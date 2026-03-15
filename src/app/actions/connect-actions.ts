@@ -1,0 +1,189 @@
+"use server";
+
+import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
+import { MessagingService } from "@/server/recovery/services/messaging-service";
+import { getPlatformBootstrapService } from "@/server/recovery/services/platform-bootstrap-service";
+
+function revalidateOperationalRoutes() {
+  revalidatePath("/connect");
+  revalidatePath("/dashboard");
+  revalidatePath("/inbox");
+  revalidatePath("/leads");
+  revalidatePath("/test");
+}
+
+export async function saveConnectionSettingsAction(formData: FormData) {
+  const scope = String(formData.get("scope") ?? "").trim();
+  const settingsService = getConnectionSettingsService();
+
+  if (!scope) {
+    redirect("/connect?status=error&message=Escopo%20invalido");
+  }
+
+  switch (scope) {
+    case "workspace":
+      await settingsService.saveSettings({
+        appBaseUrl: String(formData.get("appBaseUrl") ?? "").trim(),
+        webhookSecret: String(formData.get("webhookSecret") ?? "").trim(),
+        webhookToleranceSeconds: Number(
+          String(formData.get("webhookToleranceSeconds") ?? "300"),
+        ),
+      });
+      break;
+    case "whatsapp":
+      await settingsService.saveSettings({
+        whatsappProvider:
+          String(formData.get("whatsappProvider") ?? "cloud_api") === "web_api"
+            ? "web_api"
+            : "cloud_api",
+        whatsappApiBaseUrl: String(
+          formData.get("whatsappApiBaseUrl") ?? "",
+        ).trim(),
+        whatsappAccessToken: String(
+          formData.get("whatsappAccessToken") ?? "",
+        ).trim(),
+        whatsappPhoneNumberId: String(
+          formData.get("whatsappPhoneNumberId") ?? "",
+        ).trim(),
+        whatsappBusinessAccountId: String(
+          formData.get("whatsappBusinessAccountId") ?? "",
+        ).trim(),
+        whatsappWebhookVerifyToken: String(
+          formData.get("whatsappWebhookVerifyToken") ?? "",
+        ).trim(),
+        whatsappWebSessionId: "",
+        whatsappWebSessionStatus: "disconnected",
+        whatsappWebSessionQrCode: "",
+        whatsappWebSessionPhone: "",
+        whatsappWebSessionError: "",
+        whatsappWebSessionUpdatedAt: new Date().toISOString(),
+      });
+      break;
+    case "email":
+      await settingsService.saveSettings({
+        emailApiKey: String(formData.get("emailApiKey") ?? "").trim(),
+        emailFromAddress: String(
+          formData.get("emailFromAddress") ?? "",
+        ).trim(),
+      });
+      break;
+    case "crm":
+      await settingsService.saveSettings({
+        crmApiUrl: String(formData.get("crmApiUrl") ?? "").trim(),
+        crmApiKey: String(formData.get("crmApiKey") ?? "").trim(),
+      });
+      break;
+    case "ai":
+      await settingsService.saveSettings({
+        openAiApiKey: String(formData.get("openAiApiKey") ?? "").trim(),
+      });
+      break;
+    default:
+      redirect("/connect?status=error&message=Escopo%20desconhecido");
+  }
+
+  revalidateOperationalRoutes();
+  redirect(`/connect?status=ok&saved=${encodeURIComponent(scope)}`);
+}
+
+export async function saveDatabaseBootstrapAction(formData: FormData) {
+  const supabaseUrl = String(formData.get("supabaseUrl") ?? "").trim();
+  const supabaseServiceRoleKey = String(
+    formData.get("supabaseServiceRoleKey") ?? "",
+  ).trim();
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    redirect("/connect?status=error&message=Informe%20URL%20e%20Service%20Role%20do%20Supabase");
+  }
+
+  try {
+    const client = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const { error } = await client
+      .from("connection_settings")
+      .select("id")
+      .limit(1);
+
+    if (error) {
+      const message = error.message.toLowerCase();
+
+      if (message.includes("relation") || message.includes("does not exist")) {
+        redirect("/connect?status=error&message=Aplique%20primeiro%20o%20schema%20em%20supabase/schema.sql");
+      }
+
+      if (
+        message.includes("jwt") ||
+        message.includes("permission") ||
+        message.includes("invalid")
+      ) {
+        redirect("/connect?status=error&message=Credenciais%20do%20Supabase%20invalidas");
+      }
+
+      redirect(
+        `/connect?status=error&message=${encodeURIComponent(error.message)}`,
+      );
+    }
+
+    getPlatformBootstrapService().saveSettings({
+      supabaseUrl,
+      supabaseServiceRoleKey,
+    });
+  } catch (error) {
+    redirect(
+      `/connect?status=error&message=${encodeURIComponent(
+        error instanceof Error ? error.message : "Falha ao validar o Supabase",
+      )}`,
+    );
+  }
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=database");
+}
+
+export async function startWhatsAppQrSessionAction() {
+  try {
+    await new MessagingService().startWhatsAppWebSession();
+  } catch (error) {
+    redirect(
+      `/connect?status=error&message=${encodeURIComponent(
+        error instanceof Error ? error.message : "Falha ao iniciar QR",
+      )}`,
+    );
+  }
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=whatsapp_qr");
+}
+
+export async function refreshWhatsAppQrSessionAction() {
+  try {
+    await new MessagingService().refreshWhatsAppWebSession();
+  } catch (error) {
+    redirect(
+      `/connect?status=error&message=${encodeURIComponent(
+        error instanceof Error ? error.message : "Falha ao atualizar QR",
+      )}`,
+    );
+  }
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=whatsapp_qr");
+}
+
+export async function disconnectWhatsAppQrSessionAction() {
+  try {
+    await new MessagingService().disconnectWhatsAppWebSession();
+  } catch (error) {
+    redirect(
+      `/connect?status=error&message=${encodeURIComponent(
+        error instanceof Error ? error.message : "Falha ao desconectar QR",
+      )}`,
+    );
+  }
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=whatsapp_qr");
+}

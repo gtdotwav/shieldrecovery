@@ -1,0 +1,9 @@
+.next
+node_modules
+.git
+.env.local
+.DS_Store
+*.log
+node_modules2
+test_dir
+.vercel
