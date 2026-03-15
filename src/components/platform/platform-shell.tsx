@@ -10,7 +10,9 @@ import {
   UsersRound,
 } from "lucide-react";
 
+import { logoutAction } from "@/app/actions/auth-actions";
 import { ShieldRecoveryLogo } from "@/components/platform/shield-recovery-logo";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
 import { cn } from "@/lib/utils";
 
@@ -154,7 +156,7 @@ export function PlatformPage({
    App page shell (Dashboard, CRM, etc.)
    ═══════════════════════════════════════════ */
 
-export function PlatformAppPage({
+export async function PlatformAppPage({
   currentPath,
   action,
   children,
@@ -164,6 +166,7 @@ export function PlatformAppPage({
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
+  await requireAuthenticatedSession();
   const visibleRoutes = getVisibleRoutes();
   const currentRoute =
     visibleRoutes.find((route) => route.href === currentPath) ?? visibleRoutes[1];
@@ -247,6 +250,14 @@ export function PlatformAppPage({
                   })}
                 </div>
                 {action}
+                <form action={logoutAction}>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#6b7280] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+                  >
+                    Sair
+                  </button>
+                </form>
               </div>
             </div>
           </header>

@@ -29,6 +29,7 @@ import {
 } from "@/components/platform/platform-shell";
 import { StageBadge } from "@/components/ui/stage-badge";
 import { formatCurrency, formatRelativeTime } from "@/lib/format";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
 import { getAIOrchestrator } from "@/server/recovery/ai/orchestrator";
 import type {
@@ -49,6 +50,7 @@ export const metadata = {
 };
 
 export default async function AIPage() {
+  await requireAuthenticatedSession();
   if (!appEnv.experimentalPagesEnabled) {
     notFound();
   }

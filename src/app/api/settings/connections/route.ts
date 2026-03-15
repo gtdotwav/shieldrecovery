@@ -1,3 +1,4 @@
+import { ensureAuthenticatedRequest } from "@/server/auth/request";
 import {
   handleGetConnectionSettings,
   handleSaveConnectionSettings,
@@ -6,10 +7,18 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const unauthorized = await ensureAuthenticatedRequest(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
   return handleGetConnectionSettings();
 }
 
 export async function POST(request: Request) {
+  const unauthorized = await ensureAuthenticatedRequest(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
   return handleSaveConnectionSettings(request);
 }

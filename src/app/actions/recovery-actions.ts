@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import type { ConversationStatus, RecoveryLeadStatus } from "@/server/recovery/types";
 
 export async function transitionLeadStage(formData: FormData) {
+  await requireAuthenticatedSession();
   const service = getPaymentRecoveryService();
   const leadId = String(formData.get("leadId") ?? "");
   const status = String(formData.get("status") ?? "") as RecoveryLeadStatus;
@@ -23,6 +25,7 @@ export async function transitionLeadStage(formData: FormData) {
 }
 
 export async function registerConversationReply(formData: FormData) {
+  await requireAuthenticatedSession();
   const service = getPaymentRecoveryService();
   const conversationId = String(formData.get("conversationId") ?? "");
   const content = String(formData.get("content") ?? "");
@@ -38,6 +41,7 @@ export async function registerConversationReply(formData: FormData) {
 }
 
 export async function sendAiConversationReply(formData: FormData) {
+  await requireAuthenticatedSession();
   const service = getPaymentRecoveryService();
   const conversationId = String(formData.get("conversationId") ?? "");
 
@@ -52,6 +56,7 @@ export async function sendAiConversationReply(formData: FormData) {
 }
 
 export async function changeConversationStatus(formData: FormData) {
+  await requireAuthenticatedSession();
   const service = getPaymentRecoveryService();
   const conversationId = String(formData.get("conversationId") ?? "");
   const status = String(formData.get("status") ?? "") as ConversationStatus;

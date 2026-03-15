@@ -22,6 +22,7 @@ import {
   scorePriority,
 } from "@/lib/stage";
 import { cn } from "@/lib/utils";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import type {
   FollowUpContact,
@@ -55,6 +56,7 @@ const laneOrder: RecoveryLeadStatus[] = [
 ];
 
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
+  await requireAuthenticatedSession();
   const params = (await searchParams) ?? {};
   const currentView = readViewMode(params.view);
   const currentScope = readScopeMode(params.scope);

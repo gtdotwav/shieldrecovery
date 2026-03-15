@@ -23,6 +23,7 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { formatCurrency } from "@/lib/format";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,7 @@ type TestPageProps = {
 };
 
 export default async function TestPage({ searchParams }: TestPageProps) {
+  await requireAuthenticatedSession();
   const params = await searchParams;
   const service = getPaymentRecoveryService();
   const [analytics, contacts] = await Promise.all([

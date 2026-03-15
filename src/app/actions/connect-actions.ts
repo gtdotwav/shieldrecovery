@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPlatformBootstrapService } from "@/server/recovery/services/platform-bootstrap-service";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 
 function revalidateOperationalRoutes() {
   revalidatePath("/connect");
@@ -17,6 +18,7 @@ function revalidateOperationalRoutes() {
 }
 
 export async function saveConnectionSettingsAction(formData: FormData) {
+  await requireAuthenticatedSession();
   const scope = String(formData.get("scope") ?? "").trim();
   const settingsService = getConnectionSettingsService();
 
@@ -91,6 +93,7 @@ export async function saveConnectionSettingsAction(formData: FormData) {
 }
 
 export async function saveDatabaseBootstrapAction(formData: FormData) {
+  await requireAuthenticatedSession();
   const supabaseUrl = String(formData.get("supabaseUrl") ?? "").trim();
   const supabaseServiceRoleKey = String(
     formData.get("supabaseServiceRoleKey") ?? "",
@@ -144,6 +147,7 @@ export async function saveDatabaseBootstrapAction(formData: FormData) {
 }
 
 export async function startWhatsAppQrSessionAction() {
+  await requireAuthenticatedSession();
   try {
     await new MessagingService().startWhatsAppWebSession();
   } catch (error) {
@@ -159,6 +163,7 @@ export async function startWhatsAppQrSessionAction() {
 }
 
 export async function refreshWhatsAppQrSessionAction() {
+  await requireAuthenticatedSession();
   try {
     await new MessagingService().refreshWhatsAppWebSession();
   } catch (error) {
@@ -174,6 +179,7 @@ export async function refreshWhatsAppQrSessionAction() {
 }
 
 export async function disconnectWhatsAppQrSessionAction() {
+  await requireAuthenticatedSession();
   try {
     await new MessagingService().disconnectWhatsAppWebSession();
   } catch (error) {

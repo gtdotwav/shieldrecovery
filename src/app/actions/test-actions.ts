@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -160,12 +161,14 @@ function refreshOperationalViews() {
 }
 
 export async function resetOperationalDataAction() {
+  await requireAuthenticatedSession();
   await getStorageService().clearOperationalData();
   refreshOperationalViews();
   redirect("/test?status=ok&message=Base%20operacional%20limpa");
 }
 
 export async function seedValidationScenarioAction() {
+  await requireAuthenticatedSession();
   const storage = getStorageService();
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();
@@ -256,6 +259,7 @@ export async function seedValidationScenarioAction() {
 }
 
 export async function seedFailedPaymentAction() {
+  await requireAuthenticatedSession();
   const service = getPaymentRecoveryService();
 
   await service.importShieldTransactionPayload(
@@ -267,6 +271,7 @@ export async function seedFailedPaymentAction() {
 }
 
 export async function seedRecoveredPaymentAction() {
+  await requireAuthenticatedSession();
   const service = getPaymentRecoveryService();
   const suffix = Date.now().toString();
   const paymentId = `pay_test_recovered_${suffix}`;
@@ -297,6 +302,7 @@ export async function seedRecoveredPaymentAction() {
 }
 
 export async function simulateInboundReplyAction() {
+  await requireAuthenticatedSession();
   const messaging = new MessagingService();
   const service = getPaymentRecoveryService();
   const contacts = await service.getFollowUpContacts();
@@ -329,6 +335,7 @@ export async function simulateInboundReplyAction() {
 }
 
 export async function generateRetryLinkAction(formData: FormData) {
+  await requireAuthenticatedSession();
   const gatewayPaymentId = String(formData.get("gatewayPaymentId") ?? "").trim();
 
   if (!gatewayPaymentId) {

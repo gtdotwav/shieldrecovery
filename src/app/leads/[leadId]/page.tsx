@@ -37,6 +37,7 @@ import {
   mapStageLabel,
   recommendedNextAction,
 } from "@/lib/stage";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
@@ -47,6 +48,7 @@ type PageProps = {
 };
 
 export default async function LeadDetailPage({ params }: PageProps) {
+  await requireAuthenticatedSession();
   const { leadId } = await params;
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();

@@ -23,6 +23,7 @@ import { MessageBubble } from "@/components/ui/message-bubble";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/format";
 import { mapStageLabel, recommendedNextAction } from "@/lib/stage";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import type { InboxConversation } from "@/server/recovery/types";
@@ -40,6 +41,7 @@ type InboxPageProps = {
 };
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
+  await requireAuthenticatedSession();
   const params = await searchParams;
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();

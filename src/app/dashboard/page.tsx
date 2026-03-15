@@ -22,6 +22,7 @@ import { TimeBadge } from "@/components/ui/time-badge";
 import { hasPhone, pickBestContact } from "@/lib/contact";
 import { formatCurrency } from "@/lib/format";
 import { recommendedNextAction, scorePriority } from "@/lib/stage";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import type { FollowUpContact } from "@/server/recovery/types";
 
@@ -32,6 +33,7 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
+  await requireAuthenticatedSession();
   const service = getPaymentRecoveryService();
   const [analytics, contacts] = await Promise.all([
     service.getRecoveryAnalytics(),

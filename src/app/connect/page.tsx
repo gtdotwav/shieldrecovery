@@ -28,6 +28,7 @@ import {
   PlatformPill,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
+import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPlatformBootstrapService } from "@/server/recovery/services/platform-bootstrap-service";
@@ -55,6 +56,7 @@ type IntegrationStatus = {
 };
 
 export default async function ConnectPage({ searchParams }: ConnectPageProps) {
+  await requireAuthenticatedSession();
   const params = await searchParams;
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();
