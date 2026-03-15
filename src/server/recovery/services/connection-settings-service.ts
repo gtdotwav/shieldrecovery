@@ -17,6 +17,22 @@ export type RuntimeConnectionSettings = ConnectionSettingsRecord & {
   aiConfigured: boolean;
 };
 
+export type PublicRuntimeConnectionSettings = {
+  appBaseUrl: string;
+  webhookToleranceSeconds: number;
+  whatsappProvider: ConnectionSettingsRecord["whatsappProvider"];
+  whatsappWebSessionStatus: ConnectionSettingsRecord["whatsappWebSessionStatus"];
+  whatsappWebSessionPhone: string;
+  whatsappWebSessionUpdatedAt: string;
+  databaseMode: StorageMode;
+  databaseConfigured: boolean;
+  whatsappConfigured: boolean;
+  whatsappSessionConnected: boolean;
+  emailConfigured: boolean;
+  crmConfigured: boolean;
+  aiConfigured: boolean;
+};
+
 export class ConnectionSettingsService {
   async getSettings(): Promise<ConnectionSettingsRecord> {
     const defaults = createDefaultConnectionSettings();
@@ -61,6 +77,26 @@ export class ConnectionSettingsService {
       emailConfigured: Boolean(settings.emailApiKey),
       crmConfigured: Boolean(settings.crmApiUrl && settings.crmApiKey),
       aiConfigured: Boolean(settings.openAiApiKey),
+    };
+  }
+
+  async getPublicRuntimeSettings(): Promise<PublicRuntimeConnectionSettings> {
+    const runtime = await this.getRuntimeSettings();
+
+    return {
+      appBaseUrl: runtime.appBaseUrl,
+      webhookToleranceSeconds: runtime.webhookToleranceSeconds,
+      whatsappProvider: runtime.whatsappProvider,
+      whatsappWebSessionStatus: runtime.whatsappWebSessionStatus,
+      whatsappWebSessionPhone: runtime.whatsappWebSessionPhone,
+      whatsappWebSessionUpdatedAt: runtime.whatsappWebSessionUpdatedAt,
+      databaseMode: runtime.databaseMode,
+      databaseConfigured: runtime.databaseConfigured,
+      whatsappConfigured: runtime.whatsappConfigured,
+      whatsappSessionConnected: runtime.whatsappSessionConnected,
+      emailConfigured: runtime.emailConfigured,
+      crmConfigured: runtime.crmConfigured,
+      aiConfigured: runtime.aiConfigured,
     };
   }
 
