@@ -23,6 +23,8 @@ import { MessageBubble } from "@/components/ui/message-bubble";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/format";
 import { mapStageLabel, recommendedNextAction } from "@/lib/stage";
+import { canRoleAccessAgent } from "@/server/auth/core";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -41,19 +43,91 @@ type InboxPageProps = {
 };
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
-  await requireAuthenticatedSession();
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
   const params = await searchParams;
   const service = getPaymentRecoveryService();
+  const sellerIdentity =
+    session.role === "seller"
+      ? await getSellerIdentityByEmail(session.email)
+      : null;
+  const sellerControl =
+    session.role === "seller"
+      ? await service.getSellerAdminControlForName(sellerIdentity?.agentName)
+      : undefined;
+
+  if (session.role === "seller" && sellerControl && !sellerControl.inboxEnabled) {
+    return (
+      <PlatformAppPage currentPath="/inbox">
+        <PlatformSurface className="p-6 sm:p-7">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+            Conversas bloqueadas pelo admin
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#111827]">
+            A central de conversas foi pausada para este seller.
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6b7280]">
+            O admin retirou o acesso da carteira às conversas. Você ainda pode
+            acompanhar os casos no CRM, mas o atendimento fica centralizado até
+            nova liberação.
+          </p>
+        </PlatformSurface>
+      </PlatformAppPage>
+    );
+  }
+
   const messaging = new MessagingService();
-  const [contacts, inbox] = await Promise.all([
+  const [allContacts, inboxSnapshot] = await Promise.all([
     service.getFollowUpContacts(),
-    messaging.getInboxSnapshot(params.conversationId),
+    messaging.getInboxSnapshot(),
   ]);
 
-  const conversationCount = inbox.conversations.length;
-  const unreadCount = inbox.conversations.reduce((s, c) => s + c.unread_count, 0);
+  const contacts =
+    session.role === "admin"
+      ? allContacts
+      : allContacts.filter((contact) =>
+          canRoleAccessAgent(
+            session.role,
+            contact.assigned_agent,
+            sellerIdentity?.agentName,
+          ),
+        );
+  const accessibleLeadIds = new Set(contacts.map((contact) => contact.lead_id));
+  const conversations = inboxSnapshot.conversations.filter((conversation) => {
+    if (session.role === "admin") {
+      return true;
+    }
+
+    if (conversation.lead_id) {
+      return accessibleLeadIds.has(conversation.lead_id);
+    }
+
+    return canRoleAccessAgent(
+      session.role,
+      conversation.assigned_agent,
+      sellerIdentity?.agentName,
+    );
+  });
+  const selectedConversation =
+    (params.conversationId
+      ? conversations.find(
+          (conversation) => conversation.conversation_id === params.conversationId,
+        )
+      : null) ??
+    conversations[0] ??
+    null;
+  const selectedMessages = selectedConversation
+    ? await messaging.getConversationMessages(selectedConversation.conversation_id)
+    : [];
+
+  const conversationCount = conversations.length;
+  const unreadCount = conversations.reduce((s, c) => s + c.unread_count, 0);
   const selectedLead =
-    contacts.find((c) => c.lead_id === inbox.selectedConversation?.lead_id) ?? null;
+    contacts.find((c) => c.lead_id === selectedConversation?.lead_id) ?? null;
+  const latestRecoveryPrompt =
+    [...selectedMessages]
+      .reverse()
+      .find((message) => message.metadata?.kind === "recovery_prompt")
+      ?.metadata ?? null;
 
   return (
     <PlatformAppPage
@@ -68,7 +142,6 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
         </Link>
       }
     >
-      {/* Compact stats */}
       <section className="grid gap-3 sm:grid-cols-3">
         <PlatformMetricCard
           icon={MessageCircle}
@@ -83,78 +156,111 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
         <PlatformMetricCard
           icon={MessageCircle}
           label="mensagens"
-          value={inbox.conversations.reduce((s, c) => s + c.message_count, 0).toString()}
+          value={conversations.reduce((s, c) => s + c.message_count, 0).toString()}
         />
       </section>
 
+      <PlatformSurface className="mt-5 p-5 sm:p-6">
+        <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
+          <div>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+              Central de conversas
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
+              Fila, thread e contexto no mesmo fluxo.
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
+              A inbox concentra o atendimento que já nasceu do webhook. O time
+              continua a conversa aqui e o CRM acompanha a mesma história.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-[#6b7280]">
+              {conversationCount} conversas abertas e {unreadCount} mensagens
+              ainda pedindo leitura.
+            </p>
+          </div>
+
+          <div className="rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+            Priorize a fila e mantenha toda a tratativa na mesma thread.
+          </div>
+        </div>
+      </PlatformSurface>
+
       <section className="mt-5 grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_18rem]">
-        {/* Queue */}
         <PlatformSurface className="p-3 xl:sticky xl:top-20 xl:self-start">
-          <h2 className="px-1 pb-3 text-xs font-medium uppercase tracking-[0.16em] text-[#9ca3af]">
-            Fila ({conversationCount})
-          </h2>
+          <div className="flex items-center justify-between px-1 pb-3">
+            <h2 className="text-xs font-medium uppercase tracking-[0.16em] text-[#9ca3af]">
+              Fila
+            </h2>
+            <span className="rounded-full border border-black/[0.06] bg-[#f7f8fa] px-2 py-0.5 text-[0.65rem] font-medium text-[#6b7280]">
+              {conversationCount}
+            </span>
+          </div>
 
           <div className="space-y-1.5 xl:max-h-[calc(100vh-12rem)] xl:overflow-y-auto xl:pr-1">
-            {inbox.conversations.length === 0 ? (
+            {conversations.length === 0 ? (
               <PlatformInset className="p-5 text-center">
                 <MessageCircle className="mx-auto h-5 w-5 text-[#d1d5db]" />
-                <p className="mt-2 text-sm text-[#9ca3af]">Nenhuma conversa ainda.</p>
-                <p className="mt-1 text-xs text-[#d1d5db]">
-                  As conversas passam a nascer pelo webhook, junto com o primeiro follow-up.
+                <p className="mt-2 text-sm text-[#9ca3af]">Nenhuma conversa por aqui ainda.</p>
+                <p className="mt-1 text-xs text-[#9ca3af]">
+                  Elas nascem quando o webhook entra e o primeiro follow-up é aberto.
                 </p>
-                <Link href="/connect" className="mt-3 inline-block text-xs text-orange-500 hover:underline">
-                  Configurar WhatsApp
-                </Link>
+                {session.role === "admin" ? (
+                  <Link href="/connect" className="mt-3 inline-block text-xs text-orange-500 hover:underline">
+                    Configurar WhatsApp
+                  </Link>
+                ) : null}
               </PlatformInset>
             ) : (
-              inbox.conversations
+              conversations
                 .sort((a, b) => b.unread_count - a.unread_count)
                 .map((conv) => (
                   <ConversationRow
                     key={conv.conversation_id}
                     conversation={conv}
-                    active={conv.conversation_id === inbox.selectedConversation?.conversation_id}
+                    active={conv.conversation_id === selectedConversation?.conversation_id}
                   />
                 ))
             )}
           </div>
         </PlatformSurface>
 
-        {/* Thread */}
         <PlatformSurface className="flex flex-col p-4 sm:p-5">
-          {inbox.selectedConversation ? (
+          {selectedConversation ? (
             <>
               <div className="flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <p className="text-sm font-semibold text-[#1a1a2e]">
-                      {inbox.selectedConversation.customer_name}
+                      {selectedConversation.customer_name}
                     </p>
                     <StatusBadge
-                      label={labelForChannel(inbox.selectedConversation.channel)}
+                      label={labelForChannel(selectedConversation.channel)}
                       variant="neutral"
                     />
                   </div>
                   <p className="mt-1 text-xs text-[#9ca3af]">
-                    {inbox.selectedConversation.contact_value}
+                    {selectedConversation.contact_value}
+                  </p>
+                  <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[#9ca3af]">
+                    {selectedConversation.message_count} mensagens · {selectedConversation.unread_count} não lidas
                   </p>
                 </div>
 
                 <div className="self-start sm:self-auto">
                   <ConversationStatusSelect
-                    conversationId={inbox.selectedConversation.conversation_id}
-                    currentStatus={inbox.selectedConversation.status}
+                    conversationId={selectedConversation.conversation_id}
+                    currentStatus={selectedConversation.status}
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto py-4 min-h-[22rem] space-y-2.5 xl:max-h-[calc(100vh-18rem)] xl:pr-1">
-                {inbox.selectedMessages.length === 0 ? (
+              <div className="min-h-[22rem] flex-1 overflow-y-auto py-4 space-y-2 xl:max-h-[calc(100vh-18rem)] xl:pr-1">
+                {selectedMessages.length === 0 ? (
                   <p className="py-8 text-center text-sm text-[#9ca3af]">
-                    Sem mensagens registradas.
+                    Ainda sem mensagens nesta thread.
                   </p>
                 ) : (
-                  inbox.selectedMessages.map((msg) => (
+                  selectedMessages.map((msg) => (
                     <MessageBubble key={msg.id} message={msg} />
                   ))
                 )}
@@ -169,15 +275,15 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                     <input
                       type="hidden"
                       name="conversationId"
-                      value={inbox.selectedConversation.conversation_id}
+                      value={selectedConversation.conversation_id}
                     />
                     <input
                       name="content"
                       type="text"
                       placeholder="Registrar mensagem ou atualização da tratativa..."
-                      className="flex-1 rounded-xl border border-black/10 bg-[#f3f3f5] px-3.5 py-2.5 text-sm text-[#1a1a2e] outline-none placeholder:text-[#9ca3af] focus:border-orange-300 focus:ring-1 focus:ring-orange-200"
+                      className="flex-1 rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#1a1a2e] outline-none placeholder:text-[#9ca3af] focus:border-orange-300 focus:ring-1 focus:ring-orange-100"
                     />
-                    <ActionButton className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
+                    <ActionButton className="inline-flex items-center justify-center rounded-[0.95rem] bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
                       <Send className="h-4 w-4" />
                     </ActionButton>
                   </form>
@@ -191,9 +297,9 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                       <input
                         type="hidden"
                         name="conversationId"
-                        value={inbox.selectedConversation.conversation_id}
+                        value={selectedConversation.conversation_id}
                       />
-                      <ActionButton className="inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3.5 py-2 text-xs font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
+                      <ActionButton className="inline-flex items-center gap-2 rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2 text-xs font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
                         <Bot className="h-4 w-4" />
                         Responder com IA
                       </ActionButton>
@@ -209,7 +315,6 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
           )}
         </PlatformSurface>
 
-        {/* Context sidebar */}
         <PlatformSurface className="p-4 xl:sticky xl:top-20 xl:self-start">
           <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
             Contexto do lead
@@ -229,28 +334,22 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <PlatformInset className="px-3 py-2.5">
-                  <ContextLine
-                    label="Etapa"
-                    value={mapStageLabel(selectedLead.lead_status)}
-                  />
-                </PlatformInset>
-                <PlatformInset className="px-3 py-2.5">
-                  <ContextLine
-                    label="Dono"
-                    value={selectedLead.assigned_agent || "Sem responsável"}
-                  />
-                </PlatformInset>
-                <PlatformInset className="px-3 py-2.5">
-                  <ContextLine
-                    label="Contato"
-                    value={selectedLead.phone || selectedLead.email || "Sem contato"}
-                  />
-                </PlatformInset>
+              <div className="space-y-2 rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-3 py-3">
+                <ContextLine
+                  label="Etapa"
+                  value={mapStageLabel(selectedLead.lead_status)}
+                />
+                <ContextLine
+                  label="Dono"
+                  value={selectedLead.assigned_agent || "Sem responsável"}
+                />
+                <ContextLine
+                  label="Contato"
+                  value={selectedLead.phone || selectedLead.email || "Sem contato"}
+                />
               </div>
 
-              <div className="rounded-xl bg-[#f5f5f7] px-3 py-3">
+              <div className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-3 py-3">
                 <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#9ca3af]">
                   Próxima ação
                 </p>
@@ -258,6 +357,37 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                   {recommendedNextAction(selectedLead)}
                 </p>
               </div>
+
+              {latestRecoveryPrompt ? (
+                <PlatformInset className="px-3 py-3">
+                  <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#9ca3af]">
+                    Cobrança ativa
+                  </p>
+                  <div className="mt-2 space-y-2 text-sm text-[#374151]">
+                    {latestRecoveryPrompt.paymentUrl || latestRecoveryPrompt.retryLink ? (
+                      <a
+                        href={latestRecoveryPrompt.paymentUrl || latestRecoveryPrompt.retryLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-600 transition-colors hover:text-orange-700"
+                      >
+                        Abrir link de pagamento
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    ) : null}
+                    {latestRecoveryPrompt.pixCode ? (
+                      <p className="break-all font-mono text-xs leading-6 text-[#1a1a2e]">
+                        {latestRecoveryPrompt.pixCode}
+                      </p>
+                    ) : null}
+                    {latestRecoveryPrompt.pixExpiresAt ? (
+                      <p className="text-xs text-[#9ca3af]">
+                        Expira em {latestRecoveryPrompt.pixExpiresAt}
+                      </p>
+                    ) : null}
+                  </div>
+                </PlatformInset>
+              ) : null}
 
               <Link
                 href={`/leads/${selectedLead.lead_id}`}
@@ -287,10 +417,10 @@ function ConversationRow({
 }) {
   return (
     <div
-      className={`rounded-xl border px-3 py-3 transition-all ${
+      className={`rounded-[0.95rem] border px-3 py-3 transition-colors ${
         active
-          ? "border-orange-200 bg-orange-50 shadow-sm"
-          : "border-transparent hover:border-black/5 hover:bg-[#f5f5f7]"
+          ? "border-orange-200 bg-orange-50/60"
+          : "border-black/[0.04] bg-[#fbfbfc] hover:bg-white"
       }`}
     >
       <Link href={`/inbox?conversationId=${conversation.conversation_id}`} className="block">
@@ -312,15 +442,7 @@ function ConversationRow({
         </p>
       </Link>
 
-      {conversation.lead_id ? (
-        <Link
-          href={`/leads/${conversation.lead_id}`}
-          className="mt-2 inline-flex items-center gap-1 text-[0.65rem] font-medium text-orange-600 hover:text-orange-700"
-        >
-          Abrir lead
-          <ExternalLink className="h-3 w-3" />
-        </Link>
-      ) : null}
+      {conversation.lead_id ? null : null}
     </div>
   );
 }
@@ -345,7 +467,7 @@ function ConversationStatusSelect({
           <input type="hidden" name="conversationId" value={conversationId} />
           <input type="hidden" name="status" value={opt.status} />
           <ActionButton
-            className={`rounded-lg px-2.5 py-1 text-[0.65rem] font-medium transition-colors ${
+            className={`rounded-[0.8rem] px-2.5 py-1 text-[0.65rem] font-medium transition-colors ${
               currentStatus === opt.status
                 ? "bg-orange-50 text-orange-600 border border-orange-200"
                 : "text-[#9ca3af] hover:bg-[#f5f5f7] hover:text-[#717182]"
@@ -375,10 +497,23 @@ function labelForChannel(channel: InboxConversation["channel"]) {
 }
 
 function formatMessageTime(value: string) {
+  const date = safeDate(value);
+
+  if (!date) {
+    return "sem data";
+  }
+
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(value));
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
+}
+
+function safeDate(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
