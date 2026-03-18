@@ -173,17 +173,10 @@ export class PagnetProvider implements PaymentProvider {
         },
       ],
       customer: {
-        name: input.customerName,
-        email: input.customerEmail,
-        phone: cleanPhone(input.customerPhone),
-        document: input.customerDocument
-          ? {
-              number: input.customerDocument.replace(/\D/g, ""),
-              type: input.customerDocument.replace(/\D/g, "").length > 11
-                ? "cnpj"
-                : "cpf",
-            }
-          : undefined,
+        name: input.customerName || "Cliente Shield",
+        email: input.customerEmail || "cliente@shield.com",
+        phone: cleanPhone(input.customerPhone) || "21999999999",
+        document: buildDocument(input.customerDocument),
       },
     };
 
@@ -357,4 +350,16 @@ function futureDate(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().split("T")[0];
+}
+
+function buildDocument(doc?: string): { number: string; type: "cpf" | "cnpj" } {
+  if (!doc) {
+    // PagNet requires a document — use placeholder for minimal integration
+    return { number: "00000000000", type: "cpf" };
+  }
+  const digits = doc.replace(/\D/g, "");
+  return {
+    number: digits,
+    type: digits.length > 11 ? "cnpj" : "cpf",
+  };
 }

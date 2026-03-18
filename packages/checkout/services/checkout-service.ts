@@ -150,7 +150,7 @@ export class CheckoutService {
         customerName: session.customerName,
         customerEmail: session.customerEmail,
         customerPhone: session.customerPhone,
-        customerDocument: session.customerDocument,
+        customerDocument: input.customerDocument || session.customerDocument,
         description: session.description,
         cardToken: input.cardToken,
         metadata: { postbackUrl },

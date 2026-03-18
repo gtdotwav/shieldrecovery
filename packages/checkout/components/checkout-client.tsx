@@ -36,6 +36,7 @@ export function CheckoutClient({
   const [selectedInstallments, setSelectedInstallments] = useState(1);
   const [paymentResult, setPaymentResult] =
     useState<ProcessPaymentResult | null>(null);
+  const [customerDocument, setCustomerDocument] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -109,6 +110,7 @@ export function CheckoutClient({
             methodType: selectedMethodType,
             installments: selectedInstallments,
             cardToken,
+            customerDocument: customerDocument.replace(/\D/g, "") || undefined,
           }),
         });
 
@@ -126,7 +128,7 @@ export function CheckoutClient({
         setLoading(false);
       }
     },
-    [session.id, selectedProviderId, selectedMethodType, selectedInstallments],
+    [session.id, selectedProviderId, selectedMethodType, selectedInstallments, customerDocument],
   );
 
   // Terminal states
@@ -167,6 +169,43 @@ export function CheckoutClient({
           selectedInstallments={selectedInstallments}
           onSelect={handleInstallmentSelect}
         />
+      ) : null}
+
+      {/* CPF / CNPJ */}
+      {selectedMethodType && !paymentResult ? (
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+            CPF / CNPJ
+          </p>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={customerDocument}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 14);
+              if (digits.length <= 11) {
+                // Format CPF: 000.000.000-00
+                setCustomerDocument(
+                  digits
+                    .replace(/(\d{3})(\d)/, "$1.$2")
+                    .replace(/(\d{3})(\d)/, "$1.$2")
+                    .replace(/(\d{3})(\d{1,2})$/, "$1-$2"),
+                );
+              } else {
+                // Format CNPJ: 00.000.000/0000-00
+                setCustomerDocument(
+                  digits
+                    .replace(/(\d{2})(\d)/, "$1.$2")
+                    .replace(/(\d{3})(\d)/, "$1.$2")
+                    .replace(/(\d{3})(\d)/, "$1/$2")
+                    .replace(/(\d{4})(\d{1,2})$/, "$1-$2"),
+                );
+              }
+            }}
+            placeholder="000.000.000-00"
+            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-400/30"
+          />
+        </div>
       ) : null}
 
       {error ? (

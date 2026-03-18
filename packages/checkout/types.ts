@@ -181,6 +181,7 @@ export type ProcessPaymentInput = {
   methodType: CheckoutMethodType;
   installments?: number;
   cardToken?: string;
+  customerDocument?: string;
 };
 
 export type ProcessPaymentResult = {
