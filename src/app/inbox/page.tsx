@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Bot,
   ExternalLink,
+  Inbox,
   MessageCircle,
   Send,
 } from "lucide-react";
@@ -60,13 +61,13 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     return (
       <PlatformAppPage currentPath="/inbox">
         <PlatformSurface className="p-6 sm:p-7">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+          <p className="text-xs font-semibold uppercase tracking-widest text-orange-500">
             Conversas bloqueadas pelo admin
           </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#111827]">
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900">
             A central de conversas foi pausada para este seller.
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6b7280]">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500">
             O admin retirou o acesso da carteira às conversas. Você ainda pode
             acompanhar os casos no CRM, mas o atendimento fica centralizado até
             nova liberação.
@@ -122,6 +123,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
 
   const conversationCount = conversations.length;
   const unreadCount = conversations.reduce((s, c) => s + c.unread_count, 0);
+  const messageCount = conversations.reduce((s, c) => s + c.message_count, 0);
   const selectedLead =
     contacts.find((c) => c.lead_id === selectedConversation?.lead_id) ?? null;
   const latestRecoveryPrompt =
@@ -144,6 +146,8 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       }
     >
       <AutoRefresh intervalMs={5000} />
+
+      {/* ── Métricas ── */}
       <section className="grid gap-3 sm:grid-cols-3">
         <PlatformMetricCard
           icon={MessageCircle}
@@ -151,63 +155,68 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
           value={conversationCount.toString()}
         />
         <PlatformMetricCard
-          icon={Send}
+          icon={Inbox}
           label="não lidas"
           value={unreadCount.toString()}
         />
         <PlatformMetricCard
-          icon={MessageCircle}
+          icon={Send}
           label="mensagens"
-          value={conversations.reduce((s, c) => s + c.message_count, 0).toString()}
+          value={messageCount.toString()}
         />
       </section>
 
+      {/* ── Cabeçalho ── */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+            <p className="text-xs font-semibold uppercase tracking-widest text-orange-500">
               Central de conversas
             </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-gray-900">
               Fila, thread e contexto no mesmo fluxo.
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
               A inbox concentra o atendimento que já nasceu do webhook. O time
               continua a conversa aqui e o CRM acompanha a mesma história.
             </p>
-            <p className="mt-3 text-sm leading-6 text-[#6b7280]">
-              {conversationCount} conversas abertas e {unreadCount} mensagens
-              ainda pedindo leitura.
+            <p className="mt-3 text-sm text-gray-500">
+              <span className="font-semibold text-gray-700">{conversationCount}</span> conversas abertas
+              {" · "}
+              <span className="font-semibold text-gray-700">{unreadCount}</span> mensagens não lidas
             </p>
           </div>
 
-          <div className="rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+          <div className="rounded-2xl border border-black/[0.06] bg-gray-50 px-4 py-4 text-sm leading-6 text-gray-500">
             Priorize a fila e mantenha toda a tratativa na mesma thread.
           </div>
         </div>
       </PlatformSurface>
 
-      <section className="mt-5 grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_18rem]">
-        <PlatformSurface className="p-3 xl:sticky xl:top-20 xl:self-start">
+      {/* ── Grid principal: Fila | Thread | Contexto ── */}
+      <section className="mt-5 grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)_17rem]">
+
+        {/* ── Fila de conversas ── */}
+        <PlatformSurface className="p-3 lg:sticky lg:top-20 lg:self-start">
           <div className="flex items-center justify-between px-1 pb-3">
-            <h2 className="text-xs font-medium uppercase tracking-[0.16em] text-[#9ca3af]">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
               Fila
             </h2>
-            <span className="rounded-full border border-black/[0.06] bg-[#f7f8fa] px-2 py-0.5 text-[0.65rem] font-medium text-[#6b7280]">
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-100 text-[0.65rem] font-semibold text-gray-500">
               {conversationCount}
             </span>
           </div>
 
-          <div className="space-y-1.5 xl:max-h-[calc(100vh-12rem)] xl:overflow-y-auto xl:pr-1">
+          <div className="space-y-1.5 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
             {conversations.length === 0 ? (
               <PlatformInset className="p-5 text-center">
-                <MessageCircle className="mx-auto h-5 w-5 text-[#d1d5db]" />
-                <p className="mt-2 text-sm text-[#9ca3af]">Nenhuma conversa por aqui ainda.</p>
-                <p className="mt-1 text-xs text-[#9ca3af]">
+                <MessageCircle className="mx-auto h-5 w-5 text-gray-300" />
+                <p className="mt-2 text-sm text-gray-400">Nenhuma conversa por aqui ainda.</p>
+                <p className="mt-1 text-xs text-gray-400">
                   Elas nascem quando o webhook entra e o primeiro follow-up é aberto.
                 </p>
                 {session.role === "admin" ? (
-                  <Link href="/connect" className="mt-3 inline-block text-xs text-orange-500 hover:underline">
+                  <Link href="/connect" className="mt-3 inline-block text-xs font-medium text-orange-500 hover:underline">
                     Configurar WhatsApp
                   </Link>
                 ) : null}
@@ -226,24 +235,26 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
           </div>
         </PlatformSurface>
 
+        {/* ── Thread principal ── */}
         <PlatformSurface className="flex flex-col p-4 sm:p-5">
           {selectedConversation ? (
             <>
+              {/* Cabeçalho da conversa */}
               <div className="flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <p className="text-sm font-semibold text-[#1a1a2e]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold text-gray-900">
                       {selectedConversation.customer_name}
-                    </p>
+                    </h3>
                     <StatusBadge
                       label={labelForChannel(selectedConversation.channel)}
                       variant="neutral"
                     />
                   </div>
-                  <p className="mt-1 text-xs text-[#9ca3af]">
+                  <p className="mt-0.5 text-sm text-gray-400">
                     {selectedConversation.contact_value}
                   </p>
-                  <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[#9ca3af]">
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
                     {selectedConversation.message_count} mensagens · {selectedConversation.unread_count} não lidas
                   </p>
                 </div>
@@ -256,11 +267,14 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                 </div>
               </div>
 
-              <div className="min-h-[22rem] flex-1 overflow-y-auto py-4 space-y-2 xl:max-h-[calc(100vh-18rem)] xl:pr-1">
+              {/* Mensagens */}
+              <div className="min-h-[20rem] flex-1 space-y-3 overflow-y-auto py-4 lg:max-h-[calc(100vh-18rem)] lg:pr-1">
                 {selectedMessages.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-[#9ca3af]">
-                    Ainda sem mensagens nesta thread.
-                  </p>
+                  <div className="flex h-full items-center justify-center">
+                    <p className="text-sm text-gray-400">
+                      Ainda sem mensagens nesta thread.
+                    </p>
+                  </div>
                 ) : (
                   selectedMessages.map((msg) => (
                     <MessageBubble key={msg.id} message={msg} />
@@ -268,75 +282,82 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                 )}
               </div>
 
-              <div className="border-t border-black/[0.06] pt-3">
-                <div className="grid gap-2">
-                  <form
-                    action={registerConversationReply}
-                    className="flex flex-col gap-2 sm:flex-row"
+              {/* Área de resposta */}
+              <div className="border-t border-black/[0.06] pt-4">
+                <form
+                  action={registerConversationReply}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    type="hidden"
+                    name="conversationId"
+                    value={selectedConversation.conversation_id}
+                  />
+                  <input
+                    name="content"
+                    type="text"
+                    placeholder="Escrever mensagem..."
+                    autoComplete="off"
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-shadow"
+                  />
+                  <ActionButton
+                    className="inline-flex h-[2.625rem] w-[2.625rem] shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white transition-colors hover:bg-orange-600"
+                    aria-label="Enviar mensagem"
                   >
+                    <Send className="h-4 w-4" />
+                  </ActionButton>
+                </form>
+
+                <div className="mt-2 flex items-center justify-between">
+                  <p className="text-xs text-gray-400">
+                    Use a thread para centralizar o histórico da abordagem.
+                  </p>
+
+                  <form action={sendAiConversationReply}>
                     <input
                       type="hidden"
                       name="conversationId"
                       value={selectedConversation.conversation_id}
                     />
-                    <input
-                      name="content"
-                      type="text"
-                      placeholder="Registrar mensagem ou atualização da tratativa..."
-                      className="flex-1 rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#1a1a2e] outline-none placeholder:text-[#9ca3af] focus:border-orange-300 focus:ring-1 focus:ring-orange-100"
-                    />
-                    <ActionButton className="inline-flex items-center justify-center rounded-[0.95rem] bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
-                      <Send className="h-4 w-4" />
+                    <ActionButton className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50">
+                      <Bot className="h-3.5 w-3.5" />
+                      Responder com IA
                     </ActionButton>
                   </form>
-
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-xs text-[#9ca3af]">
-                      Use a thread para centralizar o histórico da abordagem.
-                    </p>
-
-                    <form action={sendAiConversationReply}>
-                      <input
-                        type="hidden"
-                        name="conversationId"
-                        value={selectedConversation.conversation_id}
-                      />
-                      <ActionButton className="inline-flex items-center gap-2 rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2 text-xs font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
-                        <Bot className="h-4 w-4" />
-                        Responder com IA
-                      </ActionButton>
-                    </form>
-                  </div>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex flex-1 items-center justify-center py-12">
-              <p className="text-sm text-[#9ca3af]">Selecione uma conversa na fila.</p>
+            <div className="flex flex-1 items-center justify-center py-16">
+              <div className="text-center">
+                <Inbox className="mx-auto h-8 w-8 text-gray-300" />
+                <p className="mt-3 text-sm font-medium text-gray-400">Selecione uma conversa na fila.</p>
+              </div>
             </div>
           )}
         </PlatformSurface>
 
-        <PlatformSurface className="p-4 xl:sticky xl:top-20 xl:self-start">
-          <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+        {/* ── Contexto do lead ── */}
+        <PlatformSurface className="p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-8rem)] lg:self-start lg:overflow-y-auto">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-orange-500">
             Contexto do lead
           </h3>
 
           {selectedLead ? (
             <div className="mt-4 space-y-3">
               <div>
-                <p className="text-sm font-semibold text-[#1a1a2e]">
+                <p className="text-sm font-semibold text-gray-900">
                   {selectedLead.customer_name}
                 </p>
-                <p className="mt-0.5 text-lg font-semibold text-[#1a1a2e]">
+                <p className="mt-0.5 text-lg font-bold text-gray-900">
                   {formatCurrency(selectedLead.payment_value)}
                 </p>
-                <p className="mt-1 text-xs text-[#9ca3af]">
+                <p className="mt-1 text-xs text-gray-400">
                   {selectedLead.product || "Produto não informado"}
                 </p>
               </div>
 
-              <div className="space-y-2 rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-3 py-3">
+              <div className="space-y-2.5 rounded-xl border border-black/[0.06] bg-gray-50 px-3.5 py-3">
                 <ContextLine
                   label="Etapa"
                   value={mapStageLabel(selectedLead.lead_status)}
@@ -351,21 +372,21 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                 />
               </div>
 
-              <div className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-3 py-3">
-                <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#9ca3af]">
+              <div className="rounded-xl border border-black/[0.06] bg-gray-50 px-3.5 py-3">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400">
                   Próxima ação
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[#374151]">
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-600">
                   {recommendedNextAction(selectedLead)}
                 </p>
               </div>
 
               {latestRecoveryPrompt ? (
-                <PlatformInset className="px-3 py-3">
-                  <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#9ca3af]">
+                <PlatformInset className="px-3.5 py-3">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-gray-400">
                     Cobrança ativa
                   </p>
-                  <div className="mt-2 space-y-2 text-sm text-[#374151]">
+                  <div className="mt-2 space-y-2 text-sm text-gray-600">
                     {latestRecoveryPrompt.paymentUrl || latestRecoveryPrompt.retryLink ? (
                       <a
                         href={latestRecoveryPrompt.paymentUrl || latestRecoveryPrompt.retryLink}
@@ -378,12 +399,12 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                       </a>
                     ) : null}
                     {latestRecoveryPrompt.pixCode ? (
-                      <p className="break-all font-mono text-xs leading-6 text-[#1a1a2e]">
+                      <p className="break-words font-mono text-xs leading-5 text-gray-700">
                         {latestRecoveryPrompt.pixCode}
                       </p>
                     ) : null}
                     {latestRecoveryPrompt.pixExpiresAt ? (
-                      <p className="text-xs text-[#9ca3af]">
+                      <p className="text-xs text-gray-400">
                         Expira em {latestRecoveryPrompt.pixExpiresAt}
                       </p>
                     ) : null}
@@ -400,7 +421,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
               </Link>
             </div>
           ) : (
-            <p className="mt-3 text-xs text-[#9ca3af]">
+            <p className="mt-3 text-sm text-gray-400">
               Conversa não vinculada a lead.
             </p>
           )}
@@ -409,6 +430,8 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     </PlatformAppPage>
   );
 }
+
+/* ── Componentes auxiliares ── */
 
 function ConversationRow({
   conversation,
@@ -419,32 +442,33 @@ function ConversationRow({
 }) {
   return (
     <div
-      className={`rounded-[0.95rem] border px-3 py-3 transition-colors ${
+      className={`rounded-xl border px-3 py-2.5 transition-colors ${
         active
-          ? "border-orange-200 bg-orange-50/60"
-          : "border-black/[0.04] bg-[#fbfbfc] hover:bg-white"
+          ? "border-orange-200 bg-orange-50/70 shadow-sm"
+          : "border-transparent bg-gray-50/60 hover:border-gray-200 hover:bg-white"
       }`}
     >
       <Link href={`/inbox?conversationId=${conversation.conversation_id}`} className="block">
         <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-sm font-medium text-[#1a1a2e]">
+          <p className={`truncate text-sm font-medium ${active ? "text-gray-900" : "text-gray-700"}`}>
             {conversation.customer_name}
           </p>
           {conversation.unread_count > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 text-[0.6rem] font-bold text-white">
+            <span
+              className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[0.625rem] font-bold tabular-nums text-white"
+              aria-label={`${conversation.unread_count} não lidas`}
+            >
               {conversation.unread_count}
             </span>
           )}
         </div>
-        <p className="mt-1 text-xs text-[#9ca3af] truncate">
-          {conversation.last_message_preview}
+        <p className="mt-0.5 truncate text-xs text-gray-400">
+          {conversation.last_message_preview || "Sem mensagens ainda."}
         </p>
-        <p className="mt-1 text-[0.65rem] text-[#d1d5db]">
+        <p className="mt-1 text-[0.6875rem] text-gray-300">
           {formatMessageTime(conversation.last_message_at)}
         </p>
       </Link>
-
-      {conversation.lead_id ? null : null}
     </div>
   );
 }
@@ -463,16 +487,16 @@ function ConversationStatusSelect({
   ] as const;
 
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex gap-1">
       {options.map((opt) => (
         <form key={opt.status} action={changeConversationStatus}>
           <input type="hidden" name="conversationId" value={conversationId} />
           <input type="hidden" name="status" value={opt.status} />
           <ActionButton
-            className={`rounded-[0.8rem] px-2.5 py-1 text-[0.65rem] font-medium transition-colors ${
+            className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
               currentStatus === opt.status
-                ? "bg-orange-50 text-orange-600 border border-orange-200"
-                : "text-[#9ca3af] hover:bg-[#f5f5f7] hover:text-[#717182]"
+                ? "border border-orange-200 bg-orange-50 text-orange-600"
+                : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             }`}
           >
             {opt.label}
@@ -485,9 +509,9 @@ function ConversationStatusSelect({
 
 function ContextLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-[#9ca3af]">{label}</span>
-      <span className="text-xs text-right text-[#374151]">{value}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="shrink-0 text-xs text-gray-400">{label}</span>
+      <span className="truncate text-right text-xs font-medium text-gray-600">{value}</span>
     </div>
   );
 }
