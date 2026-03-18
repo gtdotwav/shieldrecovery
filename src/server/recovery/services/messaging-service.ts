@@ -407,6 +407,211 @@ export class MessagingService {
     }
   }
 
+  async dispatchPaymentMethodButtons(input: {
+    conversation: ConversationRecord;
+    bodyText: string;
+    metadata?: MessageMetadata;
+  }): Promise<DispatchOutboundMessageResult> {
+    if (input.conversation.channel !== "whatsapp") {
+      return { status: "queued" };
+    }
+
+    const runtimeSettings =
+      await getConnectionSettingsService().getRuntimeSettings();
+
+    if (!runtimeSettings.whatsappConfigured) {
+      return { status: "queued" };
+    }
+
+    const normalizedPhone = normalizePhone(input.conversation.contactValue);
+
+    if (!normalizedPhone) {
+      return {
+        status: "failed",
+        error: "Conversation does not have a valid WhatsApp contact.",
+      };
+    }
+
+    try {
+      if (runtimeSettings.whatsappProvider === "web_api") {
+        return await this.dispatchButtonsViaWebApi({
+          apiBaseUrl: runtimeSettings.whatsappApiBaseUrl,
+          accessToken: runtimeSettings.whatsappAccessToken,
+          sessionId: runtimeSettings.whatsappWebSessionId || "shield-recovery",
+          phone: normalizedPhone,
+          bodyText: input.bodyText,
+        });
+      }
+
+      return await this.dispatchButtonsViaCloudApi({
+        apiBaseUrl: runtimeSettings.whatsappApiBaseUrl,
+        accessToken: runtimeSettings.whatsappAccessToken,
+        phoneNumberId: runtimeSettings.whatsappPhoneNumberId,
+        phone: normalizedPhone,
+        bodyText: input.bodyText,
+      });
+    } catch {
+      // Fallback to plain text if buttons fail
+      return this.dispatchOutboundMessage({
+        conversation: input.conversation,
+        content: input.bodyText,
+        metadata: input.metadata,
+      });
+    }
+  }
+
+  private async dispatchButtonsViaCloudApi(input: {
+    apiBaseUrl: string;
+    accessToken: string;
+    phoneNumberId: string;
+    phone: string;
+    bodyText: string;
+  }): Promise<DispatchOutboundMessageResult> {
+    const response = await fetch(
+      `${input.apiBaseUrl.replace(/\/$/, "")}/${input.phoneNumberId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${input.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: input.phone,
+          type: "interactive",
+          interactive: {
+            type: "button",
+            body: { text: input.bodyText },
+            action: {
+              buttons: [
+                { type: "reply", reply: { id: "pix", title: "PIX" } },
+                {
+                  type: "reply",
+                  reply: { id: "cartao", title: "Cartao de credito" },
+                },
+                { type: "reply", reply: { id: "boleto", title: "Boleto" } },
+              ],
+            },
+          },
+        }),
+      },
+    );
+
+    const payload = (await safeParseJson(response)) as
+      | {
+          messages?: Array<{ id?: string }>;
+          error?: { message?: string };
+        }
+      | undefined;
+
+    if (!response.ok) {
+      throw new Error(
+        payload?.error?.message ??
+          `WhatsApp Cloud API interactive message failed (${response.status}).`,
+      );
+    }
+
+    return {
+      status: "sent",
+      providerMessageId: payload?.messages?.[0]?.id,
+    };
+  }
+
+  private async dispatchButtonsViaWebApi(input: {
+    apiBaseUrl: string;
+    accessToken: string;
+    sessionId: string;
+    phone: string;
+    bodyText: string;
+  }): Promise<DispatchOutboundMessageResult> {
+    const config = resolveWebApiConfig(input.apiBaseUrl, input.sessionId);
+
+    if (config.kind === "evolution") {
+      // Evolution API: use sendButtons endpoint
+      const buttonsUrl = joinUrl(
+        config.baseUrl,
+        `/message/sendButtons/${encodeURIComponent(config.sessionId)}`,
+      );
+
+      const response = await fetch(buttonsUrl, {
+        method: "POST",
+        headers: {
+          ...buildWhatsAppApiHeaders(input.accessToken),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          number: input.phone,
+          title: "Forma de pagamento",
+          description: input.bodyText,
+          footer: "Shield Recovery",
+          buttons: [
+            {
+              type: "reply",
+              buttonId: "pix",
+              buttonText: { displayText: "PIX" },
+            },
+            {
+              type: "reply",
+              buttonId: "cartao",
+              buttonText: { displayText: "Cartao de credito" },
+            },
+            {
+              type: "reply",
+              buttonId: "boleto",
+              buttonText: { displayText: "Boleto" },
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Evolution API buttons failed (${response.status}).`);
+      }
+
+      const payload = (await safeParseJson(response)) as
+        | { key?: { id?: string }; id?: string }
+        | undefined;
+
+      return {
+        status: "sent",
+        providerMessageId:
+          firstString(asRecord(payload)?.id) ??
+          firstString(asRecord(asRecord(payload)?.key)?.id),
+      };
+    }
+
+    // Generic Web API: send as plain text (buttons not supported)
+    const response = await fetch(config.sendUrl, {
+      method: "POST",
+      headers: {
+        ...buildWhatsAppApiHeaders(input.accessToken),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        to: input.phone,
+        type: "text",
+        message: input.bodyText,
+        text: input.bodyText,
+        preview_url: false,
+      }),
+    });
+
+    const payload = (await safeParseJson(response)) as
+      | { id?: string; messageId?: string; data?: { id?: string } }
+      | undefined;
+
+    if (!response.ok) {
+      throw new Error(`Web API text fallback failed (${response.status}).`);
+    }
+
+    return {
+      status: "sent",
+      providerMessageId:
+        payload?.id ?? payload?.messageId ?? payload?.data?.id,
+    };
+  }
+
   async getWhatsAppWebhookUrl() {
     const settings = await getConnectionSettingsService().getSettings();
     return `${settings.appBaseUrl}/api/webhooks/whatsapp`;

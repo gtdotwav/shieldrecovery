@@ -969,32 +969,6 @@ export class PaymentRecoveryService {
           gatewayPaymentId: contact.gateway_payment_id,
         })
       : undefined;
-    const retryLink =
-      [...messages]
-        .reverse()
-        .find((message) => message.metadata?.retryLink || message.metadata?.paymentUrl)
-        ?.metadata?.paymentUrl ??
-      [...messages]
-        .reverse()
-        .find((message) => message.metadata?.retryLink || message.metadata?.paymentUrl)
-        ?.metadata?.retryLink ??
-      (payment && contact
-        ? await this.createImmediatePaymentLink(
-            payment,
-            contact.payment_status,
-            contact.payment_method,
-            await this.resolveAppBaseUrl(),
-            {
-              id: conversation.customerId ?? "",
-              gatewayCustomerId: "",
-              name: contact.customer_name,
-              email: contact.email,
-              phone: contact.phone,
-              createdAt: "",
-              updatedAt: "",
-            },
-          )
-        : undefined);
     const latestPaymentMetadata =
       [...messages]
         .reverse()
@@ -1006,6 +980,8 @@ export class PaymentRecoveryService {
     const automationPolicy = await this.getAutomationPolicyForSeller(
       conversation.assignedAgentName ?? contact?.assigned_agent,
     );
+
+    // Classify inbound intent first to detect payment method selection
     const decision = contact
       ? getAIOrchestrator().decideConversationFollowUp({
           context: {
@@ -1017,7 +993,6 @@ export class PaymentRecoveryService {
               unreadCount: conversation.status === "open" ? 1 : 0,
             },
             payment: {
-              paymentLink: retryLink,
               pixCode: latestPaymentMetadata?.pixCode,
               pixQrCode: latestPaymentMetadata?.pixQrCode,
               expiresAt: latestPaymentMetadata?.pixExpiresAt,
@@ -1032,15 +1007,80 @@ export class PaymentRecoveryService {
           latestInboundContent: latestInbound?.content,
         })
       : null;
+
+    const detectedIntent = decision?.intent?.intent;
+    const isMethodSelection =
+      detectedIntent === "payment_method_pix" ||
+      detectedIntent === "payment_method_card" ||
+      detectedIntent === "payment_method_boleto";
+
+    // Generate checkout link when user selects a payment method (or for other payment intents)
+    let retryLink: string | undefined;
+    let selectedMethodType: "pix" | "card" | "boleto" | undefined;
+
+    if (isMethodSelection && payment && contact) {
+      // User just selected a payment method — generate a fresh checkout link
+      selectedMethodType =
+        detectedIntent === "payment_method_pix"
+          ? "pix"
+          : detectedIntent === "payment_method_card"
+            ? "card"
+            : "boleto";
+
+      retryLink = await this.createImmediatePaymentLink(
+        payment,
+        contact.payment_status,
+        contact.payment_method,
+        await this.resolveAppBaseUrl(),
+        {
+          id: conversation.customerId ?? "",
+          gatewayCustomerId: "",
+          name: contact.customer_name,
+          email: contact.email,
+          phone: contact.phone,
+          createdAt: "",
+          updatedAt: "",
+        },
+      );
+    } else {
+      // Look for existing link in previous messages, or generate one if needed
+      retryLink =
+        [...messages]
+          .reverse()
+          .find((message) => message.metadata?.retryLink || message.metadata?.paymentUrl)
+          ?.metadata?.paymentUrl ??
+        [...messages]
+          .reverse()
+          .find((message) => message.metadata?.retryLink || message.metadata?.paymentUrl)
+          ?.metadata?.retryLink ??
+        (payment && contact
+          ? await this.createImmediatePaymentLink(
+              payment,
+              contact.payment_status,
+              contact.payment_method,
+              await this.resolveAppBaseUrl(),
+              {
+                id: conversation.customerId ?? "",
+                gatewayCustomerId: "",
+                name: contact.customer_name,
+                email: contact.email,
+                phone: contact.phone,
+                createdAt: "",
+                updatedAt: "",
+              },
+            )
+          : undefined);
+    }
+
     const content = await generateConversationReply({
       apiKey: runtimeSettings.openAiApiKey,
       customerName: contact?.customer_name ?? conversation.customerName,
       productName: contact?.product,
       latestInboundContent: latestInbound?.content,
-      latestInboundIntent: decision?.intent?.intent,
+      latestInboundIntent: detectedIntent,
       retryLink,
       pixCode: latestPaymentMetadata?.pixCode,
-      paymentMethod: contact?.payment_method,
+      paymentMethod: selectedMethodType ?? contact?.payment_method,
       paymentStatus: contact?.payment_status,
       failureReason: payment?.failureCode ?? contact?.payment_status,
       tonePreference: decision?.tone,
@@ -1064,31 +1104,37 @@ export class PaymentRecoveryService {
         nextAction: decision?.nextAction ?? "send_follow_up",
         followUpMode: decision?.followUpMode ?? "supervised",
         decisionReason: decision?.reason,
-        inboundIntent: decision?.intent?.intent,
+        inboundIntent: detectedIntent,
+        selectedMethodType,
         product: contact?.product,
-        paymentMethod: contact?.payment_method,
+        paymentMethod: selectedMethodType ?? contact?.payment_method,
         paymentStatus: contact?.payment_status,
         paymentValue: contact?.payment_value,
         orderId: contact?.order_id,
         gatewayPaymentId: contact?.gateway_payment_id,
         retryLink,
-        paymentUrl: latestPaymentMetadata?.paymentUrl,
+        paymentUrl: retryLink,
         pixCode: latestPaymentMetadata?.pixCode,
         pixQrCode: latestPaymentMetadata?.pixQrCode,
         pixExpiresAt: latestPaymentMetadata?.pixExpiresAt,
-        actionLabel: latestPaymentMetadata?.pixCode
-          ? "Copiar código Pix"
-          : retryLink
-            ? "Abrir pagamento"
-            : undefined,
+        actionLabel: isMethodSelection
+          ? `Pagar via ${selectedMethodType === "pix" ? "PIX" : selectedMethodType === "card" ? "Cartão" : "Boleto"}`
+          : latestPaymentMetadata?.pixCode
+            ? "Copiar código Pix"
+            : retryLink
+              ? "Abrir pagamento"
+              : undefined,
       },
-      logMessage: "AI reply generated for conversation.",
+      logMessage: isMethodSelection
+        ? `AI generated checkout link after ${selectedMethodType} method selection.`
+        : "AI reply generated for conversation.",
       eventType: "ai_reply_generated",
       logContext: {
         conversationId: conversation.id,
         leadId: conversation.leadId,
         nextAction: decision?.nextAction,
-        inboundIntent: decision?.intent?.intent,
+        inboundIntent: detectedIntent,
+        selectedMethodType,
       },
     });
 
@@ -1488,15 +1534,6 @@ export class PaymentRecoveryService {
     const automationPolicy = await this.getAutomationPolicyForSeller(
       input.lead.assignedAgentName,
     );
-    const paymentLink =
-      input.paymentUrl ||
-      (await this.createImmediatePaymentLink(
-        input.payment,
-        input.failureReason,
-        input.payment.paymentMethod,
-        runtimeSettings.appBaseUrl,
-        input.customer,
-      ));
 
     const decision = getAIOrchestrator().decideRecoveryPlan({
       contact: {
@@ -1522,7 +1559,6 @@ export class PaymentRecoveryService {
         unreadCount: 0,
       },
       payment: {
-        paymentLink,
         pixCode: input.pixCode,
         pixQrCode: input.pixQrCode,
         expiresAt: input.pixExpiresAt,
@@ -1534,6 +1570,8 @@ export class PaymentRecoveryService {
         autonomyMode: automationPolicy.autonomous ? "autonomous" : "supervised",
       },
     });
+
+    // Generate "ask payment method" message (no link yet — link comes after user picks method)
     const generated = await generateRecoveryMessage({
       apiKey: runtimeSettings.openAiApiKey,
       context: {
@@ -1546,68 +1584,99 @@ export class PaymentRecoveryService {
           input.payment.status,
         channel: target.channel,
         attemptNumber: 1,
-        paymentLink,
-        pixCode: input.pixCode,
         paymentMethod: input.payment.paymentMethod,
         tonePreference: decision.tone,
-        nextAction: decision.nextAction,
+        nextAction: "ask_payment_method",
         recoveryUrgency: decision.urgency,
         decisionReason: decision.reason,
       },
     });
 
-    const message = await this.createAndDispatchConversationMessage({
+    // Try sending with interactive WhatsApp buttons first
+    const metadata: MessageMetadata = {
+      kind: "recovery_prompt",
+      generatedBy:
+        generated.templateUsed === "openai_recovery_flow" ? "ai" : "workflow",
+      strategyId: decision.strategy?.id,
+      strategyName: decision.strategy?.name,
+      recoveryProbability: decision.classification.probability,
+      recoveryScore: decision.classification.score,
+      recoveryUrgency: decision.urgency,
+      nextAction: "ask_payment_method",
+      followUpMode: decision.followUpMode,
+      decisionReason: decision.reason,
+      product: input.lead.product,
+      paymentMethod: input.payment.paymentMethod,
+      paymentStatus: input.currentPaymentStatus,
+      failureReason: input.failureReason,
+      paymentValue: input.payment.amount,
+      orderId: input.payment.orderId,
+      gatewayPaymentId: input.payment.gatewayPaymentId,
+      pixCode: input.pixCode,
+      pixQrCode: input.pixQrCode,
+      pixExpiresAt: input.pixExpiresAt,
+      actionLabel: "Escolher forma de pagamento",
+    };
+
+    // Dispatch interactive buttons (falls back to plain text)
+    const dispatch = await this.messaging.dispatchPaymentMethodButtons({
       conversation,
-      lead: input.lead,
-      customerId: input.customer.id,
-      content: generated.content,
-      senderName: "Shield Recovery",
-      metadata: {
-        kind: "recovery_prompt",
-        generatedBy:
-          generated.templateUsed === "openai_recovery_flow" ? "ai" : "workflow",
-        strategyId: decision.strategy?.id,
-        strategyName: decision.strategy?.name,
-        recoveryProbability: decision.classification.probability,
-        recoveryScore: decision.classification.score,
-        recoveryUrgency: decision.urgency,
-        nextAction: decision.nextAction,
-        followUpMode: decision.followUpMode,
-        decisionReason: decision.reason,
-        product: input.lead.product,
-        paymentMethod: input.payment.paymentMethod,
-        paymentStatus: input.currentPaymentStatus,
-        failureReason: input.failureReason,
-        paymentValue: input.payment.amount,
-        orderId: input.payment.orderId,
-        gatewayPaymentId: input.payment.gatewayPaymentId,
-        retryLink: paymentLink,
-        paymentUrl: input.paymentUrl,
-        pixCode: input.pixCode,
-        pixQrCode: input.pixQrCode,
-        pixExpiresAt: input.pixExpiresAt,
-        actionLabel:
-          input.pixCode
-            ? "Copiar código Pix"
-            : input.payment.paymentMethod.toLowerCase() === "pix"
-              ? "Abrir pagamento"
-              : "Finalizar pagamento",
-      },
-      logMessage:
-        input.source === "webhook"
-          ? "Initial follow-up prepared from webhook."
-          : "Initial follow-up started manually from CRM.",
-      logContext: {
-        leadId: input.lead.leadId,
-        conversationId: conversation.id,
-        channel: target.channel,
-        paymentId: input.payment.id,
-        source: input.source,
-        nextAction: decision.nextAction,
-        strategyId: decision.strategy?.id,
-        recoveryProbability: decision.classification.probability,
-      },
+      bodyText: generated.content,
+      metadata,
     });
+
+    const resolvedLead =
+      input.lead ??
+      (conversation.channel === "whatsapp" || conversation.channel === "sms"
+        ? await this.storage.findLeadByContact({
+            phone: conversation.contactValue,
+          })
+        : await this.storage.findLeadByContact({
+            email: conversation.contactValue,
+          }));
+
+    const message = await this.storage.createMessage({
+      conversationId: conversation.id,
+      channel: conversation.channel,
+      direction: "outbound",
+      senderAddress: "shield-recovery",
+      senderName: "Shield Recovery",
+      content: generated.content,
+      status: dispatch.status,
+      lead: resolvedLead,
+      customerId: input.customer.id,
+      providerMessageId: dispatch.providerMessageId,
+      error: dispatch.error,
+      metadata,
+    });
+
+    await this.storage.updateConversationStatus({
+      conversationId: conversation.id,
+      status: "pending",
+    });
+
+    await this.storage.addLog(
+      createStructuredLog({
+        eventType: "recovery_started",
+        level: dispatch.status === "failed" ? "warn" : "info",
+        message:
+          input.source === "webhook"
+            ? "Initial follow-up with payment method selection sent from webhook."
+            : "Initial follow-up with payment method selection started manually.",
+        context: {
+          leadId: input.lead.leadId,
+          conversationId: conversation.id,
+          channel: target.channel,
+          paymentId: input.payment.id,
+          source: input.source,
+          nextAction: "ask_payment_method",
+          strategyId: decision.strategy?.id,
+          recoveryProbability: decision.classification.probability,
+          deliveryStatus: dispatch.status,
+          dispatchError: dispatch.error,
+        },
+      }),
+    );
 
     return {
       state: "created" as const,

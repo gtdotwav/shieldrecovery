@@ -15,6 +15,46 @@ type MessageTemplate = {
 };
 
 const TEMPLATES: MessageTemplate[] = [
+  // ── Method selection (initial message without link) ──
+  {
+    id: "wa_ask_method_empathetic",
+    channel: "whatsapp",
+    tone: "empathetic",
+    template:
+      "Oi {name}! Notamos que houve um problema no pagamento do seu pedido{product} no valor de {value}. " +
+      "Queremos te ajudar a finalizar sua compra rapidamente.\n\n" +
+      "Como deseja pagar?\n" +
+      "1 - PIX\n" +
+      "2 - Cartao de credito\n" +
+      "3 - Boleto",
+    condition: (ctx) => ctx.nextAction === "ask_payment_method",
+  },
+  {
+    id: "wa_ask_method_casual",
+    channel: "whatsapp",
+    tone: "casual",
+    template:
+      "E ai {name}! Vi que o pagamento{product} de {value} nao passou dessa vez. " +
+      "Sem stress, acontece bastante.\n\n" +
+      "Escolhe ai como prefere pagar:\n" +
+      "1 - PIX\n" +
+      "2 - Cartao de credito\n" +
+      "3 - Boleto",
+    condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue < 200,
+  },
+  {
+    id: "wa_ask_method_urgent",
+    channel: "whatsapp",
+    tone: "urgent",
+    template:
+      "{name}, seu pagamento de {value}{product} nao foi processado. " +
+      "Para garantir sua compra, me diga a forma de pagamento:\n\n" +
+      "1 - PIX\n" +
+      "2 - Cartao de credito\n" +
+      "3 - Boleto",
+    condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue >= 500,
+  },
+  // ── Legacy initial templates (with link) ──
   {
     id: "wa_initial_empathetic",
     channel: "whatsapp",
@@ -257,6 +297,19 @@ function buildRecoveryPrompt(ctx: MessageContext) {
 }
 
 function buildReplyPrompt(input: ConversationReplyContext) {
+  const isMethodSelection =
+    input.latestInboundIntent === "payment_method_pix" ||
+    input.latestInboundIntent === "payment_method_card" ||
+    input.latestInboundIntent === "payment_method_boleto";
+
+  const methodInstruction = isMethodSelection
+    ? [
+        "IMPORTANTE: O cliente acabou de escolher a forma de pagamento.",
+        "Confirme a escolha com entusiasmo e inclua o link de pagamento.",
+        "Nao ofereca outras opcoes, apenas confirme a escolha e envie o link.",
+      ]
+    : [];
+
   return [
     "Voce responde um cliente em uma conversa de recovery de pagamento.",
     "Escreva em portugues do Brasil, de forma curta, clara e comercial.",
@@ -265,6 +318,7 @@ function buildReplyPrompt(input: ConversationReplyContext) {
     "- Mostre ajuda e conduza para a conclusao do pagamento.",
     "- Se houver link, inclua-o uma vez no final.",
     "- Nao use markdown, aspas, listas, emojis ou linguagem robotica.",
+    ...methodInstruction,
     "",
     `Cliente: ${input.customerName}`,
     `Produto: ${input.productName || "Nao informado"}`,
@@ -338,6 +392,18 @@ function buildFallbackReply(input: ConversationReplyContext) {
 
   if (input.requiresHumanHandoff) {
     return `Oi, ${name}. Vou encaminhar seu caso${product} para acompanhamento mais próximo e manter o pagamento pronto por aqui.${retrySentence}${pixSentence}`;
+  }
+
+  if (input.latestInboundIntent === "payment_method_pix") {
+    return `Perfeito, ${name}! Gerando seu pagamento via PIX${product}.${retrySentence}${pixSentence}`;
+  }
+
+  if (input.latestInboundIntent === "payment_method_card") {
+    return `Perfeito, ${name}! Preparando o pagamento via cartao de credito${product}.${retrySentence}`;
+  }
+
+  if (input.latestInboundIntent === "payment_method_boleto") {
+    return `Perfeito, ${name}! Gerando seu boleto${product}.${retrySentence}`;
   }
 
   if (input.latestInboundIntent === "payment_intent") {

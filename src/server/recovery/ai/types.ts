@@ -17,9 +17,11 @@ export type RecoveryMessageTone =
   | "direct";
 export type RecoveryNextActionType =
   | "send_initial_message"
+  | "ask_payment_method"
   | "send_follow_up"
   | "wait_for_customer"
   | "generate_new_payment_link"
+  | "generate_method_payment_link"
   | "escalate_to_seller"
   | "pause_automation"
   | "review_manually"
@@ -27,6 +29,9 @@ export type RecoveryNextActionType =
   | "close_as_lost";
 export type InboundIntent =
   | "payment_intent"
+  | "payment_method_pix"
+  | "payment_method_card"
+  | "payment_method_boleto"
   | "question"
   | "objection"
   | "needs_time"

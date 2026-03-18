@@ -233,6 +233,65 @@ export class AIRecoveryOrchestrator {
       };
     }
 
+    // Payment method selection (button reply or text)
+    if (
+      matchesAny(normalized, [
+        "pix",
+        "quero pix",
+        "pagar com pix",
+        "via pix",
+        "pelo pix",
+      ]) &&
+      !matchesAny(normalized, ["cartao", "cartão", "boleto", "credito", "crédito"])
+    ) {
+      return {
+        intent: "payment_method_pix",
+        confidence: 0.95,
+        reasoning: "O cliente escolheu pagar via PIX.",
+        requiresHuman: false,
+      };
+    }
+
+    if (
+      matchesAny(normalized, [
+        "cartao",
+        "cartão",
+        "credito",
+        "crédito",
+        "cartao de credito",
+        "cartão de crédito",
+        "quero cartao",
+        "pagar com cartao",
+        "via cartao",
+      ]) &&
+      !matchesAny(normalized, ["boleto"])
+    ) {
+      return {
+        intent: "payment_method_card",
+        confidence: 0.95,
+        reasoning: "O cliente escolheu pagar via cartão de crédito.",
+        requiresHuman: false,
+      };
+    }
+
+    if (
+      matchesAny(normalized, [
+        "boleto",
+        "quero boleto",
+        "pagar com boleto",
+        "via boleto",
+        "pelo boleto",
+        "gerar boleto",
+      ])
+    ) {
+      return {
+        intent: "payment_method_boleto",
+        confidence: 0.95,
+        reasoning: "O cliente escolheu pagar via boleto.",
+        requiresHuman: false,
+      };
+    }
+
     if (
       matchesAny(normalized, [
         "vou pagar",
@@ -336,6 +395,24 @@ export class AIRecoveryOrchestrator {
         followUpMode: base.followUpMode,
         requiresHuman: false,
         timingMinutes: 180,
+      };
+    }
+
+    if (
+      intent.intent === "payment_method_pix" ||
+      intent.intent === "payment_method_card" ||
+      intent.intent === "payment_method_boleto"
+    ) {
+      return {
+        intent,
+        nextAction: "generate_method_payment_link",
+        reason: "O cliente selecionou a forma de pagamento. Gerar link e enviar.",
+        channel: base.channel,
+        tone: "reassuring",
+        sendNow: true,
+        followUpMode: base.followUpMode,
+        requiresHuman: false,
+        timingMinutes: 0,
       };
     }
 
