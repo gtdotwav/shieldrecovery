@@ -19,6 +19,7 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { ActionButton } from "@/components/ui/action-button";
+import { AutoRefresh } from "@/components/ui/auto-refresh";
 import { MessageBubble } from "@/components/ui/message-bubble";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCurrency } from "@/lib/format";
@@ -142,6 +143,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
         </Link>
       }
     >
+      <AutoRefresh intervalMs={5000} />
       <section className="grid gap-3 sm:grid-cols-3">
         <PlatformMetricCard
           icon={MessageCircle}
