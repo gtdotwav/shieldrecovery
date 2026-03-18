@@ -176,7 +176,18 @@ export class PagnetProvider implements PaymentProvider {
         name: input.customerName || "Cliente Shield",
         email: input.customerEmail || "cliente@shield.com",
         phone: cleanPhone(input.customerPhone) || "21999999999",
+        birthdate: "1990-01-01",
         document: buildDocument(input.customerDocument),
+        address: {
+          street: "Av. Brigadeiro Faria Lima",
+          streetNumber: "4055",
+          complement: "",
+          zipCode: "04538133",
+          neighborhood: "Itaim Bibi",
+          city: "São Paulo",
+          state: "SP",
+          country: "BR",
+        },
       },
     };
 
