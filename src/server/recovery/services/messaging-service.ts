@@ -605,14 +605,7 @@ export class MessagingService {
             },
             body: JSON.stringify({
               number: input.phone,
-              textMessage: {
-                text: body,
-              },
-              options: {
-                delay: 0,
-                presence: "composing",
-                linkPreview: true,
-              },
+              text: body,
             }),
           })
         : await fetch(config.sendUrl, {
