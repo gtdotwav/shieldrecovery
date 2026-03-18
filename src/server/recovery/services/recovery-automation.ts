@@ -1,5 +1,9 @@
 import { getStorageService } from "@/server/recovery/services/storage";
-import { buildRecoveryWorkflowJobs, buildRetryJobs } from "@/server/recovery/queues/recovery-queues";
+import {
+  buildRecoveryWorkflowJobs,
+  buildRetryJobs,
+  buildWebhookProcessingJobs,
+} from "@/server/recovery/queues/recovery-queues";
 import type {
   NormalizedPaymentEvent,
   PaymentAttemptRecord,
@@ -16,6 +20,15 @@ export class RecoveryAutomationService {
     event: NormalizedPaymentEvent;
   }) {
     const jobs = buildRecoveryWorkflowJobs(input);
+    return this.storage.createQueueJobs(jobs);
+  }
+
+  async scheduleWebhookProcessing(input: {
+    webhookId: string;
+    timestamp: number;
+    sellerKey?: string;
+  }) {
+    const jobs = buildWebhookProcessingJobs(input);
     return this.storage.createQueueJobs(jobs);
   }
 

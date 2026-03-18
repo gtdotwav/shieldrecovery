@@ -38,8 +38,22 @@ export function buildRecoveryWorkflowJobs(input: {
     }),
     createJob("recovery-jobs", "agent-task", now + 24 * 60 * 60_000, {
       leadId: input.lead.leadId,
-      taskType: "manual_follow_up",
+      taskType: "ai_follow_up",
       assignedAgent: input.lead.assignedAgentName,
+    }),
+  ];
+}
+
+export function buildWebhookProcessingJobs(input: {
+  webhookId: string;
+  timestamp: number;
+  sellerKey?: string;
+}): QueueJobRecord[] {
+  return [
+    createJob("recovery-jobs", "webhook-process", Date.now(), {
+      webhookId: input.webhookId,
+      timestamp: input.timestamp,
+      ...(input.sellerKey ? { sellerKey: input.sellerKey } : {}),
     }),
   ];
 }

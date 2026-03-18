@@ -6,6 +6,8 @@ import { appEnv } from "@/server/recovery/config";
 import { createDefaultConnectionSettings } from "@/server/recovery/config";
 import type {
   AgentRecord,
+  CalendarSnapshot,
+  CalendarNoteRecord,
   ConnectionSettingsInput,
   ConnectionSettingsRecord,
   ConversationRecord,
@@ -21,9 +23,17 @@ import type {
   PaymentAttemptRecord,
   PaymentRecord,
   QueueJobRecord,
+  QueueOverviewSnapshot,
   RecoveryAnalytics,
   RecoveryLeadRecord,
   RecoveryLeadStatus,
+  SellerAdminControlInput,
+  SellerAdminControlRecord,
+  SellerInviteInput,
+  SellerInviteRecord,
+  SellerUserInput,
+  SellerUserRecord,
+  CreateCalendarNoteInput,
   StorageState,
   SystemLogRecord,
   WebhookEventRecord,
@@ -44,6 +54,7 @@ export interface RecoveryStorage {
     eventType: string;
     payload: unknown;
   }): Promise<WebhookEventRecord>;
+  listWebhookEvents(limit?: number): Promise<WebhookEventRecord[]>;
   markWebhookProcessed(input: {
     webhookRecordId: string;
     eventId: string;
@@ -61,10 +72,16 @@ export interface RecoveryStorage {
     orderId?: string;
   }): Promise<PaymentRecord | undefined>;
   findCustomer(customerId: string): Promise<CustomerRecord | undefined>;
+  findLeadByLeadId(leadId: string): Promise<RecoveryLeadRecord | undefined>;
   findLeadByContact(input: {
     phone?: string;
     email?: string;
   }): Promise<RecoveryLeadRecord | undefined>;
+  ensureAgent(input: {
+    name: string;
+    email: string;
+    phone?: string;
+  }): Promise<AgentRecord>;
   getActiveAgents(): Promise<AgentRecord[]>;
   assignAgentRoundRobin(): Promise<AgentRecord | undefined>;
   upsertLead(input: {
@@ -80,8 +97,21 @@ export interface RecoveryStorage {
   updateLeadStatus(input: {
     leadId: string;
     status: RecoveryLeadStatus;
+    assignedAgent?: AgentRecord;
   }): Promise<RecoveryLeadRecord | undefined>;
   createQueueJobs(jobs: QueueJobRecord[]): Promise<QueueJobRecord[]>;
+  getQueueOverview(): Promise<QueueOverviewSnapshot>;
+  claimDueQueueJobs(input?: {
+    limit?: number;
+    runUntil?: string;
+  }): Promise<QueueJobRecord[]>;
+  completeQueueJob(jobId: string): Promise<void>;
+  rescheduleQueueJobFailure(input: {
+    jobId: string;
+    error: string;
+    remainingAttempts: number;
+    nextRunAt?: string;
+  }): Promise<QueueJobRecord | undefined>;
   createPaymentAttempt(input: {
     paymentId: string;
     paymentLink: string;
@@ -115,6 +145,14 @@ export interface RecoveryStorage {
     error?: string;
     metadata?: MessageMetadata;
   }): Promise<MessageRecord>;
+  updateMessageById(input: {
+    messageId: string;
+    status: MessageStatus;
+    providerMessageId?: string;
+    deliveredAt?: string;
+    readAt?: string;
+    error?: string;
+  }): Promise<MessageRecord | undefined>;
   updateMessageStatus(input: {
     providerMessageId: string;
     status: MessageStatus;
@@ -123,10 +161,30 @@ export interface RecoveryStorage {
     error?: string;
   }): Promise<MessageRecord | undefined>;
   addLog(log: SystemLogRecord): Promise<void>;
+  getCalendarSnapshot(input: {
+    month: string;
+    visibleLeadIds?: string[];
+  }): Promise<CalendarSnapshot>;
+  createCalendarNote(input: CreateCalendarNoteInput): Promise<CalendarNoteRecord>;
+  deleteCalendarNote(noteId: string): Promise<void>;
   getAnalytics(): Promise<RecoveryAnalytics>;
+  listQueueJobs(limit?: number): Promise<QueueJobRecord[]>;
+  listSystemLogs(limit?: number): Promise<SystemLogRecord[]>;
   getFollowUpContacts(): Promise<FollowUpContact[]>;
   getInboxConversations(): Promise<InboxConversation[]>;
   getConversationMessages(conversationId: string): Promise<MessageRecord[]>;
+  getSellerAdminControls(): Promise<SellerAdminControlRecord[]>;
+  saveSellerAdminControl(
+    input: SellerAdminControlInput,
+  ): Promise<SellerAdminControlRecord>;
+  listSellerUsers(): Promise<SellerUserRecord[]>;
+  findSellerUserByEmail(email: string): Promise<SellerUserRecord | undefined>;
+  saveSellerUser(input: SellerUserInput): Promise<SellerUserRecord>;
+  touchSellerUserLogin(email: string): Promise<void>;
+  listSellerInvites(): Promise<SellerInviteRecord[]>;
+  findSellerInviteByToken(token: string): Promise<SellerInviteRecord | undefined>;
+  createSellerInvite(input: SellerInviteInput): Promise<SellerInviteRecord>;
+  markSellerInviteAccepted(token: string): Promise<SellerInviteRecord | undefined>;
   getConnectionSettings(): Promise<ConnectionSettingsRecord>;
   saveConnectionSettings(
     input: ConnectionSettingsInput,
@@ -148,6 +206,10 @@ function createEmptyState(): StorageState {
     conversations: [],
     messages: [],
     logs: [],
+    calendarNotes: [],
+    sellerAdminControls: [],
+    sellerUsers: [],
+    sellerInvites: [],
     connectionSettings: createDefaultConnectionSettings(),
     meta: {
       lastAssignedAgentIndex: -1,
@@ -171,6 +233,10 @@ function hydrateState(partial: Partial<StorageState>): StorageState {
     conversations: partial.conversations ?? baseState.conversations,
     messages: partial.messages ?? baseState.messages,
     logs: partial.logs ?? baseState.logs,
+    calendarNotes: partial.calendarNotes ?? baseState.calendarNotes,
+    sellerAdminControls: partial.sellerAdminControls ?? baseState.sellerAdminControls,
+    sellerUsers: partial.sellerUsers ?? baseState.sellerUsers,
+    sellerInvites: partial.sellerInvites ?? baseState.sellerInvites,
     connectionSettings: {
       ...baseState.connectionSettings,
       ...(partial.connectionSettings ?? {}),
@@ -245,6 +311,11 @@ function stabilizeState(state: StorageState): StorageState {
     paymentAttempts,
     conversations,
     messages,
+    calendarNotes: state.calendarNotes,
+    sellerAdminControls: state.sellerAdminControls,
+    sellerUsers: state.sellerUsers
+      .filter((seller) => Boolean(seller.email))
+      .sort((left, right) => left.displayName.localeCompare(right.displayName)),
   };
 }
 
@@ -324,6 +395,7 @@ class LocalStorageService implements RecoveryStorage {
       state.conversations = [];
       state.messages = [];
       state.logs = [];
+      state.calendarNotes = [];
       state.meta = {
         lastAssignedAgentIndex: -1,
       };
@@ -356,6 +428,10 @@ class LocalStorageService implements RecoveryStorage {
       state.webhookEvents.unshift(record);
       return record;
     });
+  }
+
+  async listWebhookEvents(limit = 100): Promise<WebhookEventRecord[]> {
+    return this.readState().webhookEvents.slice(0, limit);
   }
 
   async markWebhookProcessed(input: {
@@ -498,6 +574,10 @@ class LocalStorageService implements RecoveryStorage {
     return this.readState().customers.find((customer) => customer.id === customerId);
   }
 
+  async findLeadByLeadId(leadId: string): Promise<RecoveryLeadRecord | undefined> {
+    return this.readState().leads.find((lead) => lead.leadId === leadId);
+  }
+
   async findLeadByContact(input: {
     phone?: string;
     email?: string;
@@ -521,6 +601,42 @@ class LocalStorageService implements RecoveryStorage {
       .sort((left, right) => {
         return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
       })[0];
+  }
+
+  async ensureAgent(input: {
+    name: string;
+    email: string;
+    phone?: string;
+  }): Promise<AgentRecord> {
+    return this.mutate((state) => {
+      const existing =
+        state.agents.find(
+          (agent) => agent.email.trim().toLowerCase() === input.email.trim().toLowerCase(),
+        ) ??
+        state.agents.find(
+          (agent) => agent.name.trim().toLowerCase() === input.name.trim().toLowerCase(),
+        );
+
+      if (existing) {
+        existing.name = input.name;
+        existing.email = input.email;
+        existing.phone = input.phone ?? existing.phone;
+        existing.active = true;
+        return existing;
+      }
+
+      const agent: AgentRecord = {
+        id: randomUUID(),
+        name: input.name,
+        email: input.email,
+        phone: input.phone ?? "",
+        active: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      state.agents.push(agent);
+      return agent;
+    });
   }
 
   async getActiveAgents(): Promise<AgentRecord[]> {
@@ -628,6 +744,7 @@ class LocalStorageService implements RecoveryStorage {
   async updateLeadStatus(input: {
     leadId: string;
     status: RecoveryLeadStatus;
+    assignedAgent?: AgentRecord;
   }): Promise<RecoveryLeadRecord | undefined> {
     return this.mutate((state) => {
       const lead = state.leads.find((item) => item.leadId === input.leadId);
@@ -637,7 +754,20 @@ class LocalStorageService implements RecoveryStorage {
       }
 
       lead.status = input.status;
+      if (input.assignedAgent) {
+        lead.assignedAgentId = input.assignedAgent.id;
+        lead.assignedAgentName = input.assignedAgent.name;
+      }
       lead.updatedAt = new Date().toISOString();
+
+      state.conversations
+        .filter((conversation) => conversation.leadId === lead.leadId)
+        .forEach((conversation) => {
+          conversation.assignedAgentId = lead.assignedAgentId;
+          conversation.assignedAgentName = lead.assignedAgentName;
+          conversation.updatedAt = lead.updatedAt;
+        });
+
       return lead;
     });
   }
@@ -646,6 +776,99 @@ class LocalStorageService implements RecoveryStorage {
     return this.mutate((state) => {
       state.queueJobs.unshift(...jobs);
       return jobs;
+    });
+  }
+
+  async getQueueOverview(): Promise<QueueOverviewSnapshot> {
+    const now = Date.now();
+    const queueJobs = this.readState().queueJobs.map((job) => ({ ...job }));
+    const scheduledJobs = queueJobs
+      .filter((job) => job.status === "scheduled")
+      .sort((left, right) => new Date(left.runAt).getTime() - new Date(right.runAt).getTime());
+    const dueJobs = scheduledJobs.filter(
+      (job) => new Date(job.runAt).getTime() <= now,
+    );
+
+    return {
+      scheduled: scheduledJobs.length,
+      processing: queueJobs.filter((job) => job.status === "processing").length,
+      processed: queueJobs.filter((job) => job.status === "processed").length,
+      failed: queueJobs.filter((job) => job.status === "failed").length,
+      dueNow: dueJobs.length,
+      oldestScheduledAt: scheduledJobs[0]?.runAt,
+      oldestDueAt: dueJobs[0]?.runAt,
+    };
+  }
+
+  async claimDueQueueJobs(input?: {
+    limit?: number;
+    runUntil?: string;
+  }): Promise<QueueJobRecord[]> {
+    const limit = input?.limit ?? 20;
+    const runUntil = new Date(input?.runUntil ?? new Date().toISOString()).getTime();
+
+    return this.mutate((state) => {
+      const dueJobs = state.queueJobs
+        .filter((job) => job.status === "scheduled")
+        .filter((job) => new Date(job.runAt).getTime() <= runUntil)
+        .sort((left, right) => {
+          const priorityDifference =
+            queueJobPriority(left.jobType) - queueJobPriority(right.jobType);
+
+          if (priorityDifference !== 0) {
+            return priorityDifference;
+          }
+
+          return new Date(left.runAt).getTime() - new Date(right.runAt).getTime();
+        })
+        .slice(0, limit);
+
+      dueJobs.forEach((job) => {
+        job.status = "processing";
+        job.error = undefined;
+      });
+
+      return dueJobs.map((job) => ({ ...job }));
+    });
+  }
+
+  async completeQueueJob(jobId: string): Promise<void> {
+    this.mutate((state) => {
+      const job = state.queueJobs.find((item) => item.id === jobId);
+
+      if (!job) {
+        return;
+      }
+
+      job.status = "processed";
+      job.error = undefined;
+    });
+  }
+
+  async rescheduleQueueJobFailure(input: {
+    jobId: string;
+    error: string;
+    remainingAttempts: number;
+    nextRunAt?: string;
+  }): Promise<QueueJobRecord | undefined> {
+    return this.mutate((state) => {
+      const job = state.queueJobs.find((item) => item.id === input.jobId);
+
+      if (!job) {
+        return undefined;
+      }
+
+      job.attempts = Math.max(0, input.remainingAttempts);
+      job.error = input.error;
+
+      if (input.remainingAttempts > 0 && input.nextRunAt) {
+        job.status = "scheduled";
+        job.runAt = input.nextRunAt;
+      } else {
+        job.status = "failed";
+      }
+
+      return { ...job };
     });
   }
 
@@ -804,6 +1027,31 @@ class LocalStorageService implements RecoveryStorage {
     });
   }
 
+  async updateMessageById(input: {
+    messageId: string;
+    status: MessageStatus;
+    providerMessageId?: string;
+    deliveredAt?: string;
+    readAt?: string;
+    error?: string;
+  }): Promise<MessageRecord | undefined> {
+    return this.mutate((state) => {
+      const message = state.messages.find((item) => item.id === input.messageId);
+
+      if (!message) {
+        return undefined;
+      }
+
+      message.status = input.status;
+      message.providerMessageId = input.providerMessageId ?? message.providerMessageId;
+      message.deliveredAt = input.deliveredAt ?? message.deliveredAt;
+      message.readAt = input.readAt ?? message.readAt;
+      message.error = input.error ?? message.error;
+
+      return { ...message };
+    });
+  }
+
   async updateMessageStatus(input: {
     providerMessageId: string;
     status: MessageStatus;
@@ -843,6 +1091,52 @@ class LocalStorageService implements RecoveryStorage {
     });
   }
 
+  async getCalendarSnapshot(input: {
+    month: string;
+    visibleLeadIds?: string[];
+  }): Promise<CalendarSnapshot> {
+    const state = this.readState();
+
+    return buildCalendarSnapshot({
+      month: input.month,
+      visibleLeadIds: input.visibleLeadIds,
+      leads: state.leads,
+      payments: state.payments,
+      queueJobs: state.queueJobs,
+      messages: state.messages,
+      conversations: state.conversations,
+      calendarNotes: state.calendarNotes,
+    });
+  }
+
+  async createCalendarNote(
+    input: CreateCalendarNoteInput,
+  ): Promise<CalendarNoteRecord> {
+    return this.mutate((state) => {
+      const timestamp = new Date().toISOString();
+      const note: CalendarNoteRecord = {
+        id: randomUUID(),
+        date: normalizeCalendarDate(input.date),
+        lane: input.lane,
+        title: input.title.trim(),
+        content: input.content?.trim() || undefined,
+        createdByEmail: input.createdByEmail.trim().toLowerCase(),
+        createdByRole: input.createdByRole,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      state.calendarNotes.unshift(note);
+      return note;
+    });
+  }
+
+  async deleteCalendarNote(noteId: string): Promise<void> {
+    this.mutate((state) => {
+      state.calendarNotes = state.calendarNotes.filter((note) => note.id !== noteId);
+    });
+  }
+
   async getAnalytics(): Promise<RecoveryAnalytics> {
     const state = this.readState();
     const failedPayments = state.payments.filter((payment) => payment.firstFailureAt);
@@ -877,6 +1171,26 @@ class LocalStorageService implements RecoveryStorage {
         (lead) => lead.status !== "RECOVERED" && lead.status !== "LOST",
       ).length,
     };
+  }
+
+  async listQueueJobs(limit = 50): Promise<QueueJobRecord[]> {
+    return this.readState().queueJobs
+      .map((job) => ({ ...job }))
+      .sort(
+        (left, right) =>
+          new Date(right.runAt).getTime() - new Date(left.runAt).getTime(),
+      )
+      .slice(0, Math.max(1, limit));
+  }
+
+  async listSystemLogs(limit = 50): Promise<SystemLogRecord[]> {
+    return this.readState().logs
+      .map((log) => ({ ...log }))
+      .sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+      )
+      .slice(0, Math.max(1, limit));
   }
 
   async getFollowUpContacts(): Promise<FollowUpContact[]> {
@@ -953,6 +1267,176 @@ class LocalStorageService implements RecoveryStorage {
       });
   }
 
+  async getSellerAdminControls(): Promise<SellerAdminControlRecord[]> {
+    return this.readState().sellerAdminControls
+      .map((control) => ({ ...control }))
+      .sort((left, right) => left.sellerName.localeCompare(right.sellerName));
+  }
+
+  async listSellerUsers(): Promise<SellerUserRecord[]> {
+    return this.readState().sellerUsers
+      .map((seller) => ({ ...seller }))
+      .sort((left, right) => left.displayName.localeCompare(right.displayName));
+  }
+
+  async findSellerUserByEmail(email: string): Promise<SellerUserRecord | undefined> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const seller = this.readState().sellerUsers.find(
+      (item) => item.email.trim().toLowerCase() === normalizedEmail,
+    );
+
+    return seller ? { ...seller } : undefined;
+  }
+
+  async saveSellerUser(input: SellerUserInput): Promise<SellerUserRecord> {
+    return this.mutate((state) => {
+      const normalizedEmail = input.email.trim().toLowerCase();
+      const existing = state.sellerUsers.find(
+        (seller) => seller.email.trim().toLowerCase() === normalizedEmail,
+      );
+      const timestamp = new Date().toISOString();
+
+      const nextRecord: SellerUserRecord = {
+        id: existing?.id ?? randomUUID(),
+        email: normalizedEmail,
+        displayName:
+          input.displayName?.trim() || existing?.displayName || normalizedEmail,
+        agentName: input.agentName.trim() || existing?.agentName || normalizedEmail,
+        passwordHash: input.passwordHash ?? existing?.passwordHash ?? "",
+        active: input.active ?? existing?.active ?? true,
+        createdAt: existing?.createdAt ?? timestamp,
+        updatedAt: timestamp,
+        lastLoginAt: existing?.lastLoginAt,
+      };
+
+      if (existing) {
+        Object.assign(existing, nextRecord);
+        return existing;
+      }
+
+      state.sellerUsers.unshift(nextRecord);
+      return nextRecord;
+    });
+  }
+
+  async touchSellerUserLogin(email: string): Promise<void> {
+    await this.mutate((state) => {
+      const normalizedEmail = email.trim().toLowerCase();
+      const seller = state.sellerUsers.find(
+        (item) => item.email.trim().toLowerCase() === normalizedEmail,
+      );
+
+      if (seller) {
+        seller.lastLoginAt = new Date().toISOString();
+        seller.updatedAt = new Date().toISOString();
+      }
+    });
+  }
+
+  async listSellerInvites(): Promise<SellerInviteRecord[]> {
+    return this.readState().sellerInvites
+      .map((invite) => ({ ...invite }))
+      .sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+      );
+  }
+
+  async findSellerInviteByToken(token: string): Promise<SellerInviteRecord | undefined> {
+    const normalizedToken = token.trim();
+    const invite = this.readState().sellerInvites.find(
+      (item) => item.token === normalizedToken,
+    );
+    return invite ? { ...invite } : undefined;
+  }
+
+  async createSellerInvite(input: SellerInviteInput): Promise<SellerInviteRecord> {
+    return this.mutate((state) => {
+      const now = new Date();
+      const expiresAt = new Date(
+        now.getTime() + Math.max(1, input.expiresInDays ?? 7) * 24 * 60 * 60 * 1000,
+      );
+      const record: SellerInviteRecord = {
+        id: randomUUID(),
+        token: randomUUID(),
+        email: input.email.trim().toLowerCase(),
+        suggestedDisplayName: input.suggestedDisplayName?.trim() || undefined,
+        agentName: input.agentName?.trim() || undefined,
+        note: input.note?.trim() || undefined,
+        createdByEmail: input.createdByEmail.trim().toLowerCase(),
+        status: "pending",
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      };
+
+      state.sellerInvites.unshift(record);
+      return record;
+    });
+  }
+
+  async markSellerInviteAccepted(token: string): Promise<SellerInviteRecord | undefined> {
+    return this.mutate((state) => {
+      const invite = state.sellerInvites.find((item) => item.token === token.trim());
+      if (!invite) {
+        return undefined;
+      }
+
+      const now = new Date().toISOString();
+      invite.status = "accepted";
+      invite.acceptedAt = now;
+      invite.updatedAt = now;
+      return { ...invite };
+    });
+  }
+
+  async saveSellerAdminControl(
+    input: SellerAdminControlInput,
+  ): Promise<SellerAdminControlRecord> {
+    return this.mutate((state) => {
+      const sellerKey = normalizeSellerKey(input.sellerKey);
+      const existing = state.sellerAdminControls.find(
+        (control) => control.sellerKey === sellerKey,
+      );
+      const timestamp = new Date().toISOString();
+
+      const nextRecord: SellerAdminControlRecord = {
+        id: existing?.id ?? randomUUID(),
+        sellerKey,
+        sellerName: input.sellerName?.trim() || existing?.sellerName || input.sellerKey,
+        sellerEmail:
+          input.sellerEmail?.trim().toLowerCase() ||
+          existing?.sellerEmail ||
+          undefined,
+        active: input.active ?? existing?.active ?? true,
+        recoveryTargetPercent: clampPercent(
+          input.recoveryTargetPercent ?? existing?.recoveryTargetPercent ?? 18,
+        ),
+        reportedRecoveryRatePercent:
+          input.reportedRecoveryRatePercent !== undefined
+            ? clampOptionalPercent(input.reportedRecoveryRatePercent)
+            : existing?.reportedRecoveryRatePercent,
+        maxAssignedLeads: clampLeadLimit(
+          input.maxAssignedLeads ?? existing?.maxAssignedLeads ?? 30,
+        ),
+        inboxEnabled: input.inboxEnabled ?? existing?.inboxEnabled ?? true,
+        automationsEnabled:
+          input.automationsEnabled ?? existing?.automationsEnabled ?? true,
+        autonomyMode: input.autonomyMode ?? existing?.autonomyMode ?? "autonomous",
+        notes: input.notes?.trim() || existing?.notes || undefined,
+        updatedAt: timestamp,
+      };
+
+      if (existing) {
+        Object.assign(existing, nextRecord);
+        return existing;
+      }
+
+      state.sellerAdminControls.unshift(nextRecord);
+      return nextRecord;
+    });
+  }
+
   async getConnectionSettings(): Promise<ConnectionSettingsRecord> {
     return {
       ...createDefaultConnectionSettings(),
@@ -998,12 +1482,359 @@ function normalizeEmail(value?: string) {
   return value?.trim().toLowerCase() ?? "";
 }
 
+function normalizeSellerKey(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, Math.round(value * 100) / 100));
+}
+
+function clampOptionalPercent(value?: number) {
+  if (value === undefined || value === null || Number.isNaN(value)) {
+    return undefined;
+  }
+
+  return clampPercent(value);
+}
+
+function clampLeadLimit(value: number) {
+  if (!Number.isFinite(value)) return 1;
+  return Math.max(1, Math.round(value));
+}
+
 function normalizeContactValue(channel: MessagingChannel, value: string) {
   if (channel === "whatsapp" || channel === "sms") {
     return normalizePhone(value);
   }
 
   return normalizeEmail(value);
+}
+
+const CALENDAR_TIME_ZONE = "America/Sao_Paulo";
+
+function buildCalendarSnapshot(input: {
+  month: string;
+  visibleLeadIds?: string[];
+  leads: RecoveryLeadRecord[];
+  payments: PaymentRecord[];
+  queueJobs: QueueJobRecord[];
+  messages: MessageRecord[];
+  conversations: ConversationRecord[];
+  calendarNotes: CalendarNoteRecord[];
+}): CalendarSnapshot {
+  const month = normalizeMonthKey(input.month);
+  const { start, endExclusive, dateKeys } = getMonthRange(month);
+  const allowedLeadIds = input.visibleLeadIds ? new Set(input.visibleLeadIds) : null;
+  const visibleLeads = allowedLeadIds
+    ? input.leads.filter((lead) => allowedLeadIds.has(lead.leadId))
+    : input.leads;
+  const visiblePaymentIds = new Set(visibleLeads.map((lead) => lead.paymentId));
+  const leadByPaymentId = new Map(visibleLeads.map((lead) => [lead.paymentId, lead]));
+  const leadByPublicId = new Map(visibleLeads.map((lead) => [lead.leadId, lead]));
+  const conversationById = new Map(
+    input.conversations.map((conversation) => [conversation.id, conversation]),
+  );
+  const dayMap = new Map(
+    dateKeys.map((date) => [
+      date,
+      {
+        date,
+        recoveredRevenue: 0,
+        recoveredCount: 0,
+        newLeads: 0,
+        automationJobs: 0,
+        outboundMessages: 0,
+        inboundMessages: 0,
+        notesCount: 0,
+      },
+    ]),
+  );
+  const activities: CalendarSnapshot["activities"] = [];
+
+  visibleLeads.forEach((lead) => {
+    const dateKey = toCalendarDateKey(lead.createdAt);
+    if (!dateKey || !dayMap.has(dateKey)) {
+      return;
+    }
+
+    dayMap.get(dateKey)!.newLeads += 1;
+    activities.push({
+      id: `lead-${lead.id}`,
+      date: dateKey,
+      at: lead.createdAt,
+      type: "lead",
+      title: `${lead.customerName} entrou na carteira`,
+      detail: `${lead.product ?? "Lead sem produto"} · ${lead.assignedAgentName ?? "sem responsável"}`,
+      leadId: lead.leadId,
+      href: `/leads/${lead.leadId}`,
+    });
+  });
+
+  input.payments.forEach((payment) => {
+    if (allowedLeadIds && !visiblePaymentIds.has(payment.id)) {
+      return;
+    }
+
+    const dateKey = toCalendarDateKey(payment.recoveredAt);
+    if (!dateKey || !dayMap.has(dateKey)) {
+      return;
+    }
+
+    dayMap.get(dateKey)!.recoveredRevenue += payment.amount;
+    dayMap.get(dateKey)!.recoveredCount += 1;
+
+    const lead = leadByPaymentId.get(payment.id);
+    activities.push({
+      id: `recovery-${payment.id}`,
+      date: dateKey,
+      at: payment.recoveredAt!,
+      type: "recovery",
+      title: `${lead?.customerName ?? "Pagamento"} recuperado`,
+      detail: `${formatCalendarCurrency(payment.amount)} · ${lead?.product ?? payment.paymentMethod}`,
+      amount: payment.amount,
+      leadId: lead?.leadId,
+      href: lead?.leadId ? `/leads/${lead.leadId}` : undefined,
+    });
+  });
+
+  input.queueJobs.forEach((job) => {
+    if (allowedLeadIds && !isVisibleQueueJob(job, allowedLeadIds, visiblePaymentIds)) {
+      return;
+    }
+
+    const dateKey = toCalendarDateKey(job.runAt);
+    if (!dateKey || !dayMap.has(dateKey)) {
+      return;
+    }
+
+    dayMap.get(dateKey)!.automationJobs += 1;
+    const leadId = typeof job.payload.leadId === "string" ? job.payload.leadId : undefined;
+    activities.push({
+      id: `job-${job.id}`,
+      date: dateKey,
+      at: job.runAt,
+      type: "automation",
+      title: mapCalendarJobTitle(job.jobType),
+      detail: `${job.queueName} · ${job.status}`,
+      leadId,
+      href: leadId ? `/leads/${leadId}` : undefined,
+    });
+  });
+
+  input.messages.forEach((message) => {
+    const relatedConversation = conversationById.get(message.conversationId);
+    const relatedLead =
+      (message.leadId ? leadByPublicId.get(message.leadId) : undefined) ??
+      (relatedConversation?.leadId
+        ? leadByPublicId.get(relatedConversation.leadId)
+        : undefined);
+
+    if (allowedLeadIds) {
+      const visible =
+        (message.leadId && allowedLeadIds.has(message.leadId)) ||
+        (relatedConversation?.leadId && allowedLeadIds.has(relatedConversation.leadId));
+
+      if (!visible) {
+        return;
+      }
+    }
+
+    const dateKey = toCalendarDateKey(message.createdAt);
+    if (!dateKey || !dayMap.has(dateKey)) {
+      return;
+    }
+
+    if (message.direction === "outbound") {
+      dayMap.get(dateKey)!.outboundMessages += 1;
+    } else {
+      dayMap.get(dateKey)!.inboundMessages += 1;
+    }
+
+    activities.push({
+      id: `message-${message.id}`,
+      date: dateKey,
+      at: message.createdAt,
+      type: "message",
+      title:
+        message.direction === "inbound"
+          ? `${relatedLead?.customerName ?? "Cliente"} respondeu`
+          : `Saída para ${relatedLead?.customerName ?? "cliente"}`,
+      detail: truncateCalendarText(message.content),
+      leadId: relatedLead?.leadId,
+      href: relatedConversation?.id
+        ? `/inbox?conversationId=${relatedConversation.id}`
+        : relatedLead?.leadId
+          ? `/leads/${relatedLead.leadId}`
+          : undefined,
+    });
+  });
+
+  const notes = input.calendarNotes
+    .filter((note) => note.date >= dateKeys[0] && note.date <= dateKeys[dateKeys.length - 1])
+    .sort((left, right) => {
+      return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+    });
+
+  notes.forEach((note) => {
+    if (dayMap.has(note.date)) {
+      dayMap.get(note.date)!.notesCount += 1;
+    }
+  });
+
+  return {
+    month,
+    days: Array.from(dayMap.values()),
+    notes,
+    activities: activities
+      .filter((item) => item.at >= start.toISOString() && item.at < endExclusive.toISOString())
+      .sort((left, right) => {
+        return new Date(right.at).getTime() - new Date(left.at).getTime();
+      }),
+  };
+}
+
+function normalizeMonthKey(value?: string) {
+  if (value && /^\d{4}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  return toMonthKey(new Date());
+}
+
+function normalizeCalendarDate(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  return toCalendarDateKey(value) ?? toCalendarDateKey(new Date().toISOString())!;
+}
+
+function getMonthRange(month: string) {
+  const [yearValue, monthValue] = month.split("-");
+  const year = Number(yearValue);
+  const monthIndex = Number(monthValue) - 1;
+  const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0, 0));
+  const endExclusive = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0, 0));
+  const dateKeys: string[] = [];
+  const cursor = new Date(start);
+
+  while (cursor < endExclusive) {
+    dateKeys.push(toCalendarDateKey(cursor.toISOString())!);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return { start, endExclusive, dateKeys };
+}
+
+function toMonthKey(value: Date) {
+  const year = value.getUTCFullYear();
+  const month = String(value.getUTCMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function toCalendarDateKey(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: CALENDAR_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return formatter.format(date);
+}
+
+function formatCalendarCurrency(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function truncateCalendarText(value: string, max = 84) {
+  const trimmed = value.trim();
+  if (trimmed.length <= max) {
+    return trimmed;
+  }
+
+  return `${trimmed.slice(0, max - 1)}…`;
+}
+
+function isVisibleQueueJob(
+  job: QueueJobRecord,
+  visibleLeadIds: Set<string>,
+  visiblePaymentIds: Set<string>,
+) {
+  const leadId = typeof job.payload.leadId === "string" ? job.payload.leadId : undefined;
+  const paymentId =
+    typeof job.payload.paymentId === "string" ? job.payload.paymentId : undefined;
+
+  if (leadId) {
+    return visibleLeadIds.has(leadId);
+  }
+
+  if (paymentId) {
+    return visiblePaymentIds.has(paymentId);
+  }
+
+  return false;
+}
+
+function mapCalendarJobTitle(jobType: string) {
+  switch (jobType) {
+    case "lead-created":
+      return "Lead entrou no fluxo";
+    case "whatsapp-initial":
+      return "Primeiro WhatsApp programado";
+    case "email-reminder":
+      return "Lembrete por email";
+    case "whatsapp-follow-up":
+      return "Follow-up de WhatsApp";
+    case "agent-task":
+      return "Tarefa manual do time";
+    case "payment-link-generated":
+      return "Novo link de pagamento";
+    default:
+      return jobType;
+  }
+}
+
+function queueJobPriority(jobType: string) {
+  switch (jobType) {
+    case "webhook-process":
+      return 0;
+    case "payment-link-generated":
+      return 1;
+    case "lead-created":
+      return 2;
+    case "whatsapp-initial":
+      return 3;
+    case "email-reminder":
+      return 4;
+    case "whatsapp-follow-up":
+      return 5;
+    case "agent-task":
+      return 6;
+    default:
+      return 20;
+  }
 }
 
 
@@ -1017,7 +1848,19 @@ export function getStorageService(): RecoveryStorage {
   const hasConnectionSettingsApi =
     globalThis.__shieldRecoveryStorage__ &&
     typeof globalThis.__shieldRecoveryStorage__.getConnectionSettings === "function" &&
-    typeof globalThis.__shieldRecoveryStorage__.saveConnectionSettings === "function";
+    typeof globalThis.__shieldRecoveryStorage__.saveConnectionSettings === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.listSellerUsers === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.findSellerUserByEmail === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.saveSellerUser === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.touchSellerUserLogin === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.listSellerInvites === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.findSellerInviteByToken === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.createSellerInvite === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.markSellerInviteAccepted === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.getQueueOverview === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.listQueueJobs === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.listSystemLogs === "function" &&
+    typeof globalThis.__shieldRecoveryStorage__.listWebhookEvents === "function";
   const shouldUseSupabase = database.databaseConfigured;
   const currentMode = globalThis.__shieldRecoveryStorage__?.mode;
 

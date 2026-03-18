@@ -3,10 +3,14 @@
 import { redirect } from "next/navigation";
 
 import {
-  authenticateCredentials,
+  isRoleAllowedForPath,
   isAuthConfigured,
   normalizeNextPath,
 } from "@/server/auth/core";
+import {
+  authenticatePlatformUser,
+  registerSellerLogin,
+} from "@/server/auth/identities";
 import {
   clearAuthenticatedSession,
   setAuthenticatedSession,
@@ -15,20 +19,33 @@ import {
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "").trim();
-  const next = normalizeNextPath(String(formData.get("next") ?? "/dashboard"));
+  const requestedNext = String(formData.get("next") ?? "");
 
   if (!isAuthConfigured()) {
     redirect("/login?error=config");
   }
 
-  const isValid = await authenticateCredentials({ email, password });
+  const authenticatedUser = await authenticatePlatformUser({ email, password });
 
-  if (!isValid) {
+  if (!authenticatedUser) {
+    const next = normalizeNextPath(requestedNext);
     redirect(`/login?error=invalid&next=${encodeURIComponent(next)}`);
   }
 
-  await setAuthenticatedSession(email);
-  redirect(next);
+  const next = normalizeNextPath(
+    requestedNext,
+    authenticatedUser.role,
+  );
+
+  await setAuthenticatedSession(authenticatedUser.email, authenticatedUser.role);
+  if (authenticatedUser.role === "seller") {
+    await registerSellerLogin(authenticatedUser.email);
+  }
+  redirect(
+    isRoleAllowedForPath(next, authenticatedUser.role)
+      ? next
+      : normalizeNextPath(undefined, authenticatedUser.role),
+  );
 }
 
 export async function logoutAction() {

@@ -43,3 +43,9 @@ next-env.d.ts
 
 # local backend state
 /data/*.json
+
+# embedded repos
+/evolution-api/
+
+# test artifacts
+test-write.txt

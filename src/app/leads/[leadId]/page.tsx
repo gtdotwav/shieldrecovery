@@ -26,6 +26,8 @@ import { MessageBubble } from "@/components/ui/message-bubble";
 import { StageBadge } from "@/components/ui/stage-badge";
 import { TimeBadge } from "@/components/ui/time-badge";
 import { pickBestContact, formatPhone, hasPhone } from "@/lib/contact";
+import { canRoleAccessAgent } from "@/server/auth/core";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import {
   formatCurrency,
   formatDateTime,
@@ -48,15 +50,26 @@ type PageProps = {
 };
 
 export default async function LeadDetailPage({ params }: PageProps) {
-  await requireAuthenticatedSession();
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
   const { leadId } = await params;
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();
   const contacts = await service.getFollowUpContacts();
+  const sellerIdentity =
+    session.role === "seller"
+      ? await getSellerIdentityByEmail(session.email)
+      : null;
 
   const lead = contacts.find((contact) => contact.lead_id === leadId);
 
-  if (!lead) {
+  if (
+    !lead ||
+    !canRoleAccessAgent(
+      session.role,
+      lead.assigned_agent,
+      sellerIdentity?.agentName,
+    )
+  ) {
     notFound();
   }
 
@@ -412,6 +425,15 @@ function StageAction({
     <form action={transitionLeadStage}>
       <input type="hidden" name="leadId" value={leadId} />
       <input type="hidden" name="status" value={targetStatus} />
+      <input
+        type="hidden"
+        name="intent"
+        value={
+          currentStatus === "NEW_RECOVERY" && targetStatus === "CONTACTING"
+            ? "start_flow"
+            : "move_stage"
+        }
+      />
       <ActionButton
         disabled={isActive}
         className={`rounded-full px-3.5 py-2 text-xs font-medium transition-colors ${buttonClass}`}

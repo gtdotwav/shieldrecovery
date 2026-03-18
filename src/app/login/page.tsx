@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { loginAction } from "@/app/actions/auth-actions";
 import { ShieldRecoveryLogo } from "@/components/platform/shield-recovery-logo";
-import { isAuthConfigured } from "@/server/auth/core";
+import { defaultPathForRole, isAuthConfigured } from "@/server/auth/core";
 import { getAuthenticatedSession, resolvePostLoginPath } from "@/server/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const session = await getAuthenticatedSession();
 
   if (session) {
-    redirect("/dashboard");
+    redirect(defaultPathForRole(session.role));
   }
 
   const nextPath = resolvePostLoginPath(params.next);
@@ -34,11 +34,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const configurationMissing = params.error === "config" || !authConfigured;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff3e8_0%,#ffffff_38%,#f5f6f8_100%)] px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.08),transparent_22rem),linear-gradient(180deg,#fafbfc_0%,#f3f5f8_100%)] px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl items-center justify-center">
-        <div className="grid w-full gap-6 rounded-[2rem] border border-black/[0.06] bg-white/92 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.10)] backdrop-blur xl:grid-cols-[1.1fr_0.9fr] xl:p-6">
-          <section className="rounded-[1.6rem] bg-[linear-gradient(180deg,#141414_0%,#0f172a_100%)] p-6 text-white sm:p-8">
-            <ShieldRecoveryLogo />
+        <div className="grid w-full gap-6 rounded-[2rem] border border-black/[0.06] bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] xl:grid-cols-[1.05fr_0.95fr] xl:p-6">
+          <section className="rounded-[1.6rem] bg-[linear-gradient(180deg,#141414_0%,#121826_100%)] p-6 text-white sm:p-8">
+            <ShieldRecoveryLogo size="lg" emphasis="strong" className="bg-transparent shadow-none ring-0" />
 
             <div className="mt-10 max-w-lg">
               <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-orange-400">
@@ -54,22 +54,22 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               </p>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <FeatureCard
+            <div className="mt-8 space-y-3">
+              <FeatureRow
                 icon={ShieldCheck}
-                title="Sessao protegida"
-                description="Acesso por cookie assinado e expiracao automatica."
+                title="Sessão protegida"
+                description="Acesso por cookie assinado e expiração automática."
               />
-              <FeatureCard
+              <FeatureRow
                 icon={LockKeyhole}
-                title="Areas internas isoladas"
-                description="Dashboard, CRM, Inbox, Connect e Testes ficam protegidos."
+                title="Áreas internas isoladas"
+                description="CRM, conversas, integrações e operação ficam sob login."
               />
             </div>
           </section>
 
           <section className="flex items-center">
-            <div className="w-full rounded-[1.6rem] border border-black/[0.06] bg-[#fcfcfd] p-5 sm:p-6">
+            <div className="w-full rounded-[1.6rem] border border-black/[0.06] bg-[#fbfbfc] p-5 sm:p-6">
               <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-orange-500">
                 Entrar
               </p>
@@ -77,7 +77,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 Acesse a operacao.
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#6b7280]">
-                Use as credenciais de administrador configuradas no ambiente.
+                O sistema identifica automaticamente se o acesso e de administrador ou seller.
               </p>
 
               {params.logged_out === "1" ? (
@@ -96,7 +96,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 <Notice tone="warning">
                   Login ainda nao configurado no ambiente. Defina
                   `PLATFORM_AUTH_EMAIL`, `PLATFORM_AUTH_PASSWORD` e
-                  `PLATFORM_AUTH_SECRET`.
+                  `PLATFORM_AUTH_SECRET`. Os sellers agora podem ser criados no
+                  painel Admin; em desenvolvimento, o fallback por env continua
+                  disponivel.
                 </Notice>
               ) : null}
 
@@ -121,7 +123,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                  className="inline-flex w-full items-center justify-center rounded-[1rem] bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
                 >
                   Entrar na plataforma
                 </button>
@@ -134,7 +136,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   );
 }
 
-function FeatureCard({
+function FeatureRow({
   icon: Icon,
   title,
   description,
@@ -144,10 +146,14 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <Icon className="h-5 w-5 text-orange-400" />
-      <p className="mt-4 text-sm font-semibold text-white">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-white/60">{description}</p>
+    <div className="flex items-start gap-3 rounded-[1.1rem] border border-white/10 bg-white/5 px-4 py-4">
+      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/8">
+        <Icon className="h-4.5 w-4.5 text-orange-400" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-white">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-white/60">{description}</p>
+      </div>
     </div>
   );
 }

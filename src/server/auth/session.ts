@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 
 import {
   createSessionToken,
+  defaultPathForRole,
   getSessionCookieName,
   getSessionTtlSeconds,
   normalizeNextPath,
+  type UserRole,
   verifySessionToken,
 } from "@/server/auth/core";
 
@@ -15,9 +17,9 @@ export async function getAuthenticatedSession() {
   return verifySessionToken(token);
 }
 
-export async function setAuthenticatedSession(email: string) {
+export async function setAuthenticatedSession(email: string, role: UserRole) {
   const store = await cookies();
-  const token = await createSessionToken(email);
+  const token = await createSessionToken(email, role);
 
   store.set(getSessionCookieName(), token, {
     httpOnly: true,
@@ -39,16 +41,20 @@ export async function clearAuthenticatedSession() {
   });
 }
 
-export async function requireAuthenticatedSession() {
+export async function requireAuthenticatedSession(allowedRoles?: UserRole[]) {
   const session = await getAuthenticatedSession();
 
   if (!session) {
     redirect("/login");
   }
 
+  if (allowedRoles && !allowedRoles.includes(session.role)) {
+    redirect(defaultPathForRole(session.role));
+  }
+
   return session;
 }
 
-export function resolvePostLoginPath(input?: string | null) {
-  return normalizeNextPath(input);
+export function resolvePostLoginPath(input?: string | null, role?: UserRole) {
+  return normalizeNextPath(input, role);
 }

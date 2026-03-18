@@ -47,12 +47,27 @@ export const MESSAGE_STATUSES = [
 
 export const WHATSAPP_PROVIDERS = ["cloud_api", "web_api"] as const;
 export const EMAIL_PROVIDERS = ["sendgrid"] as const;
+export const CALENDAR_NOTE_LANES = [
+  "operations",
+  "automations",
+  "revenue",
+] as const;
 export const WHATSAPP_WEB_SESSION_STATUSES = [
   "disconnected",
   "pending_qr",
   "connected",
   "expired",
   "error",
+] as const;
+export const SELLER_AUTONOMY_MODES = [
+  "assisted",
+  "supervised",
+  "autonomous",
+] as const;
+export const SELLER_INVITE_STATUSES = [
+  "pending",
+  "accepted",
+  "revoked",
 ] as const;
 
 export type SupportedPaymentEvent = (typeof SUPPORTED_PAYMENT_EVENTS)[number];
@@ -65,12 +80,40 @@ export type MessageDirection = (typeof MESSAGE_DIRECTIONS)[number];
 export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
 export type WhatsAppProvider = (typeof WHATSAPP_PROVIDERS)[number];
 export type EmailProvider = (typeof EMAIL_PROVIDERS)[number];
+export type CalendarNoteLane = (typeof CALENDAR_NOTE_LANES)[number];
 export type WhatsAppWebSessionStatus =
   (typeof WHATSAPP_WEB_SESSION_STATUSES)[number];
+export type SellerAutonomyMode = (typeof SELLER_AUTONOMY_MODES)[number];
+export type SellerInviteStatus = (typeof SELLER_INVITE_STATUSES)[number];
 
 export type MessageMetadata = {
   kind?: "recovery_prompt" | "ai_draft" | "operator_note";
   generatedBy?: "workflow" | "ai" | "operator";
+  strategyId?: string;
+  strategyName?: string;
+  recoveryProbability?: "high" | "medium" | "low" | "manual";
+  recoveryScore?: number;
+  recoveryUrgency?: "immediate" | "today" | "scheduled" | "manual";
+  nextAction?:
+    | "send_initial_message"
+    | "send_follow_up"
+    | "wait_for_customer"
+    | "generate_new_payment_link"
+    | "escalate_to_seller"
+    | "pause_automation"
+    | "review_manually"
+    | "close_as_recovered"
+    | "close_as_lost";
+  followUpMode?: "autonomous" | "supervised" | "manual";
+  decisionReason?: string;
+  inboundIntent?:
+    | "payment_intent"
+    | "question"
+    | "objection"
+    | "needs_time"
+    | "human_handoff"
+    | "friction"
+    | "irrelevant";
   product?: string;
   paymentMethod?: string;
   paymentStatus?: string;
@@ -79,6 +122,10 @@ export type MessageMetadata = {
   orderId?: string;
   gatewayPaymentId?: string;
   retryLink?: string;
+  paymentUrl?: string;
+  pixCode?: string;
+  pixQrCode?: string;
+  pixExpiresAt?: string;
   actionLabel?: string;
 };
 
@@ -104,6 +151,10 @@ export type NormalizedPaymentEvent = {
   metadata: {
     product?: string;
     campaign?: string;
+    paymentUrl?: string;
+    pixCode?: string;
+    pixQrCode?: string;
+    pixExpiresAt?: string;
   };
 };
 
@@ -193,7 +244,7 @@ export type QueueJobRecord = {
   payload: Record<string, unknown>;
   runAt: string;
   attempts: number;
-  status: "scheduled" | "processed" | "failed";
+  status: "scheduled" | "processing" | "processed" | "failed";
   createdAt: string;
   error?: string;
 };
@@ -266,7 +317,10 @@ export type SystemLogRecord = {
     | "message_received"
     | "message_status_updated"
     | "message_dispatched"
-    | "ai_reply_generated";
+    | "ai_reply_generated"
+    | "worker_job_processed"
+    | "worker_job_rescheduled"
+    | "worker_job_failed";
   level: "info" | "warn" | "error";
   message: string;
   context: Record<string, unknown>;
@@ -303,6 +357,222 @@ export type ConnectionSettingsInput = Partial<
   Omit<ConnectionSettingsRecord, "id" | "updatedAt">
 >;
 
+export type CalendarNoteRecord = {
+  id: string;
+  date: string;
+  lane: CalendarNoteLane;
+  title: string;
+  content?: string;
+  createdByEmail: string;
+  createdByRole: "admin" | "seller";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CalendarDaySummary = {
+  date: string;
+  recoveredRevenue: number;
+  recoveredCount: number;
+  newLeads: number;
+  automationJobs: number;
+  outboundMessages: number;
+  inboundMessages: number;
+  notesCount: number;
+};
+
+export type CalendarActivityItem = {
+  id: string;
+  date: string;
+  at: string;
+  type: "recovery" | "lead" | "automation" | "message";
+  title: string;
+  detail: string;
+  amount?: number;
+  leadId?: string;
+  href?: string;
+};
+
+export type CalendarSnapshot = {
+  month: string;
+  days: CalendarDaySummary[];
+  notes: CalendarNoteRecord[];
+  activities: CalendarActivityItem[];
+};
+
+export type SellerAdminControlRecord = {
+  id: string;
+  sellerKey: string;
+  sellerName: string;
+  sellerEmail?: string;
+  active: boolean;
+  recoveryTargetPercent: number;
+  reportedRecoveryRatePercent?: number;
+  maxAssignedLeads: number;
+  inboxEnabled: boolean;
+  automationsEnabled: boolean;
+  autonomyMode: SellerAutonomyMode;
+  notes?: string;
+  updatedAt: string;
+};
+
+export type SellerAdminControlInput = {
+  sellerKey: string;
+  sellerName?: string;
+  sellerEmail?: string;
+  active?: boolean;
+  recoveryTargetPercent?: number;
+  reportedRecoveryRatePercent?: number;
+  maxAssignedLeads?: number;
+  inboxEnabled?: boolean;
+  automationsEnabled?: boolean;
+  autonomyMode?: SellerAutonomyMode;
+  notes?: string;
+};
+
+export type SellerUserRecord = {
+  id: string;
+  email: string;
+  displayName: string;
+  agentName: string;
+  passwordHash: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string;
+};
+
+export type SellerUserInput = {
+  email: string;
+  displayName?: string;
+  agentName: string;
+  passwordHash?: string;
+  active?: boolean;
+};
+
+export type SellerUserSnapshot = {
+  id: string;
+  email: string;
+  displayName: string;
+  agentName: string;
+  active: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SellerInviteRecord = {
+  id: string;
+  token: string;
+  email: string;
+  suggestedDisplayName?: string;
+  agentName?: string;
+  note?: string;
+  createdByEmail: string;
+  status: SellerInviteStatus;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+  acceptedAt?: string;
+  revokedAt?: string;
+};
+
+export type SellerInviteInput = {
+  email: string;
+  suggestedDisplayName?: string;
+  agentName?: string;
+  note?: string;
+  createdByEmail: string;
+  expiresInDays?: number;
+};
+
+export type SellerInviteSnapshot = {
+  id: string;
+  token: string;
+  email: string;
+  suggestedDisplayName?: string;
+  agentName?: string;
+  note?: string;
+  createdByEmail: string;
+  status: SellerInviteStatus;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+  acceptedAt?: string;
+  revokedAt?: string;
+  expired: boolean;
+  inviteUrl: string;
+};
+
+export type SellerWebhookSnapshot = {
+  sellerKey: string;
+  url: string;
+  eventCount: number;
+  processedCount: number;
+  failedCount: number;
+  pendingCount: number;
+  lastReceivedAt?: string;
+  lastProcessedAt?: string;
+  lastEventType?: string;
+  lastError?: string;
+  status: "idle" | "healthy" | "attention";
+};
+
+export type AdminSellerSnapshot = {
+  sellerKey: string;
+  sellerName: string;
+  sellerEmail?: string;
+  activeLeads: number;
+  waitingCustomer: number;
+  recoveredCount: number;
+  recoveredRevenue: number;
+  openConversations: number;
+  unreadConversations: number;
+  platformRecoveryRate: number;
+  realRecoveryRate: number;
+  lastActivityAt?: string;
+  control: SellerAdminControlRecord;
+  webhook: SellerWebhookSnapshot;
+};
+
+export type WorkerQueueSnapshot = {
+  scheduled: number;
+  processing: number;
+  processed: number;
+  failed: number;
+  dueNow: number;
+  oldestScheduledAt?: string;
+  oldestDueAt?: string;
+  queueLagMinutes: number;
+  batchSize: number;
+  concurrency: number;
+  recentJobs: QueueJobRecord[];
+  recentEvents: SystemLogRecord[];
+};
+
+export type QueueOverviewSnapshot = {
+  scheduled: number;
+  processing: number;
+  processed: number;
+  failed: number;
+  dueNow: number;
+  oldestScheduledAt?: string;
+  oldestDueAt?: string;
+};
+
+export type AdminPanelSnapshot = {
+  totalSellers: number;
+  activeSellers: number;
+  totalActiveLeads: number;
+  totalRecoveredRevenue: number;
+  totalUnreadConversations: number;
+  unassignedLeads: number;
+  pendingInvites: number;
+  sellers: AdminSellerSnapshot[];
+  sellerUsers: SellerUserSnapshot[];
+  sellerInvites: SellerInviteSnapshot[];
+  worker: WorkerQueueSnapshot;
+};
+
 export type StorageState = {
   payments: PaymentRecord[];
   customers: CustomerRecord[];
@@ -314,6 +584,10 @@ export type StorageState = {
   conversations: ConversationRecord[];
   messages: MessageRecord[];
   logs: SystemLogRecord[];
+  calendarNotes: CalendarNoteRecord[];
+  sellerAdminControls: SellerAdminControlRecord[];
+  sellerUsers: SellerUserRecord[];
+  sellerInvites: SellerInviteRecord[];
   connectionSettings: ConnectionSettingsRecord;
   meta: {
     lastAssignedAgentIndex: number;
@@ -327,6 +601,15 @@ export type RecoveryAnalytics = {
   recovered_revenue: number;
   average_recovery_time_hours: number;
   active_recoveries: number;
+};
+
+export type CreateCalendarNoteInput = {
+  date: string;
+  lane: CalendarNoteLane;
+  title: string;
+  content?: string;
+  createdByEmail: string;
+  createdByRole: "admin" | "seller";
 };
 
 export type FollowUpContact = {

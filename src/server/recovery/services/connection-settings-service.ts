@@ -1,4 +1,4 @@
-import { createDefaultConnectionSettings } from "@/server/recovery/config";
+import { appEnv, createDefaultConnectionSettings } from "@/server/recovery/config";
 import type { StorageMode } from "@/server/recovery/services/storage";
 import { getStorageService } from "@/server/recovery/services/storage";
 import { getPlatformBootstrapService } from "@/server/recovery/services/platform-bootstrap-service";
@@ -15,6 +15,9 @@ export type RuntimeConnectionSettings = ConnectionSettingsRecord & {
   emailConfigured: boolean;
   crmConfigured: boolean;
   aiConfigured: boolean;
+  workerConfigured: boolean;
+  workerExecutorConfigured: boolean;
+  workerCronConfigured: boolean;
 };
 
 export type PublicRuntimeConnectionSettings = {
@@ -31,6 +34,9 @@ export type PublicRuntimeConnectionSettings = {
   emailConfigured: boolean;
   crmConfigured: boolean;
   aiConfigured: boolean;
+  workerConfigured: boolean;
+  workerExecutorConfigured: boolean;
+  workerCronConfigured: boolean;
 };
 
 export class ConnectionSettingsService {
@@ -77,6 +83,9 @@ export class ConnectionSettingsService {
       emailConfigured: Boolean(settings.emailApiKey),
       crmConfigured: Boolean(settings.crmApiUrl && settings.crmApiKey),
       aiConfigured: Boolean(settings.openAiApiKey),
+      workerConfigured: appEnv.workerConfigured,
+      workerExecutorConfigured: appEnv.workerExecutorConfigured,
+      workerCronConfigured: appEnv.workerCronConfigured,
     };
   }
 
@@ -97,6 +106,9 @@ export class ConnectionSettingsService {
       emailConfigured: runtime.emailConfigured,
       crmConfigured: runtime.crmConfigured,
       aiConfigured: runtime.aiConfigured,
+      workerConfigured: runtime.workerConfigured,
+      workerExecutorConfigured: runtime.workerExecutorConfigured,
+      workerCronConfigured: runtime.workerCronConfigured,
     };
   }
 

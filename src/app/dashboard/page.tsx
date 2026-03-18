@@ -12,7 +12,6 @@ import {
   PlatformAppPage,
   PlatformInset,
   PlatformMetricCard,
-  PlatformPill,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { RecoveryChart } from "@/components/ui/recovery-chart";
@@ -33,7 +32,7 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const service = getPaymentRecoveryService();
   const [analytics, contacts] = await Promise.all([
     service.getRecoveryAnalytics(),
@@ -113,24 +112,35 @@ export default async function DashboardPage() {
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.9fr)]">
         <div className="space-y-5">
           <PlatformSurface className="p-5 sm:p-6">
-            <div className="flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
+            <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)] lg:items-end">
+              <div className="min-w-0">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
                   Carteira agora
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[2rem]">
-                  Leitura rápida do que precisa de atenção.
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
+                  O painel do dia, sem ruído.
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
-                  O painel aqui resume somente o que ajuda a decidir prioridade:
-                  casos novos, carteira parada, follow-up aguardando resposta e
-                  cobertura de canais.
+                  Use esta visão para decidir prioridade rápido: o que entrou,
+                  o que está esperando cliente e onde a operação já pode agir.
+                </p>
+                <p className="mt-3 text-sm leading-6 text-[#6b7280]">
+                  {prioritizedContacts.length} prioridades abertas e {whatsappCount} casos
+                  já com WhatsApp disponível.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <PlatformPill>{actionableContacts.length} para agir</PlatformPill>
-                <PlatformPill>{waitingContacts.length} aguardando cliente</PlatformPill>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <CompactStat
+                  label="Para agir"
+                  value={actionableContacts.length.toString()}
+                  detail="casos novos ou que pedem retomada"
+                />
+                <CompactStat
+                  label="Aguardando cliente"
+                  value={waitingContacts.length.toString()}
+                  detail="carteira parada esperando resposta"
+                />
               </div>
             </div>
 
@@ -145,11 +155,7 @@ export default async function DashboardPage() {
                 value={waitingContacts.length.toString()}
                 detail="já abordados, mas sem retorno"
               />
-              <CompactStat
-                label="Perdidos"
-                value={lostContacts.length.toString()}
-                detail="encerrados sem recuperação"
-              />
+              <CompactStat label="Perdidos" value={lostContacts.length.toString()} detail="encerrados sem recuperação" />
               <CompactStat
                 label="Tempo médio"
                 value={formatAverageRecoveryTime(analytics.average_recovery_time_hours)}
@@ -187,7 +193,7 @@ export default async function DashboardPage() {
                   Casos prioritários
                 </p>
                 <h3 className="mt-2 text-lg font-semibold text-[#111827]">
-                  A carteira que deveria abrir o dia da operação.
+                  A carteira que abre o dia da operação.
                 </h3>
               </div>
               <Link
@@ -228,13 +234,13 @@ export default async function DashboardPage() {
                 label="WhatsApp"
                 count={whatsappCount}
                 percentage={Math.round((whatsappCount / channelTotal) * 100)}
-                color="bg-green-500"
+                color="bg-[#6b7280]"
               />
               <ChannelBar
                 label="Email"
                 count={emailCount}
                 percentage={Math.round((emailCount / channelTotal) * 100)}
-                color="bg-sky-500"
+                color="bg-[#9ca3af]"
               />
               <ChannelBar
                 label="SMS"
@@ -245,7 +251,7 @@ export default async function DashboardPage() {
                     Math.round((whatsappCount / channelTotal) * 100) -
                     Math.round((emailCount / channelTotal) * 100),
                 )}
-                color="bg-violet-500"
+                color="bg-[#d1d5db]"
               />
             </div>
           </PlatformSurface>
@@ -295,20 +301,17 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-[#111827]">
-                  O que acompanhar agora
+                  Regras simples para o turno
                 </p>
                 <ul className="mt-3 space-y-2 text-sm leading-6 text-[#6b7280]">
                   <li>
-                    Priorize primeiro os casos novos com maior valor e canal
-                    disponível.
+                    Abra primeiro os casos novos com maior valor e canal pronto.
                   </li>
                   <li>
-                    Use a inbox para dar sequência nos casos já em contato, sem
-                    duplicar abordagem no CRM.
+                    Use a inbox para continuar o contato e evite duplicar tratativa no CRM.
                   </li>
                   <li>
-                    Quando o cliente responder, mova o caso no CRM e mantenha a
-                    conversa na mesma thread.
+                    Quando houver resposta, mova o lead e mantenha tudo na mesma thread.
                   </li>
                 </ul>
               </div>
@@ -330,11 +333,11 @@ function CompactStat({
   detail: string;
 }) {
   return (
-    <div className="rounded-2xl border border-black/[0.06] bg-[#f9fafb] px-4 py-4">
+    <div className="rounded-[1.05rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4">
       <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#9ca3af]">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
+      <p className="mt-2 text-[1.55rem] font-semibold tracking-tight text-[#111827]">
         {value}
       </p>
       <p className="mt-1 text-sm leading-6 text-[#6b7280]">{detail}</p>
@@ -350,7 +353,7 @@ function LegendPill({
   children: React.ReactNode;
 }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-white px-3 py-1.5 text-[0.7rem] font-medium uppercase tracking-[0.14em] text-[#6b7280]">
+    <span className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-[#fbfbfc] px-3 py-1.5 text-[0.72rem] font-medium text-[#6b7280]">
       <span className={`h-2 w-2 rounded-full ${color}`} />
       {children}
     </span>
@@ -392,7 +395,7 @@ function ChannelBar({
 
 function MetricLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-black/[0.05] bg-[#f9fafb] px-3.5 py-3">
+    <div className="flex items-center justify-between gap-4 rounded-[1rem] border border-black/[0.05] bg-[#fbfbfc] px-3.5 py-3">
       <span className="text-sm text-[#6b7280]">{label}</span>
       <span className="text-sm font-semibold text-[#111827]">{value}</span>
     </div>
@@ -403,7 +406,7 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
   return (
     <Link
       href={`/leads/${contact.lead_id}`}
-      className="block rounded-2xl border border-black/[0.06] bg-[#fbfbfc] p-4 transition-all hover:border-orange-200 hover:shadow-[0_16px_40px_rgba(17,24,39,0.06)]"
+      className="block rounded-[1.15rem] border border-black/[0.06] bg-[#fbfbfc] p-4 transition-colors hover:bg-white"
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
@@ -440,7 +443,7 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
 
 function DetailBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-black/[0.05] bg-white px-3 py-2.5">
+    <div className="rounded-[0.95rem] border border-black/[0.05] bg-[#f9fafb] px-3 py-2.5">
       <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#9ca3af]">
         {label}
       </p>

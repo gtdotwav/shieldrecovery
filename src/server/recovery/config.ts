@@ -17,6 +17,20 @@ const sendgridApiKey = process.env.SENDGRID_API_KEY ?? "";
 const shieldLeadApiUrl = process.env.SHIELD_LEAD_API_URL ?? "";
 const shieldLeadApiKey = process.env.SHIELD_LEAD_API_KEY ?? "";
 const openAiApiKey = process.env.OPENAI_API_KEY ?? "";
+const workerAuthToken = process.env.WORKER_AUTH_TOKEN ?? "";
+const cronSecret = process.env.CRON_SECRET ?? "";
+const workerBatchSize = clampInteger(
+  process.env.SHIELD_WORKER_BATCH_SIZE,
+  60,
+  1,
+  250,
+);
+const workerConcurrency = clampInteger(
+  process.env.SHIELD_WORKER_CONCURRENCY,
+  4,
+  1,
+  16,
+);
 const experimentalPagesEnabled =
   (process.env.SHIELD_ENABLE_EXPERIMENTAL_UI ?? "").toLowerCase() === "true";
 
@@ -70,6 +84,13 @@ export const appEnv = {
   crmConfigured: Boolean(shieldLeadApiUrl && shieldLeadApiKey),
   openAiApiKey,
   aiConfigured: Boolean(openAiApiKey),
+  workerAuthToken,
+  cronSecret,
+  workerBatchSize,
+  workerConcurrency,
+  workerExecutorConfigured: Boolean(workerAuthToken),
+  workerCronConfigured: Boolean(cronSecret),
+  workerConfigured: Boolean(workerAuthToken || cronSecret),
   experimentalPagesEnabled,
   webhookSecret:
     process.env.SHIELD_GATEWAY_WEBHOOK_SECRET ?? "shield_preview_secret",
@@ -82,3 +103,18 @@ export const appEnv = {
     ? "/tmp/shield-recovery-store.json"
     : path.join(process.cwd(), "data", "shield-recovery.local.json"),
 };
+
+function clampInteger(
+  rawValue: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+) {
+  const parsed = Number(rawValue ?? fallback);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, Math.floor(parsed)));
+}

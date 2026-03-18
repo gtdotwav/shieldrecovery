@@ -14,6 +14,7 @@ import {
   generateRetryLinkAction,
   seedFailedPaymentAction,
   seedRecoveredPaymentAction,
+  seedShieldTransactionAction,
   simulateInboundReplyAction,
 } from "@/app/actions/test-actions";
 import {
@@ -38,7 +39,7 @@ type TestPageProps = {
 };
 
 export default async function TestPage({ searchParams }: TestPageProps) {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const params = await searchParams;
   const service = getPaymentRecoveryService();
   const [analytics, contacts] = await Promise.all([
@@ -176,6 +177,23 @@ export default async function TestPage({ searchParams }: TestPageProps) {
                 <form action={seedFailedPaymentAction} className="mt-4">
                   <button className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
                     Disparar falha
+                  </button>
+                </form>
+              </PlatformInset>
+
+              <PlatformInset className="p-4">
+                <p className="text-sm font-medium text-[#1a1a2e]">
+                  Simular payload da Shield
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#717182]">
+                  Injeta um evento no formato real de transação da Shield, com
+                  `data.pix.qrcode`, metadata serializada e status
+                  `waiting_payment`.
+                </p>
+                <form action={seedShieldTransactionAction} className="mt-4">
+                  <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
+                    <Link2 className="h-4 w-4" />
+                    Importar payload Shield
                   </button>
                 </form>
               </PlatformInset>

@@ -2,7 +2,9 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import {
+  defaultPathForRole,
   getSessionCookieName,
+  isRoleAllowedForPath,
   isApiLikePath,
   isAuthConfigured,
   isProtectedPath,
@@ -38,6 +40,14 @@ export async function middleware(request: NextRequest) {
   const session = await verifySessionToken(token);
 
   if (session) {
+    if (!isRoleAllowedForPath(pathname, session.role)) {
+      if (isApiLikePath(pathname)) {
+        return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+      }
+
+      return NextResponse.redirect(new URL(defaultPathForRole(session.role), request.url));
+    }
+
     return NextResponse.next();
   }
 

@@ -27,6 +27,11 @@ export function normalizeShieldGatewayEvent(
   const customer =
     asRecord(payment.customer) ?? asRecord(payload.customer) ?? shieldTransaction ?? payload;
   const metadata = parseMetadataRecord(payment.metadata) ?? asRecord(payload.metadata);
+  const pixData =
+    asRecord(payment.pix) ??
+    asRecord(payload.pix) ??
+    asRecord(metadata?.pix) ??
+    undefined;
   const items = Array.isArray(payment.items) ? payment.items : [];
   const firstItem = asRecord(items[0]);
 
@@ -59,6 +64,57 @@ export function normalizeShieldGatewayEvent(
   const customerId =
     pickString(customer.id, customer.customer_id, payload.customer_id, customer.email) ??
     `customer-${paymentId}`;
+  const paymentUrl =
+    findNestedString(
+      [payment, payload, metadata, pixData],
+      [
+        "payment_url",
+        "paymentUrl",
+        "checkout_url",
+        "checkoutUrl",
+        "secureUrl",
+        "secure_url",
+        "redirectUrl",
+        "returnUrl",
+        "url",
+      ],
+    ) ?? undefined;
+  const pixCode =
+    findNestedString(
+      [payment, payload, metadata, pixData],
+      [
+        "pix_code",
+        "pixCode",
+        "copy_paste",
+        "copyPaste",
+        "qrcode",
+        "qrCode",
+        "code",
+        "payload",
+      ],
+    ) ?? undefined;
+  const pixQrCode =
+    findNestedString(
+      [payment, payload, metadata, pixData],
+      [
+        "pix_qr_code",
+        "pixQrCode",
+        "qr_code",
+        "qrCode",
+        "image",
+      ],
+    ) ?? undefined;
+  const pixExpiresAt =
+    findNestedString(
+      [payment, payload, metadata, pixData],
+      [
+        "pix_expiration_date",
+        "pixExpirationDate",
+        "expirationDate",
+        "expiration_date",
+        "expiresAt",
+      ],
+    ) ?? undefined;
 
   return {
     event_id:
@@ -131,6 +187,10 @@ export function normalizeShieldGatewayEvent(
           metadata?.sessionToken,
           payment.externalRef,
         ) ?? undefined,
+      paymentUrl,
+      pixCode,
+      pixQrCode,
+      pixExpiresAt,
     },
   };
 }
@@ -262,6 +322,32 @@ function pickNumber(...values: unknown[]): number | undefined {
 
       if (Number.isFinite(parsed)) {
         return parsed;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function findNestedString(
+  records: Array<Record<string, unknown> | null | undefined>,
+  keys: string[],
+): string | undefined {
+  for (const record of records) {
+    if (!record) continue;
+
+    const direct = pickString(...keys.map((key) => record[key]));
+    if (direct) {
+      return direct;
+    }
+
+    for (const value of Object.values(record)) {
+      const nested = asRecord(value);
+      if (!nested) continue;
+
+      const nestedValue = pickString(...keys.map((key) => nested[key]));
+      if (nestedValue) {
+        return nestedValue;
       }
     }
   }

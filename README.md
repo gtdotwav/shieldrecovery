@@ -17,6 +17,7 @@ The V1 that should go live is:
 - `/leads`
 - `/leads/[leadId]`
 - `/inbox`
+- `/ai`
 - `/api/webhooks/shield-gateway`
 - `/api/webhooks/whatsapp`
 - `/api/import`
@@ -28,7 +29,6 @@ The V1 that should go live is:
 
 Experimental areas are hidden by default:
 
-- `/ai`
 - `/test`
 
 To expose experimental pages locally:
@@ -92,6 +92,8 @@ Main endpoints:
 - `POST /api/payments/retry`
 - `GET /api/settings/connections`
 - `POST /api/settings/connections`
+- `GET /api/worker/run`
+- `POST /api/worker/run`
 
 Legacy paths still exist for compatibility, but new integrations should point only to `/api/*`.
 
@@ -165,7 +167,19 @@ SHIELD_LEAD_API_KEY=your-shield-lead-api-key
 
 OPENAI_API_KEY=your-openai-api-key
 
+WORKER_AUTH_TOKEN=your-worker-token
+# optional on Vercel cron
+CRON_SECRET=your-cron-secret
+
 SHIELD_ENABLE_EXPERIMENTAL_UI=false
+
+PLATFORM_AUTH_EMAIL=admin@shieldrecovery.local
+PLATFORM_AUTH_PASSWORD=change-this-password
+# optional local fallback seller; production can use Admin > seller accounts
+PLATFORM_SELLER_AUTH_EMAIL=seller@shieldrecovery.local
+PLATFORM_SELLER_AUTH_PASSWORD=change-this-password
+PLATFORM_SELLER_AGENT_NAME=Carla
+PLATFORM_AUTH_SECRET=change-this-long-random-secret
 ```
 
 ## Webhook contract
@@ -195,13 +209,13 @@ Already working:
 - lead creation and status updates
 - retry link generation
 - inbox persistence for inbound/outbound records
+- scheduled worker endpoint for due queue jobs
 - operational dashboard, CRM and connect surfaces
 - WhatsApp webhook intake
 
 Not complete yet:
 
-- real outbound WhatsApp sending from the platform
-- real worker execution for scheduled jobs
+- final provider-specific WhatsApp hardening in production
 - production-ready automation execution layer
 - final checkout handoff in the retry page
 
@@ -211,6 +225,37 @@ Not complete yet:
 npm install
 npm run dev
 ```
+
+Run due queue jobs manually:
+
+```bash
+npm run worker:run
+```
+
+Or against a remote environment:
+
+```bash
+WORKER_RUN_URL=https://shield-recovery.vercel.app \
+WORKER_AUTH_TOKEN=your-worker-token \
+npm run worker:run -- --limit=50
+```
+
+## Continuous worker execution
+
+The project now supports both execution modes:
+
+- Vercel cron calling `GET /api/worker/run` every 5 minutes
+- external/manual executor calling `POST /api/worker/run`
+
+To enable unattended execution safely:
+
+1. set `CRON_SECRET` in Vercel
+2. set `WORKER_AUTH_TOKEN` for manual or external executors
+3. redeploy so the cron picks up the secret
+4. confirm in `GET /api/health`:
+   - `automation.worker_enabled`
+   - `automation.worker_executor_configured`
+   - `automation.cron_secret_configured`
 
 Open:
 

@@ -160,6 +160,25 @@ CREATE TABLE system_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
+-- Table: calendar_notes
+CREATE TABLE calendar_notes (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  date DATE NOT NULL,
+  lane TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT,
+  created_by_email TEXT NOT NULL,
+  created_by_role TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX calendar_notes_date_idx
+  ON calendar_notes(date DESC);
+
+CREATE INDEX calendar_notes_lane_idx
+  ON calendar_notes(lane);
+
 -- Table: connection_settings
 CREATE TABLE connection_settings (
   id TEXT PRIMARY KEY,
@@ -186,6 +205,65 @@ CREATE TABLE connection_settings (
   openai_api_key TEXT,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
+
+-- Table: seller_admin_controls
+CREATE TABLE seller_admin_controls (
+  id TEXT PRIMARY KEY,
+  seller_key TEXT UNIQUE NOT NULL,
+  seller_name TEXT NOT NULL,
+  seller_email TEXT,
+  active BOOLEAN NOT NULL DEFAULT true,
+  recovery_target_percent DECIMAL(5, 2) NOT NULL DEFAULT 18,
+  reported_recovery_rate_percent DECIMAL(5, 2),
+  max_assigned_leads INTEGER NOT NULL DEFAULT 30,
+  inbox_enabled BOOLEAN NOT NULL DEFAULT true,
+  automations_enabled BOOLEAN NOT NULL DEFAULT true,
+  autonomy_mode TEXT NOT NULL DEFAULT 'supervised',
+  notes TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX seller_admin_controls_name_idx
+  ON seller_admin_controls(seller_name);
+
+-- Table: seller_users
+CREATE TABLE seller_users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  display_name TEXT NOT NULL,
+  agent_name TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  last_login_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX seller_users_display_name_idx
+  ON seller_users(display_name);
+
+-- Table: seller_invites
+CREATE TABLE seller_invites (
+  id TEXT PRIMARY KEY,
+  token TEXT UNIQUE NOT NULL,
+  email TEXT NOT NULL,
+  suggested_display_name TEXT,
+  agent_name TEXT,
+  note TEXT,
+  created_by_email TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  accepted_at TIMESTAMP WITH TIME ZONE,
+  revoked_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX seller_invites_email_idx
+  ON seller_invites(email);
+
+CREATE INDEX seller_invites_status_idx
+  ON seller_invites(status);
 
 INSERT INTO connection_settings (
   id,

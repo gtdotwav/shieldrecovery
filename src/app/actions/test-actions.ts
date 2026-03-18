@@ -38,6 +38,9 @@ type SamplePayloadOptions = {
   failureCode?: string;
   paymentId?: string;
   orderId?: string;
+  paymentUrl?: string;
+  pixCode?: string;
+  pixQrCode?: string;
 };
 
 function buildSamplePayload(kind: SampleKind, options: SamplePayloadOptions = {}) {
@@ -103,6 +106,17 @@ function buildSamplePayload(kind: SampleKind, options: SamplePayloadOptions = {}
             ? "Checkout Pix pendente"
             : "Pedido recuperado"),
       campaign: "internal_test_harness",
+      paymentUrl:
+        options.paymentUrl ??
+        `http://localhost:3011/retry/${paymentId}?token=test-${suffix}`,
+      pixCode:
+        options.pixCode ??
+        (options.paymentMethod === "pix" || kind === "pending" || kind === "failed"
+          ? `00020101021226830014br.gov.bcb.pix2561pix.test/${paymentId}5204000053039865405${String(
+              options.amount ?? (kind === "failed" ? 129900 : 89000),
+            ).slice(0, 5)}5802BR5913Shield Teste6009Sao Paulo62070503***6304ABCD`
+          : undefined),
+      pixQrCode: options.pixQrCode,
     },
   };
 }
@@ -161,14 +175,14 @@ function refreshOperationalViews() {
 }
 
 export async function resetOperationalDataAction() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   await getStorageService().clearOperationalData();
   refreshOperationalViews();
   redirect("/test?status=ok&message=Base%20operacional%20limpa");
 }
 
 export async function seedValidationScenarioAction() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const storage = getStorageService();
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();
@@ -259,7 +273,7 @@ export async function seedValidationScenarioAction() {
 }
 
 export async function seedFailedPaymentAction() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const service = getPaymentRecoveryService();
 
   await service.importShieldTransactionPayload(
@@ -270,8 +284,69 @@ export async function seedFailedPaymentAction() {
   redirect("/test?status=ok&event=failure");
 }
 
+export async function seedShieldTransactionAction() {
+  await requireAuthenticatedSession(["admin"]);
+  const service = getPaymentRecoveryService();
+  const suffix = Date.now().toString();
+
+  await service.importShieldTransactionPayload(
+    JSON.stringify({
+      id: `evt_shield_transaction_${suffix}`,
+      type: "transaction",
+      objectId: `4301${suffix.slice(-6)}`,
+      data: {
+        id: Number(`4301${suffix.slice(-6)}`),
+        tenantId: "c3025a97-5887-4de6-94ba-b042e52e227b",
+        companyId: 33865,
+        amount: 1000,
+        currency: "BRL",
+        paymentMethod: "pix",
+        status: "waiting_payment",
+        installments: 1,
+        paidAt: null,
+        paidAmount: 0,
+        metadata: JSON.stringify({
+          userId: 33865,
+          sessionToken: `session_${suffix}`,
+          paymentUrl: `https://payments.shield.test/secure/${suffix}`,
+        }),
+        secureId: `secure-${suffix}`,
+        secureUrl: `https://payments.shield.test/secure/${suffix}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        items: [
+          {
+            title: "Depósito Interno",
+            quantity: 1,
+            tangible: false,
+            unitPrice: 1000,
+            externalRef: "",
+          },
+        ],
+        customer: {
+          id: Number(`3244${suffix.slice(-5)}`),
+          name: "HYLEX TECNOLOGIAS LTDA",
+          email: `felipe+${suffix}@hylexpay.com`,
+          phone: "(11) 96179-2241",
+          document: {
+            type: "cnpj",
+            number: "58058174000195",
+          },
+        },
+        pix: {
+          qrcode: `00020101021226790014br.gov.bcb.pix2557brcode.starkinfra.com/v2/${suffix}5204000053039865802BR5925Sua Compra Garantida Ltda6008Alvorada62070503***63040DD5`,
+          expirationDate: "2026-03-14",
+        },
+      },
+    }),
+  );
+
+  refreshOperationalViews();
+  redirect("/test?status=ok&message=Payload%20realista%20da%20Shield%20importado");
+}
+
 export async function seedRecoveredPaymentAction() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const service = getPaymentRecoveryService();
   const suffix = Date.now().toString();
   const paymentId = `pay_test_recovered_${suffix}`;
@@ -302,7 +377,7 @@ export async function seedRecoveredPaymentAction() {
 }
 
 export async function simulateInboundReplyAction() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const messaging = new MessagingService();
   const service = getPaymentRecoveryService();
   const contacts = await service.getFollowUpContacts();
@@ -335,7 +410,7 @@ export async function simulateInboundReplyAction() {
 }
 
 export async function generateRetryLinkAction(formData: FormData) {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const gatewayPaymentId = String(formData.get("gatewayPaymentId") ?? "").trim();
 
   if (!gatewayPaymentId) {

@@ -1,13 +1,10 @@
-import type { MessageContext, GeneratedMessage } from "./types";
 import type { MessagingChannel } from "@/server/recovery/types";
 
-/**
- * Template-based message generator.
- *
- * In production this would call an LLM (OpenAI/Anthropic) for personalization.
- * For now we use high-quality handcrafted templates with variable interpolation.
- * The architecture is LLM-ready: swap `pickTemplate` with an API call.
- */
+import type {
+  ConversationReplyContext,
+  GeneratedMessage,
+  MessageContext,
+} from "./types";
 
 type MessageTemplate = {
   id: string;
@@ -18,7 +15,6 @@ type MessageTemplate = {
 };
 
 const TEMPLATES: MessageTemplate[] = [
-  // ── WhatsApp: First contact ──
   {
     id: "wa_initial_empathetic",
     channel: "whatsapp",
@@ -34,7 +30,7 @@ const TEMPLATES: MessageTemplate[] = [
     tone: "casual",
     template:
       "E aí {name}! Tudo certo? Vi que o pagamento{product} não passou dessa vez. " +
-      "Sem stress — acontece bastante. Segue um novo link pra tentar: {link}",
+      "Sem stress - acontece bastante. Segue um novo link pra tentar: {link}",
     condition: (ctx) => ctx.cartValue < 200,
   },
   {
@@ -46,8 +42,6 @@ const TEMPLATES: MessageTemplate[] = [
       "Para garantir sua compra, finalize o pagamento pelo link abaixo: {link}",
     condition: (ctx) => ctx.cartValue >= 500,
   },
-
-  // ── WhatsApp: Follow-up ──
   {
     id: "wa_followup_empathetic",
     channel: "whatsapp",
@@ -66,19 +60,15 @@ const TEMPLATES: MessageTemplate[] = [
       "continua pendente. O link expira em breve: {link}",
     condition: (ctx) => ctx.attemptNumber >= 2 && ctx.cartValue >= 300,
   },
-
-  // ── WhatsApp: Insufficient funds ──
   {
     id: "wa_insufficient_funds",
     channel: "whatsapp",
     tone: "empathetic",
     template:
       "Oi {name}! Vimos que o pagamento{product} não passou por saldo insuficiente. " +
-      "Sem problema — geramos um link via Pix pra facilitar: {link}",
+      "Sem problema - geramos um link via Pix pra facilitar: {link}",
     condition: (ctx) => ctx.failureReason.includes("insufficient"),
   },
-
-  // ── WhatsApp: Expired card ──
   {
     id: "wa_expired_card",
     channel: "whatsapp",
@@ -88,8 +78,6 @@ const TEMPLATES: MessageTemplate[] = [
       "Você pode tentar com outro cartão ou Pix neste link: {link}",
     condition: (ctx) => ctx.failureReason.includes("expired"),
   },
-
-  // ── Email templates ──
   {
     id: "email_initial",
     channel: "email",
@@ -116,8 +104,6 @@ const TEMPLATES: MessageTemplate[] = [
       "Atenciosamente,\nEquipe Shield Recovery",
     condition: (ctx) => ctx.attemptNumber >= 2,
   },
-
-  // ── SMS templates ──
   {
     id: "sms_initial",
     channel: "sms",
@@ -128,9 +114,6 @@ const TEMPLATES: MessageTemplate[] = [
   },
 ];
 
-/**
- * Generate a personalized recovery message.
- */
 export function generateMessage(ctx: MessageContext): GeneratedMessage {
   const template = pickTemplate(ctx);
   const content = interpolate(template.template, ctx);
@@ -143,9 +126,59 @@ export function generateMessage(ctx: MessageContext): GeneratedMessage {
   };
 }
 
-/**
- * Generate messages for all channels.
- */
+export async function generateRecoveryMessage(input: {
+  context: MessageContext;
+  apiKey?: string;
+}): Promise<GeneratedMessage> {
+  const fallback = generateMessage(input.context);
+
+  if (!input.apiKey) {
+    return fallback;
+  }
+
+  try {
+    const prompt = buildRecoveryPrompt(input.context);
+    const content = await generateOpenAiText({
+      apiKey: input.apiKey,
+      prompt,
+    });
+
+    if (!content) {
+      return fallback;
+    }
+
+    return {
+      ...fallback,
+      content,
+      templateUsed: "openai_recovery_flow",
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+export async function generateConversationReply(
+  input: { apiKey?: string } & ConversationReplyContext,
+): Promise<string> {
+  const fallback = buildFallbackReply(input);
+
+  if (!input.apiKey) {
+    return fallback;
+  }
+
+  try {
+    const prompt = buildReplyPrompt(input);
+    const content = await generateOpenAiText({
+      apiKey: input.apiKey,
+      prompt,
+    });
+
+    return content || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function generateAllChannelMessages(ctx: MessageContext): GeneratedMessage[] {
   const channels: MessagingChannel[] = ["whatsapp", "email", "sms"];
 
@@ -155,24 +188,18 @@ export function generateAllChannelMessages(ctx: MessageContext): GeneratedMessag
   });
 }
 
-/**
- * Pick the best matching template for a given context.
- */
 function pickTemplate(ctx: MessageContext): MessageTemplate {
-  // Filter by channel
-  const channelTemplates = TEMPLATES.filter((t) => t.channel === ctx.channel);
+  const channelTemplates = TEMPLATES.filter((template) => template.channel === ctx.channel);
+  const candidates = channelTemplates.filter((template) =>
+    template.condition ? template.condition(ctx) : true,
+  );
+  const preferredByTone = ctx.tonePreference
+    ? candidates.find((template) => template.tone === ctx.tonePreference)
+    : undefined;
 
-  // Try to find a template with a matching condition
-  const conditional = channelTemplates.find((t) => t.condition?.(ctx));
-  if (conditional) return conditional;
-
-  // Fallback to first template for channel
-  return channelTemplates[0] ?? TEMPLATES[0];
+  return preferredByTone ?? candidates[0] ?? channelTemplates[0] ?? TEMPLATES[0];
 }
 
-/**
- * Interpolate template variables.
- */
 function interpolate(template: string, ctx: MessageContext): string {
   const value = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -181,10 +208,184 @@ function interpolate(template: string, ctx: MessageContext): string {
 
   const product = ctx.productName ? ` de ${ctx.productName}` : "";
   const link = ctx.paymentLink ?? "[link de pagamento]";
+  const pixCode = ctx.pixCode?.trim();
 
-  return template
+  const base = template
     .replace(/\{name\}/g, ctx.customerName)
     .replace(/\{value\}/g, value)
     .replace(/\{product\}/g, product)
     .replace(/\{link\}/g, link);
+
+  if (!pixCode || ctx.channel !== "whatsapp") {
+    return base;
+  }
+
+  return `${base}\n\nCodigo Pix copia e cola:\n${pixCode}`;
+}
+
+function buildRecoveryPrompt(ctx: MessageContext) {
+  const value = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(ctx.cartValue);
+
+  return [
+    "Voce escreve mensagens curtas de recovery de pagamento para WhatsApp ou email, em portugues do Brasil.",
+    "Objetivo: recuperar a compra com linguagem humana, direta, confiavel e comercial.",
+    "Regras:",
+    "- Seja curto e natural.",
+    "- Mencione o primeiro nome do cliente.",
+    "- Explique o motivo do contato com clareza.",
+    "- Convide para concluir o pagamento agora.",
+    "- Inclua o link exatamente uma vez, no final.",
+    "- Nao use markdown, aspas, emojis nem texto tecnico.",
+    "",
+    `Canal: ${ctx.channel}`,
+    `Cliente: ${ctx.customerName}`,
+    `Produto: ${ctx.productName || "Nao informado"}`,
+    `Valor: ${value}`,
+    `Motivo da falha ou pendencia: ${ctx.failureReason}`,
+    `Tentativa numero: ${ctx.attemptNumber}`,
+    `Link de pagamento: ${ctx.paymentLink || "Nao informado"}`,
+    `Metodo de pagamento: ${ctx.paymentMethod || "Nao informado"}`,
+    `Codigo Pix: ${ctx.pixCode || "Nao informado"}`,
+    `Tom desejado: ${ctx.tonePreference || "Nao informado"}`,
+    `Proxima acao esperada: ${ctx.nextAction || "Nao informado"}`,
+    `Urgencia: ${ctx.recoveryUrgency || "Nao informado"}`,
+    `Motivo estrategico: ${ctx.decisionReason || "Nao informado"}`,
+  ].join("\n");
+}
+
+function buildReplyPrompt(input: ConversationReplyContext) {
+  return [
+    "Voce responde um cliente em uma conversa de recovery de pagamento.",
+    "Escreva em portugues do Brasil, de forma curta, clara e comercial.",
+    "Regras:",
+    "- Responda a ultima mensagem do cliente.",
+    "- Mostre ajuda e conduza para a conclusao do pagamento.",
+    "- Se houver link, inclua-o uma vez no final.",
+    "- Nao use markdown, aspas, listas, emojis ou linguagem robotica.",
+    "",
+    `Cliente: ${input.customerName}`,
+    `Produto: ${input.productName || "Nao informado"}`,
+    `Metodo: ${input.paymentMethod || "Nao informado"}`,
+    `Status do pagamento: ${input.paymentStatus || "Nao informado"}`,
+    `Motivo da falha: ${input.failureReason || "Nao informado"}`,
+    `Ultima mensagem do cliente: ${input.latestInboundContent || "Sem mensagem inbound"}`,
+    `Intencao detectada no inbound: ${input.latestInboundIntent || "Nao informado"}`,
+    `Tom desejado: ${input.tonePreference || "Nao informado"}`,
+    `Proxima acao sugerida: ${input.nextAction || "Nao informado"}`,
+    `Motivo estrategico: ${input.decisionReason || "Nao informado"}`,
+    `Precisa handoff humano: ${input.requiresHumanHandoff ? "sim" : "nao"}`,
+    `Link de pagamento: ${input.retryLink || "Nao informado"}`,
+    `Codigo Pix: ${input.pixCode || "Nao informado"}`,
+  ].join("\n");
+}
+
+async function generateOpenAiText(input: {
+  apiKey: string;
+  prompt: string;
+}): Promise<string> {
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${input.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4.1-mini",
+      input: input.prompt,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI request failed with status ${response.status}.`);
+  }
+
+  const payload = (await response.json()) as {
+    output_text?: string;
+    output?: Array<{
+      content?: Array<{
+        type?: string;
+        text?: string;
+      }>;
+    }>;
+  };
+
+  const fromTopLevel = payload.output_text?.trim();
+  if (fromTopLevel) {
+    return fromTopLevel;
+  }
+
+  const nestedText = payload.output
+    ?.flatMap((item) => item.content ?? [])
+    .map((content) => content.text?.trim() ?? "")
+    .find(Boolean);
+
+  return nestedText ?? "";
+}
+
+function buildFallbackReply(input: ConversationReplyContext) {
+  const name = firstName(input.customerName || "Cliente");
+  const product = input.productName ? ` do pedido ${input.productName}` : "";
+  const latestInbound = (input.latestInboundContent ?? "").toLowerCase();
+  const retrySentence = input.retryLink
+    ? `\n\nSegue o link para concluir agora: ${input.retryLink}`
+    : "";
+  const pixSentence = input.pixCode
+    ? `\n\nCodigo Pix copia e cola:\n${input.pixCode}`
+    : "";
+
+  if (input.requiresHumanHandoff) {
+    return `Oi, ${name}. Vou encaminhar seu caso${product} para acompanhamento mais próximo e manter o pagamento pronto por aqui.${retrySentence}${pixSentence}`;
+  }
+
+  if (input.latestInboundIntent === "payment_intent") {
+    return `Perfeito, ${name}. Deixei o pagamento${product} pronto para você concluir agora.${retrySentence}${pixSentence}`;
+  }
+
+  if (input.latestInboundIntent === "needs_time") {
+    return `Sem problema, ${name}. Vou deixar o pagamento${product} preparado para quando você quiser retomar.${retrySentence}${pixSentence}`;
+  }
+
+  if (input.latestInboundIntent === "question") {
+    return `Oi, ${name}. Vou te ajudar com isso e já deixei o pagamento${product} acessível caso você queira concluir agora.${retrySentence}${pixSentence}`;
+  }
+
+  if (input.latestInboundIntent === "objection") {
+    return `Oi, ${name}. Entendi o ponto sobre o pagamento${product}. Posso te ajudar a retomar da forma mais simples possível.${retrySentence}${pixSentence}`;
+  }
+
+  if (
+    latestInbound.includes("pix") ||
+    latestInbound.includes("link") ||
+    latestInbound.includes("codigo")
+  ) {
+    return `Oi, ${name}. Separei novamente o acesso ao pagamento${product} para facilitar seu follow-up.${retrySentence}${pixSentence}`;
+  }
+
+  if (
+    latestInbound.includes("erro") ||
+    latestInbound.includes("não foi") ||
+    latestInbound.includes("nao foi") ||
+    latestInbound.includes("cartão") ||
+    latestInbound.includes("cartao")
+  ) {
+    return `Oi, ${name}. Entendi o problema no pagamento${product}. Posso te ajudar a retomar por um novo link seguro agora.${retrySentence}${pixSentence}`;
+  }
+
+  if (
+    latestInbound.includes("depois") ||
+    latestInbound.includes("mais tarde") ||
+    latestInbound.includes("amanhã") ||
+    latestInbound.includes("amanha")
+  ) {
+    return `Perfeito, ${name}. Vou deixar o pagamento${product} pronto para quando você quiser finalizar.${retrySentence}${pixSentence}`;
+  }
+
+  return `Oi, ${name}. Estou acompanhando seu caso${product} e ja deixei a continuacao do pagamento pronta para voce.${retrySentence}${pixSentence}`;
+}
+
+function firstName(value: string) {
+  return value.trim().split(/\s+/)[0] || "Cliente";
 }

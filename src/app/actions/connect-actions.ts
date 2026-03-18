@@ -18,7 +18,7 @@ function revalidateOperationalRoutes() {
 }
 
 export async function saveConnectionSettingsAction(formData: FormData) {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const scope = String(formData.get("scope") ?? "").trim();
   const settingsService = getConnectionSettingsService();
 
@@ -48,6 +48,9 @@ export async function saveConnectionSettingsAction(formData: FormData) {
         whatsappAccessToken: String(
           formData.get("whatsappAccessToken") ?? "",
         ).trim(),
+        whatsappWebSessionId: String(
+          formData.get("whatsappWebSessionId") ?? "",
+        ).trim(),
         whatsappPhoneNumberId: String(
           formData.get("whatsappPhoneNumberId") ?? "",
         ).trim(),
@@ -57,7 +60,6 @@ export async function saveConnectionSettingsAction(formData: FormData) {
         whatsappWebhookVerifyToken: String(
           formData.get("whatsappWebhookVerifyToken") ?? "",
         ).trim(),
-        whatsappWebSessionId: "",
         whatsappWebSessionStatus: "disconnected",
         whatsappWebSessionQrCode: "",
         whatsappWebSessionPhone: "",
@@ -93,7 +95,7 @@ export async function saveConnectionSettingsAction(formData: FormData) {
 }
 
 export async function saveDatabaseBootstrapAction(formData: FormData) {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   const supabaseUrl = String(formData.get("supabaseUrl") ?? "").trim();
   const supabaseServiceRoleKey = String(
     formData.get("supabaseServiceRoleKey") ?? "",
@@ -147,7 +149,7 @@ export async function saveDatabaseBootstrapAction(formData: FormData) {
 }
 
 export async function startWhatsAppQrSessionAction() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   try {
     await new MessagingService().startWhatsAppWebSession();
   } catch (error) {
@@ -163,7 +165,7 @@ export async function startWhatsAppQrSessionAction() {
 }
 
 export async function refreshWhatsAppQrSessionAction() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   try {
     await new MessagingService().refreshWhatsAppWebSession();
   } catch (error) {
@@ -179,7 +181,7 @@ export async function refreshWhatsAppQrSessionAction() {
 }
 
 export async function disconnectWhatsAppQrSessionAction() {
-  await requireAuthenticatedSession();
+  await requireAuthenticatedSession(["admin"]);
   try {
     await new MessagingService().disconnectWhatsAppWebSession();
   } catch (error) {

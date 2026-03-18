@@ -6,6 +6,7 @@ import {
   PlatformAppPage,
   PlatformInset,
   PlatformMetricCard,
+  PlatformPill,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { ActionButton } from "@/components/ui/action-button";
@@ -22,6 +23,8 @@ import {
   scorePriority,
 } from "@/lib/stage";
 import { cn } from "@/lib/utils";
+import { canRoleAccessAgent } from "@/server/auth/core";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import type {
@@ -56,13 +59,23 @@ const laneOrder: RecoveryLeadStatus[] = [
 ];
 
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
-  await requireAuthenticatedSession();
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
   const params = (await searchParams) ?? {};
   const currentView = readViewMode(params.view);
   const currentScope = readScopeMode(params.scope);
 
   const service = getPaymentRecoveryService();
-  const contacts = await service.getFollowUpContacts();
+  const sellerIdentity =
+    session.role === "seller"
+      ? await getSellerIdentityByEmail(session.email)
+      : null;
+  const contacts = (await service.getFollowUpContacts()).filter((contact) =>
+    canRoleAccessAgent(
+      session.role,
+      contact.assigned_agent,
+      sellerIdentity?.agentName,
+    ),
+  );
 
   const sortedContacts = [...contacts].sort(compareLeads);
   const activeContacts = sortedContacts.filter(isOpenLead);
@@ -127,16 +140,22 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                 CRM operacional
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
-                Lista para escala, kanban para leitura rápida.
+                Lista para operar, kanban para apoiar.
               </h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
-                A carteira principal agora nasce em lista. Isso reduz ruído,
-                suporta volume alto e deixa o kanban como visão complementar, não
-                como gargalo do dia a dia.
+                A operação principal fica na lista. O kanban continua disponível
+                só como apoio visual para leitura de etapa.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <PlatformPill>{filteredContacts.length} casos visíveis</PlatformPill>
+                <PlatformPill>{waitingCount} aguardando retorno</PlatformPill>
+              </div>
             </div>
 
-            <ScopeSwitcher currentView={currentView} currentScope={currentScope} />
+            <div className="flex flex-col items-start gap-2 lg:items-end">
+              <ScopeSwitcher currentView={currentView} currentScope={currentScope} />
+              <p className="text-xs text-[#9ca3af]">Lista como padrão.</p>
+            </div>
           </div>
 
           <div className="mt-4">
@@ -170,7 +189,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                   <StageBadge stage={focusedLead.lead_status} />
                   <TimeBadge updatedAt={focusedLead.updated_at} />
                 </div>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 rounded-[1rem] border border-black/[0.06] bg-[#fafafa] px-3 py-3">
                   <DetailLine
                     label="Dono"
                     value={focusedLead.assigned_agent || "Sem responsável"}
@@ -188,7 +207,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     value={formatDateTime(focusedLead.updated_at)}
                   />
                 </div>
-                <div className="rounded-xl bg-[#f5f5f7] px-3 py-3">
+                <div className="rounded-[1rem] border border-black/[0.06] bg-[#fafafa] px-3 py-3">
                   <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#717182]">
                     Próxima ação
                   </p>
@@ -206,7 +225,10 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
               </div>
             ) : (
               <PlatformInset className="mt-3 p-4">
-                <p className="text-sm text-[#9ca3af]">Nenhum lead na carteira.</p>
+                <p className="text-sm text-[#9ca3af]">Nenhum lead nesta carteira.</p>
+                <p className="mt-1 text-xs text-[#9ca3af]">
+                  Quando novos casos entrarem, o foco da operação aparece aqui.
+                </p>
               </PlatformInset>
             )}
           </PlatformSurface>
@@ -225,7 +247,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                 return (
                   <div
                     key={stage}
-                    className="flex items-center justify-between rounded-xl border border-black/[0.06] bg-[#fafafa] px-3 py-2.5"
+                    className="flex items-center justify-between rounded-[0.95rem] border border-black/[0.06] bg-[#fafafa] px-3 py-2.5"
                   >
                     <div className="flex items-center gap-2">
                       <StageBadge stage={stage} />
@@ -234,7 +256,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                   </div>
                 );
               })}
-              <div className="flex items-center justify-between rounded-xl border border-black/[0.06] bg-[#fafafa] px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-[0.95rem] border border-black/[0.06] bg-[#fafafa] px-3 py-2.5">
                 <span className="text-sm text-[#6b7280]">Sem responsável</span>
                 <span className="text-sm font-medium text-[#1a1a2e]">{unassignedCount}</span>
               </div>
@@ -331,7 +353,10 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
     return (
       <PlatformInset className="p-6 text-center">
         <p className="text-sm text-[#6b7280]">
-          Nenhum lead encontrado para essa visualização.
+          Nenhum lead encontrado nessa visualização.
+        </p>
+        <p className="mt-1 text-xs text-[#9ca3af]">
+          Ajuste o filtro ou aguarde a próxima entrada da carteira.
         </p>
       </PlatformInset>
     );
@@ -340,8 +365,8 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
   return (
     <>
       <div className="hidden lg:block">
-        <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white">
-          <div className="grid grid-cols-[minmax(0,1.5fr)_0.9fr_0.95fr_1.2fr_0.8fr_0.9fr_0.8fr] gap-3 border-b border-black/[0.06] bg-[#fafafa] px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ca3af]">
+        <div className="overflow-hidden rounded-[1.1rem] border border-black/[0.06] bg-white">
+          <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 border-b border-black/[0.06] bg-[#f8f9fb] px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ca3af]">
             <span>Lead</span>
             <span>Etapa</span>
             <span>Valor</span>
@@ -386,7 +411,7 @@ function LeadKanbanView({
       {visibleLanes.map((lane) => (
         <div
           key={lane.key}
-          className="min-w-[17rem] rounded-2xl border border-black/[0.05] bg-[#f9fafb] p-3 xl:min-w-0"
+          className="min-w-[17rem] rounded-[1.1rem] border border-black/[0.05] bg-[#fafafa] p-3 xl:min-w-0"
         >
           <div className="flex items-center justify-between pb-3">
             <p className="text-sm font-medium text-[#1a1a2e]">
@@ -417,7 +442,7 @@ function LeadTableRow({ contact }: { contact: FollowUpContact }) {
   const isTerminal = isTerminalLead(contact);
 
   return (
-    <div className="grid grid-cols-[minmax(0,1.5fr)_0.9fr_0.95fr_1.2fr_0.8fr_0.9fr_0.8fr] gap-3 px-4 py-3 transition-colors hover:bg-[#fcfcfd]">
+    <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 px-4 py-3.5 transition-colors hover:bg-[#fafafa]">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <Link
@@ -482,7 +507,7 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
   const isTerminal = isTerminalLead(contact);
 
   return (
-    <div className="rounded-2xl border border-black/[0.06] bg-white p-3.5 shadow-[0_10px_24px_rgba(17,24,39,0.03)]">
+    <div className="rounded-[1.1rem] border border-black/[0.06] bg-white p-3.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
@@ -510,7 +535,7 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
         <DetailBlock label="Dono" value={contact.assigned_agent || "Sem responsável"} />
       </div>
 
-      <div className="mt-3 rounded-xl bg-[#f8fafc] px-3 py-2.5">
+      <div className="mt-3 rounded-[0.95rem] border border-black/[0.05] bg-[#fafafa] px-3 py-2.5">
         <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#9ca3af]">
           Próxima ação
         </p>
@@ -561,6 +586,11 @@ function LeadAction({
     <form action={transitionLeadStage}>
       <input type="hidden" name="leadId" value={contact.lead_id} />
       <input type="hidden" name="status" value={nextStatus} />
+      <input
+        type="hidden"
+        name="intent"
+        value={contact.lead_status === "NEW_RECOVERY" ? "start_flow" : "move_stage"}
+      />
       <ActionButton
         className={cn(
           "rounded-lg text-xs font-medium transition-colors",

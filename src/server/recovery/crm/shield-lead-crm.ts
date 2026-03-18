@@ -1,4 +1,5 @@
 import type {
+  AgentRecord,
   CustomerRecord,
   NormalizedPaymentEvent,
   PaymentRecord,
@@ -12,9 +13,10 @@ export async function createOrUpdateShieldLead(input: {
   customer: CustomerRecord;
   normalizedEvent: NormalizedPaymentEvent;
   status?: RecoveryLeadStatus;
+  assignedAgent?: AgentRecord;
 }): Promise<RecoveryLeadRecord> {
   const storage = getStorageService();
-  const assignedAgent = await storage.assignAgentRoundRobin();
+  const assignedAgent = input.assignedAgent ?? (await storage.assignAgentRoundRobin());
 
   return storage.upsertLead({
     payment: input.payment,

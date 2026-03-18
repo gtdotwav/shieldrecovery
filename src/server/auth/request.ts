@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { getSessionCookieName, isAuthConfigured, verifySessionToken } from "@/server/auth/core";
+import {
+  getAllowedRolesForPath,
+  getSessionCookieName,
+  isAuthConfigured,
+  verifySessionToken,
+} from "@/server/auth/core";
 
 function readCookieValue(cookieHeader: string | null, name: string) {
   if (!cookieHeader) {
@@ -28,6 +33,13 @@ export async function ensureAuthenticatedRequest(request: Request) {
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  const pathname = new URL(request.url).pathname;
+  const allowedRoles = getAllowedRolesForPath(pathname);
+
+  if (allowedRoles && !allowedRoles.includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
   return null;

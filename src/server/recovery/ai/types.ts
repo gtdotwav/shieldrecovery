@@ -1,4 +1,5 @@
 import type {
+  ConversationStatus,
   FollowUpContact,
   MessagingChannel,
 } from "@/server/recovery/types";
@@ -6,12 +7,54 @@ import type {
 /* ── Recovery probability ── */
 
 export type RecoveryProbability = "high" | "medium" | "low" | "manual";
+export type RecoveryUrgency = "immediate" | "today" | "scheduled" | "manual";
+export type RecoveryFollowUpMode = "autonomous" | "supervised" | "manual";
+export type RecoveryMessageTone =
+  | "empathetic"
+  | "urgent"
+  | "casual"
+  | "reassuring"
+  | "direct";
+export type RecoveryNextActionType =
+  | "send_initial_message"
+  | "send_follow_up"
+  | "wait_for_customer"
+  | "generate_new_payment_link"
+  | "escalate_to_seller"
+  | "pause_automation"
+  | "review_manually"
+  | "close_as_recovered"
+  | "close_as_lost";
+export type InboundIntent =
+  | "payment_intent"
+  | "question"
+  | "objection"
+  | "needs_time"
+  | "human_handoff"
+  | "friction"
+  | "irrelevant";
+export type EscalationReason =
+  | "seller_policy"
+  | "customer_requested_human"
+  | "low_confidence"
+  | "high_value_case"
+  | "sensitive_case"
+  | "channel_blocked"
+  | "unknown";
 
 export type RecoveryClassification = {
   probability: RecoveryProbability;
   score: number; // 0–100
   reasoning: string;
   suggestedStrategy: string;
+  urgency?: RecoveryUrgency;
+  preferredChannel?: MessagingChannel;
+  recommendedNextAction?: RecoveryNextActionType;
+  requiresHuman?: boolean;
+};
+
+export type ClassifiedFollowUpContact = FollowUpContact & {
+  classification: RecoveryClassification;
 };
 
 /* ── Strategy engine ── */
@@ -32,6 +75,46 @@ export type RecoveryStrategy = {
   failureReasons: string[];
   steps: StrategyStep[];
   enabled: boolean;
+};
+
+export type RecoveryDecisionContext = {
+  contact: FollowUpContact;
+  conversation?: {
+    id?: string;
+    status?: ConversationStatus;
+    channel?: MessagingChannel;
+    unreadCount?: number;
+    lastInboundAt?: string;
+    lastOutboundAt?: string;
+  };
+  payment?: {
+    paymentLink?: string;
+    pixCode?: string;
+    pixQrCode?: string;
+    expiresAt?: string;
+  };
+  automation?: {
+    autonomyMode?: RecoveryFollowUpMode;
+    sellerActive?: boolean;
+    inboxEnabled?: boolean;
+    automationsEnabled?: boolean;
+  };
+};
+
+export type RecoveryDecision = {
+  classification: RecoveryClassification;
+  strategy?: RecoveryStrategy;
+  nextAction: RecoveryNextActionType;
+  reason: string;
+  urgency: RecoveryUrgency;
+  channel: MessagingChannel | "system";
+  timingMinutes: number;
+  tone: RecoveryMessageTone;
+  followUpMode: RecoveryFollowUpMode;
+  requiresHuman: boolean;
+  escalationReason?: EscalationReason;
+  shouldPauseAutomation: boolean;
+  shouldGeneratePaymentLink: boolean;
 };
 
 /* ── AI Activity ── */
@@ -80,13 +163,56 @@ export type MessageContext = {
   channel: MessagingChannel;
   attemptNumber: number;
   paymentLink?: string;
+  pixCode?: string;
+  paymentMethod?: string;
+  tonePreference?: RecoveryMessageTone;
+  nextAction?: RecoveryNextActionType;
+  recoveryUrgency?: RecoveryUrgency;
+  decisionReason?: string;
 };
 
 export type GeneratedMessage = {
   content: string;
   channel: MessagingChannel;
-  tone: "empathetic" | "urgent" | "casual";
+  tone: RecoveryMessageTone;
   templateUsed: string;
+};
+
+export type ConversationReplyContext = {
+  customerName: string;
+  productName?: string;
+  latestInboundContent?: string;
+  latestInboundIntent?: InboundIntent;
+  retryLink?: string;
+  pixCode?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  failureReason?: string;
+  tonePreference?: RecoveryMessageTone;
+  nextAction?: RecoveryNextActionType;
+  decisionReason?: string;
+  requiresHumanHandoff?: boolean;
+};
+
+export type InboundIntentClassification = {
+  intent: InboundIntent;
+  confidence: number;
+  reasoning: string;
+  requiresHuman: boolean;
+  escalationReason?: EscalationReason;
+};
+
+export type ConversationFollowUpDecision = {
+  intent?: InboundIntentClassification;
+  nextAction: RecoveryNextActionType;
+  reason: string;
+  channel: MessagingChannel | "system";
+  tone: RecoveryMessageTone;
+  sendNow: boolean;
+  followUpMode: RecoveryFollowUpMode;
+  requiresHuman: boolean;
+  timingMinutes?: number;
+  escalationReason?: EscalationReason;
 };
 
 /* ── Followup timeline ── */
@@ -126,7 +252,7 @@ export type StrategyPerformance = {
 export type AIDashboardData = {
   metrics: AIOverviewMetrics;
   activity: AIActivityEntry[];
-  classifications: Array<FollowUpContact & { classification: RecoveryClassification }>;
+  classifications: ClassifiedFollowUpContact[];
   strategies: RecoveryStrategy[];
   strategyPerformance: StrategyPerformance[];
 };
