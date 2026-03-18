@@ -29,7 +29,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "packages/checkout/**/*.ts",
+    "packages/checkout/**/*.tsx"
   ],
   "exclude": ["node_modules", "evolution-api"]
 }

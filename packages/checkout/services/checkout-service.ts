@@ -72,7 +72,13 @@ export class CheckoutService {
       );
     }
 
-    return { session, providers: eligible, installmentOptions };
+    // Strip secret credentials — only expose publicKey to the client
+    const safeProviders = eligible.map((p) => ({
+      ...p,
+      credentials: {},
+    }));
+
+    return { session, providers: safeProviders, installmentOptions };
   }
 
   // ── Process payment ─────────────────────────────────────────────
@@ -133,6 +139,9 @@ export class CheckoutService {
     }
 
     try {
+      // Build postback URL for this provider
+      const postbackUrl = `${this.baseUrl}/api/checkout/webhook/${providerRecord.slug}`;
+
       const result = await provider.createPayment({
         sessionId: session.id,
         amount: session.amount,
@@ -144,6 +153,7 @@ export class CheckoutService {
         customerDocument: session.customerDocument,
         description: session.description,
         cardToken: input.cardToken,
+        metadata: { postbackUrl },
       });
 
       // Update session with provider response

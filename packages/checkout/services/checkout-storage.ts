@@ -85,13 +85,15 @@ type TrackingRow = {
 // ─── Mappers ────────────────────────────────────────────────────────
 
 function mapProvider(r: ProviderRow): CheckoutPaymentProvider {
+  const creds = (r.credentials ?? {}) as Record<string, unknown>;
   return {
     id: r.id,
     slug: r.slug,
     displayName: r.display_name,
     methodType: r.method_type as CheckoutMethodType,
     gateway: r.gateway as CheckoutPaymentProvider["gateway"],
-    credentials: r.credentials ?? {},
+    credentials: creds,
+    publicKey: typeof creds.publicKey === "string" ? creds.publicKey : undefined,
     installmentRules: r.installment_rules ?? [],
     enabled: r.enabled,
     priority: r.priority,

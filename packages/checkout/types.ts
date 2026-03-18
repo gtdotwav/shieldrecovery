@@ -12,6 +12,7 @@ export const CHECKOUT_GATEWAYS = [
   "mercado_pago",
   "asaas",
   "coinbase",
+  "pagnet",
   "mock",
 ] as const;
 
@@ -57,6 +58,8 @@ export type CheckoutPaymentProvider = {
   methodType: CheckoutMethodType;
   gateway: CheckoutGateway;
   credentials: Record<string, unknown>;
+  /** Public key exposed to the client for card tokenization (PagNet, Stripe, etc.) */
+  publicKey?: string;
   installmentRules: InstallmentRule[];
   enabled: boolean;
   priority: number;

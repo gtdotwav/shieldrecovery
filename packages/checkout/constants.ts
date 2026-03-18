@@ -14,6 +14,7 @@ export const GATEWAY_LABELS: Record<string, string> = {
   mercado_pago: "Mercado Pago",
   asaas: "Asaas",
   coinbase: "Coinbase",
+  pagnet: "PagNet",
   mock: "Mock (teste)",
 };
 

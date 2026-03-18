@@ -1,0 +1,15 @@
+{
+  "extends": "../../Documents/shield recovery/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@checkout/*": ["./*"]
+    },
+    "typeRoots": [
+      "../../Documents/shield recovery/node_modules/@types",
+      "../../Documents/shield recovery/node_modules"
+    ]
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

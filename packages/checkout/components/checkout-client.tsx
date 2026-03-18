@@ -147,6 +147,10 @@ export function CheckoutClient({
     ? (installmentOptions[selectedProviderId] ?? [])
     : [];
 
+  const selectedProvider = selectedProviderId
+    ? providers.find((p) => p.id === selectedProviderId)
+    : undefined;
+
   return (
     <div className="space-y-6">
       <CheckoutSummary session={session} />
@@ -176,6 +180,10 @@ export function CheckoutClient({
         <CardPaymentForm
           onSubmit={(token) => processPayment(token)}
           loading={loading}
+          gateway={selectedProvider?.gateway}
+          publicKey={selectedProvider?.publicKey}
+          amount={session.amount}
+          installments={selectedInstallments}
         />
       ) : null}
 

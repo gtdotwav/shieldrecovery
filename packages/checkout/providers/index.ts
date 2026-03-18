@@ -1,5 +1,6 @@
 import type { CheckoutPaymentProvider } from "../types";
 import { MockProvider } from "./mock-provider";
+import { PagnetProvider } from "./pagnet-provider";
 import type { PaymentProvider } from "./types";
 
 export type { PaymentProvider } from "./types";
@@ -10,7 +11,7 @@ type ProviderFactory = (
 
 const FACTORY_MAP: Record<string, ProviderFactory> = {
   mock: (r) => new MockProvider(r.slug, r.methodType),
-  // Future: stripe, mercado_pago, asaas, coinbase
+  pagnet: (r) => new PagnetProvider(r.slug, r.methodType, r.credentials),
 };
 
 /**
