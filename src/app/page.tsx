@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { LiveDemo } from "@/components/landing/live-demo";
+import { RecoveryCalculator } from "@/components/landing/recovery-calculator";
 import { PlatformLogo } from "@/components/platform/platform-logo";
 import { formatCurrency } from "@/lib/format";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -242,6 +243,9 @@ export default async function Home() {
 
         {/* ═══════════════════════ LIVE DEMO ═══════════════════════ */}
         <LiveDemo />
+
+        {/* ═══════════════════════ CALCULATOR ═══════════════════════ */}
+        <RecoveryCalculator />
 
         {/* ═══════════════════════ FEATURES ═══════════════════════ */}
         <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
