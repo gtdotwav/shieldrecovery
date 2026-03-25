@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { LiveDemo } from "@/components/landing/live-demo";
 import { PlatformLogo } from "@/components/platform/platform-logo";
 import { formatCurrency } from "@/lib/format";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -231,6 +232,9 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        {/* ═══════════════════════ LIVE DEMO ═══════════════════════ */}
+        <LiveDemo />
 
         {/* ═══════════════════════ FEATURES ═══════════════════════ */}
         <section className="relative z-10 mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
