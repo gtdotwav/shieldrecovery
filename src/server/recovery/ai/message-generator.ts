@@ -54,6 +54,30 @@ const TEMPLATES: MessageTemplate[] = [
       "3 - Boleto",
     condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue >= 500,
   },
+  // ── Pix-first initial templates (QR/link already available) ──
+  {
+    id: "wa_pix_initial_empathetic",
+    channel: "whatsapp",
+    tone: "empathetic",
+    template:
+      "Oi {name}, tudo bem? Identificamos que o pagamento do seu pedido{product} no valor de {value} ficou pendente. " +
+      "Para facilitar, deixei o pagamento via Pix pronto para voce concluir com seguranca agora. " +
+      "Se precisar, tambem posso te ajudar por aqui.",
+    condition: (ctx) =>
+      ctx.nextAction === "send_initial_message" && ctx.paymentMethod === "pix",
+  },
+  {
+    id: "wa_pix_initial_urgent",
+    channel: "whatsapp",
+    tone: "urgent",
+    template:
+      "{name}, o pagamento do seu pedido{product} no valor de {value} ainda nao foi concluido. " +
+      "Para nao perder a continuidade da compra, deixei o Pix pronto para voce finalizar agora com seguranca.",
+    condition: (ctx) =>
+      ctx.nextAction === "send_initial_message" &&
+      ctx.paymentMethod === "pix" &&
+      ctx.cartValue >= 500,
+  },
   // ── Legacy initial templates (with link) ──
   {
     id: "wa_initial_empathetic",
@@ -270,6 +294,8 @@ function buildRecoveryPrompt(ctx: MessageContext) {
   }).format(ctx.cartValue);
 
   const isAskMethod = ctx.nextAction === "ask_payment_method";
+  const isPixFirstInitial =
+    ctx.nextAction === "send_initial_message" && ctx.paymentMethod === "pix";
 
   const linkRule = isAskMethod
     ? [
@@ -277,6 +303,17 @@ function buildRecoveryPrompt(ctx: MessageContext) {
         "- Pergunte qual forma de pagamento o cliente prefere: PIX, cartao de credito ou boleto.",
         "- Liste as opcoes numeradas (1, 2, 3) para facilitar a resposta.",
       ]
+    : isPixFirstInitial
+      ? [
+          "- Informe que o pagamento via Pix ja esta pronto.",
+          "- Convide o cliente a concluir agora com linguagem segura e natural.",
+          ctx.paymentLink
+            ? "- Inclua o link exatamente uma vez, no final."
+            : "- Nao mencione link pois ainda nao esta disponivel.",
+          ctx.pixCode
+            ? "- Avise que o codigo Pix copia e cola sera enviado junto da mensagem."
+            : "- Nao invente codigo Pix se ele nao estiver disponivel.",
+        ]
     : [
         ctx.paymentLink
           ? "- Inclua o link exatamente uma vez, no final."
@@ -400,42 +437,42 @@ function buildFallbackReply(input: ConversationReplyContext) {
   const product = input.productName ? ` do pedido ${input.productName}` : "";
   const latestInbound = (input.latestInboundContent ?? "").toLowerCase();
   const retrySentence = input.retryLink
-    ? `\n\nSegue o link para concluir agora: ${input.retryLink}`
+    ? `\n\nLink para concluir com seguranca:\n${input.retryLink}`
     : "";
   const pixSentence = input.pixCode
-    ? `\n\nCodigo Pix copia e cola:\n${input.pixCode}`
+    ? `\n\nPix copia e cola:\n${input.pixCode}`
     : "";
 
   if (input.requiresHumanHandoff) {
-    return `Oi, ${name}. Vou encaminhar seu caso${product} para acompanhamento mais próximo e manter o pagamento pronto por aqui.${retrySentence}${pixSentence}`;
+    return `Oi, ${name}. Vou encaminhar seu caso${product} para um acompanhamento mais proximo e manter o pagamento pronto por aqui.${retrySentence}${pixSentence}`;
   }
 
   if (input.latestInboundIntent === "payment_method_pix") {
-    return `Perfeito, ${name}! Gerando seu pagamento via PIX${product}.${retrySentence}${pixSentence}`;
+    return `Perfeito, ${name}. Seu pagamento via Pix${product} ja esta pronto para conclusao.${retrySentence}${pixSentence}`;
   }
 
   if (input.latestInboundIntent === "payment_method_card") {
-    return `Perfeito, ${name}! Preparando o pagamento via cartao de credito${product}.${retrySentence}`;
+    return `Perfeito, ${name}. Estou preparando o pagamento via cartao de credito${product}.${retrySentence}`;
   }
 
   if (input.latestInboundIntent === "payment_method_boleto") {
-    return `Perfeito, ${name}! Gerando seu boleto${product}.${retrySentence}`;
+    return `Perfeito, ${name}. Estou gerando o boleto${product}.${retrySentence}`;
   }
 
   if (input.latestInboundIntent === "payment_intent") {
-    return `Perfeito, ${name}. Deixei o pagamento${product} pronto para você concluir agora.${retrySentence}${pixSentence}`;
+    return `Perfeito, ${name}. Deixei o pagamento${product} pronto para voce concluir agora.${retrySentence}${pixSentence}`;
   }
 
   if (input.latestInboundIntent === "needs_time") {
-    return `Sem problema, ${name}. Vou deixar o pagamento${product} preparado para quando você quiser retomar.${retrySentence}${pixSentence}`;
+    return `Sem problema, ${name}. Vou deixar o pagamento${product} preparado para quando voce quiser retomar.${retrySentence}${pixSentence}`;
   }
 
   if (input.latestInboundIntent === "question") {
-    return `Oi, ${name}. Vou te ajudar com isso e já deixei o pagamento${product} acessível caso você queira concluir agora.${retrySentence}${pixSentence}`;
+    return `Oi, ${name}. Vou te ajudar com isso e ja deixei o pagamento${product} acessivel caso queira concluir agora.${retrySentence}${pixSentence}`;
   }
 
   if (input.latestInboundIntent === "objection") {
-    return `Oi, ${name}. Entendi o ponto sobre o pagamento${product}. Posso te ajudar a retomar da forma mais simples possível.${retrySentence}${pixSentence}`;
+    return `Oi, ${name}. Entendi seu ponto sobre o pagamento${product}. Posso te ajudar a retomar da forma mais simples possivel.${retrySentence}${pixSentence}`;
   }
 
   if (
@@ -443,7 +480,7 @@ function buildFallbackReply(input: ConversationReplyContext) {
     latestInbound.includes("link") ||
     latestInbound.includes("codigo")
   ) {
-    return `Oi, ${name}. Separei novamente o acesso ao pagamento${product} para facilitar seu follow-up.${retrySentence}${pixSentence}`;
+    return `Oi, ${name}. Separei novamente o acesso ao pagamento${product} para facilitar sua conclusao.${retrySentence}${pixSentence}`;
   }
 
   if (
@@ -453,7 +490,7 @@ function buildFallbackReply(input: ConversationReplyContext) {
     latestInbound.includes("cartão") ||
     latestInbound.includes("cartao")
   ) {
-    return `Oi, ${name}. Entendi o problema no pagamento${product}. Posso te ajudar a retomar por um novo link seguro agora.${retrySentence}${pixSentence}`;
+    return `Oi, ${name}. Entendi o problema no pagamento${product}. Posso te ajudar a retomar agora por um link seguro.${retrySentence}${pixSentence}`;
   }
 
   if (
@@ -462,10 +499,10 @@ function buildFallbackReply(input: ConversationReplyContext) {
     latestInbound.includes("amanhã") ||
     latestInbound.includes("amanha")
   ) {
-    return `Perfeito, ${name}. Vou deixar o pagamento${product} pronto para quando você quiser finalizar.${retrySentence}${pixSentence}`;
+    return `Perfeito, ${name}. Vou deixar o pagamento${product} pronto para quando voce quiser finalizar.${retrySentence}${pixSentence}`;
   }
 
-  return `Oi, ${name}. Estou acompanhando seu caso${product} e ja deixei a continuacao do pagamento pronta para voce.${retrySentence}${pixSentence}`;
+  return `Oi, ${name}. Seu pagamento${product} ja esta pronto para conclusao. Se quiser, posso te ajudar por aqui.${retrySentence}${pixSentence}`;
 }
 
 function firstName(value: string) {
