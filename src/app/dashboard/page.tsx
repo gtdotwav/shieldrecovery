@@ -76,7 +76,7 @@ export default async function DashboardPage() {
       action={
         <Link
           href="/leads"
-          className="glass-button-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em]"
+          className="glass-button-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold"
         >
           Abrir CRM
           <ArrowRight className="h-3.5 w-3.5" />
@@ -115,12 +115,12 @@ export default async function DashboardPage() {
         <div className="space-y-5">
           {/* Chart */}
           <PlatformSurface className="p-5 sm:p-6">
-            <div className="ambient-divider flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-              <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
                 Evolucao mensal
               </p>
-              <h3 className="mt-1.5 text-lg font-semibold tracking-[-0.04em] text-white">
+              <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-white">
                 Recuperadas vs. abertas
               </h3>
               </div>
@@ -136,12 +136,12 @@ export default async function DashboardPage() {
 
           {/* Priority leads */}
           <PlatformSurface className="p-5 sm:p-6">
-            <div className="ambient-divider flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+                <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
                   Prioridades
                 </p>
-                <h3 className="mt-1.5 text-lg font-semibold tracking-[-0.04em] text-white">
+                <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-white">
                   Casos que abrem o dia
                 </h3>
               </div>
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
         <div className="space-y-5 xl:sticky xl:top-20 xl:self-start">
           {/* Portfolio health */}
           <PlatformSurface className="p-5">
-            <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
               Saude da carteira
             </p>
             <div className="mt-4 space-y-2.5">
@@ -190,7 +190,7 @@ export default async function DashboardPage() {
 
           {/* Channel coverage */}
           <PlatformSurface className="p-5">
-            <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
               Canais disponiveis
             </p>
             <div className="mt-4 space-y-3.5">
@@ -219,7 +219,7 @@ function LegendPill({
   children: React.ReactNode;
 }) {
   return (
-    <span className="muted-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.72rem] font-medium uppercase tracking-[0.12em]">
+    <span className="muted-pill inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[0.68rem] font-medium">
       <span className={`h-2 w-2 rounded-full ${color}`} />
       {children}
     </span>
@@ -284,7 +284,7 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
   return (
     <Link
       href={`/leads/${contact.lead_id}`}
-      className="glass-inset glass-hover group block rounded-[1.1rem] p-4"
+      className="glass-inset glass-hover group block rounded-xl p-4"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -315,7 +315,7 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
 
 function DetailPill({ label, value }: { label: string; value: string }) {
   return (
-    <span className="muted-pill inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs">
+    <span className="muted-pill inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs">
       <span className="text-[rgba(255,255,255,0.42)]">{label}:</span>
       <span className="font-medium text-[rgba(255,255,255,0.8)]">{value}</span>
     </span>

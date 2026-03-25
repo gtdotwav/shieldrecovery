@@ -61,7 +61,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     return (
       <PlatformAppPage currentPath="/inbox">
         <PlatformSurface className="p-6 sm:p-7">
-          <p className="font-mono text-xs font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+          <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
             Conversas bloqueadas pelo admin
           </p>
           <h2 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
@@ -168,9 +168,9 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
 
       {/* ── Cabeçalho ── */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
-        <div className="ambient-divider grid gap-5 border-b pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
+        <div className="grid gap-5 border-b border-[var(--border)] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
           <div>
-            <p className="font-mono text-xs font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
               Central de conversas
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
@@ -199,7 +199,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
         {/* ── Fila de conversas ── */}
         <PlatformSurface className="p-3 lg:sticky lg:top-20 lg:self-start">
           <div className="flex items-center justify-between px-1 pb-3">
-            <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.24em] text-[rgba(255,255,255,0.42)]">
+            <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
               Fila
             </h2>
             <span className="muted-pill flex h-5 min-w-5 items-center justify-center rounded-full text-[0.65rem] font-semibold">
@@ -240,7 +240,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
           {selectedConversation ? (
             <>
               {/* Cabeçalho da conversa */}
-              <div className="ambient-divider flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-base font-semibold text-white">
@@ -254,7 +254,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                   <p className="mt-0.5 text-sm text-[rgba(255,255,255,0.42)]">
                     {selectedConversation.contact_value}
                   </p>
-                  <p className="mt-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[rgba(255,255,255,0.38)]">
+                  <p className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
                     {selectedConversation.message_count} mensagens · {selectedConversation.unread_count} não lidas
                   </p>
                 </div>
@@ -283,7 +283,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
               </div>
 
               {/* Área de resposta */}
-              <div className="ambient-divider border-t pt-4">
+              <div className="border-t border-[var(--border)] pt-4">
                 <form
                   action={registerConversationReply}
                   className="flex items-center gap-2"
@@ -339,7 +339,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
 
         {/* ── Contexto do lead ── */}
         <PlatformSurface className="p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-8rem)] lg:self-start lg:overflow-y-auto">
-          <h3 className="font-mono text-xs font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+          <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
             Contexto do lead
           </h3>
 
@@ -373,7 +373,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
               </div>
 
               <div className="glass-inset rounded-xl px-3.5 py-3">
-                <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[rgba(255,255,255,0.42)]">
+                <p className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
                   Próxima ação
                 </p>
                 <p className="mt-1.5 text-sm leading-relaxed text-[rgba(255,255,255,0.72)]">

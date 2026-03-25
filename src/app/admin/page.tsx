@@ -142,7 +142,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </p>
           </div>
 
-          <div className="rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+          <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
             {snapshot.totalSellers} sellers mapeados, {snapshot.pendingInvites} convites
             pendentes, {snapshot.unassignedLeads} leads sem dono e{" "}
             {sellersWithWebhookTraffic.length} sellers com tráfego no webhook.
@@ -702,8 +702,8 @@ function SellerListRow({
       href={buildSellerHref(seller.sellerKey, query)}
       className={
         active
-          ? "block rounded-[1.25rem] border border-sky-200 bg-sky-50/60 px-4 py-4 transition-colors"
-          : "block rounded-[1.25rem] border border-black/[0.06] bg-[#fafafa] px-4 py-4 transition-colors hover:bg-white"
+          ? "block rounded-xl border border-sky-200 bg-sky-50/60 px-4 py-4 transition-colors"
+          : "block rounded-xl border border-black/[0.06] bg-[#fafafa] px-4 py-4 transition-colors hover:bg-white"
       }
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

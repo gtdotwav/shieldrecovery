@@ -38,12 +38,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <div className="glow-orb left-[-8rem] top-[-2rem] h-[22rem] w-[22rem] bg-[rgba(30,215,96,0.14)]" />
       <div className="glow-orb right-[-7rem] top-[12rem] h-[20rem] w-[20rem] bg-[rgba(15,164,122,0.14)]" />
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl items-center justify-center">
-        <div className="glass-panel qr-panel grid w-full gap-6 rounded-[2rem] p-5 shadow-[0_32px_90px_rgba(0,0,0,0.42)] xl:grid-cols-[1.08fr_0.92fr] xl:p-6">
-          <section className="glass-inset qr-panel rounded-[1.6rem] p-6 text-white sm:p-8">
+        <div className="glass-panel grid w-full gap-6 rounded-2xl p-5 shadow-[0_32px_90px_rgba(0,0,0,0.42)] xl:grid-cols-[1.08fr_0.92fr] xl:p-6">
+          <section className="glass-inset rounded-xl p-6 text-white sm:p-8">
             <PlatformLogo size="lg" emphasis="strong" className="bg-transparent shadow-none ring-0" />
 
             <div className="mt-10 max-w-lg">
-              <p className="font-mono text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-[var(--accent)]">
+              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/40">
                 Acesso protegido
               </p>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -71,8 +71,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </section>
 
           <section className="flex items-center">
-            <div className="glass-inset w-full rounded-[1.6rem] p-5 sm:p-6">
-              <p className="font-mono text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+            <div className="glass-inset w-full rounded-xl p-5 sm:p-6">
+              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/40">
                 Entrar
               </p>
               <h2 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
@@ -125,7 +125,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
                 <button
                   type="submit"
-                  className="glass-button-primary inline-flex w-full items-center justify-center rounded-[1rem] px-4 py-3 text-sm font-semibold"
+                  className="glass-button-primary inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold"
                 >
                   Entrar na plataforma
                 </button>

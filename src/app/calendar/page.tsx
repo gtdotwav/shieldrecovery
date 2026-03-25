@@ -162,7 +162,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             </p>
           </div>
 
-          <div className="rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+          <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
             {movementDays} dias com movimento, {formatCurrency(monthRecoveredRevenue)}{" "}
             recuperado e {formatShortDate(selectedDate)} aberta agora.
           </div>
@@ -203,7 +203,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                       key={cell.date}
                       href={`/calendar?month=${snapshot.month}&date=${cell.date}`}
                       className={cn(
-                        "group flex min-h-[8.75rem] flex-col rounded-[1.2rem] border px-3.5 py-3 transition-all",
+                        "group flex min-h-[8.75rem] flex-col rounded-xl border px-3.5 py-3 transition-all",
                         getDaySurfaceClass(cell, cell.date === selectedDate),
                       )}
                     >
@@ -242,7 +242,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                   ) : (
                     <div
                       key={`empty-${index}`}
-                      className="min-h-[8.75rem] rounded-[1.2rem] border border-dashed border-black/[0.05] bg-transparent"
+                      className="min-h-[8.75rem] rounded-xl border border-dashed border-black/[0.05] bg-transparent"
                     />
                   ),
                 )}

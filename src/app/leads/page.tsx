@@ -132,11 +132,11 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
         />
       </section>
 
-      <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_19rem]">
+      <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_19.25rem]">
         <PlatformSurface className="p-4 sm:p-5">
-          <div className="ambient-divider flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
                 CRM operacional
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
@@ -169,7 +169,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
         <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <PlatformSurface className="p-4">
-            <h3 className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+            <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
               Caso em foco
             </h3>
             {focusedLead ? (
@@ -207,11 +207,11 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     value={formatDateTime(focusedLead.updated_at)}
                   />
                 </div>
-                <div className="glass-inset rounded-[1rem] px-3 py-3">
+                <div className="rounded-[1rem] border border-[rgba(30,215,96,0.16)] bg-[linear-gradient(180deg,rgba(30,215,96,0.18),rgba(15,164,122,0.14))] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                   <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-[rgba(255,255,255,0.44)]">
                     Próxima ação
                   </p>
-                  <p className="mt-1 text-sm text-[rgba(255,255,255,0.72)]">
+                  <p className="mt-1 text-sm text-white">
                     {recommendedNextAction(focusedLead)}
                   </p>
                 </div>
@@ -234,7 +234,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <h3 className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+            <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
               Leitura da carteira
             </h3>
             <div className="mt-4 space-y-2.5">
@@ -352,10 +352,10 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
   if (contacts.length === 0) {
     return (
       <PlatformInset className="p-6 text-center">
-        <p className="text-sm text-[#6b7280]">
+        <p className="text-sm text-[rgba(255,255,255,0.56)]">
           Nenhum lead encontrado nessa visualização.
         </p>
-        <p className="mt-1 text-xs text-[#9ca3af]">
+        <p className="mt-1 text-xs text-[rgba(255,255,255,0.38)]">
           Ajuste o filtro ou aguarde a próxima entrada da carteira.
         </p>
       </PlatformInset>
@@ -365,8 +365,8 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
   return (
     <>
       <div className="hidden lg:block">
-        <div className="glass-panel overflow-hidden rounded-[1.1rem]">
-          <div className="ambient-divider grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 border-b bg-[rgba(255,255,255,0.03)] px-4 py-3 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[rgba(255,255,255,0.42)]">
+        <div className="glass-panel overflow-hidden rounded-xl">
+          <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 border-b bg-[rgba(255,255,255,0.03)] px-4 py-3 text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
             <span>Lead</span>
             <span>Etapa</span>
             <span>Valor</span>
@@ -409,7 +409,7 @@ function LeadKanbanView({
   return (
     <div className="flex gap-4 overflow-x-auto pb-2 xl:grid xl:grid-cols-5 xl:overflow-visible xl:pb-0">
       {visibleLanes.map((lane) => (
-        <div key={lane.key} className="glass-panel min-w-[17rem] rounded-[1.1rem] p-3 xl:min-w-0">
+        <div key={lane.key} className="glass-panel min-w-[17rem] rounded-xl p-3 xl:min-w-0">
           <div className="flex items-center justify-between pb-3">
             <p className="text-sm font-medium text-white">
               {mapStageLabel(lane.key)}
@@ -504,7 +504,7 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
   const isTerminal = isTerminalLead(contact);
 
   return (
-    <div className="glass-inset rounded-[1.1rem] p-3.5">
+    <div className="glass-inset rounded-xl p-3.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
@@ -533,7 +533,7 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
       </div>
 
       <div className="glass-inset mt-3 rounded-[0.95rem] px-3 py-2.5">
-        <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.18em] text-[rgba(255,255,255,0.42)]">
+        <p className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
           Próxima ação
         </p>
         <p className="mt-1 text-xs leading-5 text-[rgba(255,255,255,0.72)]">
@@ -591,10 +591,10 @@ function LeadAction({
       <ActionButton
         className={cn(
           "rounded-lg text-xs font-medium transition-colors",
-          compact ? "px-2.5 py-1.5" : "px-3 py-1.5",
+          compact ? "px-2.75 py-1.5" : "px-3.25 py-1.5",
           isPrimary
             ? "glass-button-primary text-[0.72rem] uppercase tracking-[0.14em]"
-            : "glass-button-secondary text-[0.72rem] uppercase tracking-[0.14em]",
+            : "border border-[rgba(30,215,96,0.18)] bg-[rgba(255,255,255,0.02)] text-[var(--accent)] hover:bg-[rgba(30,215,96,0.08)] text-[0.72rem] uppercase tracking-[0.14em]",
         )}
       >
         {label}
@@ -615,7 +615,7 @@ function DetailLine({ label, value }: { label: string; value: string }) {
 function DetailBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.18em] text-[rgba(255,255,255,0.42)]">
+      <p className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
         {label}
       </p>
       <p className="mt-1 truncate text-sm text-[rgba(255,255,255,0.78)]">{value}</p>

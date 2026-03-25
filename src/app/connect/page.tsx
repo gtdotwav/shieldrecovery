@@ -259,7 +259,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
             </p>
           </div>
 
-          <div className="rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+          <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
             Ordem ideal: banco, Pagou.ai, WhatsApp e IA.
           </div>
         </div>
@@ -513,7 +513,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
                   </div>
 
                   {whatsappSession.qrCode ? (
-                    <div className="flex justify-center rounded-[1.15rem] border border-black/[0.06] bg-[#f8f9fb] p-4">
+                    <div className="flex justify-center rounded-xl border border-black/[0.06] bg-[#f8f9fb] p-4">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={whatsappSession.qrCode}
@@ -823,7 +823,7 @@ function SellerConnectView({
             </p>
           </div>
 
-          <div className="rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+          <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
             Seller vinculado: <span className="font-medium text-[#1a1a2e]">{sellerDisplayName}</span>
           </div>
         </div>
