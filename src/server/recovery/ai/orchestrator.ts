@@ -789,7 +789,7 @@ function pickTone(
     return "reassuring";
   }
 
-  if (probability === "high" && context.contact.payment_value >= 500) {
+  if (probability === "high" && context.contact.payment_value >= 50_000) {
     return "urgent";
   }
 

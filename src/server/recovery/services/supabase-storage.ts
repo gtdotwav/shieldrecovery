@@ -2306,7 +2306,7 @@ function formatCalendarCurrency(value: number) {
     style: "currency",
     currency: "BRL",
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value / 100);
 }
 
 function truncateCalendarText(value: string, max = 84) {

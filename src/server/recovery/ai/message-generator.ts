@@ -40,7 +40,7 @@ const TEMPLATES: MessageTemplate[] = [
       "1 - PIX\n" +
       "2 - Cartao de credito\n" +
       "3 - Boleto",
-    condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue < 200,
+    condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue < 20_000,
   },
   {
     id: "wa_ask_method_urgent",
@@ -52,7 +52,7 @@ const TEMPLATES: MessageTemplate[] = [
       "1 - PIX\n" +
       "2 - Cartao de credito\n" +
       "3 - Boleto",
-    condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue >= 500,
+    condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue >= 50_000,
   },
   // ── Pix-first initial templates (QR/link already available) ──
   {
@@ -76,7 +76,20 @@ const TEMPLATES: MessageTemplate[] = [
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" &&
       ctx.paymentMethod === "pix" &&
-      ctx.cartValue >= 500,
+      ctx.cartValue >= 50_000,
+  },
+  {
+    id: "wa_pix_initial_abandoned",
+    channel: "whatsapp",
+    tone: "empathetic",
+    template:
+      "Oi {name}, tudo bem? Vi que sua compra{product} ficou em aberto. " +
+      "Para facilitar sua retomada, deixei o pagamento via Pix pronto para voce concluir agora com seguranca. " +
+      "Se precisar, tambem posso te orientar por aqui.",
+    condition: (ctx) =>
+      ctx.nextAction === "send_initial_message" &&
+      ctx.paymentMethod === "pix" &&
+      ctx.failureReason.toLowerCase().includes("abandoned"),
   },
   // ── Legacy initial templates (with link) ──
   {
@@ -95,7 +108,7 @@ const TEMPLATES: MessageTemplate[] = [
     template:
       "E aí {name}! Tudo certo? Vi que o pagamento{product} não passou dessa vez. " +
       "Sem stress - acontece bastante. Segue um novo link pra tentar: {link}",
-    condition: (ctx) => ctx.cartValue < 200,
+    condition: (ctx) => ctx.cartValue < 20_000,
   },
   {
     id: "wa_initial_urgent",
@@ -104,7 +117,7 @@ const TEMPLATES: MessageTemplate[] = [
     template:
       "{name}, seu pagamento de {value}{product} não foi processado. " +
       "Para garantir sua compra, finalize o pagamento pelo link abaixo: {link}",
-    condition: (ctx) => ctx.cartValue >= 500,
+    condition: (ctx) => ctx.cartValue >= 50_000,
   },
   {
     id: "wa_followup_empathetic",
@@ -122,7 +135,7 @@ const TEMPLATES: MessageTemplate[] = [
     template:
       "{name}, este é um lembrete importante: seu pagamento de {value}{product} " +
       "continua pendente. O link expira em breve: {link}",
-    condition: (ctx) => ctx.attemptNumber >= 2 && ctx.cartValue >= 300,
+    condition: (ctx) => ctx.attemptNumber >= 2 && ctx.cartValue >= 30_000,
   },
   {
     id: "wa_insufficient_funds",
@@ -265,10 +278,7 @@ function pickTemplate(ctx: MessageContext): MessageTemplate {
 }
 
 function interpolate(template: string, ctx: MessageContext): string {
-  const value = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(ctx.cartValue);
+  const value = formatMinorUnitCurrency(ctx.cartValue);
 
   const product = ctx.productName ? ` de ${ctx.productName}` : "";
   const link = ctx.paymentLink ?? "";
@@ -288,10 +298,7 @@ function interpolate(template: string, ctx: MessageContext): string {
 }
 
 function buildRecoveryPrompt(ctx: MessageContext) {
-  const value = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(ctx.cartValue);
+  const value = formatMinorUnitCurrency(ctx.cartValue);
 
   const isAskMethod = ctx.nextAction === "ask_payment_method";
   const isPixFirstInitial =
@@ -331,6 +338,12 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     ...linkRule,
     "- Nao use markdown, aspas, emojis nem texto tecnico.",
     "- Nao use placeholders como [link] ou [link de pagamento].",
+    ...(ctx.sellerGuidance
+      ? [
+          "- Siga a direcao operacional do seller sem contradizer as regras acima.",
+          `Direcao do seller: ${ctx.sellerGuidance}`,
+        ]
+      : []),
     "",
     `Canal: ${ctx.channel}`,
     `Cliente: ${ctx.customerName}`,
@@ -370,6 +383,12 @@ function buildReplyPrompt(input: ConversationReplyContext) {
     "- Mostre ajuda e conduza para a conclusao do pagamento.",
     "- Se houver link, inclua-o uma vez no final.",
     "- Nao use markdown, aspas, listas, emojis ou linguagem robotica.",
+    ...(input.sellerGuidance
+      ? [
+          "- Siga a direcao operacional do seller sem contradizer as regras acima.",
+          `Direcao do seller: ${input.sellerGuidance}`,
+        ]
+      : []),
     ...methodInstruction,
     "",
     `Cliente: ${input.customerName}`,
@@ -507,4 +526,11 @@ function buildFallbackReply(input: ConversationReplyContext) {
 
 function firstName(value: string) {
   return value.trim().split(/\s+/)[0] || "Cliente";
+}
+
+function formatMinorUnitCurrency(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format((Number.isFinite(value) ? value : 0) / 100);
 }

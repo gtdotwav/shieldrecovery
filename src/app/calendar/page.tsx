@@ -657,7 +657,7 @@ function formatCompactCurrency(value: number) {
     style: "currency",
     currency: "BRL",
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value / 100);
 }
 
 function readDayNumber(date: string) {

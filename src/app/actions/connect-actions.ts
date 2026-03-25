@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPlatformBootstrapService } from "@/server/recovery/services/platform-bootstrap-service";
+import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 
 function revalidateOperationalRoutes() {
@@ -194,4 +196,24 @@ export async function disconnectWhatsAppQrSessionAction() {
 
   revalidateOperationalRoutes();
   redirect("/connect?status=ok&saved=whatsapp_qr");
+}
+
+export async function saveSellerAiGuidanceAction(formData: FormData) {
+  const session = await requireAuthenticatedSession(["seller", "admin"]);
+  const guidance = String(formData.get("sellerAiGuidance") ?? "").trim();
+  const sellerIdentity = await getSellerIdentityByEmail(session.email);
+
+  if (!sellerIdentity?.agentName) {
+    redirect("/connect?status=error&message=Seller%20nao%20identificado");
+  }
+
+  await getPaymentRecoveryService().saveSellerAdminControl({
+    sellerKey: sellerIdentity.agentName,
+    sellerName: sellerIdentity.agentName,
+    sellerEmail: sellerIdentity.email,
+    notes: guidance || undefined,
+  });
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=seller_ai_guidance");
 }

@@ -1,7 +1,7 @@
 import type { FollowUpContact } from "@/server/recovery/types";
 import type { RecoveryClassification, RecoveryProbability } from "./types";
 import { hasPhone } from "@/lib/contact";
-import { hoursSince } from "@/lib/format";
+import { formatCurrency, hoursSince } from "@/lib/format";
 
 /**
  * Classifies a recovery lead by probability of success.
@@ -36,14 +36,14 @@ export function classifyRecovery(contact: FollowUpContact): RecoveryClassificati
   }
 
   // Payment value signals
-  if (contact.payment_value > 500) {
+  if (contact.payment_value > 50_000) {
     score += 15;
-    reasons.push(`Alto valor: R$${contact.payment_value.toFixed(0)}`);
-  } else if (contact.payment_value > 100) {
+    reasons.push(`Alto valor: ${formatCurrency(contact.payment_value)}`);
+  } else if (contact.payment_value > 10_000) {
     score += 10;
-    reasons.push(`Valor moderado: R$${contact.payment_value.toFixed(0)}`);
+    reasons.push(`Valor moderado: ${formatCurrency(contact.payment_value)}`);
   } else {
-    reasons.push(`Baixo valor: R$${contact.payment_value.toFixed(0)}`);
+    reasons.push(`Baixo valor: ${formatCurrency(contact.payment_value)}`);
   }
 
   // Freshness

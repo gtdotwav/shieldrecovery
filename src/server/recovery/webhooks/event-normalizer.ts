@@ -267,6 +267,10 @@ function normalizeEventType(
     transaction_partially_refunded: "payment_partially_refunded",
     transaction_chargedback: "payment_chargeback",
     transaction_three_ds_required: "payment_processing",
+    cart_abandoned: "payment_pending",
+    abandoned_cart: "payment_pending",
+    checkout_abandoned: "payment_pending",
+    checkout_cart_abandoned: "payment_pending",
   };
 
   if (explicitMap[normalizedType]) {
@@ -310,6 +314,9 @@ function mapTransactionStatusToEventType(
     waiting_payment: "payment_pending",
     awaiting_payment: "payment_pending",
     pending: "payment_pending",
+    abandoned: "payment_pending",
+    abandoned_cart: "payment_pending",
+    cart_abandoned: "payment_pending",
     processing: "payment_processing",
     in_process: "payment_processing",
     paid: "payment_succeeded",

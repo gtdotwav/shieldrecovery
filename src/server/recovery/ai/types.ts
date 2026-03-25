@@ -174,6 +174,7 @@ export type MessageContext = {
   nextAction?: RecoveryNextActionType;
   recoveryUrgency?: RecoveryUrgency;
   decisionReason?: string;
+  sellerGuidance?: string;
 };
 
 export type GeneratedMessage = {
@@ -197,6 +198,7 @@ export type ConversationReplyContext = {
   nextAction?: RecoveryNextActionType;
   decisionReason?: string;
   requiresHumanHandoff?: boolean;
+  sellerGuidance?: string;
 };
 
 export type InboundIntentClassification = {

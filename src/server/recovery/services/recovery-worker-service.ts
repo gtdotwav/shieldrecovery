@@ -353,7 +353,7 @@ export class RecoveryWorkerService {
       };
     }
 
-    const message = await this.recovery.sendAiConversationReply({
+    const message = await this.recovery.sendScheduledPixFollowUp({
       conversationId: conversation.id,
     });
 

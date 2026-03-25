@@ -1192,6 +1192,7 @@ export class PaymentRecoveryService {
       nextAction: decision?.nextAction,
       decisionReason: decision?.reason,
       requiresHumanHandoff: decision?.requiresHuman,
+      sellerGuidance: automationPolicy.control?.notes,
     });
 
     const message = await this.createAndDispatchConversationMessage({
@@ -1244,6 +1245,112 @@ export class PaymentRecoveryService {
     });
 
     return message;
+  }
+
+  async sendScheduledPixFollowUp(input: { conversationId: string }) {
+    const conversation = await this.storage.findConversationById(input.conversationId);
+
+    if (!conversation) {
+      throw new HttpError(404, "Conversation not found.");
+    }
+
+    const messages = await this.storage.getConversationMessages(conversation.id);
+    const contact = conversation.leadId
+      ? (await this.getFollowUpContacts()).find(
+          (item) => item.lead_id === conversation.leadId,
+        ) ?? null
+      : null;
+    const payment = contact
+      ? await this.storage.findPayment({
+          gatewayPaymentId: contact.gateway_payment_id,
+        })
+      : undefined;
+
+    if (!contact || !payment) {
+      throw new HttpError(404, "Conversation dependencies not found.");
+    }
+
+    const runtimeSettings =
+      await getConnectionSettingsService().getRuntimeSettings();
+    const automationPolicy = await this.getAutomationPolicyForSeller(
+      conversation.assignedAgentName ?? contact.assigned_agent,
+    );
+    const refreshedPayment = await this.createImmediatePaymentLink(
+      payment,
+      contact.payment_status,
+      contact.payment_method,
+      await this.resolveAppBaseUrl(),
+      {
+        id: conversation.customerId ?? "",
+        gatewayCustomerId: "",
+        name: contact.customer_name,
+        email: contact.email,
+        phone: contact.phone,
+        createdAt: "",
+        updatedAt: "",
+      },
+      "pix",
+    );
+    const latestPromptMetadata =
+      [...messages]
+        .reverse()
+        .find((message) => message.metadata?.kind === "recovery_prompt")
+        ?.metadata ?? undefined;
+    const content = await generateConversationReply({
+      apiKey: runtimeSettings.openAiApiKey,
+      customerName: contact.customer_name ?? conversation.customerName,
+      productName: contact.product,
+      retryLink: refreshedPayment.paymentLink,
+      pixCode: refreshedPayment.pixCode,
+      paymentMethod: "pix",
+      paymentStatus: contact.payment_status,
+      failureReason: payment.failureCode ?? contact.payment_status,
+      tonePreference: "reassuring",
+      nextAction: "send_follow_up",
+      decisionReason:
+        "O Pix anterior ficou sem resposta. Um novo pagamento foi gerado para facilitar a retomada.",
+      requiresHumanHandoff: false,
+      sellerGuidance: automationPolicy.control?.notes,
+    });
+
+    return this.createAndDispatchConversationMessage({
+      conversation,
+      content,
+      senderName: `IA ${platformBrand.name}`,
+      metadata: {
+        kind: "recovery_prompt",
+        generatedBy: runtimeSettings.openAiApiKey ? "ai" : "workflow",
+        strategyId: latestPromptMetadata?.strategyId,
+        strategyName: latestPromptMetadata?.strategyName,
+        recoveryProbability: latestPromptMetadata?.recoveryProbability,
+        recoveryScore: latestPromptMetadata?.recoveryScore,
+        recoveryUrgency: "today",
+        nextAction: "send_follow_up",
+        followUpMode: automationPolicy.autonomous ? "autonomous" : "supervised",
+        decisionReason:
+          "Pix regenerado automaticamente 6 minutos apos a primeira geracao para reforcar a retomada.",
+        product: contact.product,
+        paymentMethod: "pix",
+        paymentStatus: contact.payment_status,
+        paymentValue: contact.payment_value,
+        orderId: contact.order_id,
+        gatewayPaymentId: contact.gateway_payment_id,
+        retryLink: refreshedPayment.paymentLink,
+        paymentUrl: refreshedPayment.paymentLink,
+        pixCode: refreshedPayment.pixCode,
+        pixQrCode: refreshedPayment.pixQrCode,
+        pixExpiresAt: refreshedPayment.pixExpiresAt,
+        actionLabel: "Copiar codigo Pix",
+      },
+      logMessage: "Scheduled Pix follow-up generated with refreshed payment.",
+      eventType: "ai_reply_generated",
+      logContext: {
+        conversationId: conversation.id,
+        leadId: conversation.leadId,
+        regeneratedPayment: true,
+        method: "pix",
+      },
+    });
   }
 
   async updateConversationStatus(input: {
@@ -1446,6 +1553,11 @@ export class PaymentRecoveryService {
         normalizedEvent,
         status: "WAITING_CUSTOMER",
         assignedAgent: forcedAssignedAgent,
+      });
+      jobs = await this.automation.scheduleRecovery({
+        lead,
+        payment,
+        event: normalizedEvent,
       });
       await this.prepareInitialFollowUp({
         lead,
@@ -1721,6 +1833,7 @@ export class PaymentRecoveryService {
         nextAction: "send_initial_message",
         recoveryUrgency: decision.urgency,
         decisionReason: decision.reason,
+        sellerGuidance: automationPolicy.control?.notes,
       },
     });
 

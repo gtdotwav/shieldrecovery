@@ -21,6 +21,7 @@ import {
   refreshWhatsAppQrSessionAction,
   saveConnectionSettingsAction,
   saveDatabaseBootstrapAction,
+  saveSellerAiGuidanceAction,
   startWhatsAppQrSessionAction,
 } from "@/app/actions/connect-actions";
 import {
@@ -93,6 +94,12 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
   const sellerWebhookSnapshot =
     session.role === "seller"
       ? await service.getSellerWebhookSnapshot(
+          sellerIdentity?.agentName ?? sellerIdentity?.displayName ?? session.email,
+        )
+      : null;
+  const sellerControl =
+    session.role === "seller"
+      ? await service.getSellerAdminControlForName(
           sellerIdentity?.agentName ?? sellerIdentity?.displayName ?? session.email,
         )
       : null;
@@ -189,6 +196,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
           sellerIdentity?.agentName ?? sellerIdentity?.displayName ?? session.email,
         )}
         sellerWebhookSnapshot={sellerWebhookSnapshot}
+        sellerAiGuidance={sellerControl?.notes ?? ""}
       />
     );
   }
@@ -717,6 +725,7 @@ function SellerConnectView({
   sellerDisplayName,
   sellerWebhookUrl,
   sellerWebhookSnapshot,
+  sellerAiGuidance,
 }: {
   activeCount: number;
   analyticsTotal: number;
@@ -756,6 +765,7 @@ function SellerConnectView({
     lastError?: string;
     status: "idle" | "healthy" | "attention";
   } | null;
+  sellerAiGuidance: string;
 }) {
   return (
     <PlatformAppPage
@@ -859,6 +869,26 @@ function SellerConnectView({
               do evento ou da transacao no proprio payload. O seller so precisa
               apontar a URL correta e manter o envio em JSON.
             </p>
+          </PlatformSurface>
+
+          <PlatformSurface className="p-5">
+            <SectionHeader
+              eyebrow="Direção da IA"
+              title="Defina o contexto que a IA deve seguir nas suas conversas."
+            />
+            <form action={saveSellerAiGuidanceAction} className="mt-4 space-y-4">
+              <TextareaField
+                label="Briefing do seller"
+                name="sellerAiGuidance"
+                defaultValue={sellerAiGuidance}
+                placeholder="Ex.: priorize linguagem premium, nao ofereca desconto, reforce urgencia leve, fale como especialista do produto e mantenha tom consultivo."
+              />
+              <p className="text-sm leading-6 text-[#717182]">
+                Use este campo para orientar tom, abordagem comercial, limites e contexto
+                operacional. A IA segue esta direcao sem quebrar as regras de envio.
+              </p>
+              <SaveButton label="Salvar direção da IA" />
+            </form>
           </PlatformSurface>
         </div>
 
@@ -1030,6 +1060,33 @@ function SelectField({
           </option>
         ))}
       </select>
+    </label>
+  );
+}
+
+function TextareaField({
+  label,
+  name,
+  defaultValue,
+  placeholder,
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-[#6b7280]">
+        {label}
+      </span>
+      <textarea
+        name={name}
+        defaultValue={defaultValue}
+        placeholder={placeholder}
+        rows={6}
+        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-3 text-sm leading-6 text-[#111827] outline-none placeholder:text-[#9ca3af] transition-colors focus:border-sky-300 focus:ring-1 focus:ring-sky-100"
+      />
     </label>
   );
 }

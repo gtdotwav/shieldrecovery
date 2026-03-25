@@ -31,7 +31,7 @@ export function buildRecoveryWorkflowJobs(input: {
       channel: "email",
       template: "payment_recovery_email",
     }),
-    createJob("notification-jobs", "whatsapp-follow-up", now + 6 * 60 * 60_000, {
+    createJob("notification-jobs", "whatsapp-follow-up", now + 6 * 60_000, {
       leadId: input.lead.leadId,
       channel: "whatsapp",
       template: "payment_recovery_follow_up",
