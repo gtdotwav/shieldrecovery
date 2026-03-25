@@ -367,6 +367,8 @@ export class SupabaseStorageService implements RecoveryStorage {
   }
 
   async upsertCustomer(normalizedEvent: NormalizedPaymentEvent): Promise<CustomerRecord> {
+    const normalizedPhone = normalizePhone(normalizedEvent.customer.phone);
+
     // Prefer exact gateway_customer_id match, then fall back to email match
     const { data: byGatewayId } = await this.supabase
       .from("customers")
@@ -382,7 +384,7 @@ export class SupabaseStorageService implements RecoveryStorage {
         .update({
           name: normalizedEvent.customer.name,
           email: normalizedEvent.customer.email,
-          phone: normalizedEvent.customer.phone,
+          phone: normalizedPhone,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existing.id)
@@ -406,7 +408,7 @@ export class SupabaseStorageService implements RecoveryStorage {
         .from("customers")
         .update({
           name: normalizedEvent.customer.name,
-          phone: normalizedEvent.customer.phone,
+          phone: normalizedPhone,
           updated_at: new Date().toISOString(),
         })
         .eq("id", emailMatch.id)
@@ -423,7 +425,7 @@ export class SupabaseStorageService implements RecoveryStorage {
         gateway_customer_id: normalizedEvent.customer.id,
         name: normalizedEvent.customer.name,
         email: normalizedEvent.customer.email,
-        phone: normalizedEvent.customer.phone,
+        phone: normalizedPhone,
       })
       .select()
       .single();
@@ -573,6 +575,7 @@ export class SupabaseStorageService implements RecoveryStorage {
   }): Promise<AgentRecord> {
     const normalizedEmail = input.email.trim().toLowerCase();
     const normalizedName = input.name.trim().toLowerCase();
+    const normalizedPhone = normalizePhone(input.phone);
 
     const { data: existingByEmail } = await this.supabase
       .from("agents")
@@ -597,7 +600,7 @@ export class SupabaseStorageService implements RecoveryStorage {
         .update({
           name: input.name,
           email: input.email,
-          phone: input.phone ?? existing.phone ?? "",
+          phone: normalizedPhone || existing.phone || "",
           active: true,
         })
         .eq("id", existing.id)
@@ -612,7 +615,7 @@ export class SupabaseStorageService implements RecoveryStorage {
       .insert({
         name: input.name,
         email: input.email,
-        phone: input.phone ?? "",
+        phone: normalizedPhone,
         active: true,
       })
       .select()
@@ -678,6 +681,7 @@ export class SupabaseStorageService implements RecoveryStorage {
       .maybeSingle();
 
     const assignedAgentId = existing?.assigned_agent_id ?? input.assignedAgent?.id ?? null;
+    const normalizedPhone = normalizePhone(input.customer.phone);
 
     if (existing) {
       const { data, error } = await this.supabase
@@ -685,7 +689,7 @@ export class SupabaseStorageService implements RecoveryStorage {
         .update({
           customer_name: input.customer.name,
           email: input.customer.email,
-          phone: input.customer.phone,
+          phone: normalizedPhone,
           payment_value: input.payment.amount,
           product: input.product,
           failure_reason: input.failureReason,
@@ -707,7 +711,7 @@ export class SupabaseStorageService implements RecoveryStorage {
           customer_id: input.customer.id,
           customer_name: input.customer.name,
           email: input.customer.email,
-          phone: input.customer.phone,
+          phone: normalizedPhone,
           payment_value: input.payment.amount,
           product: input.product,
           failure_reason: input.failureReason,

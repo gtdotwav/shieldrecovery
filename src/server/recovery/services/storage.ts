@@ -468,6 +468,7 @@ class LocalStorageService implements RecoveryStorage {
   async upsertCustomer(normalizedEvent: NormalizedPaymentEvent): Promise<CustomerRecord> {
     return this.mutate((state) => {
       const timestamp = new Date().toISOString();
+      const normalizedPhone = normalizePhone(normalizedEvent.customer.phone);
       const existing =
         state.customers.find(
           (customer) =>
@@ -479,7 +480,7 @@ class LocalStorageService implements RecoveryStorage {
         existing.gatewayCustomerId = normalizedEvent.customer.id;
         existing.name = normalizedEvent.customer.name;
         existing.email = normalizedEvent.customer.email;
-        existing.phone = normalizedEvent.customer.phone;
+        existing.phone = normalizedPhone;
         existing.updatedAt = timestamp;
         return existing;
       }
@@ -489,7 +490,7 @@ class LocalStorageService implements RecoveryStorage {
         gatewayCustomerId: normalizedEvent.customer.id,
         name: normalizedEvent.customer.name,
         email: normalizedEvent.customer.email,
-        phone: normalizedEvent.customer.phone,
+        phone: normalizedPhone,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
@@ -612,6 +613,7 @@ class LocalStorageService implements RecoveryStorage {
     phone?: string;
   }): Promise<AgentRecord> {
     return this.mutate((state) => {
+      const normalizedPhone = normalizePhone(input.phone);
       const existing =
         state.agents.find(
           (agent) => agent.email.trim().toLowerCase() === input.email.trim().toLowerCase(),
@@ -623,7 +625,7 @@ class LocalStorageService implements RecoveryStorage {
       if (existing) {
         existing.name = input.name;
         existing.email = input.email;
-        existing.phone = input.phone ?? existing.phone;
+        existing.phone = normalizedPhone || existing.phone;
         existing.active = true;
         return existing;
       }
@@ -632,7 +634,7 @@ class LocalStorageService implements RecoveryStorage {
         id: randomUUID(),
         name: input.name,
         email: input.email,
-        phone: input.phone ?? "",
+        phone: normalizedPhone,
         active: true,
         createdAt: new Date().toISOString(),
       };
@@ -671,13 +673,14 @@ class LocalStorageService implements RecoveryStorage {
   }): Promise<RecoveryLeadRecord> {
     return this.mutate((state) => {
       const timestamp = new Date().toISOString();
+      const normalizedPhone = normalizePhone(input.customer.phone);
       const existing =
         state.leads.find((lead) => lead.paymentId === input.payment.id) ?? null;
 
       if (existing) {
         existing.customerName = input.customer.name;
         existing.email = input.customer.email;
-        existing.phone = input.customer.phone;
+        existing.phone = normalizedPhone;
         existing.paymentValue = input.payment.amount;
         existing.product = input.product;
         existing.failureReason = input.failureReason;
@@ -699,7 +702,7 @@ class LocalStorageService implements RecoveryStorage {
         leadId: `lead_${input.payment.gatewayPaymentId}`,
         customerName: input.customer.name,
         email: input.customer.email,
-        phone: input.customer.phone,
+        phone: normalizedPhone,
         paymentValue: input.payment.amount,
         product: input.product,
         failureReason: input.failureReason,
