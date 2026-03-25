@@ -208,9 +208,9 @@ export async function PlatformAppPage({
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
       <AmbientCanvas />
       <div className="flex min-h-screen">
-        <aside className="fixed inset-y-0 left-0 z-50 hidden w-[5.35rem] flex-col items-center border-r border-white/6 bg-[rgba(2,14,11,0.72)] px-3 py-4 backdrop-blur-[30px] xl:flex">
-          <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-[1.45rem] border border-white/8 bg-[rgba(255,255,255,0.03)] shadow-[0_20px_44px_rgba(0,0,0,0.28)]">
-            <PlatformLogo mode="icon" size="lg" />
+        <aside className="fixed inset-y-0 left-0 z-50 hidden w-[4.95rem] flex-col items-center border-r border-white/8 bg-[linear-gradient(180deg,rgba(6,18,14,0.92),rgba(8,26,20,0.72))] px-3 py-5 backdrop-blur-[34px] xl:flex">
+          <div className="mb-8 flex h-12 w-12 items-center justify-center">
+            <PlatformLogo mode="icon" size="lg" className="scale-[0.92]" />
           </div>
 
           <nav className="flex flex-1 flex-col items-center gap-2.5">
@@ -225,8 +225,8 @@ export async function PlatformAppPage({
                   className={cn(
                     "group relative flex h-11 w-11 items-center justify-center rounded-[1rem] border transition-all duration-300",
                     isActive
-                      ? "border-[rgba(30,215,96,0.26)] bg-[linear-gradient(180deg,rgba(30,215,96,0.26),rgba(15,164,122,0.16))] text-[var(--accent)] shadow-[0_18px_34px_rgba(9,43,29,0.42)]"
-                      : "border-transparent bg-transparent text-[rgba(255,255,255,0.44)] hover:border-white/8 hover:bg-white/6 hover:text-white",
+                      ? "border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.12)] text-[var(--accent)] shadow-[0_14px_30px_rgba(9,43,29,0.32)]"
+                      : "border-transparent bg-transparent text-[rgba(255,255,255,0.4)] hover:border-white/8 hover:bg-white/6 hover:text-white",
                   )}
                 >
                   <route.icon className="h-[18px] w-[18px]" />
@@ -244,9 +244,9 @@ export async function PlatformAppPage({
           </nav>
         </aside>
 
-        <div className="min-w-0 flex-1 xl:pl-[5.35rem]">
+        <div className="min-w-0 flex-1 xl:pl-[4.95rem]">
           <header className="sticky top-0 z-40 px-4 pt-4 sm:px-6 lg:px-8">
-            <div className="glass-panel qr-panel rounded-[1.5rem] px-4 py-4 sm:px-5">
+            <div className="glass-panel qr-panel rounded-[1.5rem] px-5 py-4 sm:px-6">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-start gap-3 sm:items-center">
                   <div className="xl:hidden">
@@ -263,7 +263,7 @@ export async function PlatformAppPage({
                       </span>
                     </nav>
                     <div className="flex flex-wrap items-center gap-2 sm:mt-1">
-                      <h1 className="text-base font-semibold tracking-[-0.05em] text-white sm:text-[1.45rem]">
+                      <h1 className="text-base font-semibold tracking-[-0.05em] text-white sm:text-[1.75rem]">
                         {currentRoute.label}
                       </h1>
                       <span className="success-pill inline-flex items-center rounded-full px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.18em]">
@@ -340,7 +340,7 @@ export function PlatformSurface({
   return (
     <div
       className={cn(
-        "glass-panel qr-panel soft-vignette rounded-[1.45rem]",
+        "glass-panel qr-panel soft-vignette rounded-[1.6rem]",
         className,
       )}
     >
@@ -359,7 +359,7 @@ export function PlatformInset({
   return (
     <div
       className={cn(
-        "glass-inset rounded-[1.15rem]",
+        "glass-inset rounded-[1.2rem]",
         className,
       )}
     >
@@ -424,7 +424,7 @@ export function PlatformMetricCard({
   return (
     <div
       className={cn(
-        "glass-panel qr-panel glass-hover rounded-[1.4rem] px-4 py-4 sm:px-5 sm:py-5",
+        "glass-panel qr-panel glass-hover min-h-[8.65rem] rounded-[1.45rem] px-5 py-4 sm:px-5 sm:py-5",
         className,
       )}
     >
@@ -433,7 +433,7 @@ export function PlatformMetricCard({
           <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.24em] text-[rgba(255,255,255,0.5)]">
             {label}
           </p>
-          <p className="text-xl font-semibold tracking-[-0.05em] text-[var(--accent)] sm:text-[2rem]">
+          <p className="text-[2.15rem] font-semibold tracking-[-0.05em] text-[var(--accent)] sm:text-[2.35rem]">
             {value}
           </p>
           {subtitle ? (
@@ -473,9 +473,9 @@ export function PlatformPill({
 function AmbientCanvas() {
   return (
     <>
-      <div className="glow-orb left-[-9rem] top-8 h-[18rem] w-[18rem] bg-[rgba(30,215,96,0.14)]" />
-      <div className="glow-orb right-[-8rem] top-24 h-[16rem] w-[16rem] bg-[rgba(15,164,122,0.14)]" />
-      <div className="pointer-events-none absolute inset-0 surface-grid opacity-20" />
+      <div className="glow-orb left-[-9rem] top-8 h-[18rem] w-[18rem] bg-[rgba(30,215,96,0.1)]" />
+      <div className="glow-orb right-[-8rem] top-24 h-[16rem] w-[16rem] bg-[rgba(15,164,122,0.1)]" />
+      <div className="pointer-events-none absolute inset-0 surface-grid opacity-[0.12]" />
     </>
   );
 }
