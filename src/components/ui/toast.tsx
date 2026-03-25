@@ -73,14 +73,14 @@ function ToastItem({
 
   const variantStyles =
     toast.variant === "error"
-      ? "border-red-200 bg-red-50 text-red-700"
+      ? "border-[rgba(255,122,116,0.18)] bg-[rgba(255,122,116,0.12)] text-[#ffb4ad]"
       : toast.variant === "info"
-        ? "border-gray-200 bg-white text-[#1a1a2e]"
-        : "border-green-200 bg-green-50 text-green-700";
+        ? "border-white/10 bg-[rgba(255,255,255,0.06)] text-white"
+        : "border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.12)] text-[#8cf1b0]";
 
   return (
     <div
-      className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm shadow-lg transition-all duration-300 ${variantStyles} ${
+      className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm shadow-[0_24px_44px_rgba(0,0,0,0.36)] backdrop-blur-[22px] transition-all duration-300 ${variantStyles} ${
         visible
           ? "translate-y-0 opacity-100"
           : "translate-y-2 opacity-0"
@@ -93,7 +93,7 @@ function ToastItem({
           setVisible(false);
           setTimeout(() => onDismiss(toast.id), 300);
         }}
-        className="shrink-0 rounded p-0.5 hover:bg-black/5 transition-colors"
+        className="shrink-0 rounded p-0.5 transition-colors hover:bg-white/8"
       >
         <X className="h-3 w-3" />
       </button>

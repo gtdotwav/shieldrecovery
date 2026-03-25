@@ -10,7 +10,7 @@ import {
   UsersRound,
 } from "lucide-react";
 
-import { ShieldRecoveryLogo } from "@/components/platform/shield-recovery-logo";
+import { PlatformLogo } from "@/components/platform/platform-logo";
 import {
   PlatformPill,
   PlatformSurface,
@@ -86,26 +86,28 @@ export default async function Home() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(2,132,199,0.12),transparent_24rem),radial-gradient(circle_at_top_right,rgba(15,23,42,0.06),transparent_28rem),linear-gradient(180deg,#fbfbfc_0%,#f3f5f8_50%,#eef1f5_100%)]">
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div className="glow-orb left-[-9rem] top-[-2rem] h-[25rem] w-[25rem] bg-[rgba(30,215,96,0.14)]" />
+      <div className="glow-orb right-[-7rem] top-[8rem] h-[20rem] w-[20rem] bg-[rgba(15,164,122,0.14)]" />
       <main className="mx-auto max-w-[88rem] px-4 pb-24 pt-6 sm:px-6 sm:pt-8 lg:px-8">
-        <section className="relative overflow-hidden rounded-[2rem] border border-black/[0.06] bg-[linear-gradient(135deg,#11131a_0%,#171a24_45%,#1a1f2d_100%)] px-5 py-6 shadow-[0_35px_80px_rgba(15,23,42,0.16)] sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-          <div className="absolute inset-y-0 right-0 w-[32rem] bg-[radial-gradient(circle_at_top_right,rgba(2,132,199,0.22),transparent_42%)]" />
-          <div className="absolute -left-12 top-24 h-40 w-40 rounded-full bg-[rgba(2,132,199,0.08)] blur-3xl" />
+        <section className="glass-panel qr-panel relative overflow-hidden rounded-[2rem] px-5 py-6 shadow-[0_35px_90px_rgba(0,0,0,0.34)] sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+          <div className="absolute inset-y-0 right-0 w-[32rem] bg-[radial-gradient(circle_at_top_right,rgba(30,215,96,0.14),transparent_42%)]" />
+          <div className="absolute -left-12 top-24 h-40 w-40 rounded-full bg-[rgba(30,215,96,0.1)] blur-3xl" />
 
           <div className="relative">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <ShieldRecoveryLogo size="lg" emphasis="strong" className="w-fit bg-white/0 p-0 shadow-none ring-0" />
+              <PlatformLogo size="lg" emphasis="strong" className="w-fit bg-white/0 p-0 shadow-none ring-0" />
 
               <div className="flex flex-wrap gap-2">
                 <Link
                   href="/login"
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-white/82 transition-colors hover:bg-white/10 hover:text-white"
+                  className="glass-button-secondary px-4 py-2 text-sm font-medium text-white/82"
                 >
                   Entrar
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+                  className="glass-button-primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
                 >
                   Abrir plataforma
                   <ArrowRight className="h-4 w-4" />
@@ -153,7 +155,7 @@ export default async function Home() {
               <PlatformSurface className="border-white/8 bg-white/7 p-5 shadow-none backdrop-blur-xl">
                 <div className="flex items-center justify-between border-b border-white/8 pb-4">
                   <div>
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-300">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
                       Fluxo do produto
                     </p>
                     <p className="mt-2 text-lg font-semibold text-white">
@@ -169,7 +171,7 @@ export default async function Home() {
                       className="rounded-[1rem] border border-white/8 bg-black/10 px-3.5 py-3"
                     >
                       <div className="flex items-start gap-3">
-                        <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/8 text-[0.68rem] font-semibold text-sky-300">
+                        <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/8 text-[0.68rem] font-semibold text-[var(--accent)]">
                           {index + 1}
                         </span>
                         <p className="text-sm leading-6 text-white/78">{item}</p>
@@ -180,13 +182,13 @@ export default async function Home() {
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <div className="rounded-[1rem] border border-white/8 bg-black/10 px-3.5 py-3">
-                    <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/52">
+                    <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-white/52">
                       aguardando retorno
                     </p>
                     <p className="mt-1 text-2xl font-semibold text-white">{awaitingReply}</p>
                   </div>
                   <div className="rounded-[1rem] border border-white/8 bg-black/10 px-3.5 py-3">
-                    <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/52">
+                    <p className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-white/52">
                       pagamentos recuperados
                     </p>
                     <p className="mt-1 text-2xl font-semibold text-white">
@@ -205,13 +207,13 @@ export default async function Home() {
 
         <section className="mt-10 grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           <PlatformSurface className="p-5 sm:p-6">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+            <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
               Visão do produto
             </p>
-            <h2 className="mt-2 max-w-[14ch] text-3xl font-semibold tracking-tight text-[#111827]">
+            <h2 className="mt-2 max-w-[14ch] text-3xl font-semibold tracking-[-0.05em] text-white">
               Uma entrada simples para um software de recovery.
             </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[#6b7280]">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(255,255,255,0.62)]">
               A home explica o que a plataforma resolve e aponta para as áreas
               de uso real. Ela não precisa competir com o dashboard.
             </p>
@@ -223,15 +225,15 @@ export default async function Home() {
                 <Link
                   key={module.href}
                   href={module.href}
-                  className="group rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 transition-colors hover:bg-white"
+                  className="glass-inset glass-hover group rounded-[1.2rem] px-4 py-4"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-[rgba(2,132,199,0.1)]">
-                    <module.icon className="h-5 w-5 text-sky-500" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] border border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.12)]">
+                    <module.icon className="h-5 w-5 text-[var(--accent)]" />
                   </div>
-                  <p className="mt-4 text-base font-semibold text-[#111827]">
+                  <p className="mt-4 text-base font-semibold text-white">
                     {module.title}
                   </p>
-                  <p className="mt-1 text-sm leading-6 text-[#6b7280]">
+                  <p className="mt-1 text-sm leading-6 text-[rgba(255,255,255,0.58)]">
                     {module.description}
                   </p>
                 </Link>
@@ -260,8 +262,8 @@ function HeroStat({
           <p className="text-[0.68rem] uppercase tracking-[0.16em] text-white/54">{label}</p>
           <p className="mt-2 text-2xl font-semibold tracking-tight text-white">{value}</p>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500/14 ring-1 ring-sky-400/18">
-          <Icon className="h-5 w-5 text-sky-300" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(30,215,96,0.14)] ring-1 ring-[rgba(30,215,96,0.22)]">
+          <Icon className="h-5 w-5 text-[var(--accent)]" />
         </div>
       </div>
     </div>

@@ -113,7 +113,7 @@ export const TextRevealCard = ({
       onPointerLeave={resetReveal}
       onPointerMove={(event) => updateRevealWidth(event.clientX)}
       className={cn(
-        "relative w-full overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-[#0d0f12] p-6 touch-none sm:p-7",
+        "relative w-full overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-[rgba(7,22,17,0.78)] p-6 touch-none sm:p-7 backdrop-blur-[22px]",
         className,
       )}
     >
@@ -133,7 +133,7 @@ export const TextRevealCard = ({
                 }
           }
           transition={isPointerInside ? { duration: 0 } : { duration: 0.4 }}
-          className="absolute z-20 bg-[#0d0f12] will-change-transform"
+          className="absolute z-20 bg-[rgba(7,22,17,0.94)] will-change-transform"
         >
           <p
             style={{ textShadow: "4px 4px 15px rgba(0,0,0,0.5)" }}
@@ -149,11 +149,11 @@ export const TextRevealCard = ({
             opacity: widthPercentage > 0 ? 1 : 0,
           }}
           transition={isPointerInside ? { duration: 0 } : { duration: 0.4 }}
-          className="absolute z-50 h-24 w-[8px] bg-gradient-to-b from-transparent via-[#ff6a00] to-transparent will-change-transform sm:h-[7.5rem] lg:h-32"
+          className="absolute z-50 h-24 w-[8px] bg-gradient-to-b from-transparent via-[var(--accent)] to-transparent will-change-transform sm:h-[7.5rem] lg:h-32"
         />
 
         <div className="overflow-hidden [mask-image:linear-gradient(to_bottom,transparent,white,transparent)]">
-          <p className="bg-[#343941] bg-clip-text py-2 text-[clamp(1.55rem,4.5vw,2.45rem)] font-bold leading-[0.94] tracking-[-0.06em] text-transparent sm:py-4">
+          <p className="bg-[linear-gradient(180deg,rgba(255,255,255,0.18),rgba(255,255,255,0.05))] bg-clip-text py-2 text-[clamp(1.55rem,4.5vw,2.45rem)] font-bold leading-[0.94] tracking-[-0.06em] text-transparent sm:py-4">
             {text}
           </p>
           {showStars ? <MemoizedStars /> : null}
@@ -180,7 +180,7 @@ export const TextRevealCardDescription = ({
   children: React.ReactNode;
   className?: string;
 }) => {
-  return <p className={twMerge("text-sm text-[#d1d5db]", className)}>{children}</p>;
+  return <p className={twMerge("text-sm text-[rgba(255,255,255,0.62)]", className)}>{children}</p>;
 };
 
 const Stars = () => {

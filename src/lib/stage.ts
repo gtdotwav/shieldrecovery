@@ -67,13 +67,13 @@ export function scorePriority(contact: FollowUpContact) {
 
 export const STAGE_STYLES: Record<string, string> = {
   NEW_RECOVERY:
-    "border-sky-200 bg-sky-50 text-sky-600",
+    "border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.12)] text-[#9bf4be]",
   CONTACTING:
-    "border-blue-200 bg-blue-50 text-blue-600",
+    "border-[rgba(15,164,122,0.2)] bg-[rgba(15,164,122,0.14)] text-[#7fe7c3]",
   WAITING_CUSTOMER:
-    "border-amber-200 bg-amber-50 text-amber-600",
+    "border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.74)]",
   RECOVERED:
-    "border-green-200 bg-green-50 text-green-600",
+    "border-[rgba(30,215,96,0.2)] bg-[rgba(30,215,96,0.12)] text-[#8df0b1]",
   LOST:
-    "border-red-200 bg-red-50 text-red-600",
+    "border-[rgba(255,122,116,0.18)] bg-[rgba(255,122,116,0.1)] text-[#ffb5af]",
 };

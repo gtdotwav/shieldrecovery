@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, KeyRound, UserRound } from "lucide-react";
 
 import { completeSellerInviteAction } from "@/app/actions/seller-invite-actions";
-import { ShieldRecoveryLogo } from "@/components/platform/shield-recovery-logo";
+import { PlatformLogo } from "@/components/platform/platform-logo";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export default async function SellerInvitePage({
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl items-center justify-center">
         <div className="grid w-full gap-6 rounded-[2rem] border border-black/[0.06] bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] xl:grid-cols-[1.05fr_0.95fr] xl:p-6">
           <section className="rounded-[1.6rem] bg-[linear-gradient(180deg,#141414_0%,#121826_100%)] p-6 text-white sm:p-8">
-            <ShieldRecoveryLogo size="lg" emphasis="strong" className="bg-transparent shadow-none ring-0" />
+            <PlatformLogo size="lg" emphasis="strong" className="bg-transparent shadow-none ring-0" />
 
             <div className="mt-10 max-w-lg">
               <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-sky-400">

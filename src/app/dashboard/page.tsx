@@ -76,7 +76,7 @@ export default async function DashboardPage() {
       action={
         <Link
           href="/leads"
-          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
+          className="glass-button-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em]"
         >
           Abrir CRM
           <ArrowRight className="h-3.5 w-3.5" />
@@ -115,18 +115,18 @@ export default async function DashboardPage() {
         <div className="space-y-5">
           {/* Chart */}
           <PlatformSurface className="p-5 sm:p-6">
-            <div className="flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="ambient-divider flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
-                  Evolucao mensal
-                </p>
-                <h3 className="mt-1.5 text-lg font-semibold text-[#111827]">
-                  Recuperadas vs. abertas
-                </h3>
+              <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+                Evolucao mensal
+              </p>
+              <h3 className="mt-1.5 text-lg font-semibold tracking-[-0.04em] text-white">
+                Recuperadas vs. abertas
+              </h3>
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
-                <LegendPill color="bg-sky-500">recuperadas</LegendPill>
-                <LegendPill color="bg-[#9ca3af]">abertas</LegendPill>
+                <LegendPill color="bg-[#1ED760]">recuperadas</LegendPill>
+                <LegendPill color="bg-white/50">abertas</LegendPill>
               </div>
             </div>
             <div className="mt-4">
@@ -136,18 +136,18 @@ export default async function DashboardPage() {
 
           {/* Priority leads */}
           <PlatformSurface className="p-5 sm:p-6">
-            <div className="flex flex-col gap-2 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="ambient-divider flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+                <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
                   Prioridades
                 </p>
-                <h3 className="mt-1.5 text-lg font-semibold text-[#111827]">
+                <h3 className="mt-1.5 text-lg font-semibold tracking-[-0.04em] text-white">
                   Casos que abrem o dia
                 </h3>
               </div>
               <Link
                 href="/leads"
-                className="text-sm font-medium text-sky-600 transition-colors hover:text-sky-700"
+                className="text-sm font-medium text-[var(--accent)] transition-colors hover:text-[#72f2a2]"
               >
                 Ver todos
               </Link>
@@ -156,7 +156,7 @@ export default async function DashboardPage() {
             <div className="mt-4 space-y-2.5">
               {prioritizedContacts.length === 0 ? (
                 <PlatformInset className="p-6 text-center">
-                  <p className="text-sm text-[#6b7280]">
+                  <p className="text-sm text-[rgba(255,255,255,0.54)]">
                     Nenhum caso ativo na carteira.
                   </p>
                 </PlatformInset>
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
         <div className="space-y-5 xl:sticky xl:top-20 xl:self-start">
           {/* Portfolio health */}
           <PlatformSurface className="p-5">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+            <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
               Saude da carteira
             </p>
             <div className="mt-4 space-y-2.5">
@@ -190,15 +190,15 @@ export default async function DashboardPage() {
 
           {/* Channel coverage */}
           <PlatformSurface className="p-5">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+            <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
               Canais disponiveis
             </p>
             <div className="mt-4 space-y-3.5">
-              <ChannelBar label="WhatsApp" count={whatsappCount} total={contacts.length} color="bg-emerald-500" />
-              <ChannelBar label="Email" count={emailCount} total={contacts.length} color="bg-blue-400" />
+              <ChannelBar label="WhatsApp" count={whatsappCount} total={contacts.length} color="bg-[#1ED760]" />
+              <ChannelBar label="Email" count={emailCount} total={contacts.length} color="bg-[#0FA47A]" />
             </div>
             {contacts.length > 0 ? (
-              <p className="mt-4 text-xs text-[#9ca3af]">
+              <p className="mt-4 text-xs text-[rgba(255,255,255,0.42)]">
                 {contacts.length} contatos no total
               </p>
             ) : null}
@@ -219,7 +219,7 @@ function LegendPill({
   children: React.ReactNode;
 }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-[#fbfbfc] px-3 py-1.5 text-[0.72rem] font-medium text-[#6b7280]">
+    <span className="muted-pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.72rem] font-medium uppercase tracking-[0.12em]">
       <span className={`h-2 w-2 rounded-full ${color}`} />
       {children}
     </span>
@@ -242,12 +242,12 @@ function ChannelBar({
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium text-[#111827]">{label}</span>
-        <span className="text-sm tabular-nums text-[#6b7280]">
-          {count} <span className="text-[#9ca3af]">({pct}%)</span>
+        <span className="text-sm font-medium text-[rgba(255,255,255,0.82)]">{label}</span>
+        <span className="text-sm tabular-nums text-[rgba(255,255,255,0.64)]">
+          {count} <span className="text-[rgba(255,255,255,0.38)]">({pct}%)</span>
         </span>
       </div>
-      <div className="mt-1.5 h-1.5 rounded-full bg-[#eef0f3]">
+      <div className="mt-1.5 h-1.5 rounded-full bg-white/6">
         <div
           className={`h-1.5 rounded-full transition-all ${color}`}
           style={{ width: `${pct}%` }}
@@ -267,13 +267,15 @@ function MetricLine({
   highlight?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-black/[0.05] bg-[#fbfbfc] px-3.5 py-2.5">
-      <span className="text-sm text-[#6b7280]">{label}</span>
+    <div className="glass-inset rounded-xl px-3.5 py-2.5">
+      <div className="flex items-center justify-between gap-4">
+      <span className="text-sm text-[rgba(255,255,255,0.6)]">{label}</span>
       <span
-        className={`text-sm font-semibold tabular-nums ${highlight ? "text-sky-600" : "text-[#111827]"}`}
+        className={`text-sm font-semibold tabular-nums ${highlight ? "text-[var(--accent)]" : "text-white"}`}
       >
         {value}
       </span>
+      </div>
     </div>
   );
 }
@@ -282,22 +284,22 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
   return (
     <Link
       href={`/leads/${contact.lead_id}`}
-      className="group block rounded-[1.1rem] border border-black/[0.06] bg-[#fbfbfc] p-4 transition-colors hover:border-sky-200 hover:bg-white"
+      className="glass-inset glass-hover group block rounded-[1.1rem] p-4"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-semibold text-[#111827]">
+            <p className="truncate text-sm font-semibold text-white">
               {contact.customer_name}
             </p>
             <StageBadge stage={contact.lead_status} />
             <TimeBadge updatedAt={contact.updated_at} />
           </div>
-          <p className="mt-1 text-xs text-[#9ca3af]">
+          <p className="mt-1 text-xs text-[rgba(255,255,255,0.42)]">
             {contact.product || "Produto nao informado"} · {pickBestContact(contact.phone, contact.email)}
           </p>
         </div>
-        <p className="shrink-0 text-sm font-semibold tabular-nums text-[#111827]">
+        <p className="shrink-0 text-sm font-semibold tabular-nums text-[var(--accent)]">
           {formatCurrency(contact.payment_value)}
         </p>
       </div>
@@ -313,9 +315,9 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
 
 function DetailPill({ label, value }: { label: string; value: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.05] bg-[#f5f6f8] px-2.5 py-1.5 text-xs">
-      <span className="text-[#9ca3af]">{label}:</span>
-      <span className="font-medium text-[#374151]">{value}</span>
+    <span className="muted-pill inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs">
+      <span className="text-[rgba(255,255,255,0.42)]">{label}:</span>
+      <span className="font-medium text-[rgba(255,255,255,0.8)]">{value}</span>
     </span>
   );
 }

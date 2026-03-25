@@ -2,7 +2,7 @@ import { LockKeyhole, ShieldCheck } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { loginAction } from "@/app/actions/auth-actions";
-import { ShieldRecoveryLogo } from "@/components/platform/shield-recovery-logo";
+import { PlatformLogo } from "@/components/platform/platform-logo";
 import { defaultPathForRole, isAuthConfigured } from "@/server/auth/core";
 import { getAuthenticatedSession, resolvePostLoginPath } from "@/server/auth/session";
 
@@ -34,20 +34,22 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const configurationMissing = params.error === "config" || !authConfigured;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(2,132,199,0.08),transparent_22rem),linear-gradient(180deg,#fafbfc_0%,#f3f5f8_100%)] px-4 py-10 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen overflow-hidden bg-background px-4 py-10 sm:px-6 lg:px-8">
+      <div className="glow-orb left-[-8rem] top-[-2rem] h-[22rem] w-[22rem] bg-[rgba(30,215,96,0.14)]" />
+      <div className="glow-orb right-[-7rem] top-[12rem] h-[20rem] w-[20rem] bg-[rgba(15,164,122,0.14)]" />
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl items-center justify-center">
-        <div className="grid w-full gap-6 rounded-[2rem] border border-black/[0.06] bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] xl:grid-cols-[1.05fr_0.95fr] xl:p-6">
-          <section className="rounded-[1.6rem] bg-[linear-gradient(180deg,#141414_0%,#121826_100%)] p-6 text-white sm:p-8">
-            <ShieldRecoveryLogo size="lg" emphasis="strong" className="bg-transparent shadow-none ring-0" />
+        <div className="glass-panel qr-panel grid w-full gap-6 rounded-[2rem] p-5 shadow-[0_32px_90px_rgba(0,0,0,0.42)] xl:grid-cols-[1.08fr_0.92fr] xl:p-6">
+          <section className="glass-inset qr-panel rounded-[1.6rem] p-6 text-white sm:p-8">
+            <PlatformLogo size="lg" emphasis="strong" className="bg-transparent shadow-none ring-0" />
 
             <div className="mt-10 max-w-lg">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-sky-400">
+              <p className="font-mono text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-[var(--accent)]">
                 Acesso protegido
               </p>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
                 Plataforma privada para operacao de recovery.
               </h1>
-              <p className="mt-4 text-sm leading-7 text-white/70">
+              <p className="mt-4 text-sm leading-7 text-[rgba(255,255,255,0.66)]">
                 O login protege CRM, conversas, integracoes e testes. Os
                 webhooks publicos continuam funcionando para o gateway, mas o
                 painel operacional agora exige sessao valida.
@@ -69,14 +71,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </section>
 
           <section className="flex items-center">
-            <div className="w-full rounded-[1.6rem] border border-black/[0.06] bg-[#fbfbfc] p-5 sm:p-6">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-500">
+            <div className="glass-inset w-full rounded-[1.6rem] p-5 sm:p-6">
+              <p className="font-mono text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
                 Entrar
               </p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#111827]">
+              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
                 Acesse a operacao.
               </h2>
-              <p className="mt-2 text-sm leading-6 text-[#6b7280]">
+              <p className="mt-2 text-sm leading-6 text-[rgba(255,255,255,0.58)]">
                 O sistema identifica automaticamente se o acesso e de administrador ou seller.
               </p>
 
@@ -123,7 +125,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center rounded-[1rem] bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+                  className="glass-button-primary inline-flex w-full items-center justify-center rounded-[1rem] px-4 py-3 text-sm font-semibold"
                 >
                   Entrar na plataforma
                 </button>
@@ -146,13 +148,13 @@ function FeatureRow({
   description: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-[1.1rem] border border-white/10 bg-white/5 px-4 py-4">
-      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/8">
-        <Icon className="h-4.5 w-4.5 text-sky-400" />
+    <div className="glass-inset flex items-start gap-3 rounded-[1.1rem] px-4 py-4">
+      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.12)]">
+        <Icon className="h-4.5 w-4.5 text-[var(--accent)]" />
       </div>
       <div>
         <p className="text-sm font-semibold text-white">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-white/60">{description}</p>
+        <p className="mt-1 text-sm leading-6 text-[rgba(255,255,255,0.58)]">{description}</p>
       </div>
     </div>
   );
@@ -167,10 +169,10 @@ function Notice({
 }) {
   const toneClass =
     tone === "error"
-      ? "border-red-200 bg-red-50 text-red-600"
+      ? "border-[rgba(255,122,116,0.18)] bg-[rgba(255,122,116,0.1)] text-[#ffbbb5]"
       : tone === "warning"
-        ? "border-amber-200 bg-amber-50 text-amber-700"
-        : "border-black/[0.06] bg-white text-[#374151]";
+        ? "border-[rgba(248,210,106,0.18)] bg-[rgba(248,210,106,0.1)] text-[#f4dd93]"
+        : "border-white/8 bg-white/5 text-[rgba(255,255,255,0.78)]";
 
   return (
     <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${toneClass}`}>
@@ -194,13 +196,13 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-[#111827]">{label}</span>
+      <span className="text-sm font-medium text-[rgba(255,255,255,0.82)]">{label}</span>
       <input
         name={name}
         type={type}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-black/[0.08] bg-white px-4 py-3 text-sm text-[#111827] outline-none transition-colors placeholder:text-[#9ca3af] focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
+        className="glass-input mt-2 w-full rounded-2xl px-4 py-3 text-sm text-white placeholder:text-[rgba(255,255,255,0.34)]"
       />
     </label>
   );

@@ -19,6 +19,11 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: `${platformBrand.name} | ${platformBrand.shortDescription}`,
   description: platformBrand.longDescription,
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

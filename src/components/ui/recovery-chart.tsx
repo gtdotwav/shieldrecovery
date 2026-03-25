@@ -88,7 +88,7 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-xl bg-[#f8f9fb] text-sm text-[#9ca3af]">
+      <div className="glass-inset flex h-48 items-center justify-center rounded-xl text-sm text-[rgba(255,255,255,0.54)]">
         Sem dados suficientes para exibir o grafico.
       </div>
     );
@@ -116,13 +116,13 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
         onMouseLeave={handleMouseLeave}
       >
         <defs>
-          <linearGradient id="orangeGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgb(249,115,22)" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="rgb(249,115,22)" stopOpacity="0.01" />
+          <linearGradient id="recoveredGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#1ED760" stopOpacity="0.24" />
+            <stop offset="100%" stopColor="#1ED760" stopOpacity="0.01" />
           </linearGradient>
-          <linearGradient id="grayGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#9ca3af" stopOpacity="0.10" />
-            <stop offset="100%" stopColor="#9ca3af" stopOpacity="0.01" />
+          <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.26)" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.26)" stopOpacity="0.01" />
           </linearGradient>
         </defs>
 
@@ -136,14 +136,14 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
                 y1={y}
                 x2={CHART_W - PAD_R}
                 y2={y}
-                stroke="#e5e7eb"
+                stroke="rgba(255,255,255,0.08)"
                 strokeWidth="0.5"
               />
               <text
                 x={PAD_L - 8}
                 y={y + 3.5}
                 textAnchor="end"
-                fill="#9ca3af"
+                fill="rgba(255,255,255,0.44)"
                 fontSize="10"
                 fontFamily="inherit"
               >
@@ -162,7 +162,7 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
               x={x}
               y={CHART_H - 6}
               textAnchor="middle"
-              fill={hoveredIndex === i ? "#111827" : "#9ca3af"}
+              fill={hoveredIndex === i ? "#ffffff" : "rgba(255,255,255,0.44)"}
               fontSize="10"
               fontWeight={hoveredIndex === i ? "600" : "400"}
               fontFamily="inherit"
@@ -173,14 +173,14 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
         })}
 
         {/* Area fills */}
-        <path d={buildSmoothAreaPath(lostCoords)} fill="url(#grayGrad)" />
-        <path d={buildSmoothAreaPath(recoveredCoords)} fill="url(#orangeGrad)" />
+        <path d={buildSmoothAreaPath(lostCoords)} fill="url(#portfolioGrad)" />
+        <path d={buildSmoothAreaPath(recoveredCoords)} fill="url(#recoveredGrad)" />
 
         {/* Lines */}
         <path
           d={buildSmoothPath(lostCoords)}
           fill="none"
-          stroke="#9ca3af"
+          stroke="rgba(255,255,255,0.44)"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -188,7 +188,7 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
         <path
           d={buildSmoothPath(recoveredCoords)}
           fill="none"
-          stroke="rgb(249,115,22)"
+          stroke="#1ED760"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -210,7 +210,7 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
                   y1={PAD_T}
                   x2={x}
                   y2={CHART_H - PAD_B}
-                  stroke="#e5e7eb"
+                  stroke="rgba(255,255,255,0.18)"
                   strokeWidth="1"
                   strokeDasharray="3 3"
                 />
@@ -221,7 +221,7 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
                 cx={x}
                 cy={lostY}
                 r={isHovered ? 5 : 3}
-                fill={isHovered ? "#6b7280" : "#9ca3af"}
+                fill={isHovered ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.44)"}
                 stroke={isHovered ? "white" : "none"}
                 strokeWidth={isHovered ? 2 : 0}
               />
@@ -231,7 +231,7 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
                 cx={x}
                 cy={recoveredY}
                 r={isHovered ? 5 : 3}
-                fill="rgb(249,115,22)"
+                fill="#1ED760"
                 stroke={isHovered ? "white" : "none"}
                 strokeWidth={isHovered ? 2 : 0}
               />
@@ -245,13 +245,13 @@ export function RecoveryChart({ data }: { data: DataPoint[] }) {
                     width={124}
                     height={44}
                     rx={8}
-                    fill="#1f2937"
+                    fill="rgba(5,18,14,0.96)"
                     opacity={0.95}
                   />
                   {/* Arrow */}
                   <path
                     d={`M${x - 5},${Math.min(lostY, recoveredY) - 10} L${x},${Math.min(lostY, recoveredY) - 5} L${x + 5},${Math.min(lostY, recoveredY) - 10}`}
-                    fill="#1f2937"
+                    fill="rgba(5,18,14,0.96)"
                     opacity={0.95}
                   />
                   <text

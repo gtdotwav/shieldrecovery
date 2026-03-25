@@ -1,7 +1,6 @@
-import { CreditCard, Orbit } from "lucide-react";
-
 import { platformBrand } from "@/lib/platform";
 import { cn } from "@/lib/utils";
+import { PagRecoveryMark } from "@/components/platform/pagrecovery-mark";
 
 type PlatformLogoProps = {
   className?: string;
@@ -22,33 +21,45 @@ export function PlatformLogo({
 }: PlatformLogoProps) {
   const frameClass =
     emphasis === "strong"
-      ? "rounded-[1.15rem] border border-sky-500/16 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(239,249,255,0.94))] px-3 py-2 shadow-[0_18px_45px_rgba(14,116,144,0.12)] ring-1 ring-white/70"
+      ? "glass-panel rounded-[1.4rem] px-3.5 py-3 shadow-[0_24px_70px_rgba(0,0,0,0.32)]"
       : "";
   const markSizeClass =
-    size === "lg" ? "h-14 w-14" : size === "sm" ? "h-10 w-10" : "h-11 w-11";
+    size === "lg" ? "h-16 w-[3.3rem]" : size === "sm" ? "h-10 w-[2.05rem]" : "h-12 w-[2.45rem]";
 
   if (mode === "icon") {
     return (
-      <LogoMark className={cn(markSizeClass, iconClassName, className)} />
+      <div className={cn("flex items-center justify-center", className)}>
+        <PagRecoveryMark className={cn(markSizeClass, "drop-shadow-[0_8px_20px_rgba(30,215,96,0.18)]", iconClassName)} />
+      </div>
     );
   }
 
   const content = (
     <>
-      <LogoMark className={cn(markSizeClass, "shrink-0", iconClassName)} />
+      <PagRecoveryMark
+        className={cn(
+          markSizeClass,
+          "shrink-0 drop-shadow-[0_12px_28px_rgba(30,215,96,0.18)]",
+          iconClassName,
+        )}
+      />
       <div className={cn("min-w-0", textClassName)}>
         <p
           className={cn(
-            "text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-sky-600",
-            size === "lg" && "text-[0.7rem]",
+            "font-mono text-[0.58rem] uppercase tracking-[0.34em] text-[rgba(255,255,255,0.54)]",
+            size === "lg" && "text-[0.62rem]",
           )}
         >
-          White Label Recovery
+          Premium Recovery Suite
         </p>
         <p
           className={cn(
-            "text-lg font-semibold tracking-tight text-[#082f49]",
-            size === "lg" ? "text-[1.45rem]" : size === "sm" ? "text-base" : "text-lg",
+            "mt-1 text-lg font-semibold tracking-[-0.06em] text-white [text-shadow:0_6px_18px_rgba(0,0,0,0.32)]",
+            size === "lg"
+              ? "text-[2.5rem] leading-none"
+              : size === "sm"
+                ? "text-[1.15rem]"
+                : "text-[1.45rem]",
           )}
         >
           {platformBrand.name}
@@ -59,13 +70,13 @@ export function PlatformLogo({
 
   if (mode === "stacked") {
     return (
-      <div className={cn("inline-flex flex-col items-start gap-3", className)}>
-        <LogoMark className={cn(markSizeClass, iconClassName)} />
+      <div className={cn("inline-flex flex-col items-start gap-3", frameClass, className)}>
+        <PagRecoveryMark className={cn(markSizeClass, iconClassName)} />
         <div className={cn("min-w-0", textClassName)}>
-          <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-sky-600">
-            White Label Recovery
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.32em] text-[rgba(255,255,255,0.5)]">
+            Premium Recovery Suite
           </p>
-          <p className="mt-1 text-[2rem] font-semibold tracking-tight text-[#082f49]">
+          <p className="mt-1 text-[2rem] font-semibold tracking-[-0.06em] text-white">
             {platformBrand.name}
           </p>
         </div>
@@ -74,26 +85,8 @@ export function PlatformLogo({
   }
 
   return (
-    <div className={cn("inline-flex items-center gap-3", frameClass, className)}>
+    <div className={cn("inline-flex items-center gap-3.5", frameClass, className)}>
       {content}
     </div>
   );
 }
-
-function LogoMark({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "relative flex items-center justify-center overflow-hidden rounded-[1rem] border border-sky-200/80 bg-[linear-gradient(145deg,#ffffff,#e0f2fe)] shadow-[0_18px_44px_rgba(8,47,73,0.12)]",
-        className,
-      )}
-      aria-label={`${platformBrand.name} logo`}
-      role="img"
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.28),transparent_58%)]" />
-      <Orbit className="absolute h-[72%] w-[72%] text-sky-300/70" strokeWidth={1.35} />
-      <CreditCard className="relative h-[42%] w-[42%] text-sky-700" strokeWidth={2} />
-    </div>
-  );
-}
-

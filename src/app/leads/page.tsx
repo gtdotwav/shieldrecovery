@@ -106,7 +106,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
           <ViewSwitcher currentView={currentView} currentScope={currentScope} />
           <Link
             href="/inbox"
-            className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
+            className="glass-button-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em]"
           >
             Conversas
             <ArrowRight className="h-3.5 w-3.5" />
@@ -134,15 +134,15 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_19rem]">
         <PlatformSurface className="p-4 sm:p-5">
-          <div className="flex flex-col gap-4 border-b border-black/[0.06] pb-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="ambient-divider flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+              <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
                 CRM operacional
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
                 Lista para operar, kanban para apoiar.
               </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[rgba(255,255,255,0.6)]">
                 A operação principal fica na lista. O kanban continua disponível
                 só como apoio visual para leitura de etapa.
               </p>
@@ -154,7 +154,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
             <div className="flex flex-col items-start gap-2 lg:items-end">
               <ScopeSwitcher currentView={currentView} currentScope={currentScope} />
-              <p className="text-xs text-[#9ca3af]">Lista como padrão.</p>
+              <p className="text-xs text-[rgba(255,255,255,0.38)]">Lista como padrão.</p>
             </div>
           </div>
 
@@ -169,19 +169,19 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
         <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <PlatformSurface className="p-4">
-            <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+            <h3 className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
               Caso em foco
             </h3>
             {focusedLead ? (
               <div className="mt-4 space-y-3">
                 <div>
-                  <p className="text-sm font-semibold text-[#1a1a2e]">
+                  <p className="text-sm font-semibold text-white">
                     {focusedLead.customer_name}
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-[#1a1a2e]">
+                  <p className="mt-1 text-lg font-semibold text-[var(--accent)]">
                     {formatCurrency(focusedLead.payment_value)}
                   </p>
-                  <p className="mt-1 text-xs text-[#9ca3af]">
+                  <p className="mt-1 text-xs text-[rgba(255,255,255,0.42)]">
                     {focusedLead.product || "Produto não informado"}
                   </p>
                 </div>
@@ -189,7 +189,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                   <StageBadge stage={focusedLead.lead_status} />
                   <TimeBadge updatedAt={focusedLead.updated_at} />
                 </div>
-                <div className="space-y-2 rounded-[1rem] border border-black/[0.06] bg-[#fafafa] px-3 py-3">
+                <div className="glass-inset space-y-2 rounded-[1rem] px-3 py-3">
                   <DetailLine
                     label="Dono"
                     value={focusedLead.assigned_agent || "Sem responsável"}
@@ -207,17 +207,17 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     value={formatDateTime(focusedLead.updated_at)}
                   />
                 </div>
-                <div className="rounded-[1rem] border border-black/[0.06] bg-[#fafafa] px-3 py-3">
-                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#717182]">
+                <div className="glass-inset rounded-[1rem] px-3 py-3">
+                  <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-[rgba(255,255,255,0.44)]">
                     Próxima ação
                   </p>
-                  <p className="mt-1 text-sm text-[#374151]">
+                  <p className="mt-1 text-sm text-[rgba(255,255,255,0.72)]">
                     {recommendedNextAction(focusedLead)}
                   </p>
                 </div>
                 <Link
                   href={`/leads/${focusedLead.lead_id}`}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--accent)] transition-colors hover:text-[#72f2a2]"
                 >
                   Abrir detalhe do lead
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -225,8 +225,8 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
               </div>
             ) : (
               <PlatformInset className="mt-3 p-4">
-                <p className="text-sm text-[#9ca3af]">Nenhum lead nesta carteira.</p>
-                <p className="mt-1 text-xs text-[#9ca3af]">
+                  <p className="text-sm text-[rgba(255,255,255,0.54)]">Nenhum lead nesta carteira.</p>
+                <p className="mt-1 text-xs text-[rgba(255,255,255,0.38)]">
                   Quando novos casos entrarem, o foco da operação aparece aqui.
                 </p>
               </PlatformInset>
@@ -234,7 +234,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+            <h3 className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
               Leitura da carteira
             </h3>
             <div className="mt-4 space-y-2.5">
@@ -247,18 +247,18 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                 return (
                   <div
                     key={stage}
-                    className="flex items-center justify-between rounded-[0.95rem] border border-black/[0.06] bg-[#fafafa] px-3 py-2.5"
+                    className="glass-inset flex items-center justify-between rounded-[0.95rem] px-3 py-2.5"
                   >
                     <div className="flex items-center gap-2">
                       <StageBadge stage={stage} />
                     </div>
-                    <span className="text-sm font-medium text-[#1a1a2e]">{count}</span>
+                    <span className="text-sm font-medium text-white">{count}</span>
                   </div>
                 );
               })}
-              <div className="flex items-center justify-between rounded-[0.95rem] border border-black/[0.06] bg-[#fafafa] px-3 py-2.5">
-                <span className="text-sm text-[#6b7280]">Sem responsável</span>
-                <span className="text-sm font-medium text-[#1a1a2e]">{unassignedCount}</span>
+              <div className="glass-inset flex items-center justify-between rounded-[0.95rem] px-3 py-2.5">
+                <span className="text-sm text-[rgba(255,255,255,0.58)]">Sem responsável</span>
+                <span className="text-sm font-medium text-white">{unassignedCount}</span>
               </div>
             </div>
           </PlatformSurface>
@@ -276,7 +276,7 @@ function ViewSwitcher({
   currentScope: ScopeMode;
 }) {
   return (
-    <div className="inline-flex items-center rounded-full border border-black/[0.08] bg-white p-1">
+    <div className="glass-inset inline-flex items-center rounded-full p-1">
       <SwitcherLink
         href={buildLeadsHref({ view: "list", scope: currentScope })}
         active={currentView === "list"}
@@ -337,10 +337,10 @@ function SwitcherLink({
     <Link
       href={href}
       className={cn(
-        "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+        "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] transition-colors",
         active
-          ? "bg-[#111827] text-white"
-          : "text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#111827]",
+          ? "bg-[rgba(30,215,96,0.16)] text-[var(--accent)]"
+          : "text-[rgba(255,255,255,0.58)] hover:bg-white/6 hover:text-white",
       )}
     >
       {children}
@@ -365,8 +365,8 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
   return (
     <>
       <div className="hidden lg:block">
-        <div className="overflow-hidden rounded-[1.1rem] border border-black/[0.06] bg-white">
-          <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 border-b border-black/[0.06] bg-[#f8f9fb] px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ca3af]">
+        <div className="glass-panel overflow-hidden rounded-[1.1rem]">
+          <div className="ambient-divider grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 border-b bg-[rgba(255,255,255,0.03)] px-4 py-3 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[rgba(255,255,255,0.42)]">
             <span>Lead</span>
             <span>Etapa</span>
             <span>Valor</span>
@@ -375,7 +375,7 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
             <span>Atualizado</span>
             <span className="text-right">Ação</span>
           </div>
-          <div className="divide-y divide-black/[0.06]">
+          <div className="divide-y divide-white/6">
             {contacts.map((contact) => (
               <LeadTableRow key={contact.lead_id} contact={contact} />
             ))}
@@ -409,22 +409,19 @@ function LeadKanbanView({
   return (
     <div className="flex gap-4 overflow-x-auto pb-2 xl:grid xl:grid-cols-5 xl:overflow-visible xl:pb-0">
       {visibleLanes.map((lane) => (
-        <div
-          key={lane.key}
-          className="min-w-[17rem] rounded-[1.1rem] border border-black/[0.05] bg-[#fafafa] p-3 xl:min-w-0"
-        >
+        <div key={lane.key} className="glass-panel min-w-[17rem] rounded-[1.1rem] p-3 xl:min-w-0">
           <div className="flex items-center justify-between pb-3">
-            <p className="text-sm font-medium text-[#1a1a2e]">
+            <p className="text-sm font-medium text-white">
               {mapStageLabel(lane.key)}
             </p>
-            <span className="rounded-full border border-black/[0.06] bg-white px-2 py-0.5 text-[0.65rem] text-[#717182]">
+            <span className="muted-pill rounded-full px-2 py-0.5 text-[0.65rem]">
               {lane.leads.length}
             </span>
           </div>
           <div className="space-y-2.5">
             {lane.leads.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-black/10 px-3 py-5 text-center">
-                <p className="text-xs text-[#9ca3af]">Vazio</p>
+              <div className="glass-inset rounded-xl border border-dashed border-white/10 px-3 py-5 text-center">
+                <p className="text-xs text-[rgba(255,255,255,0.42)]">Vazio</p>
               </div>
             ) : (
               lane.leads.map((contact) => (
@@ -442,20 +439,20 @@ function LeadTableRow({ contact }: { contact: FollowUpContact }) {
   const isTerminal = isTerminalLead(contact);
 
   return (
-    <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 px-4 py-3.5 transition-colors hover:bg-[#fafafa]">
+    <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.03]">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <Link
             href={`/leads/${contact.lead_id}`}
-            className="truncate text-sm font-semibold text-[#111827] transition-colors hover:text-sky-600"
+            className="truncate text-sm font-semibold text-white transition-colors hover:text-[var(--accent)]"
           >
             {contact.customer_name}
           </Link>
         </div>
-        <p className="mt-1 truncate text-xs text-[#9ca3af]">
+        <p className="mt-1 truncate text-xs text-[rgba(255,255,255,0.42)]">
           {contact.product || "Produto não informado"}
         </p>
-        <p className="mt-1 truncate text-xs text-[#6b7280]">
+        <p className="mt-1 truncate text-xs text-[rgba(255,255,255,0.58)]">
           {mapPaymentMethod(contact.payment_method)} ·{" "}
           {mapPaymentStatus(contact.payment_status)}
         </p>
@@ -465,20 +462,20 @@ function LeadTableRow({ contact }: { contact: FollowUpContact }) {
         <StageBadge stage={contact.lead_status} />
       </div>
 
-      <div className="flex items-center text-sm font-semibold text-[#111827]">
+      <div className="flex items-center text-sm font-semibold text-[var(--accent)]">
         {formatCurrency(contact.payment_value)}
       </div>
 
       <div className="min-w-0 self-center">
-        <p className="truncate text-sm text-[#374151]">
+        <p className="truncate text-sm text-[rgba(255,255,255,0.78)]">
           {pickBestContact(contact.phone, contact.email)}
         </p>
-        <p className="mt-1 truncate text-xs text-[#9ca3af]">
+        <p className="mt-1 truncate text-xs text-[rgba(255,255,255,0.42)]">
           {hasPhone(contact.phone) ? "WhatsApp prioritário" : "Email prioritário"}
         </p>
       </div>
 
-      <div className="flex items-center text-sm text-[#374151]">
+      <div className="flex items-center text-sm text-[rgba(255,255,255,0.78)]">
         {contact.assigned_agent || "Sem responsável"}
       </div>
 
@@ -489,7 +486,7 @@ function LeadTableRow({ contact }: { contact: FollowUpContact }) {
       <div className="flex items-center justify-end gap-2">
         <Link
           href={`/leads/${contact.lead_id}`}
-          className="text-xs font-medium text-[#6b7280] transition-colors hover:text-[#111827]"
+          className="text-xs font-medium text-[rgba(255,255,255,0.54)] transition-colors hover:text-white"
         >
           Abrir
         </Link>
@@ -507,20 +504,20 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
   const isTerminal = isTerminalLead(contact);
 
   return (
-    <div className="rounded-[1.1rem] border border-black/[0.06] bg-white p-3.5">
+    <div className="glass-inset rounded-[1.1rem] p-3.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
             href={`/leads/${contact.lead_id}`}
-            className="block truncate text-sm font-semibold text-[#111827] transition-colors hover:text-sky-600"
+            className="block truncate text-sm font-semibold text-white transition-colors hover:text-[var(--accent)]"
           >
             {contact.customer_name}
           </Link>
-          <p className="mt-1 truncate text-xs text-[#9ca3af]">
+          <p className="mt-1 truncate text-xs text-[rgba(255,255,255,0.42)]">
             {contact.product || "Produto não informado"}
           </p>
         </div>
-        <p className="whitespace-nowrap text-sm font-semibold text-[#111827]">
+        <p className="whitespace-nowrap text-sm font-semibold text-[var(--accent)]">
           {formatCurrency(contact.payment_value)}
         </p>
       </div>
@@ -530,16 +527,16 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
         <TimeBadge updatedAt={contact.updated_at} />
       </div>
 
-      <div className="mt-3 grid gap-2 text-sm text-[#4b5563] sm:grid-cols-2">
+      <div className="mt-3 grid gap-2 text-sm text-[rgba(255,255,255,0.72)] sm:grid-cols-2">
         <DetailBlock label="Contato" value={pickBestContact(contact.phone, contact.email)} />
         <DetailBlock label="Dono" value={contact.assigned_agent || "Sem responsável"} />
       </div>
 
-      <div className="mt-3 rounded-[0.95rem] border border-black/[0.05] bg-[#fafafa] px-3 py-2.5">
-        <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#9ca3af]">
+      <div className="glass-inset mt-3 rounded-[0.95rem] px-3 py-2.5">
+        <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.18em] text-[rgba(255,255,255,0.42)]">
           Próxima ação
         </p>
-        <p className="mt-1 text-xs leading-5 text-[#4b5563]">
+        <p className="mt-1 text-xs leading-5 text-[rgba(255,255,255,0.72)]">
           {recommendedNextAction(contact)}
         </p>
       </div>
@@ -547,7 +544,7 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
       <div className="mt-3 flex items-center justify-between gap-3">
         <Link
           href={`/leads/${contact.lead_id}`}
-          className="text-xs font-medium text-[#6b7280] transition-colors hover:text-[#111827]"
+          className="text-xs font-medium text-[rgba(255,255,255,0.54)] transition-colors hover:text-white"
         >
           Abrir detalhe
         </Link>
@@ -596,8 +593,8 @@ function LeadAction({
           "rounded-lg text-xs font-medium transition-colors",
           compact ? "px-2.5 py-1.5" : "px-3 py-1.5",
           isPrimary
-            ? "bg-sky-500 text-white hover:bg-sky-600"
-            : "border border-black/10 bg-white text-[#1a1a2e] hover:bg-[#f5f5f7]",
+            ? "glass-button-primary text-[0.72rem] uppercase tracking-[0.14em]"
+            : "glass-button-secondary text-[0.72rem] uppercase tracking-[0.14em]",
         )}
       >
         {label}
@@ -609,8 +606,8 @@ function LeadAction({
 function DetailLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-[#9ca3af]">{label}</span>
-      <span className="truncate text-right text-sm text-[#374151]">{value}</span>
+      <span className="text-xs text-[rgba(255,255,255,0.42)]">{label}</span>
+      <span className="truncate text-right text-sm text-[rgba(255,255,255,0.78)]">{value}</span>
     </div>
   );
 }
@@ -618,10 +615,10 @@ function DetailLine({ label, value }: { label: string; value: string }) {
 function DetailBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#9ca3af]">
+      <p className="font-mono text-[0.68rem] font-medium uppercase tracking-[0.18em] text-[rgba(255,255,255,0.42)]">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm text-[#374151]">{value}</p>
+      <p className="mt-1 truncate text-sm text-[rgba(255,255,255,0.78)]">{value}</p>
     </div>
   );
 }

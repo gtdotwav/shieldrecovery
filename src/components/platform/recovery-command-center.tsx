@@ -41,7 +41,7 @@ const modules: ModuleCard[] = [
     description:
       "Liga WhatsApp, email, CRM e playbooks para que a operação comece do jeito certo.",
     icon: Link2,
-    tone: "from-[rgba(255,106,0,0.14)] to-transparent",
+    tone: "from-[rgba(30,215,96,0.18)] to-transparent",
   },
   {
     href: "/dashboard",
@@ -49,7 +49,7 @@ const modules: ModuleCard[] = [
     description:
       "Mostra o que merece atenção agora, o que está mais quente e onde a receita pode voltar.",
     icon: BarChart3,
-    tone: "from-[rgba(143,217,255,0.12)] to-transparent",
+    tone: "from-[rgba(15,164,122,0.16)] to-transparent",
   },
   {
     href: "/leads",
@@ -57,7 +57,7 @@ const modules: ModuleCard[] = [
     description:
       "Organiza o CRM por funil, perfil e momento do cliente com apoio da IA.",
     icon: UsersRound,
-    tone: "from-[rgba(123,201,111,0.12)] to-transparent",
+    tone: "from-[rgba(30,215,96,0.14)] to-transparent",
   },
 ];
 
@@ -106,13 +106,13 @@ export function RecoveryCommandCenter({
     <PlatformSurface className="p-5 sm:p-6">
       <div className="flex flex-col gap-4 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[0.72rem] uppercase tracking-[0.28em] text-[#ff8d43]">
+          <p className="text-[0.72rem] uppercase tracking-[0.28em] text-[var(--accent)]">
             Preview da plataforma
           </p>
           <h2 className="mt-3 max-w-[13ch] text-balance text-3xl font-semibold tracking-[-0.06em] text-white sm:text-[2.4rem]">
             Plataforma única para recuperar receita.
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[#c1c6ce]">
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(255,255,255,0.62)]">
             O produto inteiro foi organizado para parecer software vivo: cada
             módulo tem função clara, a operação tem contexto e a IA ajuda a
             reduzir dúvida do time.
@@ -127,13 +127,13 @@ export function RecoveryCommandCenter({
           <div className="grid gap-3 sm:grid-cols-3">
             {previewMetrics.map((metric) => (
               <PlatformInset key={metric.label} className="p-4">
-                <p className="text-[0.68rem] uppercase tracking-[0.22em] text-[#9fa5ae]">
+                <p className="text-[0.68rem] uppercase tracking-[0.22em] text-[rgba(255,255,255,0.44)]">
                   {metric.label}
                 </p>
                 <p className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
                   {metric.value}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[#c1c6ce]">
+                <p className="mt-2 text-sm leading-6 text-[rgba(255,255,255,0.62)]">
                   {metric.detail}
                 </p>
               </PlatformInset>
@@ -145,22 +145,22 @@ export function RecoveryCommandCenter({
               <Link
                 key={module.title}
                 href={module.href}
-                className="group relative overflow-hidden rounded-[1.55rem] border border-white/10 bg-[#0f1217] p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[rgba(255,106,0,0.18)] hover:bg-[#11151b]"
+                className="glass-inset glass-hover group relative overflow-hidden rounded-[1.55rem] p-5"
               >
                 <div
                   className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${module.tone}`}
                 />
                 <div className="relative">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="rounded-[1rem] border border-white/10 bg-white/[0.04] p-2.5">
-                      <module.icon className="h-4 w-4 text-[#ff6a00]" />
+                    <div className="rounded-[1rem] border border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.1)] p-2.5">
+                      <module.icon className="h-4 w-4 text-[var(--accent)]" />
                     </div>
-                    <ArrowUpRight className="h-4 w-4 text-[#d1d5db]/40 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#ffb178]" />
+                    <ArrowUpRight className="h-4 w-4 text-white/36 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--accent)]" />
                   </div>
                   <h3 className="mt-5 text-xl font-semibold tracking-[-0.05em] text-white">
                     {module.title}
                   </h3>
-                  <p className="mt-3 text-sm leading-7 text-[#c1c6ce]">
+                  <p className="mt-3 text-sm leading-7 text-[rgba(255,255,255,0.62)]">
                     {module.description}
                   </p>
                 </div>
@@ -169,7 +169,7 @@ export function RecoveryCommandCenter({
           </div>
 
           <PlatformInset className="p-5">
-            <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.28em] text-[#ff8d43]">
+            <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.28em] text-[var(--accent)]">
               <Workflow className="h-4 w-4" />
               Como a plataforma se organiza
             </div>
@@ -177,12 +177,12 @@ export function RecoveryCommandCenter({
               {productFlow.map((item, index) => (
                 <div
                   key={item}
-                  className="rounded-[1.2rem] border border-white/10 bg-[#0d1015] px-4 py-4"
+                  className="glass-inset rounded-[1.2rem] px-4 py-4"
                 >
-                  <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[#ff8d43]">
+                  <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--accent)]">
                     etapa 0{index + 1}
                   </p>
-                  <p className="mt-3 text-sm leading-7 text-[#c1c6ce]">{item}</p>
+                  <p className="mt-3 text-sm leading-7 text-[rgba(255,255,255,0.62)]">{item}</p>
                 </div>
               ))}
             </div>
@@ -193,24 +193,24 @@ export function RecoveryCommandCenter({
           <TextRevealCard
             text="Parecia perda inevitável."
             revealText="PagRecovery enxerga receita recuperavel."
-            className="rounded-[1.8rem] border-white/10 bg-[#0c0f14] px-5 py-5"
+            className="glass-panel qr-panel rounded-[1.8rem] border-white/10 px-5 py-5"
             showStars={false}
           >
-            <div className="mb-4 flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.22em] text-[#ff8d43]">
+            <div className="mb-4 flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.22em] text-[var(--accent)]">
               <Sparkles className="h-4 w-4" />
               Leitura estratégica
             </div>
             <TextRevealCardTitle className="max-w-[14ch] text-[1.65rem] font-semibold tracking-[-0.06em] text-white">
               A operação ganha contexto antes do contato.
             </TextRevealCardTitle>
-            <TextRevealCardDescription className="max-w-[30ch] text-sm leading-7 text-[#c1c6ce]">
+            <TextRevealCardDescription className="max-w-[30ch] text-sm leading-7 text-[rgba(255,255,255,0.62)]">
               O foco deixa de ser a falha técnica e passa a ser a melhor forma
               de trazer a receita de volta.
             </TextRevealCardDescription>
           </TextRevealCard>
 
           <PlatformInset className="p-5">
-            <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.28em] text-[#ff8d43]">
+            <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.28em] text-[var(--accent)]">
               <Sparkles className="h-4 w-4" />
               O que a IA faz no dia a dia
             </div>
@@ -218,9 +218,9 @@ export function RecoveryCommandCenter({
               {aiSignals.map((signal) => (
                 <div
                   key={signal}
-                  className="rounded-[1.1rem] border border-white/10 bg-[#0d1015] px-4 py-3"
+                  className="glass-inset rounded-[1.1rem] px-4 py-3"
                 >
-                  <p className="text-sm leading-7 text-[#c1c6ce]">{signal}</p>
+                  <p className="text-sm leading-7 text-[rgba(255,255,255,0.62)]">{signal}</p>
                 </div>
               ))}
             </div>
