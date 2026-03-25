@@ -59,7 +59,7 @@ export default async function Home() {
           alt="PagRecovery"
           width={1600}
           height={1600}
-          className="h-[6rem] w-auto object-contain brightness-[1.02] drop-shadow-[0_10px_28px_rgba(0,0,0,0.35)] sm:h-[7.5rem]"
+          className="h-[10rem] w-auto object-contain brightness-[1.02] drop-shadow-[0_10px_28px_rgba(0,0,0,0.35)] sm:h-[14rem]"
           priority
         />
         <div className="flex items-center gap-3">
