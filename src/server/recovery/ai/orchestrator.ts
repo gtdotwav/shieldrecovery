@@ -233,9 +233,10 @@ export class AIRecoveryOrchestrator {
       };
     }
 
-    // Payment method selection (button reply or text)
+    // Payment method selection (button reply, text, or numeric option)
     if (
       matchesAny(normalized, [
+        "1",
         "pix",
         "quero pix",
         "pagar com pix",
@@ -254,6 +255,7 @@ export class AIRecoveryOrchestrator {
 
     if (
       matchesAny(normalized, [
+        "2",
         "cartao",
         "cartão",
         "credito",
@@ -276,6 +278,7 @@ export class AIRecoveryOrchestrator {
 
     if (
       matchesAny(normalized, [
+        "3",
         "boleto",
         "quero boleto",
         "pagar com boleto",
@@ -707,13 +710,15 @@ export class AIRecoveryOrchestrator {
       return {
         strategyId: strategy.id,
         strategyName: strategy.name,
-        timesUsed: matched.length || Math.floor(Math.random() * 30 + 5),
+        timesUsed: matched.length,
         successRate:
           matched.length > 0
             ? (recovered.length / matched.length) * 100
-            : Math.floor(Math.random() * 40 + 35),
-        averageRecoveryTimeHours: Math.floor(Math.random() * 18 + 4),
-        responseRate: Math.floor(Math.random() * 30 + 40),
+            : 0,
+        averageRecoveryTimeHours: 0,
+        responseRate: matched.length > 0
+          ? Math.round((recovered.length / matched.length) * 100)
+          : 0,
       };
     });
   }

@@ -192,7 +192,7 @@ export function RecoveryCommandCenter({
         <div className="space-y-4">
           <TextRevealCard
             text="Parecia perda inevitável."
-            revealText="A Shield enxerga receita recuperável."
+            revealText="PagRecovery enxerga receita recuperavel."
             className="rounded-[1.8rem] border-white/10 bg-[#0c0f14] px-5 py-5"
             showStars={false}
           >

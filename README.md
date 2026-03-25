@@ -1,15 +1,25 @@
-# Shield Recovery
+# PagRecovery
 
-Shield Recovery is a payment recovery platform embedded into Shield Lead.
+PagRecovery e um clone operacional da stack de recovery preparado para expansao em white label.
 
-The product has two layers:
+Hoje a base ja nasce com:
 
-- public product presentation at `/`
-- operational platform for recovery at `/dashboard`, `/connect`, `/leads` and `/inbox`
+- identidade visual azul e marca centralizada em [`src/lib/platform.ts`](/Users/geander/Documents/shield recovery/src/lib/platform.ts)
+- webhook oficial da Pagou.ai em `POST /api/webhooks/pagouai`
+- rota legada `/api/webhooks/shield-gateway` mantida so para compatibilidade
+- Pix de recovery criado direto na API v2 da Pagou.ai
+- CRM, inbox, automacoes, worker e persistencia reaproveitando a mesma estrutura do projeto original
 
-## Current V1 scope
+## Docs analisadas
 
-The V1 that should go live is:
+- docs atuais da Pagou.ai: [developer.pagou.ai](https://developer.pagou.ai/)
+- docs legadas: [pagouai.readme.io/reference/introducao](https://pagouai.readme.io/reference/introducao)
+
+Observacao importante: as chaves fornecidas para este projeto seguem o padrao `v2`, entao a integracao desta base foi orientada para a documentacao atual da API v2.
+
+## Escopo atual
+
+Rotas principais:
 
 - `/`
 - `/dashboard`
@@ -18,272 +28,117 @@ The V1 that should go live is:
 - `/leads/[leadId]`
 - `/inbox`
 - `/ai`
-- `/api/webhooks/shield-gateway`
-- `/api/webhooks/whatsapp`
-- `/api/import`
-- `/api/health`
-- `/api/analytics/recovery`
-- `/api/followups/contacts`
-- `/api/payments/retry`
-- `/api/settings/connections`
-
-Experimental areas are hidden by default:
-
-- `/test`
-
-To expose experimental pages locally:
-
-```bash
-SHIELD_ENABLE_EXPERIMENTAL_UI=true
-```
-
-## Stack
-
-- Next.js 16
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- Supabase (Postgres via `supabase-js`)
-- Framer Motion
-- Lucide React
-
-## Project structure
-
-```text
-src/
-  app/                         Next.js pages and API routes
-  components/
-    platform/                  product-specific UI
-    ui/                        reusable generic UI
-  lib/                         shared frontend helpers
-  server/
-    recovery/                  backend domain
-      ai/                      experimental AI layer
-      controllers/             request handlers used by routes
-      crm/                     Shield Lead lead orchestration
-      queues/                  scheduled job builders
-      services/                storage, messaging, automation, recovery
-      types.ts                 domain types
-      utils/                   error, signature and logging helpers
-      webhooks/                payload normalization
-supabase/
-  schema.sql                   relational schema for the operational database
-data/
-  shield-recovery.local.json   fallback local persistence
-docs/
-  *.md                         product and cleanup analysis
-```
-
-## Runtime model
-
-### Official API surface
-
-Use `/api/*` as the public integration surface.
-
-Main endpoints:
-
-- `POST /api/webhooks/shield-gateway`
-- `POST /api/webhooks/whatsapp`
-- `GET /api/webhooks/whatsapp`
+- `/retry/[gatewayPaymentId]`
+- `POST /api/webhooks/pagouai`
+- `POST /api/webhooks/pagouai/[sellerKey]`
 - `POST /api/import`
 - `GET /api/health`
 - `GET /api/analytics/recovery`
 - `GET /api/followups/contacts`
 - `POST /api/payments/retry`
-- `GET /api/settings/connections`
-- `POST /api/settings/connections`
-- `GET /api/worker/run`
-- `POST /api/worker/run`
+- `GET|POST /api/settings/connections`
+- `GET|POST /api/worker/run`
 
-Legacy paths still exist for compatibility, but new integrations should point only to `/api/*`.
+Rotas legadas mantidas:
 
-### Request flow
+- `/api/webhooks/shield-gateway`
+- `/api/webhooks/shield-gateway/[sellerKey]`
+- `/webhooks/shield-gateway`
+- `/webhooks/shield-gateway/[sellerKey]`
 
-1. Next.js route receives the request.
-2. A controller in `src/server/recovery/controllers` handles validation and response shape.
-3. `PaymentRecoveryService` coordinates normalization, persistence, lead creation and automation scheduling.
-4. Messaging and CRM helpers translate business decisions into platform records.
+## Como a integracao Pagou.ai funciona
 
-## Persistence
+Fluxo atual:
 
-The current project is aligned around Supabase credentials:
+1. Falha de pagamento entra por webhook, import manual ou fluxo interno.
+2. O backend normaliza o evento e salva customer, payment, lead e fila operacional.
+3. Quando o cliente escolhe Pix, a plataforma cria uma cobranca em `POST /v2/transactions`.
+4. Se o webhook vier resumido, a plataforma reconcilia dados faltantes com `GET /v2/transactions/{id}`.
+5. A tela de retry consegue exibir QR Code Pix, copia-e-cola e status da transacao Pagou.ai.
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+Estado da integracao:
 
-If those variables are present, the app runs in `supabase` mode.
+- Pix: implementado e pronto para uso
+- webhook Pagou.ai: implementado
+- reconciliacao por consulta da transacao: implementada
+- card: preparado via public key, mas o fluxo hospedado/cartao ainda depende da estrategia final de checkout que voce quiser adotar
 
-If not, it falls back to local JSON:
+## White label
 
-- local: `data/shield-recovery.local.json`
-- serverless preview fallback: `/tmp/shield-recovery-store.json`
+O projeto foi ressignificado para facilitar novos clones:
 
-This means:
+- marca e gateway centralizados em [`src/lib/platform.ts`](/Users/geander/Documents/shield recovery/src/lib/platform.ts)
+- logo textual reutilizavel em [`src/components/platform/platform-logo.tsx`](/Users/geander/Documents/shield recovery/src/components/platform/platform-logo.tsx)
+- cookies, namespace de senha e arquivos locais separados com slug `pagrecovery`
+- configuracao do gateway tratada como camada propria em [`src/server/pagouai/client.ts`](/Users/geander/Documents/shield recovery/src/server/pagouai/client.ts)
 
-- local demos work without a database
-- production should use Supabase
-- connection settings can now be maintained from `/connect` and are persisted in the current storage backend
+## Variaveis de ambiente
 
-## Connection management
+Use [`.env.example`](/Users/geander/Documents/shield recovery/.env.example) como base.
 
-The `/connect` page is now a real configuration surface for:
-
-- workspace base URL and gateway secret
-- WhatsApp API / Web API values
-- email provider values
-- Shield Lead CRM URL and key
-- OpenAI key
-
-Those settings are persisted in storage and exposed through:
-
-- `GET /api/settings/connections`
-- `POST /api/settings/connections`
-
-Important:
-
-- the database bootstrap itself still depends on environment variables so the app can start
-- after startup, operational connections are managed through the platform UI and saved in storage
-
-## Environment variables
+Minimo recomendado:
 
 ```bash
 NEXT_PUBLIC_APP_URL=http://127.0.0.1:3001
 
-SHIELD_GATEWAY_WEBHOOK_SECRET=shield_preview_secret
-WEBHOOK_TOLERANCE_SECONDS=300
+PAGOUAI_ENVIRONMENT=production
+PAGOUAI_SECRET_KEY=your-pagouai-secret-key
+NEXT_PUBLIC_PAGOUAI_PUBLIC_KEY=your-pagouai-public-key
 
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 
-WHATSAPP_ACCESS_TOKEN=your-whatsapp-access-token
-WHATSAPP_PHONE_NUMBER_ID=your-whatsapp-phone-number-id
-WHATSAPP_BUSINESS_ACCOUNT_ID=your-whatsapp-business-account-id
-WHATSAPP_WEBHOOK_VERIFY_TOKEN=your-whatsapp-webhook-verify-token
-
-SENDGRID_API_KEY=your-sendgrid-api-key
-
-SHIELD_LEAD_API_URL=https://shieldlead.example.com/api
-SHIELD_LEAD_API_KEY=your-shield-lead-api-key
-
-OPENAI_API_KEY=your-openai-api-key
-
-WORKER_AUTH_TOKEN=your-worker-token
-# optional on Vercel cron
-CRON_SECRET=your-cron-secret
-
-SHIELD_ENABLE_EXPERIMENTAL_UI=false
-
-PLATFORM_AUTH_EMAIL=admin@shieldrecovery.local
+PLATFORM_AUTH_EMAIL=admin@pagrecovery.local
 PLATFORM_AUTH_PASSWORD=change-this-password
-# optional local fallback seller; production can use Admin > seller accounts
-PLATFORM_SELLER_AUTH_EMAIL=seller@shieldrecovery.local
-PLATFORM_SELLER_AUTH_PASSWORD=change-this-password
-PLATFORM_SELLER_AGENT_NAME=Carla
 PLATFORM_AUTH_SECRET=change-this-long-random-secret
 ```
 
-## Webhook contract
+Notas:
 
-Official Shield Gateway webhook:
+- `PAGOUAI_API_BASE_URL` e opcional e so precisa ser definido para sobrescrever o host padrao
+- `NEXT_PUBLIC_PAGOUAI_PUBLIC_KEY` e recomendada se voce quiser evoluir para checkout card
+- `SHIELD_GATEWAY_WEBHOOK_SECRET` ficou apenas para compatibilidade com o webhook legado
+- nunca versione chaves live no repositorio
 
-- local: `POST http://127.0.0.1:3001/api/webhooks/shield-gateway`
-
-Required headers:
-
-- `X-Signature`
-- `X-Webhook-ID`
-- `X-Timestamp`
-
-Signature format:
-
-```text
-sha256=<hmac_sha256("${timestamp}.${rawBody}")>
-```
-
-## Current functional status
-
-Already working:
-
-- Shield Gateway webhook intake
-- payload normalization
-- lead creation and status updates
-- retry link generation
-- inbox persistence for inbound/outbound records
-- scheduled worker endpoint for due queue jobs
-- operational dashboard, CRM and connect surfaces
-- WhatsApp webhook intake
-
-Not complete yet:
-
-- final provider-specific WhatsApp hardening in production
-- production-ready automation execution layer
-- final checkout handoff in the retry page
-
-## Local development
+## Desenvolvimento local
 
 ```bash
 npm install
 npm run dev
 ```
 
-Run due queue jobs manually:
+Build de producao:
+
+```bash
+npm run build
+```
+
+Executar o worker manualmente:
 
 ```bash
 npm run worker:run
 ```
 
-Or against a remote environment:
+## Estrutura
 
-```bash
-WORKER_RUN_URL=https://shield-recovery.vercel.app \
-WORKER_AUTH_TOKEN=your-worker-token \
-npm run worker:run -- --limit=50
+```text
+src/
+  app/                         rotas Next.js e APIs
+  components/
+    platform/                  camada visual e branding
+    ui/                        blocos reutilizaveis
+  lib/
+    platform.ts                marca, gateway e helpers de white label
+  server/
+    pagouai/                   client API v2 da Pagou.ai
+    recovery/                  dominio operacional de recovery
+supabase/
+  schema.sql                   schema operacional
+data/
+  pagrecovery.local.json       persistencia local
 ```
 
-## Continuous worker execution
+## Observacoes
 
-The project now supports both execution modes:
-
-- Vercel cron calling `GET /api/worker/run` every 5 minutes
-- external/manual executor calling `POST /api/worker/run`
-
-To enable unattended execution safely:
-
-1. set `CRON_SECRET` in Vercel
-2. set `WORKER_AUTH_TOKEN` for manual or external executors
-3. redeploy so the cron picks up the secret
-4. confirm in `GET /api/health`:
-   - `automation.worker_enabled`
-   - `automation.worker_executor_configured`
-   - `automation.cron_secret_configured`
-
-Open:
-
-- [http://127.0.0.1:3000](http://127.0.0.1:3000)
-
-If you want the app on a custom port:
-
-```bash
-npm run dev -- --port 3011
-```
-
-## Validation
-
-```bash
-npm run lint
-./node_modules/.bin/tsc --noEmit
-```
-
-The release should be considered ready only when both pass and the V1 routes respond correctly.
-
-## Delivery recommendation
-
-To ship fast, keep the release focused on:
-
-- recovery intake
-- CRM workflow
-- inbox workflow
-- integration setup
-- analytics
-
-Do not position the current release as if AI automation workers were already executing live recovery by themselves.
+- a configuracao do gateway na tela `/connect` mostra o estado real da Pagou.ai, mas as chaves do gateway continuam no ambiente para facilitar novos white labels
+- se quiser transformar este projeto em uma nova marca, o ponto de partida mais importante e [`src/lib/platform.ts`](/Users/geander/Documents/shield recovery/src/lib/platform.ts)

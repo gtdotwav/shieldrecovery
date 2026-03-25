@@ -7,6 +7,8 @@ export const SUPPORTED_PAYMENT_EVENTS = [
   "payment_refused",
   "payment_expired",
   "payment_canceled",
+  "payment_refunded",
+  "payment_partially_refunded",
   "payment_chargeback",
 ] as const;
 
@@ -209,7 +211,7 @@ export type WebhookEventRecord = {
   payload: unknown;
   processed: boolean;
   duplicate: boolean;
-  source: "shield-gateway";
+  source: string;
   error?: string;
   createdAt: string;
   processedAt?: string;

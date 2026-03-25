@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
+import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import { appEnv, createDefaultConnectionSettings } from "@/server/recovery/config";
 import type {
   AgentRecord,
@@ -102,7 +103,7 @@ type DatabaseWebhookEventRow = {
   processed: boolean;
   duplicate: boolean;
   error?: string | null;
-  source: "shield-gateway";
+  source: string;
   created_at: string;
   processed_at?: string | null;
 };
@@ -306,6 +307,7 @@ export class SupabaseStorageService implements RecoveryStorage {
     webhookId: string;
     eventId: string;
     eventType: string;
+    source?: string;
     payload: unknown;
   }): Promise<WebhookEventRecord> {
     const { data, error } = await this.supabase
@@ -314,7 +316,7 @@ export class SupabaseStorageService implements RecoveryStorage {
         webhook_id: input.webhookId,
         event_id: input.eventId,
         event_type: input.eventType,
-        source: "shield-gateway",
+        source: input.source ?? platformBrand.gateway.slug,
         payload: input.payload,
       })
       .select()
@@ -365,18 +367,19 @@ export class SupabaseStorageService implements RecoveryStorage {
   }
 
   async upsertCustomer(normalizedEvent: NormalizedPaymentEvent): Promise<CustomerRecord> {
-    // Try to find existing
-    const { data: existing } = await this.supabase
+    // Prefer exact gateway_customer_id match, then fall back to email match
+    const { data: byGatewayId } = await this.supabase
       .from("customers")
       .select("*")
-      .or(`gateway_customer_id.eq.${normalizedEvent.customer.id},email.eq.${normalizedEvent.customer.email}`)
-      .maybeSingle();
+      .eq("gateway_customer_id", normalizedEvent.customer.id)
+      .limit(1);
+
+    const existing = byGatewayId?.[0] ?? null;
 
     if (existing) {
       const { data, error } = await this.supabase
         .from("customers")
         .update({
-          gateway_customer_id: normalizedEvent.customer.id,
           name: normalizedEvent.customer.name,
           email: normalizedEvent.customer.email,
           phone: normalizedEvent.customer.phone,
@@ -385,22 +388,47 @@ export class SupabaseStorageService implements RecoveryStorage {
         .eq("id", existing.id)
         .select()
         .single();
-      if (error) throw error;
-      return mapCustomer(data);
-    } else {
-      const { data, error } = await this.supabase
-        .from("customers")
-        .insert({
-          gateway_customer_id: normalizedEvent.customer.id,
-          name: normalizedEvent.customer.name,
-          email: normalizedEvent.customer.email,
-          phone: normalizedEvent.customer.phone,
-        })
-        .select()
-        .single();
-      if (error) throw error;
+      if (error) throw new Error(`Failed to update customer: ${error.message}`);
       return mapCustomer(data);
     }
+
+    // Check by email as fallback — but don't change its gateway_customer_id
+    const { data: byEmail } = await this.supabase
+      .from("customers")
+      .select("*")
+      .eq("email", normalizedEvent.customer.email)
+      .limit(1);
+
+    const emailMatch = byEmail?.[0] ?? null;
+
+    if (emailMatch) {
+      const { data, error } = await this.supabase
+        .from("customers")
+        .update({
+          name: normalizedEvent.customer.name,
+          phone: normalizedEvent.customer.phone,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", emailMatch.id)
+        .select()
+        .single();
+      if (error) throw new Error(`Failed to update customer by email: ${error.message}`);
+      return mapCustomer(data);
+    }
+
+    // Insert new customer
+    const { data, error } = await this.supabase
+      .from("customers")
+      .insert({
+        gateway_customer_id: normalizedEvent.customer.id,
+        name: normalizedEvent.customer.name,
+        email: normalizedEvent.customer.email,
+        phone: normalizedEvent.customer.phone,
+      })
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to insert customer: ${error.message}`);
+    return mapCustomer(data);
   }
 
   async upsertPayment(
@@ -412,11 +440,14 @@ export class SupabaseStorageService implements RecoveryStorage {
       normalizedEvent.event_type === "payment_refused" ||
       normalizedEvent.event_type === "payment_expired";
 
-    const { data: existing } = await this.supabase
+    const { data: paymentRows } = await this.supabase
       .from("payments")
       .select("*")
       .or(`gateway_payment_id.eq.${normalizedEvent.payment.id},order_id.eq.${normalizedEvent.payment.order_id}`)
-      .maybeSingle();
+      .order("created_at", { ascending: true })
+      .limit(1);
+
+    const existing = paymentRows?.[0] ?? null;
 
     if (existing) {
       const { data, error } = await this.supabase
@@ -436,7 +467,7 @@ export class SupabaseStorageService implements RecoveryStorage {
         .eq("id", existing.id)
         .select()
         .single();
-      if (error) throw error;
+      if (error) throw new Error(`Failed to update payment: ${error.message}`);
       return mapPayment(data);
     } else {
       const { data, error } = await this.supabase
@@ -455,7 +486,7 @@ export class SupabaseStorageService implements RecoveryStorage {
         })
         .select()
         .single();
-      if (error) throw error;
+      if (error) throw new Error(`Failed to insert payment: ${error.message}`);
       return mapPayment(data);
     }
   }
@@ -1670,7 +1701,7 @@ export class SupabaseStorageService implements RecoveryStorage {
   }
 
   getWebhookUrl(): string {
-    return `${appEnv.appBaseUrl}/api/webhooks/shield-gateway`;
+    return `${appEnv.appBaseUrl}${buildGatewayWebhookPath()}`;
   }
 }
 

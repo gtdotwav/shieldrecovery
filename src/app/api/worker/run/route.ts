@@ -2,6 +2,7 @@ import { ensureAuthenticatedRequest } from "@/server/auth/request";
 import { handleRunWorker } from "@/server/recovery/controllers/worker-controller";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   const unauthorized = await ensureWorkerAccess(request);

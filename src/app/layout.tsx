@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 
+import { platformBrand } from "@/lib/platform";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
@@ -16,9 +17,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Shield Recovery | Revenue recovery inside Shield Lead",
-  description:
-    "Primeira experiência de produto para mostrar como a Shield converte pagamentos falhados em receita recuperável dentro do CRM.",
+  title: `${platformBrand.name} | ${platformBrand.shortDescription}`,
+  description: platformBrand.longDescription,
 };
 
 export default function RootLayout({

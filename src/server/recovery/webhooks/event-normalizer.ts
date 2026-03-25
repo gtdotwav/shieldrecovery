@@ -22,13 +22,19 @@ export function normalizeShieldGatewayEvent(
     throw new HttpError(422, "Webhook payload must be a JSON object.");
   }
 
-  const shieldTransaction = asRecord(payload.data);
-  const payment = asRecord(payload.payment) ?? shieldTransaction ?? payload;
+  const gatewayTransaction = asRecord(payload.data);
+  const payment = asRecord(payload.payment) ?? gatewayTransaction ?? payload;
   const customer =
-    asRecord(payment.customer) ?? asRecord(payload.customer) ?? shieldTransaction ?? payload;
+    asRecord(payment.customer) ??
+    asRecord(payment.buyer) ??
+    asRecord(payload.customer) ??
+    asRecord(payload.buyer) ??
+    gatewayTransaction ??
+    payload;
   const metadata = parseMetadataRecord(payment.metadata) ?? asRecord(payload.metadata);
   const pixData =
     asRecord(payment.pix) ??
+    asRecord(asRecord(payment.payment)?.pix) ??
     asRecord(payload.pix) ??
     asRecord(metadata?.pix) ??
     undefined;
@@ -36,7 +42,14 @@ export function normalizeShieldGatewayEvent(
   const firstItem = asRecord(items[0]);
 
   const eventType = normalizeEventType(
-    pickString(payload.event_type, payload.type, payload.eventName, payload.event),
+    pickString(
+      payload.event_type,
+      payload.type,
+      payload.eventName,
+      payload.event,
+      payment.event_type,
+      payment.eventType,
+    ),
     pickString(payment.status, payload.status),
   );
 
@@ -44,6 +57,8 @@ export function normalizeShieldGatewayEvent(
     pickString(
       payment.id,
       payment.payment_id,
+      payment.transaction_id,
+      payment.transactionId,
       payload.payment_id,
       payload.objectId,
       payment.secureId,
@@ -54,6 +69,8 @@ export function normalizeShieldGatewayEvent(
     pickString(
       payment.order_id,
       payment.orderId,
+      payment.correlation_id,
+      payment.external_ref,
       payload.order_id,
       payload.orderId,
       payment.secureId,
@@ -62,7 +79,14 @@ export function normalizeShieldGatewayEvent(
     ) ?? `order-${paymentId}`;
 
   const customerId =
-    pickString(customer.id, customer.customer_id, payload.customer_id, customer.email) ??
+    pickString(
+      customer.id,
+      customer.customer_id,
+      payload.customer_id,
+      customer.email,
+      payment.customer_id,
+      payment.buyer_id,
+    ) ??
     `customer-${paymentId}`;
   const paymentUrl =
     findNestedString(
@@ -76,6 +100,8 @@ export function normalizeShieldGatewayEvent(
         "secure_url",
         "redirectUrl",
         "returnUrl",
+        "notify_url",
+        "notifyUrl",
         "url",
       ],
     ) ?? undefined;
@@ -87,6 +113,7 @@ export function normalizeShieldGatewayEvent(
         "pixCode",
         "copy_paste",
         "copyPaste",
+        "qr_code",
         "qrcode",
         "qrCode",
         "code",
@@ -101,6 +128,7 @@ export function normalizeShieldGatewayEvent(
         "pixQrCode",
         "qr_code",
         "qrCode",
+        "qr_code_image",
         "image",
       ],
     ) ?? undefined;
@@ -113,6 +141,7 @@ export function normalizeShieldGatewayEvent(
         "expirationDate",
         "expiration_date",
         "expiresAt",
+        "expires_at",
       ],
     ) ?? undefined;
 
@@ -129,6 +158,8 @@ export function normalizeShieldGatewayEvent(
     timestamp:
       pickNumber(
         payload.timestamp,
+        payment.updated_at,
+        payment.created_at,
         payment.updatedAt,
         payment.createdAt,
         payload.created_at,
@@ -141,6 +172,7 @@ export function normalizeShieldGatewayEvent(
         pickNumber(
           payment.amount,
           payment.total_amount,
+          payment.paid_amount,
           payload.amount,
           payload.total_amount,
           payment.paidAmount,
@@ -153,6 +185,7 @@ export function normalizeShieldGatewayEvent(
           payment.method,
           payment.paymentMethod,
           payment.payment_method,
+          payment.method_id,
           payload.method,
           payload.payment_method,
         ) ?? "unknown",
@@ -164,27 +197,50 @@ export function normalizeShieldGatewayEvent(
           payment.failure_code,
           payment.failureCode,
           payment.refusedReason,
+          payment.refused_reason,
           payload.failure_code,
           payload.failureCode,
         ) ?? undefined,
     },
     customer: {
       id: customerId,
-      name: pickString(customer.name, payload.customer_name, payload.name) ?? "Unknown customer",
-      email: pickString(customer.email, payload.email) ?? "unknown@shield.local",
+      name:
+        pickString(
+          customer.name,
+          payload.customer_name,
+          payload.name,
+          payment.buyer_name,
+        ) ?? "Unknown customer",
+      email:
+        pickString(customer.email, payload.email, payment.buyer_email) ??
+        "unknown@pagrecovery.local",
       phone:
-        pickString(customer.phone, payload.phone, payload.mobile, customer.mobilePhone) ??
+        pickString(
+          customer.phone,
+          payload.phone,
+          payload.mobile,
+          customer.mobilePhone,
+          payment.buyer_phone,
+        ) ??
         "not_provided",
     },
     metadata: {
       product:
-        pickString(metadata?.product, payload.product, firstItem?.title, firstItem?.name) ??
+        pickString(
+          metadata?.product,
+          payload.product,
+          firstItem?.title,
+          firstItem?.name,
+          firstItem?.product,
+        ) ??
         undefined,
       campaign:
         pickString(
           metadata?.campaign,
           payload.campaign,
           metadata?.sessionToken,
+          payment.correlation_id,
+          payment.external_ref,
           payment.externalRef,
         ) ?? undefined,
       paymentUrl,
@@ -200,6 +256,22 @@ function normalizeEventType(
   paymentStatus: string | undefined,
 ): SupportedPaymentEvent {
   const normalizedType = normalizeEventToken(rawType ?? "");
+
+  const explicitMap: Record<string, SupportedPaymentEvent> = {
+    transaction_created: "payment_created",
+    transaction_pending: "payment_pending",
+    transaction_paid: "payment_succeeded",
+    transaction_cancelled: "payment_canceled",
+    transaction_canceled: "payment_canceled",
+    transaction_refunded: "payment_refunded",
+    transaction_partially_refunded: "payment_partially_refunded",
+    transaction_chargedback: "payment_chargeback",
+    transaction_three_ds_required: "payment_processing",
+  };
+
+  if (explicitMap[normalizedType]) {
+    return explicitMap[normalizedType];
+  }
 
   if (SUPPORTED_EVENT_SET.has(normalizedType)) {
     return normalizedType as SupportedPaymentEvent;
@@ -249,7 +321,11 @@ function mapTransactionStatusToEventType(
     expired: "payment_expired",
     canceled: "payment_canceled",
     cancelled: "payment_canceled",
+    refunded: "payment_refunded",
+    partially_refunded: "payment_partially_refunded",
     chargeback: "payment_chargeback",
+    chargedback: "payment_chargeback",
+    three_ds_required: "payment_processing",
   };
 
   return map[normalizedStatus];

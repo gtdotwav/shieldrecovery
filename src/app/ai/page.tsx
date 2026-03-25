@@ -47,7 +47,7 @@ import type { FollowUpContact } from "@/server/recovery/types";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Automações | Shield Recovery",
+  title: "Automações | PagRecovery",
 };
 
 export default async function AIPage() {
@@ -66,7 +66,7 @@ export default async function AIPage() {
     return (
       <PlatformAppPage currentPath="/ai">
         <PlatformSurface className="p-6 sm:p-7">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
             Automações bloqueadas pelo admin
           </p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#111827]">
@@ -120,7 +120,7 @@ export default async function AIPage() {
         session.role === "seller" ? (
           <Link
             href="/leads"
-            className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+            className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
           >
             Abrir CRM
             <ArrowRight className="h-3.5 w-3.5" />
@@ -277,7 +277,7 @@ export default async function AIPage() {
               {/* ─── AI Engine Status ─── */}
               <PlatformSurface className="p-4">
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-orange-500" />
+                  <Shield className="h-4 w-4 text-sky-500" />
                   <SectionHeader eyebrow="Estado da IA" title="Motor da automação" compact />
                 </div>
 
@@ -300,7 +300,7 @@ export default async function AIPage() {
               {/* ─── Human Override Panel ─── */}
               <PlatformSurface className="p-4">
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-orange-500" />
+                  <User className="h-4 w-4 text-sky-500" />
                   <SectionHeader eyebrow="Leitura operacional" title="Quando o humano entra" compact />
                 </div>
 
@@ -399,7 +399,7 @@ function SellerAutomationWorkspace({
           <PlatformSurface className="p-5 sm:p-6">
             <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)] lg:items-end">
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
                   Automações de seller
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
@@ -428,7 +428,7 @@ function SellerAutomationWorkspace({
               <SectionHeader eyebrow="Fila sugerida" title="Casos priorizados pela automação." />
               <Link
                 href="/leads"
-                className="text-sm font-medium text-orange-600 transition-colors hover:text-orange-700"
+                className="text-sm font-medium text-sky-600 transition-colors hover:text-sky-700"
               >
                 Ver CRM
               </Link>
@@ -465,7 +465,7 @@ function SellerAutomationWorkspace({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-orange-500" />
+                      <Zap className="h-4 w-4 text-sky-500" />
                       <p className="text-sm font-semibold text-[#111827]">
                         {strategy.name}
                       </p>
@@ -543,7 +543,7 @@ function ActivityRow({ entry }: { entry: AIActivityEntry }) {
         <div className="mt-0.5 flex items-center gap-2 text-[0.6rem] text-[#9ca3af]">
           <Link
             href={`/leads/${entry.leadId}`}
-            className="text-orange-500 hover:underline"
+            className="text-sky-500 hover:underline"
           >
             {entry.customerName}
           </Link>
@@ -563,7 +563,7 @@ function ActivityIcon({ type }: { type: AIActivityType }) {
     recovery_closed: { icon: CheckCircle2, color: "text-green-500" },
     strategy_selected: { icon: Zap, color: "text-purple-500" },
     lead_classified: { icon: Brain, color: "text-cyan-500" },
-    follow_up_scheduled: { icon: Clock, color: "text-orange-500" },
+    follow_up_scheduled: { icon: Clock, color: "text-sky-500" },
     response_detected: { icon: MessageCircle, color: "text-emerald-500" },
   };
 
@@ -618,7 +618,7 @@ function ClassifiedLeadRow({
   const probColors: Record<RecoveryProbability, string> = {
     high: "bg-green-500",
     medium: "bg-amber-500",
-    low: "bg-orange-500",
+    low: "bg-sky-500",
     manual: "bg-red-500",
   };
 
@@ -631,7 +631,7 @@ function ClassifiedLeadRow({
           />
           <Link
             href={`/leads/${contact.lead_id}`}
-            className="text-sm font-medium text-[#1a1a2e] truncate hover:text-orange-500 transition-colors"
+            className="text-sm font-medium text-[#1a1a2e] truncate hover:text-sky-500 transition-colors"
           >
             {contact.customer_name}
           </Link>
@@ -717,7 +717,7 @@ function StrategyCard({ strategy }: { strategy: RecoveryStrategy }) {
     <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] p-3.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="h-3.5 w-3.5 text-orange-500" />
+          <Zap className="h-3.5 w-3.5 text-sky-500" />
           <h4 className="text-xs font-medium text-[#1a1a2e]">{strategy.name}</h4>
         </div>
         <span
@@ -789,7 +789,7 @@ function PerformanceRow({ perf }: { perf: StrategyPerformance }) {
     <PlatformInset className="p-3">
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-medium text-[#1a1a2e]">{perf.strategyName}</h4>
-        <span className="text-xs font-semibold text-orange-500">
+        <span className="text-xs font-semibold text-sky-500">
           {perf.successRate.toFixed(0)}% sucesso
         </span>
       </div>
@@ -812,7 +812,7 @@ function PerformanceRow({ perf }: { perf: StrategyPerformance }) {
       {/* Progress bar */}
       <div className="mt-2 h-1 w-full rounded-full bg-[#f0f0f4]">
         <div
-          className="h-1 rounded-full bg-orange-500"
+          className="h-1 rounded-full bg-sky-500"
           style={{ width: `${Math.min(perf.successRate, 100)}%` }}
         />
       </div>
@@ -907,7 +907,7 @@ function OverrideOption({
 function CRMRule({ trigger, action }: { trigger: string; action: string }) {
   return (
     <div className="flex items-start gap-2">
-      <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-orange-500" />
+      <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-sky-500" />
       <div>
         <p className="text-[#374151]">{trigger}</p>
         <p className="text-[#9ca3af]">{action}</p>
@@ -927,7 +927,7 @@ function SectionHeader({
 }) {
   return (
     <div>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
         {eyebrow}
       </p>
       <h3

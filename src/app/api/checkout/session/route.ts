@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCheckoutService } from "@/server/checkout";
-import { handleCreateSession } from "@checkout/api/handlers";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const service = getCheckoutService();
-  const result = await handleCreateSession(service, body);
-  return NextResponse.json(result.body, { status: result.status });
+/** @deprecated Checkout is now a standalone platform. Use the checkout platform API directly. */
+export async function POST() {
+  return NextResponse.json(
+    { error: "Deprecated. Use the standalone checkout platform API at CHECKOUT_PLATFORM_URL/api/v1/sessions" },
+    { status: 410 },
+  );
 }

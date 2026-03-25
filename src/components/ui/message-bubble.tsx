@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/lib/format";
+import { platformBrand } from "@/lib/platform";
 import type { MessageRecord } from "@/server/recovery/types";
 
 export function MessageBubble({ message }: { message: MessageRecord }) {
@@ -11,11 +12,11 @@ export function MessageBubble({ message }: { message: MessageRecord }) {
       <div
         className={`max-w-[80%] rounded-2xl ${
           recoveryCard
-            ? "w-full max-w-[30rem] overflow-hidden border border-orange-200 bg-orange-50/40 p-0"
+            ? "w-full max-w-[30rem] overflow-hidden border border-sky-200 bg-sky-50/40 p-0"
             : `px-4 py-2.5 ${
                 inbound
                   ? "bg-gray-100 text-gray-900"
-                  : "border border-orange-100 bg-orange-50 text-gray-900"
+                  : "border border-sky-100 bg-sky-50 text-gray-900"
               }`
         }`}
       >
@@ -24,8 +25,8 @@ export function MessageBubble({ message }: { message: MessageRecord }) {
         ) : (
           <>
             {aiReply ? (
-              <p className="mb-1.5 text-[0.625rem] font-bold uppercase tracking-widest text-orange-500">
-                IA Shield
+              <p className="mb-1.5 text-[0.625rem] font-bold uppercase tracking-widest text-sky-500">
+                IA {platformBrand.name}
               </p>
             ) : null}
             <p className="text-sm leading-relaxed">{message.content}</p>
@@ -46,17 +47,17 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
 
   return (
     <>
-      <div className="border-b border-orange-200/60 bg-orange-100/50 px-4 py-3">
+      <div className="border-b border-sky-200/60 bg-sky-100/50 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[0.625rem] font-bold uppercase tracking-widest text-orange-600">
+            <p className="text-[0.625rem] font-bold uppercase tracking-widest text-sky-600">
               Disparo inicial
             </p>
             <p className="mt-1 text-sm font-semibold text-gray-900">
               {metadata?.product || "Recuperação de pagamento"}
             </p>
           </div>
-          <span className="shrink-0 rounded-full border border-orange-200 bg-white px-2.5 py-0.5 text-[0.625rem] font-semibold text-orange-600">
+          <span className="shrink-0 rounded-full border border-sky-200 bg-white px-2.5 py-0.5 text-[0.625rem] font-semibold text-sky-600">
             {message.status === "queued" ? "na fila" : "registrado"}
           </span>
         </div>
@@ -90,9 +91,26 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
           {message.content}
         </p>
 
+        {metadata?.pixQrCode ? (
+          <div className="rounded-xl border border-sky-200 bg-white px-3 py-3">
+            <p className="text-[0.625rem] font-bold uppercase tracking-widest text-sky-600">
+              QR Code Pix
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={metadata.pixQrCode}
+              alt="QR Code Pix"
+              className="mt-2 h-64 w-64 max-w-full rounded-xl border border-sky-100 bg-white object-contain p-2"
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              Escaneie este QR Code para concluir o pagamento.
+            </p>
+          </div>
+        ) : null}
+
         {metadata?.pixCode ? (
-          <div className="rounded-xl border border-orange-200 bg-white px-3 py-2.5">
-            <p className="text-[0.625rem] font-bold uppercase tracking-widest text-orange-600">
+          <div className="rounded-xl border border-sky-200 bg-white px-3 py-2.5">
+            <p className="text-[0.625rem] font-bold uppercase tracking-widest text-sky-600">
               Código Pix
             </p>
             <p className="mt-1.5 break-words font-mono text-xs leading-5 text-gray-700">
@@ -104,7 +122,7 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
         {metadata?.retryLink || metadata?.paymentUrl ? (
           <a
             href={metadata.paymentUrl || metadata.retryLink}
-            className="inline-flex rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="inline-flex rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
             target="_blank"
             rel="noreferrer"
           >
@@ -153,7 +171,7 @@ function labelForMessageStatus(status: MessageRecord["status"]) {
   if (status === "delivered") return "entregue";
   if (status === "read") return "lida";
   if (status === "failed") return "falhou";
-  return "recebida";
+  return "registrada";
 }
 
 function safeDate(value: string) {

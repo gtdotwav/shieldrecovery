@@ -7,8 +7,8 @@
   --card-strong: #eef2f6;
   --muted: #6b7280;
   --border: rgba(15, 23, 42, 0.08);
-  --accent: #f97316;
-  --accent-light: rgba(249, 115, 22, 0.1);
+  --accent: #0284c7;
+  --accent-light: rgba(2, 132, 199, 0.12);
   --soft-gray: #9aa0ad;
   --surface: #edf1f5;
   --input-bg: #ffffff;
@@ -43,8 +43,9 @@ body {
   min-height: 100vh;
   color-scheme: light;
   background:
-    radial-gradient(circle at top center, rgba(249, 115, 22, 0.05), transparent 28rem),
-    linear-gradient(180deg, #f8f9fb 0%, var(--background) 22%, #eef2f6 100%);
+    radial-gradient(circle at top center, rgba(2, 132, 199, 0.07), transparent 28rem),
+    radial-gradient(circle at 20% 0%, rgba(56, 189, 248, 0.08), transparent 24rem),
+    linear-gradient(180deg, #f8fbfe 0%, var(--background) 22%, #eaf2f8 100%);
   color: var(--foreground);
   font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
@@ -88,7 +89,7 @@ select {
 }
 
 ::selection {
-  background: rgba(249, 115, 22, 0.2);
+  background: rgba(2, 132, 199, 0.2);
   color: #1a1a2e;
 }
 

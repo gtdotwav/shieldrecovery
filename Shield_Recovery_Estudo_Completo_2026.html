@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shield Recovery - Estudo Completo do Estado Atual + Modelo de Monetizacao</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  :root {
+    --dark: #0f1117; --dark2: #171923; --dark3: #1e2130;
+    --orange: #f97316; --orange-l: #fdba74; --orange-bg: rgba(249,115,22,0.08);
+    --g100: #f3f4f6; --g200: #e5e7eb; --g300: #d1d5db; --g400: #9ca3af;
+    --g500: #6b7280; --g600: #4b5563; --g700: #374151; --g800: #1f2937;
+    --white: #fff; --text: #111827;
+    --green: #22c55e; --green-bg: #f0fdf4; --green-dark: #166534;
+    --red: #ef4444; --red-bg: #fef2f2; --red-dark: #991b1b;
+    --yellow: #eab308; --yellow-bg: #fefce8; --yellow-dark: #854d0e;
+    --blue: #3b82f6; --blue-bg: #eff6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background: #08090c; }
+
+  .slide { width: 100%; max-width: 1200px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 60px 80px; position: relative; }
+  @media print { .slide { page-break-after: always; min-height: 0; padding: 40px 50px; } .slide:last-child { page-break-after: avoid; } body { background: white; } }
+  .slide--dark { background: var(--dark); color: var(--white); }
+  .slide--light { background: var(--white); color: var(--text); border-top: 4px solid var(--orange); }
+  .slide--gradient { background: linear-gradient(135deg, #0f1117 0%, #151821 50%, #1a1f2e 100%); color: var(--white); }
+
+  .label { font-size: 10px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--orange); margin-bottom: 8px; }
+  .title { font-size: 38px; font-weight: 800; line-height: 1.12; letter-spacing: -0.02em; margin-bottom: 12px; }
+  .slide--light .title { color: var(--text); }
+  .subtitle { font-size: 16px; line-height: 1.65; color: #94a3b8; max-width: 720px; }
+  .slide--light .subtitle { color: var(--g500); }
+  h2 { font-size: 18px; font-weight: 700; margin: 24px 0 10px; color: var(--text); }
+  .slide--dark h2 { color: var(--white); }
+  h3 { font-size: 14px; font-weight: 700; margin: 12px 0 4px; color: var(--g700); }
+  .slide--dark h3 { color: var(--orange-l); }
+  p, li { font-size: 13px; line-height: 1.7; color: var(--g700); }
+  .slide--dark p, .slide--dark li { color: #cbd5e1; }
+  strong { font-weight: 700; }
+  ul { list-style: none; padding: 0; }
+  ul li { padding: 3px 0 3px 18px; position: relative; }
+  ul li::before { content: '\2022'; position: absolute; left: 0; color: var(--orange); font-weight: 700; }
+  ul.check li::before { content: '\2713'; color: var(--green); }
+  ul.cross li::before { content: '\2717'; color: var(--red); }
+  ul.warn li::before { content: '\26A0'; color: var(--yellow); font-size: 11px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+  th { background: var(--dark); color: var(--white); font-weight: 600; font-size: 10px; letter-spacing: 0.06em; text-align: left; padding: 9px 12px; text-transform: uppercase; }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--g200); color: var(--g700); vertical-align: top; line-height: 1.5; }
+  tr:nth-child(even) td { background: var(--g100); }
+  tr:nth-child(odd) td { background: var(--white); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 14px 0; }
+  .card { border-radius: 14px; padding: 18px; }
+  .card--dark { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); }
+  .card--light { background: var(--g100); border: 1px solid var(--g200); }
+  .card--green { background: var(--green-bg); border: 1px solid #bbf7d0; }
+  .card--red { background: var(--red-bg); border: 1px solid #fecaca; }
+  .card--yellow { background: var(--yellow-bg); border: 1px solid #fef08a; }
+  .card--blue { background: var(--blue-bg); border: 1px solid #bfdbfe; }
+  .card--orange { background: var(--orange-bg); border: 1px solid rgba(249,115,22,0.2); }
+  .card h3 { margin-top: 0; }
+  .card p { font-size: 12px; }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; }
+  .badge--green { background: #dcfce7; color: var(--green-dark); }
+  .badge--red { background: #fee2e2; color: var(--red-dark); }
+  .badge--yellow { background: #fef9c3; color: var(--yellow-dark); }
+  .badge--blue { background: #dbeafe; color: #1e40af; }
+  .badge--orange { background: #ffedd5; color: #9a3412; }
+
+  .metric-row { display: flex; gap: 14px; margin: 14px 0; flex-wrap: wrap; }
+  .metric { flex: 1; min-width: 140px; background: var(--g100); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid var(--g200); }
+  .slide--dark .metric { background: var(--dark3); border-color: rgba(255,255,255,0.06); }
+  .metric .val { font-size: 28px; font-weight: 800; color: var(--orange); }
+  .metric .lbl { font-size: 10px; color: var(--g500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+  .phase { display: flex; gap: 14px; margin: 10px 0; padding: 14px; background: var(--g100); border-radius: 12px; border-left: 4px solid var(--orange); }
+  .phase-n { font-size: 22px; font-weight: 800; color: var(--orange); min-width: 32px; }
+  .phase h3 { margin: 0 0 3px; color: var(--text); font-size: 13px; }
+  .phase p { font-size: 11px; margin: 2px 0; }
+  .phase .del { color: var(--orange); font-weight: 600; font-size: 10px; }
+
+  .pg { position: absolute; bottom: 36px; right: 80px; font-size: 10px; color: #475569; font-weight: 600; }
+  .slide--light .pg { color: var(--g300); }
+
+  .compare-table th:first-child { background: var(--red); }
+  .compare-table th:last-child { background: var(--green); }
+  .compare-table td:first-child { background: #fef2f2; color: #991b1b; }
+  .compare-table td:last-child { background: #f0fdf4; color: #166534; }
+
+  .cover .accent-bar { width: 5px; height: 70px; background: var(--orange); border-radius: 3px; margin-bottom: 28px; }
+  .cover .glow { position: absolute; width: 350px; height: 350px; border-radius: 50%; background: radial-gradient(circle, rgba(249,115,22,0.1), transparent 70%); top: -80px; right: -60px; }
+  .stats-bar { display: flex; background: var(--dark3); border-radius: 14px; padding: 18px 0; margin-top: 48px; }
+  .stat { flex: 1; padding: 0 20px; border-right: 1px solid rgba(255,255,255,0.05); }
+  .stat:last-child { border: none; }
+  .stat-l { font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--orange); margin-bottom: 4px; }
+  .stat-v { font-size: 12px; color: #e2e8f0; }
+  .ver { position: absolute; bottom: 36px; left: 80px; font-size: 11px; color: #475569; }
+
+  .pricing-card { background: var(--white); border: 2px solid var(--g200); border-radius: 16px; padding: 24px; text-align: center; transition: all 0.2s; }
+  .pricing-card.featured { border-color: var(--orange); box-shadow: 0 0 0 1px var(--orange), 0 12px 40px rgba(249,115,22,0.15); }
+  .pricing-card .plan-name { font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--g500); }
+  .pricing-card .plan-price { font-size: 36px; font-weight: 800; color: var(--text); margin: 8px 0 4px; }
+  .pricing-card .plan-price span { font-size: 14px; font-weight: 500; color: var(--g500); }
+  .pricing-card .plan-desc { font-size: 12px; color: var(--g500); margin-bottom: 16px; }
+  .pricing-card ul { text-align: left; margin-top: 12px; }
+  .pricing-card ul li { font-size: 12px; padding: 4px 0 4px 18px; }
+  .pricing-card.featured .plan-name { color: var(--orange); }
+
+  .ltv-block { background: var(--dark3); border-radius: 16px; padding: 24px; margin: 12px 0; }
+  .ltv-block h3 { color: var(--orange-l); margin: 0 0 8px; font-size: 15px; }
+  .ltv-block p { color: #cbd5e1; font-size: 13px; }
+  .ltv-val { font-size: 32px; font-weight: 800; color: var(--orange); }
+
+  .flow-visual { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 14px 0; }
+  .flow-step { background: var(--g100); color: var(--text); padding: 7px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; border: 1px solid var(--g300); }
+  .flow-arrow { color: var(--orange); font-size: 16px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 01. COVER -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--gradient cover" style="justify-content: flex-start; padding-top: 90px;">
+  <div class="glow"></div>
+  <div class="accent-bar"></div>
+  <div class="label" style="font-size: 12px; letter-spacing: 0.25em;">SHIELD RECOVERY</div>
+  <div class="title" style="font-size: 48px; margin-top: 8px;">
+    Estudo Completo<br>do Estado Atual
+  </div>
+  <div class="subtitle" style="margin-top: 14px;">
+    Auditoria tecnica profunda, mapa de maturidade por componente,<br>
+    e modelo de monetizacao com projecao de LTV e recorrencia.
+  </div>
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-l">Tipo</div><div class="stat-v">Auditoria tecnica + business</div></div>
+    <div class="stat"><div class="stat-l">Componentes</div><div class="stat-v">14 modulos analisados</div></div>
+    <div class="stat"><div class="stat-l">Linhas revisadas</div><div class="stat-v">+2.000 linhas de codigo</div></div>
+    <div class="stat"><div class="stat-l">Data</div><div class="stat-v">Marco 2026</div></div>
+  </div>
+  <div class="ver">Shield Recovery v0.1.0 &nbsp;|&nbsp; Documento interno e confidencial</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 02. RESUMO EXECUTIVO -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">RESUMO EXECUTIVO</div>
+  <div class="title" style="font-size: 32px;">Onde o projeto esta hoje</div>
+  <p style="max-width: 780px; margin: 8px 0 20px;">
+    O Shield Recovery ultrapassou a fase de conceito. Existe uma aplicacao Next.js funcional com
+    webhook receiver, CRM de leads, inbox de conversas, dashboard operacional e sistema de autenticacao.
+    Porem, <strong>componentes criticos para operacao real ainda estao incompletos</strong>.
+  </p>
+
+  <div class="metric-row">
+    <div class="metric"><div class="val">5/10</div><div class="lbl">Production Readiness</div></div>
+    <div class="metric"><div class="val">8/10</div><div class="lbl">Modelo de Dados</div></div>
+    <div class="metric"><div class="val">7/10</div><div class="lbl">Clareza Arquitetural</div></div>
+    <div class="metric"><div class="val">3/10</div><div class="lbl">Automacao Real</div></div>
+    <div class="metric"><div class="val">2/10</div><div class="lbl">IA Funcional</div></div>
+  </div>
+
+  <div class="grid-2" style="margin-top: 20px;">
+    <div class="card card--green">
+      <h3 style="color: var(--green-dark);">O que funciona de verdade</h3>
+      <ul class="check">
+        <li>Webhooks recebem eventos de gateways e persistem</li>
+        <li>Normalizacao de eventos multi-formato</li>
+        <li>Pipeline de leads com 5 estagios funcionais</li>
+        <li>Inbox de conversas com mensagens bidirecionais</li>
+        <li>Dashboard com metricas calculadas de dados reais</li>
+        <li>Auth com roles (admin/seller) funcional</li>
+        <li>Supabase como storage primario operacional</li>
+      </ul>
+    </div>
+    <div class="card card--red">
+      <h3 style="color: var(--red-dark);">O que nao funciona ainda</h3>
+      <ul class="cross">
+        <li>Nenhuma mensagem sai de verdade (WhatsApp/email)</li>
+        <li>IA e 100% template &mdash; nenhuma chamada a LLM</li>
+        <li>Queue jobs criados mas nunca executados (sem Redis/BullMQ)</li>
+        <li>Estrategias hardcoded em codigo (nao editaveis)</li>
+        <li>Worker nao roda em producao</li>
+        <li>Prisma instalado mas nao conectado (codigo morto)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="pg">02</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 03. MAPA DE MATURIDADE -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">MATURIDADE</div>
+  <div class="title" style="font-size: 32px;">Mapa de maturidade por componente</div>
+  <p style="margin: 6px 0 14px;">Cada modulo foi classificado: <span class="badge badge--green">REAL</span> <span class="badge badge--yellow">PARCIAL</span> <span class="badge badge--red">MOCK</span> <span class="badge badge--blue">ESTRUTURAL</span></p>
+
+  <table>
+    <tr><th style="width: 25%;">Componente</th><th style="width: 12%;">Status</th><th>Evidencia (codigo auditado)</th><th style="width: 12%;">Risco</th></tr>
+    <tr><td><strong>Webhook Receiver</strong></td><td><span class="badge badge--green">REAL</span></td><td>Validacao HMAC, idempotencia por webhook_id, log estruturado</td><td><span class="badge badge--green">Baixo</span></td></tr>
+    <tr><td><strong>Event Normalizer</strong></td><td><span class="badge badge--green">REAL</span></td><td>Normaliza payload de multiplos gateways para contrato unico</td><td><span class="badge badge--green">Baixo</span></td></tr>
+    <tr><td><strong>Storage (Supabase)</strong></td><td><span class="badge badge--green">REAL</span></td><td>CRUD completo para todas as 13 entidades, queries funcionais</td><td><span class="badge badge--yellow">Medio</span></td></tr>
+    <tr><td><strong>Storage (Local JSON)</strong></td><td><span class="badge badge--yellow">PARCIAL</span></td><td>Fallback funcional mas inadequado para producao</td><td><span class="badge badge--red">Alto</span></td></tr>
+    <tr><td><strong>Prisma Schema</strong></td><td><span class="badge badge--red">MORTO</span></td><td>schema.prisma existe mas nao esta em dependencies nem conectado</td><td><span class="badge badge--red">Confusao</span></td></tr>
+    <tr><td><strong>Lead CRM</strong></td><td><span class="badge badge--green">REAL</span></td><td>Pipeline 5 estagios, move/assign/list funcional, Kanban renderiza</td><td><span class="badge badge--green">Baixo</span></td></tr>
+    <tr><td><strong>Inbox / Conversas</strong></td><td><span class="badge badge--green">REAL</span></td><td>Threads persistidas, mensagens bidirecionais, status tracking</td><td><span class="badge badge--yellow">Medio</span></td></tr>
+    <tr><td><strong>Outbound Messaging</strong></td><td><span class="badge badge--red">MOCK</span></td><td>Scaffolding existe mas dispatch real nao conectado</td><td><span class="badge badge--red">Critico</span></td></tr>
+    <tr><td><strong>WhatsApp Cloud API</strong></td><td><span class="badge badge--yellow">PARCIAL</span></td><td>QR session tracking existe, webhook parser pronto, envio TBD</td><td><span class="badge badge--red">Critico</span></td></tr>
+    <tr><td><strong>AI Classifier</strong></td><td><span class="badge badge--blue">ESTRUTURAL</span></td><td>Score 0-100 deterministico (canal, valor, freshness). Sem LLM.</td><td><span class="badge badge--yellow">Medio</span></td></tr>
+    <tr><td><strong>AI Message Generator</strong></td><td><span class="badge badge--red">MOCK</span></td><td>Codigo diz: "In production this would call an LLM". Usa templates.</td><td><span class="badge badge--red">Alto</span></td></tr>
+    <tr><td><strong>Strategy Engine</strong></td><td><span class="badge badge--blue">ESTRUTURAL</span></td><td>5 playbooks hardcoded. Condicoes nao avaliadas. Nao editaveis.</td><td><span class="badge badge--red">Alto</span></td></tr>
+    <tr><td><strong>Queue / Worker</strong></td><td><span class="badge badge--red">MOCK</span></td><td>Jobs criados no DB mas sem BullMQ, sem Redis, sem worker runner</td><td><span class="badge badge--red">Critico</span></td></tr>
+    <tr><td><strong>Dashboard</strong></td><td><span class="badge badge--green">REAL</span></td><td>Metricas calculadas de dados reais do Supabase</td><td><span class="badge badge--green">Baixo</span></td></tr>
+    <tr><td><strong>Admin Panel</strong></td><td><span class="badge badge--green">REAL</span></td><td>Snapshot de sellers, controls, modes funcionais</td><td><span class="badge badge--green">Baixo</span></td></tr>
+    <tr><td><strong>Auth System</strong></td><td><span class="badge badge--green">REAL</span></td><td>Roles admin/seller, sessoes, login funcional</td><td><span class="badge badge--green">Baixo</span></td></tr>
+  </table>
+  <div class="pg">03</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 04. CAMADA DE IA - VERDADE NUA -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--dark">
+  <div class="label">INTELIGENCIA ARTIFICIAL</div>
+  <div class="title">A verdade sobre a camada de IA</div>
+  <p style="max-width: 720px; margin: 10px 0 24px;">
+    A IA e o diferencial narrativo do Shield Recovery. Mas hoje, <strong>nenhuma chamada real
+    a qualquer LLM acontece</strong>. O campo <code>openAiApiKey</code> existe no config mas nunca e usado.
+  </p>
+
+  <div class="grid-2">
+    <div class="card card--dark">
+      <h3>Recovery Classifier</h3>
+      <p><strong>Status:</strong> <span class="badge badge--blue">Deterministico</span></p>
+      <p style="margin-top: 8px;">Score 0-100 calculado por regras fixas: tem telefone? (+20), tem email? (+15), valor > R$100? (+10), falha recente? (+15). Nao usa ML nem LLM.</p>
+      <p style="margin-top: 6px; color: var(--orange-l);"><strong>Veredicto:</strong> Funcional para MVP. Substituir por modelo treinado na Fase 4.</p>
+    </div>
+    <div class="card card--dark">
+      <h3>Message Generator</h3>
+      <p><strong>Status:</strong> <span class="badge badge--red">Template puro</span></p>
+      <p style="margin-top: 8px;">Comentario literal no codigo: <em>"In production this would call an LLM... For now we use high-quality handcrafted templates."</em> Substituicao de variaveis {name}, {value}, {link}.</p>
+      <p style="margin-top: 6px; color: var(--orange-l);"><strong>Veredicto:</strong> Templates sao bons. Mas o marketing diz "IA gera mensagens" &mdash; isso e falso hoje.</p>
+    </div>
+    <div class="card card--dark">
+      <h3>Strategy Engine</h3>
+      <p><strong>Status:</strong> <span class="badge badge--blue">Hardcoded</span></p>
+      <p style="margin-top: 8px;">5 playbooks definidos como constantes TypeScript. Condicoes (user_responded, payment_confirmed) sao strings descritivas &mdash; nao sao avaliadas pelo worker.</p>
+      <p style="margin-top: 6px; color: var(--orange-l);"><strong>Veredicto:</strong> Estrutura correta. Precisa migrar para DB e avaliar condicoes em runtime.</p>
+    </div>
+    <div class="card card--dark">
+      <h3>AI Orchestrator</h3>
+      <p><strong>Status:</strong> <span class="badge badge--yellow">Agregador</span></p>
+      <p style="margin-top: 8px;">Agrega dados do classifier + strategies + metricas para o dashboard /ai. Funciona como agregador de dados, nao como orquestrador inteligente.</p>
+      <p style="margin-top: 6px; color: var(--orange-l);"><strong>Veredicto:</strong> Renomear para "Recovery Analytics Aggregator" ate que IA real exista.</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; padding: 16px; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.25); border-radius: 12px;">
+    <p style="color: var(--orange-l); font-weight: 700; font-size: 14px; margin-bottom: 6px;">Recomendacao arquitetural</p>
+    <p>Implementar OpenAI na <code>generateRecoveryMessage()</code> e <code>generateConversationReply()</code> requer ~50 linhas de codigo. O campo <code>openAiApiKey</code> ja existe no config. A decisao e de produto, nao de engenharia. Custo estimado: ~$0.002 por mensagem com GPT-4o-mini.</p>
+  </div>
+  <div class="pg">04</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 05. INFRAESTRUTURA CRITICA AUSENTE -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">GAPS CRITICOS</div>
+  <div class="title" style="font-size: 32px;">O que impede o produto de operar</div>
+  <p style="margin: 6px 0 16px;">Tres bloqueios estruturais impedem o Shield Recovery de funcionar como produto real em producao.</p>
+
+  <div class="card card--red" style="margin-bottom: 14px;">
+    <h3 style="color: var(--red-dark); font-size: 16px;">1. Nenhuma mensagem sai do sistema</h3>
+    <p style="color: var(--red-dark);">O <code>MessagingService.dispatchOutboundMessage()</code> existe como interface mas o envio real via WhatsApp Cloud API nao esta conectado. Mensagens sao criadas no banco com status "queued" mas nunca entregues ao destinatario.</p>
+    <p style="margin-top: 8px;"><strong>Impacto:</strong> O pipeline inteiro (webhook &rarr; lead &rarr; mensagem) funciona ate o penultimo passo. O ultimo passo (enviar) nao acontece.</p>
+    <p><strong>Esforco para resolver:</strong> 2-3 dias. Integrar WhatsApp Cloud API send endpoint + SendGrid email API.</p>
+  </div>
+
+  <div class="card card--red" style="margin-bottom: 14px;">
+    <h3 style="color: var(--red-dark); font-size: 16px;">2. Jobs agendados nunca executam</h3>
+    <p style="color: var(--red-dark);">O <code>RecoveryAutomationService</code> cria <code>QueueJobRecord</code> no banco com <code>runAt</code> futuro, mas nao existe BullMQ, Redis nem worker runner para processar esses jobs. O <code>package.json</code> nao inclui nenhuma dessas dependencias.</p>
+    <p style="margin-top: 8px;"><strong>Impacto:</strong> Toda a automacao (cadencia de follow-up, retries, escalacoes) e teatro. Jobs existem no DB mas ninguem os executa.</p>
+    <p><strong>Esforco para resolver:</strong> 5-7 dias. Instalar BullMQ + Redis, criar worker que poll jobs e executa steps.</p>
+  </div>
+
+  <div class="card card--yellow">
+    <h3 style="color: var(--yellow-dark); font-size: 16px;">3. Persistencia com caminho paralelo morto</h3>
+    <p style="color: var(--yellow-dark);">Supabase funciona. Mas <code>schema.prisma</code> existe no projeto, Prisma nao esta no <code>package.json</code>, e o <code>.env.example</code> referencia <code>DATABASE_URL</code> que nao e usada. Isso confunde qualquer dev novo.</p>
+    <p style="margin-top: 8px;"><strong>Impacto:</strong> Confusao, nao bloqueio. Mas se nao limpar agora, vai acumular.</p>
+    <p><strong>Esforco para resolver:</strong> 1 dia. Deletar schema.prisma, limpar envs, documentar que Supabase e a fonte unica.</p>
+  </div>
+  <div class="pg">05</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 06. ANALISE DAS PAGINAS -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">FRONTEND</div>
+  <div class="title" style="font-size: 32px;">Analise de cada pagina: dado real vs fake</div>
+
+  <table>
+    <tr><th>Rota</th><th>Dados reais?</th><th>O que renderiza</th><th>Problema principal</th></tr>
+    <tr>
+      <td><strong>/dashboard</strong></td>
+      <td><span class="badge badge--green">SIM</span></td>
+      <td>Metricas de analytics, leads prioritarios, distribuicao por canal</td>
+      <td>Campos <code>nextTouch</code>, <code>urgency</code> sao deterministicos, nao IA</td>
+    </tr>
+    <tr>
+      <td><strong>/leads</strong></td>
+      <td><span class="badge badge--green">SIM</span></td>
+      <td>Kanban com leads reais do DB, move/assign funcional</td>
+      <td>Falta timeline/historico por lead e lead detail completo</td>
+    </tr>
+    <tr>
+      <td><strong>/inbox</strong></td>
+      <td><span class="badge badge--green">SIM</span></td>
+      <td>Conversas reais do DB, thread de mensagens</td>
+      <td>Mensagens nunca sao enviadas de verdade (dispatch incompleto)</td>
+    </tr>
+    <tr>
+      <td><strong>/connect</strong></td>
+      <td><span class="badge badge--green">SIM</span></td>
+      <td>Status real de cada integracao, modo de storage</td>
+      <td>Nao permite editar credenciais pela UI (precisa de env vars)</td>
+    </tr>
+    <tr>
+      <td><strong>/ai</strong></td>
+      <td><span class="badge badge--yellow">PARCIAL</span></td>
+      <td>Classificacoes e estrategias do orchestrator</td>
+      <td>Nao e IA &mdash; e dados agregados com label "inteligencia"</td>
+    </tr>
+    <tr>
+      <td><strong>/calendar</strong></td>
+      <td><span class="badge badge--green">SIM</span></td>
+      <td>Movimento diario real, notas operacionais</td>
+      <td>Pouco conteudo se o sistema nao esta gerando automacoes</td>
+    </tr>
+    <tr>
+      <td><strong>/admin</strong></td>
+      <td><span class="badge badge--green">SIM</span></td>
+      <td>Sellers, controls, queue jobs, logs</td>
+      <td>Worker section mostra jobs que nunca serao executados</td>
+    </tr>
+    <tr>
+      <td><strong>/ (home)</strong></td>
+      <td><span class="badge badge--yellow">PARCIAL</span></td>
+      <td>Metricas reais + narrativa de produto</td>
+      <td>Copy overstates automacao: "IA decide a primeira abordagem" (nao decide)</td>
+    </tr>
+  </table>
+
+  <div style="margin-top: 16px; padding: 14px; background: var(--yellow-bg); border: 1px solid #fef08a; border-radius: 10px;">
+    <p style="font-size: 12px; color: var(--yellow-dark);"><strong>Conclusao sobre o frontend:</strong> As paginas renderizam dados reais do Supabase. O problema nao e o frontend &mdash; e que o backend nao completa o ciclo (nao envia mensagens, nao executa jobs). O frontend e honesto sobre o que recebe; o que recebe e que e incompleto.</p>
+  </div>
+  <div class="pg">06</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 07. DEPENDENCIES -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">DEPENDENCIAS</div>
+  <div class="title" style="font-size: 32px;">O que o package.json tem vs o que precisa</div>
+
+  <div class="grid-2" style="margin-top: 16px;">
+    <div>
+      <h2 style="margin-top: 0; color: var(--green-dark);">Presente e em uso</h2>
+      <table>
+        <tr><th>Pacote</th><th>Funcao</th></tr>
+        <tr><td>next 16.1.6</td><td>Framework principal</td></tr>
+        <tr><td>react 19.2.3</td><td>UI framework</td></tr>
+        <tr><td>@supabase/supabase-js</td><td>Database client</td></tr>
+        <tr><td>framer-motion</td><td>Animacoes</td></tr>
+        <tr><td>lucide-react</td><td>Icones</td></tr>
+        <tr><td>qrcode</td><td>QR para WhatsApp Web</td></tr>
+        <tr><td>tailwind-merge</td><td>CSS utils</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2 style="margin-top: 0; color: var(--red-dark);">Ausente e necessario</h2>
+      <table>
+        <tr><th>Pacote</th><th>Para que</th></tr>
+        <tr><td style="color: var(--red);">bullmq</td><td>Queue de jobs (automacao)</td></tr>
+        <tr><td style="color: var(--red);">ioredis</td><td>Redis client para BullMQ</td></tr>
+        <tr><td style="color: var(--red);">openai</td><td>SDK para LLM calls</td></tr>
+        <tr><td style="color: var(--yellow);">@sendgrid/mail</td><td>Envio de email</td></tr>
+        <tr><td style="color: var(--yellow);">node-fetch / axios</td><td>HTTP para WhatsApp API</td></tr>
+        <tr><td style="color: var(--g400);">prisma (remover)</td><td>Codigo morto</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; padding: 14px; background: var(--orange-bg); border: 1px solid rgba(249,115,22,0.2); border-radius: 10px;">
+    <p style="font-size: 12px; color: #9a3412;"><strong>Diagnostico:</strong> O projeto e frontend-heavy. Stack de producao para backend (queues, Redis, SDKs de integracao) nao esta instalada. Isso confirma que o sistema ainda e uma aplicacao de visualizacao, nao um sistema de execucao.</p>
+  </div>
+  <div class="pg">07</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 08. ROADMAP DE CONSOLIDACAO -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">ROADMAP</div>
+  <div class="title" style="font-size: 32px;">Caminho critico para producao real</div>
+  <p style="margin: 6px 0 14px;">6 fases sequenciais. Cada fase desbloqueia a proxima. Nao pular.</p>
+
+  <div class="phase"><div class="phase-n">0</div><div>
+    <h3>Limpeza e decisao de stack <span class="badge badge--orange">1-2 dias</span></h3>
+    <p>Deletar schema.prisma, limpar .env.example, remover referencias mortas, documentar Supabase como unica fonte.</p>
+    <div class="del">Resultado: zero confusao para qualquer dev que entrar</div>
+  </div></div>
+  <div class="phase"><div class="phase-n">1</div><div>
+    <h3>Messaging real <span class="badge badge--orange">3-4 dias</span></h3>
+    <p>Integrar WhatsApp Cloud API (send message endpoint), SendGrid (send email), completar <code>dispatchOutboundMessage()</code>.</p>
+    <div class="del">Resultado: mensagens saem do sistema de verdade</div>
+  </div></div>
+  <div class="phase"><div class="phase-n">2</div><div>
+    <h3>Worker e filas <span class="badge badge--orange">5-7 dias</span></h3>
+    <p>Instalar BullMQ + Redis, criar worker que poll queue_jobs e executa steps da estrategia, implementar avaliacao de condicoes.</p>
+    <div class="del">Resultado: automacoes rodam de verdade, cadencias acontecem</div>
+  </div></div>
+  <div class="phase"><div class="phase-n">3</div><div>
+    <h3>IA real <span class="badge badge--orange">2-3 dias</span></h3>
+    <p>Conectar OpenAI SDK na geracao de mensagens e na reply de conversas. Manter templates como fallback.</p>
+    <div class="del">Resultado: mensagens personalizadas de verdade, nao templates</div>
+  </div></div>
+  <div class="phase"><div class="phase-n">4</div><div>
+    <h3>Estrategias dinamicas <span class="badge badge--orange">3-5 dias</span></h3>
+    <p>Migrar playbooks para Supabase, criar UI de edicao, implementar avaliacao de condicoes em runtime.</p>
+    <div class="del">Resultado: operador configura playbooks sem tocar em codigo</div>
+  </div></div>
+  <div class="phase"><div class="phase-n">5</div><div>
+    <h3>Lead detail e timeline <span class="badge badge--orange">3-4 dias</span></h3>
+    <p>Pagina de detalhe do lead com timeline completa, historico de tratativas, AI summary e recomendacoes.</p>
+    <div class="del">Resultado: CRM de recovery completo e operacional</div>
+  </div></div>
+
+  <p style="margin-top: 14px; font-size: 12px; color: var(--g500);"><strong>Estimativa total:</strong> 17-25 dias uteis para ir de "demo funcional" para "produto operacional". A maior parte do trabalho e backend, nao frontend.</p>
+  <div class="pg">08</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 09. AUTOCONSCIENCIA DO PROJETO -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--dark">
+  <div class="label">AUTOCONSCIENCIA</div>
+  <div class="title">O que a documentacao interna ja sabe</div>
+  <p style="max-width: 720px; margin: 10px 0 24px;">
+    O projeto possui dois documentos de analise interna que demonstram lucidez rara
+    sobre o estado real. Isso e um ativo estrategico &mdash; equipes que sabem onde estao
+    chegam mais rapido onde querem ir.
+  </p>
+
+  <div class="grid-2">
+    <div class="card card--dark">
+      <h3>ANALISE_COMPLETA_PROXIMOS_PASSOS.md</h3>
+      <p>Diz textualmente: <em>"O projeto ainda nao tomou a decisao final sobre qual e a camada oficial de persistencia."</em></p>
+      <p style="margin-top: 6px;">Define 5 fases de consolidacao. Identifica riscos: <em>"duplicidade de logica, telas bonitas mas nao confiaveis, WhatsApp conectado sem inbox utilizavel."</em></p>
+    </div>
+    <div class="card card--dark">
+      <h3>ANALISE_FRONT_CLEAN_USER_FRIENDLY.md</h3>
+      <p>Identifica excesso visual: glows, textos explicativos em areas operacionais, pesos visuais competindo.</p>
+      <p style="margin-top: 6px;">Recomenda: reduzir efeitos, simplificar cards, priorizar hierarquia sobre estetica.</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px; padding: 18px; background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.2); border-radius: 14px;">
+    <p style="color: var(--orange-l); font-weight: 700; font-size: 15px;">Veredicto sobre maturidade mental do projeto</p>
+    <p style="margin-top: 6px;">A equipe nao e iludida. Sabe exatamente o que e real e o que e cenario. A autoconsciencia documentada e o maior indicador de que o produto vai chegar la &mdash; porque o gap entre expectativa e realidade ja esta mapeado.</p>
+  </div>
+  <div class="pg">09</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 10. MODELO DE MONETIZACAO (DARK) -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--dark">
+  <div class="label">MONETIZACAO</div>
+  <div class="title">Como cobrar, lucrar e gerar<br>recorrencia com o Shield Recovery</div>
+  <p style="max-width: 720px; margin: 12px 0 20px;">
+    O Shield Recovery tem um modelo de negocio naturalmente alinhado com valor:
+    <strong>quanto mais receita recupera para o cliente, mais vale</strong>.
+    Isso permite tres camadas de monetizacao simultaneas.
+  </p>
+
+  <div class="grid-3">
+    <div class="card card--dark" style="text-align: center;">
+      <p style="font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: var(--orange);">CAMADA 1</p>
+      <h3 style="font-size: 18px; color: var(--white); margin-top: 4px;">SaaS Recorrente</h3>
+      <p style="margin-top: 8px;">Assinatura mensal fixa por funcionalidade e volume de leads.</p>
+      <p style="margin-top: 6px; color: var(--orange-l); font-weight: 700;">Previsibilidade</p>
+    </div>
+    <div class="card card--dark" style="text-align: center; border-color: var(--orange);">
+      <p style="font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: var(--orange);">CAMADA 2</p>
+      <h3 style="font-size: 18px; color: var(--white); margin-top: 4px;">Success Fee</h3>
+      <p style="margin-top: 8px;">% sobre cada pagamento efetivamente recuperado. Alinhamento total.</p>
+      <p style="margin-top: 6px; color: var(--orange-l); font-weight: 700;">Upsell natural</p>
+    </div>
+    <div class="card card--dark" style="text-align: center;">
+      <p style="font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: var(--orange);">CAMADA 3</p>
+      <h3 style="font-size: 18px; color: var(--white); margin-top: 4px;">Creditos de IA</h3>
+      <p style="margin-top: 8px;">Mensagens geradas por IA e automacoes executadas cobradas por uso.</p>
+      <p style="margin-top: 6px; color: var(--orange-l); font-weight: 700;">Margem alta</p>
+    </div>
+  </div>
+  <div class="pg">10</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 11. PLANOS E PRICING -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">PRICING</div>
+  <div class="title" style="font-size: 32px;">Estrutura de planos sugerida</div>
+  <p style="margin: 6px 0 20px;">Modelo hibrido: <strong>SaaS fixo + success fee variavel</strong>. O cliente paga pouco para entrar e mais conforme recupera.</p>
+
+  <div class="grid-3">
+    <div class="pricing-card">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price">R$297<span>/mes</span></div>
+      <div class="plan-desc">Para quem quer comecar a recuperar</div>
+      <ul class="check">
+        <li>Ate 100 leads/mes</li>
+        <li>1 canal (WhatsApp ou email)</li>
+        <li>Dashboard basico</li>
+        <li>Templates de mensagem</li>
+        <li>1 usuario operador</li>
+        <li><strong>Success fee: 8%</strong> sobre valor recuperado</li>
+      </ul>
+    </div>
+    <div class="pricing-card featured">
+      <div class="plan-name">Professional</div>
+      <div class="plan-price">R$697<span>/mes</span></div>
+      <div class="plan-desc">Recuperacao com IA e automacao</div>
+      <ul class="check">
+        <li>Ate 500 leads/mes</li>
+        <li>Todos os canais (WA + Email + SMS)</li>
+        <li>IA para geracao de mensagens</li>
+        <li>Automacao de cadencias</li>
+        <li>CRM completo com pipeline</li>
+        <li>5 usuarios + roles</li>
+        <li>Dashboard + calendario + analytics</li>
+        <li><strong>Success fee: 5%</strong> sobre valor recuperado</li>
+      </ul>
+    </div>
+    <div class="pricing-card">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price">R$1.497<span>/mes</span></div>
+      <div class="plan-desc">Operacao completa e autonoma</div>
+      <ul class="check">
+        <li>Leads ilimitados</li>
+        <li>Todos os canais</li>
+        <li>IA avancada + playbooks customizados</li>
+        <li>Multi-seller com autonomia configuravel</li>
+        <li>API de integracao</li>
+        <li>Suporte prioritario</li>
+        <li>White-label opcional</li>
+        <li><strong>Success fee: 3%</strong> sobre valor recuperado</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="margin-top: 16px; padding: 12px; background: var(--orange-bg); border: 1px solid rgba(249,115,22,0.2); border-radius: 10px;">
+    <p style="font-size: 12px; color: #9a3412;"><strong>Por que hibrido?</strong> O SaaS fixo garante receita previsivel e cobre custo de infra. O success fee alinha incentivos &mdash; o cliente so paga mais quando ganha mais. Isso reduz churn porque o ROI e visivel todo mes na dashboard.</p>
+  </div>
+  <div class="pg">11</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 12. UNIT ECONOMICS E LTV -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--dark">
+  <div class="label">UNIT ECONOMICS</div>
+  <div class="title">LTV, recorrencia e projecao de lucro</div>
+
+  <div class="grid-2" style="margin-top: 20px;">
+    <div class="ltv-block">
+      <h3>Cenario: Cliente Professional</h3>
+      <p><strong>SaaS fixo:</strong> R$697/mes</p>
+      <p><strong>Volume medio:</strong> 300 leads/mes, ticket medio R$150</p>
+      <p><strong>Taxa de recuperacao:</strong> 15% (benchmark mercado)</p>
+      <p><strong>Receita recuperada/mes:</strong> 300 x 15% x R$150 = <strong>R$6.750</strong></p>
+      <p><strong>Success fee (5%):</strong> R$337/mes</p>
+      <p style="margin-top: 10px;"><strong>Receita total/mes por cliente:</strong></p>
+      <div class="ltv-val">R$1.034/mes</div>
+    </div>
+    <div class="ltv-block">
+      <h3>Projecao de LTV</h3>
+      <p><strong>ARPU mensal:</strong> R$1.034 (SaaS + success fee)</p>
+      <p><strong>Churn estimado:</strong> 5%/mes (recovery tools tem churn baixo)</p>
+      <p><strong>Lifetime:</strong> 1/0.05 = 20 meses</p>
+      <p style="margin-top: 10px;"><strong>LTV por cliente:</strong></p>
+      <div class="ltv-val">R$20.680</div>
+      <p style="margin-top: 10px;"><strong>Custo de aquisicao estimado (CAC):</strong> R$800-1.500</p>
+      <p><strong>LTV/CAC ratio:</strong> <span style="color: var(--green); font-weight: 800;">13.8x a 25.8x</span></p>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 24px;">Projecao de receita com base de clientes</h2>
+  <table style="margin-top: 8px;">
+    <tr>
+      <th>Clientes</th><th>MRR SaaS</th><th>MRR Success Fee</th><th>MRR Total</th><th>ARR</th>
+    </tr>
+    <tr><td>10</td><td>R$6.970</td><td>R$3.370</td><td style="font-weight: 700;">R$10.340</td><td>R$124.080</td></tr>
+    <tr><td>50</td><td>R$34.850</td><td>R$16.850</td><td style="font-weight: 700;">R$51.700</td><td>R$620.400</td></tr>
+    <tr><td>100</td><td>R$69.700</td><td>R$33.700</td><td style="font-weight: 700;">R$103.400</td><td>R$1.240.800</td></tr>
+    <tr><td>250</td><td>R$174.250</td><td>R$84.250</td><td style="font-weight: 700; color: var(--orange);">R$258.500</td><td style="font-weight: 700; color: var(--orange);">R$3.102.000</td></tr>
+    <tr><td>500</td><td>R$348.500</td><td>R$168.500</td><td style="font-weight: 700; color: var(--orange);">R$517.000</td><td style="font-weight: 700; color: var(--orange);">R$6.204.000</td></tr>
+  </table>
+  <p style="margin-top: 8px; font-size: 11px; color: #64748b;">* Premissa: mix 100% Professional para simplificacao. Na pratica, mix de planos aumenta ARPU.</p>
+  <div class="pg">12</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 13. ALAVANCAS DE RECEITA -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">ALAVANCAS</div>
+  <div class="title" style="font-size: 32px;">7 alavancas de receita e recorrencia</div>
+
+  <div class="grid-2" style="margin-top: 16px;">
+    <div class="card card--orange">
+      <h3 style="color: #9a3412;">1. Success Fee escalonado</h3>
+      <p style="color: #9a3412;">Quanto mais recupera, menor o %. Incentiva upgrade de plano para reduzir taxa. Cliente que recupera R$50k/mes no Starter (8% = R$4k) migra para Enterprise (3% = R$1.5k + R$1.497 fixo = R$2.997). Economia de R$1k/mes incentiva upgrade.</p>
+    </div>
+    <div class="card card--orange">
+      <h3 style="color: #9a3412;">2. Creditos de IA por uso</h3>
+      <p style="color: #9a3412;">Cada mensagem gerada por LLM custa ~R$0.01 (GPT-4o-mini). Cobrar R$0.10 por mensagem IA = <strong>margem de 90%</strong>. Cliente que gera 1.000 msgs/mes = R$100 extra. Escala: 500 clientes x 1.000 msgs = R$50k/mes adicional.</p>
+    </div>
+    <div class="card card--orange">
+      <h3 style="color: #9a3412;">3. Automacoes extras cobradas</h3>
+      <p style="color: #9a3412;">Plano base inclui cadencia padrao. Cadencias customizadas, playbooks avancados, condicoes com IA = add-on de R$197/mes. Alta margem, baixo custo de delivery.</p>
+    </div>
+    <div class="card card--orange">
+      <h3 style="color: #9a3412;">4. Multi-seller como multiplicador</h3>
+      <p style="color: #9a3412;">Cada seller adicional alem do plano = R$97/mes. Enterprise com 20 sellers = R$1.497 + 15 x R$97 = R$2.952/mes. O custo marginal de um seller e zero (e apenas uma role no sistema).</p>
+    </div>
+    <div class="card card--orange">
+      <h3 style="color: #9a3412;">5. White-label para agencias</h3>
+      <p style="color: #9a3412;">Agencias de growth e consultores de pagamento revendem o Shield com marca propria. Fee de R$497/mes por white-label + % sobre todos os clientes da agencia. Canal de distribuicao com custo de aquisicao zero.</p>
+    </div>
+    <div class="card card--orange">
+      <h3 style="color: #9a3412;">6. Dados e benchmarks como produto</h3>
+      <p style="color: #9a3412;">Com volume, o Shield tera o maior dataset de recovery do Brasil: taxas por nicho, metodo de pagamento, horario, valor. Esses benchmarks viram produto: relatorios pagos, API de inteligencia de mercado.</p>
+    </div>
+    <div class="card card--orange">
+      <h3 style="color: #9a3412;">7. Integracao com gateways como moat</h3>
+      <p style="color: #9a3412;">Cada gateway integrado aumenta switching cost. Cliente com Stripe + Pagar.me + Mercado Pago conectados nao sai facil. Partnerships com gateways podem gerar revenue share bidirecional.</p>
+    </div>
+    <div class="card card--light" style="display: flex; align-items: center; justify-content: center; text-align: center;">
+      <div>
+        <p style="font-size: 11px; color: var(--g500); font-weight: 600;">NET REVENUE RETENTION PROJETADO</p>
+        <p style="font-size: 42px; font-weight: 800; color: var(--orange);">130%+</p>
+        <p style="font-size: 11px; color: var(--g500);">Expansao natural via success fee + add-ons</p>
+      </div>
+    </div>
+  </div>
+  <div class="pg">13</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 14. CUSTO DE OPERACAO -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">CUSTOS</div>
+  <div class="title" style="font-size: 32px;">Estrutura de custos e margens</div>
+
+  <h2 style="margin-top: 8px;">Custo por cliente/mes (plano Professional)</h2>
+  <table>
+    <tr><th>Item</th><th>Custo unitario</th><th>Volume/mes</th><th>Total/mes</th></tr>
+    <tr><td>Supabase (DB)</td><td>Pro plan rateado</td><td>-</td><td>~R$4</td></tr>
+    <tr><td>Vercel (hosting)</td><td>Pro plan rateado</td><td>-</td><td>~R$3</td></tr>
+    <tr><td>Redis (Upstash)</td><td>Pay-per-use</td><td>~5.000 ops</td><td>~R$2</td></tr>
+    <tr><td>OpenAI (msgs)</td><td>R$0.01/msg</td><td>~500 msgs</td><td>~R$5</td></tr>
+    <tr><td>WhatsApp Cloud API</td><td>~R$0.30/msg</td><td>~200 msgs</td><td>~R$60</td></tr>
+    <tr><td>SendGrid (email)</td><td>~R$0.003/email</td><td>~300 emails</td><td>~R$1</td></tr>
+    <tr><td colspan="3" style="font-weight: 700; text-align: right;">Custo total por cliente/mes</td><td style="font-weight: 700;">~R$75</td></tr>
+  </table>
+
+  <div class="metric-row" style="margin-top: 20px;">
+    <div class="metric"><div class="val">R$75</div><div class="lbl">COGS / cliente</div></div>
+    <div class="metric"><div class="val">R$1.034</div><div class="lbl">ARPU / cliente</div></div>
+    <div class="metric"><div class="val" style="color: var(--green);">92.7%</div><div class="lbl">Margem bruta</div></div>
+    <div class="metric"><div class="val" style="color: var(--green);">R$959</div><div class="lbl">Lucro bruto / cliente</div></div>
+  </div>
+
+  <div style="margin-top: 16px; padding: 14px; background: var(--green-bg); border: 1px solid #bbf7d0; border-radius: 10px;">
+    <p style="font-size: 13px; color: var(--green-dark);"><strong>Por que a margem e tao alta?</strong> O custo variavel principal e WhatsApp Cloud API (~R$0.30/msg). Todos os outros custos sao negligiveis ou fixos diluiveis. A IA custa centavos por chamada. O maior custo do negocio sera aquisicao de clientes, nao operacao.</p>
+  </div>
+  <div class="pg">14</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 15. RECORRENCIA E MOAT -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--dark">
+  <div class="label">RECORRENCIA</div>
+  <div class="title">Por que o cliente nao sai</div>
+  <p style="max-width: 720px; margin: 10px 0 24px;">
+    Recovery tools tem uma das maiores retencoes de qualquer vertical de SaaS B2B.
+    O motivo e simples: <strong>o custo de nao usar e perder dinheiro todo dia</strong>.
+  </p>
+
+  <div class="grid-2">
+    <div class="card card--dark">
+      <h3>Switching costs estruturais</h3>
+      <ul>
+        <li>Integracoes com gateways ja configuradas</li>
+        <li>Historico de leads e conversas no CRM</li>
+        <li>Playbooks otimizados ao longo do tempo</li>
+        <li>Sellers treinados na interface</li>
+        <li>Webhooks apontando para o Shield</li>
+      </ul>
+    </div>
+    <div class="card card--dark">
+      <h3>Valor crescente no tempo</h3>
+      <ul>
+        <li>IA aprende padroes de falha do cliente</li>
+        <li>Templates otimizam com feedback de conversas</li>
+        <li>Dados historicos viram inteligencia de recovery</li>
+        <li>Benchmarks do setor disponives para comparacao</li>
+        <li>Cada mes de uso melhora a taxa de recuperacao</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px;">
+    <h2>Churn benchmark por vertical de SaaS</h2>
+    <table style="margin-top: 8px;">
+      <tr><th>Vertical</th><th>Churn mensal tipico</th><th>Shield Recovery (estimado)</th></tr>
+      <tr><td>SaaS generico B2B</td><td style="color: #cbd5e1;">5-8%</td><td rowspan="4" style="font-size: 20px; font-weight: 800; color: var(--green); text-align: center; vertical-align: middle;">3-5%</td></tr>
+      <tr><td>CRM tools</td><td style="color: #cbd5e1;">4-6%</td></tr>
+      <tr><td>Payment tools</td><td style="color: #cbd5e1;">2-4%</td></tr>
+      <tr><td>Revenue recovery (Chargeback/Dunning)</td><td style="color: #cbd5e1;">2-5%</td></tr>
+    </table>
+    <p style="margin-top: 8px; font-size: 11px; color: #64748b;">Churn baixo porque: (1) resultado financeiro direto e mensuravel, (2) custo de trocar integracoes alto, (3) risco de perder receita ao desconectar.</p>
+  </div>
+  <div class="pg">15</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 16. CENARIO DE MERCADO -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">MERCADO</div>
+  <div class="title" style="font-size: 32px;">Tamanho de mercado e posicionamento</div>
+
+  <div class="grid-2" style="margin-top: 16px;">
+    <div>
+      <h2 style="margin-top: 0;">TAM-SAM-SOM Brasil</h2>
+      <div class="card card--light" style="margin-bottom: 10px;">
+        <p style="font-size: 11px; font-weight: 700; color: var(--g500);">TAM &mdash; Total Addressable Market</p>
+        <p style="font-size: 24px; font-weight: 800; color: var(--text);">R$4.2 bilhoes/ano</p>
+        <p style="font-size: 11px;">Todas as empresas digitais com cobranca recorrente no Brasil (~800k empresas)</p>
+      </div>
+      <div class="card card--light" style="margin-bottom: 10px;">
+        <p style="font-size: 11px; font-weight: 700; color: var(--g500);">SAM &mdash; Serviceable Addressable Market</p>
+        <p style="font-size: 24px; font-weight: 800; color: var(--text);">R$420 milhoes/ano</p>
+        <p style="font-size: 11px;">PMEs digitais com >R$50k/mes em cobrancas recorrentes (~80k empresas)</p>
+      </div>
+      <div class="card card--orange">
+        <p style="font-size: 11px; font-weight: 700; color: var(--orange);">SOM &mdash; Serviceable Obtainable Market</p>
+        <p style="font-size: 24px; font-weight: 800; color: var(--text);">R$12 milhoes/ano</p>
+        <p style="font-size: 11px; color: #9a3412;">1.000 clientes no plano Professional (0.12% do SAM)</p>
+      </div>
+    </div>
+    <div>
+      <h2 style="margin-top: 0;">Concorrencia e diferencial</h2>
+      <table>
+        <tr><th>Player</th><th>Modelo</th><th>Gap</th></tr>
+        <tr><td>Dunning tools (Baremetrics, Churnbuster)</td><td>Email-only dunning</td><td>Sem WhatsApp, sem IA, sem CRM</td></tr>
+        <tr><td>Gateway nativo (retry automatico)</td><td>Retry silencioso</td><td>Sem comunicacao com cliente</td></tr>
+        <tr><td>CRMs genericos (Hubspot, Pipedrive)</td><td>CRM sem recovery</td><td>Nao entendem falha de pagamento</td></tr>
+        <tr><td>Cobranca/billing (Vindi, Superlogi)</td><td>Billing completo</td><td>Recovery e feature, nao produto</td></tr>
+      </table>
+      <div style="margin-top: 12px; padding: 12px; background: var(--orange-bg); border-radius: 10px;">
+        <p style="font-size: 12px; color: #9a3412;"><strong>Moat do Shield:</strong> Unico produto no Brasil que combina recovery + CRM + IA + WhatsApp nativo. Nenhum concorrente tem os 4 juntos.</p>
+      </div>
+    </div>
+  </div>
+  <div class="pg">16</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- 17. CONCLUSAO (DARK) -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="slide slide--dark" style="justify-content: center;">
+  <div class="label">CONCLUSAO</div>
+  <div class="title" style="font-size: 36px;">O veredicto</div>
+
+  <div style="max-width: 700px; margin-top: 20px;">
+    <p style="font-size: 15px; line-height: 1.7; margin-bottom: 16px;">
+      O Shield Recovery e um <strong>produto real com gaps de backend criticos</strong>.
+      O modelo de dados e excelente, o frontend e funcional, a arquitetura suporta escala.
+      Mas o sistema nao envia mensagens, nao executa automacoes e nao usa IA de verdade.
+    </p>
+    <p style="font-size: 15px; line-height: 1.7; margin-bottom: 24px;">
+      A boa noticia: <strong>os gaps sao resolvives em 3-4 semanas de trabalho focado</strong>.
+      A stack ja esta la. O que falta e conectar os fios. E o modelo de monetizacao
+      e naturalmente forte: SaaS + success fee com margem de 92% e LTV de R$20k.
+    </p>
+
+    <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+      <p style="font-size: 18px; font-weight: 700; color: var(--orange-l); margin-bottom: 8px;">Proximos 30 dias</p>
+      <p style="font-size: 13px; margin-bottom: 6px;">Semana 1-2: Messaging real (WhatsApp + Email) + limpeza de stack</p>
+      <p style="font-size: 13px; margin-bottom: 6px;">Semana 2-3: Worker + BullMQ + Redis (automacao real)</p>
+      <p style="font-size: 13px; margin-bottom: 6px;">Semana 3-4: OpenAI integration + estrategias dinamicas</p>
+      <p style="font-size: 13px;">Semana 4: Primeiro cliente real com operacao end-to-end</p>
+    </div>
+
+    <div style="margin-top: 32px; text-align: center; padding: 20px; border: 1px solid rgba(249,115,22,0.3); border-radius: 16px; background: rgba(249,115,22,0.06);">
+      <p style="font-size: 22px; font-weight: 800; color: var(--white);">Shield Recovery</p>
+      <p style="font-size: 14px; color: var(--orange-l); margin-top: 4px;">De demo funcional a produto de R$3M ARR em 12 meses.</p>
+      <p style="font-size: 14px; color: var(--orange-l);">A falha entra. A receita volta.</p>
+    </div>
+  </div>
+  <div class="pg">17</div>
+</div>
+
+</body>
+</html>

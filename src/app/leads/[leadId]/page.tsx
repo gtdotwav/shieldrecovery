@@ -96,7 +96,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
     ? `https://wa.me/${lead.phone.replace(/\D/g, "")}`
     : undefined;
   const emailHref =
-    lead.email && lead.email !== "unknown@shield.local"
+    lead.email && lead.email !== "unknown@pagrecovery.local"
       ? `mailto:${lead.email}`
       : undefined;
 
@@ -136,7 +136,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
                   </h1>
                   <p className="mt-2 text-sm leading-6 text-[#717182]">
                     {lead.product || "Sem produto informado"} · pedido{" "}
-                    {lead.order_id}
+                    {lead.order_id || "nao informado"}
                   </p>
                 </div>
 
@@ -146,7 +146,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
                       href={whatsappHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
                     >
                       <Phone className="h-3.5 w-3.5" />
                       Abrir no WhatsApp
@@ -201,7 +201,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
           <PlatformSurface className="p-5 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-xl">
-                <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+                <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
                   Próxima ação
                 </p>
                 <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#1a1a2e]">
@@ -254,7 +254,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
           <PlatformSurface className="p-5 sm:p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+                <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
                   Conversa
                 </p>
                 <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#1a1a2e]">
@@ -310,9 +310,9 @@ export default async function LeadDetailPage({ params }: PageProps) {
                     name="content"
                     type="text"
                     placeholder="Registrar tratativa ou resposta enviada..."
-                    className="flex-1 rounded-xl border border-black/10 bg-[#f5f5f7] px-3.5 py-2.5 text-sm text-[#1a1a2e] outline-none placeholder:text-[#9ca3af] focus:border-orange-300 focus:ring-1 focus:ring-orange-200"
+                    className="flex-1 rounded-xl border border-black/10 bg-[#f5f5f7] px-3.5 py-2.5 text-sm text-[#1a1a2e] outline-none placeholder:text-[#9ca3af] focus:border-sky-300 focus:ring-1 focus:ring-sky-200"
                   />
-                  <ActionButton className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
+                  <ActionButton className="inline-flex items-center justify-center rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-600">
                     <Send className="h-4 w-4" />
                   </ActionButton>
                 </form>
@@ -323,7 +323,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
 
         <div className="space-y-4 2xl:sticky 2xl:top-20 2xl:self-start">
           <PlatformSurface className="p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+            <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
               Resumo do caso
             </p>
             <div className="mt-4 space-y-3">
@@ -341,7 +341,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+            <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
               Pagamento
             </p>
             <div className="mt-4 space-y-3">
@@ -357,13 +357,13 @@ export default async function LeadDetailPage({ params }: PageProps) {
                 label="Método"
                 value={mapPaymentMethod(lead.payment_method)}
               />
-              <SidebarLine label="Pedido" value={lead.order_id} />
-              <SidebarLine label="Gateway ID" value={lead.gateway_payment_id} />
+              <SidebarLine label="Pedido" value={lead.order_id || "—"} />
+              <SidebarLine label="Gateway ID" value={lead.gateway_payment_id || "—"} />
             </div>
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+            <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
               Linha do tempo
             </p>
             <div className="mt-4 space-y-3">
@@ -412,7 +412,7 @@ function StageAction({
 
   if (isActive) {
     buttonClass =
-      "cursor-default border border-orange-200 bg-orange-50 text-orange-600";
+      "cursor-default border border-sky-200 bg-sky-50 text-sky-600";
   } else if (variant === "success") {
     buttonClass =
       "border border-green-200 bg-green-50 text-green-600 hover:bg-green-100";

@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { platformBrand } from "@/lib/platform";
 import type { ConnectionSettingsRecord } from "@/server/recovery/types";
 
 const resolvedDefaultBaseUrl =
@@ -31,6 +32,18 @@ const workerConcurrency = clampInteger(
   1,
   16,
 );
+const checkoutPlatformUrl = process.env.CHECKOUT_PLATFORM_URL ?? "";
+const checkoutPlatformApiKey = process.env.CHECKOUT_PLATFORM_API_KEY ?? "";
+const pagouAiEnvironment =
+  (process.env.PAGOUAI_ENVIRONMENT ?? "production").toLowerCase() === "sandbox"
+    ? "sandbox"
+    : "production";
+const pagouAiApiBaseUrl = process.env.PAGOUAI_API_BASE_URL ?? "";
+const pagouAiSecretKey = process.env.PAGOUAI_SECRET_KEY ?? "";
+const pagouAiPublicKey =
+  process.env.NEXT_PUBLIC_PAGOUAI_PUBLIC_KEY ??
+  process.env.PAGOUAI_PUBLIC_KEY ??
+  "";
 const experimentalPagesEnabled =
   (process.env.SHIELD_ENABLE_EXPERIMENTAL_UI ?? "").toLowerCase() === "true";
 
@@ -91,17 +104,26 @@ export const appEnv = {
   workerExecutorConfigured: Boolean(workerAuthToken),
   workerCronConfigured: Boolean(cronSecret),
   workerConfigured: Boolean(workerAuthToken || cronSecret),
+  checkoutPlatformUrl,
+  checkoutPlatformApiKey,
+  checkoutPlatformConfigured: Boolean(checkoutPlatformUrl && checkoutPlatformApiKey),
+  pagouAiEnvironment,
+  pagouAiApiBaseUrl,
+  pagouAiSecretKey,
+  pagouAiPublicKey,
+  pagouAiConfigured: Boolean(pagouAiSecretKey),
+  pagouAiCardConfigured: Boolean(pagouAiSecretKey && pagouAiPublicKey),
   experimentalPagesEnabled,
   webhookSecret:
     process.env.SHIELD_GATEWAY_WEBHOOK_SECRET ?? "shield_preview_secret",
   webhookToleranceSeconds: Number(process.env.WEBHOOK_TOLERANCE_SECONDS ?? 300),
   appBaseUrl: resolvedDefaultBaseUrl,
   bootstrapStorePath: process.env.VERCEL
-    ? "/tmp/shield-recovery-bootstrap.json"
-    : path.join(process.cwd(), "data", "shield-recovery.bootstrap.json"),
+    ? `/tmp/${platformBrand.slug}-bootstrap.json`
+    : path.join(process.cwd(), "data", `${platformBrand.slug}.bootstrap.json`),
   localStorePath: process.env.VERCEL
-    ? "/tmp/shield-recovery-store.json"
-    : path.join(process.cwd(), "data", "shield-recovery.local.json"),
+    ? `/tmp/${platformBrand.slug}-store.json`
+    : path.join(process.cwd(), "data", `${platformBrand.slug}.local.json`),
 };
 
 function clampInteger(

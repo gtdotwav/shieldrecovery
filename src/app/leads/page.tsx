@@ -35,7 +35,7 @@ import type {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "CRM | Shield Recovery",
+  title: "CRM | PagRecovery",
 };
 
 type SearchParamValue = string | string[] | undefined;
@@ -106,7 +106,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
           <ViewSwitcher currentView={currentView} currentScope={currentScope} />
           <Link
             href="/inbox"
-            className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+            className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
           >
             Conversas
             <ArrowRight className="h-3.5 w-3.5" />
@@ -136,7 +136,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
         <PlatformSurface className="p-4 sm:p-5">
           <div className="flex flex-col gap-4 border-b border-black/[0.06] pb-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
                 CRM operacional
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
@@ -169,7 +169,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
         <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <PlatformSurface className="p-4">
-            <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+            <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
               Caso em foco
             </h3>
             {focusedLead ? (
@@ -217,7 +217,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                 </div>
                 <Link
                   href={`/leads/${focusedLead.lead_id}`}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-600 transition-colors hover:text-orange-700"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700"
                 >
                   Abrir detalhe do lead
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -234,7 +234,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+            <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
               Leitura da carteira
             </h3>
             <div className="mt-4 space-y-2.5">
@@ -447,7 +447,7 @@ function LeadTableRow({ contact }: { contact: FollowUpContact }) {
         <div className="flex items-center gap-2">
           <Link
             href={`/leads/${contact.lead_id}`}
-            className="truncate text-sm font-semibold text-[#111827] transition-colors hover:text-orange-600"
+            className="truncate text-sm font-semibold text-[#111827] transition-colors hover:text-sky-600"
           >
             {contact.customer_name}
           </Link>
@@ -512,7 +512,7 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
         <div className="min-w-0">
           <Link
             href={`/leads/${contact.lead_id}`}
-            className="block truncate text-sm font-semibold text-[#111827] transition-colors hover:text-orange-600"
+            className="block truncate text-sm font-semibold text-[#111827] transition-colors hover:text-sky-600"
           >
             {contact.customer_name}
           </Link>
@@ -596,7 +596,7 @@ function LeadAction({
           "rounded-lg text-xs font-medium transition-colors",
           compact ? "px-2.5 py-1.5" : "px-3 py-1.5",
           isPrimary
-            ? "bg-orange-500 text-white hover:bg-orange-600"
+            ? "bg-sky-500 text-white hover:bg-sky-600"
             : "border border-black/10 bg-white text-[#1a1a2e] hover:bg-[#f5f5f7]",
         )}
       >

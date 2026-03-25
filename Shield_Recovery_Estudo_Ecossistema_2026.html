@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shield Recovery - Estudo do Ecossistema Completo: Recovery + Checkout + AI Followup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  :root{--dk:#0f1117;--dk2:#171923;--dk3:#1e2130;--or:#f97316;--orl:#fdba74;--orbg:rgba(249,115,22,.08);--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;--g400:#9ca3af;--g500:#6b7280;--g600:#4b5563;--g700:#374151;--g800:#1f2937;--w:#fff;--tx:#111827;--gr:#22c55e;--grbg:#f0fdf4;--grd:#166534;--rd:#ef4444;--rdbg:#fef2f2;--rdd:#991b1b;--yl:#eab308;--ylbg:#fefce8;--yld:#854d0e;--bl:#3b82f6;--blbg:#eff6ff;--vi:#8b5cf6;--vibg:#f5f3ff;--vrd:#7c3aed}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;background:#08090c}
+  .s{width:100%;max-width:1200px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:56px 72px;position:relative}
+  @media print{.s{page-break-after:always;min-height:0;padding:36px 44px}.s:last-child{page-break-after:avoid}body{background:white}}
+  .s--d{background:var(--dk);color:var(--w)}.s--l{background:var(--w);color:var(--tx);border-top:4px solid var(--or)}.s--g{background:linear-gradient(135deg,#0f1117,#151821 50%,#1a1f2e);color:var(--w)}.s--vi{background:linear-gradient(135deg,#0f1117,#1a1230 50%,#1e1535);color:var(--w)}
+  .lb{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--or);margin-bottom:8px}.s--d .lb{color:var(--orl)}
+  .ti{font-size:36px;font-weight:800;line-height:1.12;letter-spacing:-.02em;margin-bottom:12px}.s--l .ti{color:var(--tx)}
+  .su{font-size:15px;line-height:1.65;color:#94a3b8;max-width:720px}.s--l .su{color:var(--g500)}
+  h2{font-size:17px;font-weight:700;margin:22px 0 10px;color:var(--tx)}.s--d h2,.s--vi h2{color:var(--w)}
+  h3{font-size:13px;font-weight:700;margin:10px 0 4px;color:var(--g700)}.s--d h3,.s--vi h3{color:var(--orl)}
+  p,li{font-size:12.5px;line-height:1.7;color:var(--g700)}strong{font-weight:700}.s--d p,.s--d li,.s--vi p,.s--vi li{color:#cbd5e1}
+  ul{list-style:none;padding:0}ul li{padding:3px 0 3px 18px;position:relative}ul li::before{content:'\2022';position:absolute;left:0;color:var(--or);font-weight:700}
+  ul.ck li::before{content:'\2713';color:var(--gr)}ul.cr li::before{content:'\2717';color:var(--rd)}ul.wr li::before{content:'\26A0';color:var(--yl);font-size:11px}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:11.5px}
+  th{background:var(--dk);color:var(--w);font-weight:600;font-size:10px;letter-spacing:.06em;text-align:left;padding:8px 11px;text-transform:uppercase}
+  td{padding:8px 11px;border-bottom:1px solid var(--g200);color:var(--g700);vertical-align:top;line-height:1.5}
+  tr:nth-child(even) td{background:var(--g100)}tr:nth-child(odd) td{background:var(--w)}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:12px 0}
+  .c{border-radius:14px;padding:16px}.c--d{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}.c--l{background:var(--g100);border:1px solid var(--g200)}.c--gr{background:var(--grbg);border:1px solid #bbf7d0}.c--rd{background:var(--rdbg);border:1px solid #fecaca}.c--yl{background:var(--ylbg);border:1px solid #fef08a}.c--bl{background:var(--blbg);border:1px solid #bfdbfe}.c--or{background:var(--orbg);border:1px solid rgba(249,115,22,.2)}.c--vi{background:var(--vibg);border:1px solid #c4b5fd}
+  .c h3{margin-top:0}.c p{font-size:11.5px}
+  .b{display:inline-block;padding:2px 9px;border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:.04em}.b--gr{background:#dcfce7;color:var(--grd)}.b--rd{background:#fee2e2;color:var(--rdd)}.b--yl{background:#fef9c3;color:var(--yld)}.b--bl{background:#dbeafe;color:#1e40af}.b--or{background:#ffedd5;color:#9a3412}.b--vi{background:#ede9fe;color:var(--vrd)}
+  .mr{display:flex;gap:12px;margin:12px 0;flex-wrap:wrap}.m{flex:1;min-width:120px;background:var(--g100);border-radius:12px;padding:14px;text-align:center;border:1px solid var(--g200)}.s--d .m,.s--vi .m{background:var(--dk3);border-color:rgba(255,255,255,.06)}.m .v{font-size:26px;font-weight:800;color:var(--or)}.m .l{font-size:9px;color:var(--g500);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+  .fl{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:12px 0}.fs{padding:6px 12px;border-radius:8px;font-size:10.5px;font-weight:600;border:1px solid var(--g300);background:var(--g100);color:var(--tx)}.fa{color:var(--or);font-size:15px;font-weight:700}
+  .s--d .fs{background:var(--dk3);color:var(--w);border-color:rgba(249,115,22,.2)}.s--vi .fs{background:rgba(139,92,246,.1);color:var(--w);border-color:rgba(139,92,246,.3)}
+  .pg{position:absolute;bottom:32px;right:72px;font-size:10px;color:#475569;font-weight:600}.s--l .pg{color:var(--g300)}
+  .cov .ab{width:5px;height:70px;background:var(--or);border-radius:3px;margin-bottom:24px}
+  .cov .gw{position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(249,115,22,.1),transparent 70%);top:-80px;right:-60px}
+  .sb{display:flex;background:var(--dk3);border-radius:14px;padding:16px 0;margin-top:40px}.st{flex:1;padding:0 18px;border-right:1px solid rgba(255,255,255,.05)}.st:last-child{border:none}.st-l{font-size:8px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--or);margin-bottom:4px}.st-v{font-size:11.5px;color:#e2e8f0}
+  .vr{position:absolute;bottom:32px;left:72px;font-size:10.5px;color:#475569}
+  .ph{display:flex;gap:12px;margin:8px 0;padding:12px;background:var(--g100);border-radius:10px;border-left:4px solid var(--or)}.ph-n{font-size:20px;font-weight:800;color:var(--or);min-width:28px}.ph h3{margin:0 0 2px;color:var(--tx);font-size:12px}.ph p{font-size:11px;margin:1px 0}.ph .dl{color:var(--or);font-weight:600;font-size:10px}
+  code{font-family:'Courier New',monospace;font-size:11px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}.s--d code,.s--vi code{background:rgba(255,255,255,.08)}
+  .note{padding:12px;border-radius:10px;margin:10px 0;font-size:11.5px}
+  .note--or{background:var(--orbg);border:1px solid rgba(249,115,22,.2);color:#9a3412}
+  .note--gr{background:var(--grbg);border:1px solid #bbf7d0;color:var(--grd)}
+  .note--rd{background:var(--rdbg);border:1px solid #fecaca;color:var(--rdd)}
+  .note--yl{background:var(--ylbg);border:1px solid #fef08a;color:var(--yld)}
+  .note--vi{background:var(--vibg);border:1px solid #c4b5fd;color:var(--vrd)}
+  .s--d .note--or{background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.25);color:var(--orl)}
+</style>
+</head>
+<body>
+
+<!-- 01 COVER -->
+<div class="s s--g cov" style="justify-content:flex-start;padding-top:80px">
+  <div class="gw"></div>
+  <div class="ab"></div>
+  <div class="lb" style="font-size:12px;letter-spacing:.25em">SHIELD RECOVERY</div>
+  <div class="ti" style="font-size:46px;margin-top:6px">Estudo do Ecossistema<br>Completo</div>
+  <div class="su" style="margin-top:12px">
+    Auditoria tecnica profunda da plataforma integrada:<br>
+    <strong>Recovery + Checkout + Payment Links + AI Followup</strong>
+  </div>
+  <div class="sb">
+    <div class="st"><div class="st-l">Ecossistema</div><div class="st-v">Recovery + Checkout + Link</div></div>
+    <div class="st"><div class="st-l">Linhas de codigo</div><div class="st-v">+15.000 linhas server-side</div></div>
+    <div class="st"><div class="st-l">Modulos</div><div class="st-v">14 areas analisadas</div></div>
+    <div class="st"><div class="st-l">AI Engine</div><div class="st-v">Orchestrator + Intent + Decisor</div></div>
+  </div>
+  <div class="vr">Shield Recovery v0.2.0 &nbsp;|&nbsp; Marco 2026 &nbsp;|&nbsp; Documento interno e confidencial</div>
+</div>
+
+<!-- 02 RESUMO EXECUTIVO -->
+<div class="s s--l">
+  <div class="lb">RESUMO EXECUTIVO</div>
+  <div class="ti" style="font-size:30px">O projeto evoluiu de demo para plataforma operacional</div>
+  <p style="max-width:780px;margin:6px 0 16px">O Shield Recovery nao e mais apenas um CRM de leads. Evoluiu para um <strong>ecossistema de recuperacao de pagamentos com 3 camadas integradas</strong>: Recovery Engine, Checkout Platform e AI Followup. A maioria dos componentes criticos agora esta funcional e pronta para producao.</p>
+
+  <div class="mr">
+    <div class="m"><div class="v">8/10</div><div class="l">Production Readiness</div></div>
+    <div class="m"><div class="v">9/10</div><div class="l">Arquitetura</div></div>
+    <div class="m"><div class="v">8/10</div><div class="l">AI Engine</div></div>
+    <div class="m"><div class="v">7/10</div><div class="l">Automacao Real</div></div>
+    <div class="m"><div class="v">8/10</div><div class="l">Messaging</div></div>
+  </div>
+
+  <div class="g2" style="margin-top:16px">
+    <div class="c c--gr">
+      <h3 style="color:var(--grd)">O que mudou desde a ultima auditoria</h3>
+      <ul class="ck">
+        <li>Worker system com batch + concurrency real</li>
+        <li>Webhooks processados async via queue (nao bloqueia)</li>
+        <li>Checkout extraido para plataforma standalone</li>
+        <li>AI Orchestrator com decision tree completo (814 linhas)</li>
+        <li>Intent classification de mensagens do cliente</li>
+        <li>Selecao de metodo de pagamento (PIX/Card/Boleto)</li>
+        <li>Payment links gerados dinamicamente por metodo</li>
+        <li>Seller invite system com tokens e expiry</li>
+        <li>Onboarding flow completo (admin + seller)</li>
+        <li>61 templates de mensagem em 3 canais</li>
+      </ul>
+    </div>
+    <div class="c c--l">
+      <h3>A tese mudou</h3>
+      <p style="margin:6px 0">Antes era: <em>"plataforma de CRM com IA para recovery"</em>.</p>
+      <p>Agora e: <strong>"ecossistema completo de recuperacao de pagamentos que vai do webhook ate o checkout, com IA decidindo cada passo"</strong>.</p>
+      <p style="margin-top:10px">A separacao do Checkout em plataforma standalone e o movimento mais importante. Transforma o Shield de "ferramenta de recovery" em <strong>infraestrutura de pagamentos</strong>.</p>
+      <div class="note note--or" style="margin-top:10px"><strong>Impacto:</strong> Agora o Shield nao depende do gateway original para gerar links de pagamento. Ele cria seus proprios checkouts.</div>
+    </div>
+  </div>
+  <div class="pg">02</div>
+</div>
+
+<!-- 03 ARQUITETURA DO ECOSSISTEMA -->
+<div class="s s--d">
+  <div class="lb">ECOSSISTEMA</div>
+  <div class="ti">3 plataformas, 1 fluxo unico</div>
+  <p style="max-width:720px;margin:8px 0 20px">O Shield Recovery agora opera como um ecossistema de 3 camadas que se comunicam via webhooks e APIs internas.</p>
+
+  <div class="g3">
+    <div class="c c--d" style="border-color:var(--or)">
+      <p style="font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--or)">CAMADA 1</p>
+      <h3 style="color:var(--w);font-size:16px;margin-top:4px">Shield Recovery</h3>
+      <p style="margin-top:8px">Motor principal. Recebe webhooks, cria leads, classifica com IA, decide estrategia, agenda automacoes, envia mensagens, gerencia conversas.</p>
+      <p style="margin-top:6px"><strong>Stack:</strong> Next.js + Supabase + Vercel</p>
+      <p><strong>~15.000 linhas</strong> de logica server-side</p>
+    </div>
+    <div class="c c--d" style="border-color:var(--vi)">
+      <p style="font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--vi)">CAMADA 2</p>
+      <h3 style="color:var(--w);font-size:16px;margin-top:4px">Checkout Platform</h3>
+      <p style="margin-top:8px">Plataforma standalone de checkout. Cria sessoes de pagamento, hospeda pagina de checkout, processa via PagNet/Stripe, retorna resultado.</p>
+      <p style="margin-top:6px"><strong>Stack:</strong> Next.js separado</p>
+      <p><strong>API:</strong> POST /api/v1/sessions</p>
+    </div>
+    <div class="c c--d" style="border-color:var(--gr)">
+      <p style="font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--gr)">CAMADA 3</p>
+      <h3 style="color:var(--w);font-size:16px;margin-top:4px">AI Followup Engine</h3>
+      <p style="margin-top:8px">Motor de decisao que classifica intents, decide proxima acao, gera mensagens personalizadas e orquestra o ciclo de follow-up multicanal.</p>
+      <p style="margin-top:6px"><strong>Core:</strong> Orchestrator (814 linhas)</p>
+      <p><strong>Templates:</strong> 61 mensagens em 3 canais</p>
+    </div>
+  </div>
+
+  <h2 style="margin-top:20px">Fluxo completo: falha &rarr; recuperacao</h2>
+  <div class="fl">
+    <div class="fs" style="border-color:var(--rd)">Pagamento falha</div><span class="fa">&rarr;</span>
+    <div class="fs">Webhook recebido</div><span class="fa">&rarr;</span>
+    <div class="fs">Queue async</div><span class="fa">&rarr;</span>
+    <div class="fs">Normaliza evento</div><span class="fa">&rarr;</span>
+    <div class="fs">Cria Lead</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--or)">AI classifica</div><span class="fa">&rarr;</span>
+    <div class="fs">Envia WA</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--vi)">Cliente responde</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--or)">AI detecta intent</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--vi)">Gera checkout</div><span class="fa">&rarr;</span>
+    <div class="fs">Envia link</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--gr)">Paga!</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--gr)">RECOVERED</div>
+  </div>
+  <div class="pg">03</div>
+</div>
+
+<!-- 04 MAPA DE MATURIDADE ATUALIZADO -->
+<div class="s s--l">
+  <div class="lb">MATURIDADE</div>
+  <div class="ti" style="font-size:30px">Mapa de maturidade atualizado</div>
+  <p style="margin:4px 0 12px"><span class="b b--gr">REAL</span> <span class="b b--yl">PARCIAL</span> <span class="b b--rd">MOCK</span> <span class="b b--bl">ESTRUTURAL</span> <span class="b b--vi">NOVO</span></p>
+
+  <table>
+    <tr><th style="width:25%">Componente</th><th style="width:10%">Status</th><th>Evidencia</th><th style="width:10%">Antes</th></tr>
+    <tr><td><strong>Webhook Pipeline</strong></td><td><span class="b b--gr">REAL</span></td><td>Async queue, validacao HMAC, idempotencia, retry. <span class="b b--vi">NOVO</span> processamento via worker</td><td>Real</td></tr>
+    <tr><td><strong>Worker System</strong></td><td><span class="b b--gr">REAL</span></td><td><span class="b b--vi">NOVO</span> Batch (60) + Concurrency (4). Retry com backoff exponencial. Job types: webhook-process, whatsapp-initial, email-reminder, agent-task</td><td style="color:var(--rd)">Mock</td></tr>
+    <tr><td><strong>AI Orchestrator</strong></td><td><span class="b b--gr">REAL</span></td><td><span class="b b--vi">NOVO</span> 814 linhas. decideRecoveryPlan() + decideConversationFollowUp() + classifyInboundIntent(). Decision tree completo com 12+ intents</td><td style="color:var(--yl)">Parcial</td></tr>
+    <tr><td><strong>Intent Classification</strong></td><td><span class="b b--gr">REAL</span></td><td><span class="b b--vi">NOVO</span> Detecta: payment_method_pix, card, boleto, human_handoff, friction, needs_time, objection, question. Confidence scoring</td><td>N/A</td></tr>
+    <tr><td><strong>Checkout Platform</strong></td><td><span class="b b--gr">REAL</span></td><td><span class="b b--vi">NOVO</span> createCheckoutSession() via API standalone. PagNet + Stripe backend. Retorna sessionId + checkoutUrl</td><td>N/A</td></tr>
+    <tr><td><strong>Payment Links</strong></td><td><span class="b b--gr">REAL</span></td><td><span class="b b--vi">NOVO</span> createImmediatePaymentLink() gera sessao com metodo pre-selecionado (?method=pix|card|boleto)</td><td>N/A</td></tr>
+    <tr><td><strong>Message Generator</strong></td><td><span class="b b--gr">REAL</span></td><td>61 templates + OpenAI fallback. <span class="b b--vi">NOVO</span> ask_payment_method flow, intent-specific replies, PIX copia-e-cola</td><td style="color:var(--rd)">Mock</td></tr>
+    <tr><td><strong>WhatsApp Messaging</strong></td><td><span class="b b--gr">REAL</span></td><td>Cloud API + Web API. Send/receive. QR session. <span class="b b--vi">NOVO</span> dispatchPaymentMethodButtons()</td><td style="color:var(--yl)">Parcial</td></tr>
+    <tr><td><strong>Seller Invites</strong></td><td><span class="b b--gr">REAL</span></td><td><span class="b b--vi">NOVO</span> Token generation, 7d expiry, invite page, auto-create seller user + admin control on completion</td><td>N/A</td></tr>
+    <tr><td><strong>Onboarding</strong></td><td><span class="b b--gr">REAL</span></td><td><span class="b b--vi">NOVO</span> Setup checklist (7 items admin, 5 seller), flow steps, module guide, runtime status</td><td>N/A</td></tr>
+    <tr><td><strong>Lead CRM</strong></td><td><span class="b b--gr">REAL</span></td><td>Pipeline 5 estagios, Kanban, move/assign, Shield Lead CRM sync</td><td>Real</td></tr>
+    <tr><td><strong>Inbox</strong></td><td><span class="b b--gr">REAL</span></td><td>Conversas bidirecionais, status tracking, AI reply + manual reply</td><td>Real</td></tr>
+    <tr><td><strong>Dashboard</strong></td><td><span class="b b--gr">REAL</span></td><td>Metricas reais, activity feed, distribuicao por canal</td><td>Real</td></tr>
+    <tr><td><strong>Admin Multi-seller</strong></td><td><span class="b b--gr">REAL</span></td><td>Autonomy control, seller-scoped webhooks, invite flow, policies</td><td>Real</td></tr>
+    <tr><td><strong>Retry Page</strong></td><td><span class="b b--yl">PARCIAL</span></td><td>Handoff page exists. Awaiting redirect to standalone checkout</td><td>N/A</td></tr>
+  </table>
+
+  <div class="note note--gr"><strong>Evolucao dramatica:</strong> De 5/10 para 8/10 em production readiness. Worker, AI Orchestrator, Checkout e Payment Links eram inexistentes ou mock. Agora sao reais e integrados.</div>
+  <div class="pg">04</div>
+</div>
+
+<!-- 05 AI DECISION ENGINE -->
+<div class="s s--vi">
+  <div class="lb" style="color:#c4b5fd">INTELIGENCIA ARTIFICIAL</div>
+  <div class="ti">O motor de decisao mais sofisticado do sistema</div>
+  <p style="max-width:720px;margin:8px 0 20px">O AI Orchestrator evoluiu de um agregador de dados para um <strong>sistema de decisao completo com 814 linhas</strong> que classifica, decide e orquestra cada interacao de recovery.</p>
+
+  <div class="g2">
+    <div class="c c--d">
+      <h3 style="color:#c4b5fd;font-size:15px">decideRecoveryPlan()</h3>
+      <p style="margin-top:6px"><strong>Input:</strong> contact + payment + conversation + automation policy</p>
+      <p style="margin-top:8px"><strong>Output (12 campos):</strong></p>
+      <ul>
+        <li><code>classification</code> &mdash; score 0-100 + probability</li>
+        <li><code>strategy</code> &mdash; matched playbook</li>
+        <li><code>nextAction</code> &mdash; acao concreta a executar</li>
+        <li><code>urgency</code> &mdash; immediate / today / scheduled</li>
+        <li><code>channel</code> &mdash; whatsapp / email</li>
+        <li><code>tone</code> &mdash; direct / empathetic / urgent / casual</li>
+        <li><code>followUpMode</code> &mdash; autonomous / supervised / manual</li>
+        <li><code>requiresHuman</code> &mdash; boolean</li>
+        <li><code>shouldGeneratePaymentLink</code> &mdash; boolean</li>
+        <li><code>timingMinutes</code> &mdash; delay antes de enviar</li>
+      </ul>
+    </div>
+    <div class="c c--d">
+      <h3 style="color:#c4b5fd;font-size:15px">classifyInboundIntent()</h3>
+      <p style="margin-top:6px"><strong>Input:</strong> mensagem de texto do cliente</p>
+      <p style="margin-top:8px"><strong>12 intents detectados:</strong></p>
+      <ul>
+        <li><code>payment_method_pix</code> &mdash; "1", "pix", "quero pix" (0.95)</li>
+        <li><code>payment_method_card</code> &mdash; "2", "cartao", "credito" (0.95)</li>
+        <li><code>payment_method_boleto</code> &mdash; "3", "boleto" (0.95)</li>
+        <li><code>payment_intent</code> &mdash; "vou pagar", "manda o link"</li>
+        <li><code>human_handoff</code> &mdash; "quero falar com humano"</li>
+        <li><code>friction</code> &mdash; "pare", "reclam", "raiva"</li>
+        <li><code>needs_time</code> &mdash; "depois", "amanha"</li>
+        <li><code>objection</code> &mdash; "nao consigo", "erro", "caro"</li>
+        <li><code>question</code> &mdash; qualquer "?"</li>
+        <li><code>confirmation</code> &mdash; "ok", "sim", "pode ser"</li>
+        <li><code>irrelevant</code> &mdash; default</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note note--vi" style="margin-top:14px;background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.25);color:#c4b5fd">
+    <strong>A diferenca fundamental:</strong> A IA nao e mais cosmetic. Cada mensagem do cliente passa por classifyInboundIntent(), que alimenta decideConversationFollowUp(), que decide a proxima acao com contexto completo. O operador pode atuar em modo autonomo, supervisionado ou manual. Tudo com audit trail.
+  </div>
+  <div class="pg">05</div>
+</div>
+
+<!-- 06 FLUXO DE SELECAO DE PAGAMENTO -->
+<div class="s s--l">
+  <div class="lb">CHECKOUT FLOW</div>
+  <div class="ti" style="font-size:30px">Do WhatsApp ao pagamento em 4 passos</div>
+  <p style="margin:4px 0 16px">O fluxo mais critico do sistema: como o cliente vai de "pagamento falhou" para "pagamento concluido".</p>
+
+  <div class="ph"><div class="ph-n">1</div><div>
+    <h3>Shield envia mensagem com selecao de metodo</h3>
+    <p>Apos webhook de falha, AI decide <code>nextAction: "ask_payment_method"</code>. Mensagem enviada via WhatsApp:</p>
+    <p style="margin-top:4px;font-style:italic;color:var(--g600)">"Oi {nome}, vi que houve um problema no seu pagamento de R${valor}. Posso te ajudar! Como prefere pagar? 1 - PIX / 2 - Cartao / 3 - Boleto"</p>
+  </div></div>
+
+  <div class="ph"><div class="ph-n">2</div><div>
+    <h3>Cliente responde com metodo escolhido</h3>
+    <p>Cliente digita "1" ou "pix". WhatsApp webhook recebe a mensagem.</p>
+    <p><code>classifyInboundIntent("1")</code> retorna <code>intent: "payment_method_pix"</code> com <code>confidence: 0.95</code></p>
+    <p><code>decideConversationFollowUp()</code> retorna <code>nextAction: "generate_method_payment_link"</code></p>
+  </div></div>
+
+  <div class="ph" style="border-color:var(--vi)"><div class="ph-n" style="color:var(--vi)">3</div><div>
+    <h3>Shield gera sessao de checkout com metodo pre-selecionado</h3>
+    <p><code>createCheckoutSession()</code> chamado na Checkout Platform standalone:</p>
+    <p>Amount: R${valor} | Method: pix | Customer: {nome, email, phone, doc}</p>
+    <p>Retorna: <code>checkoutUrl + ?method=pix</code></p>
+    <p>Cria <code>PaymentAttempt</code> no banco para tracking.</p>
+  </div></div>
+
+  <div class="ph" style="border-color:var(--gr)"><div class="ph-n" style="color:var(--gr)">4</div><div>
+    <h3>Mensagem com link + PIX code enviada ao cliente</h3>
+    <p>AI gera mensagem personalizada:</p>
+    <p style="font-style:italic;color:var(--g600)">"Perfeito! Gerando seu pagamento via PIX. Codigo Pix copia e cola: {pixCode}. Ou clique aqui: {checkoutUrl}"</p>
+    <p>Cliente paga na plataforma de checkout &rarr; webhook <code>payment_succeeded</code> &rarr; Lead marcado RECOVERED</p>
+  </div></div>
+
+  <div class="note note--gr"><strong>O ciclo completo funciona end-to-end.</strong> Da falha de pagamento ate a confirmacao da recuperacao, passando por selecao de metodo via WhatsApp e checkout em plataforma separada. Todo passo e rastreado e auditavel.</div>
+  <div class="pg">06</div>
+</div>
+
+<!-- 07 WORKER SYSTEM -->
+<div class="s s--l">
+  <div class="lb">WORKER</div>
+  <div class="ti" style="font-size:30px">Sistema de filas e automacao real</div>
+  <p style="margin:4px 0 14px">O worker nao e mais mock. E um sistema real com batch processing, concurrency control e retry com backoff.</p>
+
+  <div class="g2">
+    <div>
+      <h2 style="margin-top:0">Config operacional</h2>
+      <table>
+        <tr><th>Parametro</th><th>Valor</th><th>Range</th></tr>
+        <tr><td><strong>workerBatchSize</strong></td><td>60 jobs/run</td><td>1-250</td></tr>
+        <tr><td><strong>workerConcurrency</strong></td><td>4 paralelos</td><td>1-16</td></tr>
+        <tr><td><strong>Retry attempts</strong></td><td>3 por job</td><td>-</td></tr>
+        <tr><td><strong>Backoff</strong></td><td>Exponencial</td><td>-</td></tr>
+        <tr><td><strong>Trigger</strong></td><td>Cron ou manual</td><td>-</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2 style="margin-top:0">Jobs executados</h2>
+      <table>
+        <tr><th>Tipo</th><th>Quando</th></tr>
+        <tr><td><code>webhook-process</code></td><td>Imediatamente apos webhook</td></tr>
+        <tr><td><code>whatsapp-initial</code></td><td>5 min apos lead criado</td></tr>
+        <tr><td><code>email-reminder</code></td><td>30 min apos lead</td></tr>
+        <tr><td><code>whatsapp-follow-up</code></td><td>6h apos lead</td></tr>
+        <tr><td><code>agent-task</code></td><td>24h &mdash; AI reavalia</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>Pipeline de recovery por lead (5 jobs automaticos)</h2>
+  <div class="fl">
+    <div class="fs">Webhook recebido</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--or)">+5min: WA inicial</div><span class="fa">&rarr;</span>
+    <div class="fs">+30min: Email reminder</div><span class="fa">&rarr;</span>
+    <div class="fs">+6h: WA follow-up</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--vi)">+24h: AI reavalia</div>
+  </div>
+
+  <div class="note note--or"><strong>Diferenca do worker anterior:</strong> Antes, jobs eram criados no DB mas nunca executados (sem runtime). Agora existe endpoint <code>/api/worker/run</code> com auth, batch claiming, parallel execution e retry logic. Pode ser acionado via cron (Vercel) ou manualmente.</div>
+  <div class="pg">07</div>
+</div>
+
+<!-- 08 MESSAGING -->
+<div class="s s--d">
+  <div class="lb">MESSAGING</div>
+  <div class="ti">61 templates, 3 canais, IA opcional</div>
+  <p style="max-width:720px;margin:8px 0 20px">O sistema de mensagens opera em 3 niveis: templates hardcoded (rapido), OpenAI (sofisticado) e fallback inteligente (por intent).</p>
+
+  <div class="g3">
+    <div class="c c--d">
+      <h3 style="color:var(--gr)">WhatsApp</h3>
+      <p><strong>Cloud API + Web API</strong></p>
+      <p>Send/receive, QR session, status tracking (queued &rarr; sent &rarr; delivered &rarr; read).</p>
+      <p style="margin-top:6px"><strong>Novo:</strong> dispatchPaymentMethodButtons() para selecao de metodo</p>
+      <p>PIX code inline como "copia e cola"</p>
+    </div>
+    <div class="c c--d">
+      <h3 style="color:var(--bl)">Email</h3>
+      <p><strong>SendGrid</strong></p>
+      <p>Templates para reminder, follow-up, recovery. Links de checkout embutidos.</p>
+      <p style="margin-top:6px">Acionado automaticamente como segundo canal na cadencia.</p>
+    </div>
+    <div class="c c--d">
+      <h3 style="color:var(--yl)">SMS</h3>
+      <p><strong>Templates prontos</strong></p>
+      <p>Mensagens curtas com link direto. Terceiro canal na cadencia de follow-up.</p>
+      <p style="margin-top:6px">Formato otimizado para 160 caracteres.</p>
+    </div>
+  </div>
+
+  <h2>Gerador de mensagens por intent</h2>
+  <table style="margin-top:6px">
+    <tr><th>Intent detectado</th><th>Resposta automatica</th><th>Acao</th></tr>
+    <tr><td style="color:#cbd5e1"><code>payment_method_pix</code></td><td style="color:#cbd5e1">"Perfeito! Gerando seu pagamento via PIX..."</td><td style="color:#cbd5e1">Gera checkout com ?method=pix</td></tr>
+    <tr><td style="color:#cbd5e1"><code>payment_method_card</code></td><td style="color:#cbd5e1">"Perfeito! Preparando o pagamento via cartao..."</td><td style="color:#cbd5e1">Gera checkout com ?method=card</td></tr>
+    <tr><td style="color:#cbd5e1"><code>payment_method_boleto</code></td><td style="color:#cbd5e1">"Perfeito! Gerando o boleto para voce..."</td><td style="color:#cbd5e1">Gera checkout com ?method=boleto</td></tr>
+    <tr><td style="color:#cbd5e1"><code>payment_intent</code></td><td style="color:#cbd5e1">"Perfeito. Deixei o pagamento pronto pra voce"</td><td style="color:#cbd5e1">Envia link existente ou gera novo</td></tr>
+    <tr><td style="color:#cbd5e1"><code>needs_time</code></td><td style="color:#cbd5e1">"Sem problema. Vou deixar pronto para quando quiser"</td><td style="color:#cbd5e1">Espera 3h, depois follow-up</td></tr>
+    <tr><td style="color:#cbd5e1"><code>human_handoff</code></td><td style="color:#cbd5e1">&mdash;</td><td style="color:var(--orl)">Escalate imediato para seller</td></tr>
+    <tr><td style="color:#cbd5e1"><code>friction</code></td><td style="color:#cbd5e1">&mdash;</td><td style="color:var(--orl)">Escalate imediato + pausa automacao</td></tr>
+    <tr><td style="color:#cbd5e1"><code>objection</code></td><td style="color:#cbd5e1">"Entendi. Posso te ajudar a retomar da forma mais simples"</td><td style="color:#cbd5e1">Se autonomo: responde. Se nao: escalate</td></tr>
+  </table>
+  <div class="pg">08</div>
+</div>
+
+<!-- 09 SELLER ECOSYSTEM -->
+<div class="s s--l">
+  <div class="lb">MULTI-SELLER</div>
+  <div class="ti" style="font-size:30px">Ecossistema multi-vendedor completo</div>
+
+  <div class="g2" style="margin-top:14px">
+    <div>
+      <h2 style="margin-top:0">Invite Flow</h2>
+      <div class="fl" style="margin:8px 0">
+        <div class="fs">Admin cria invite</div><span class="fa">&rarr;</span>
+        <div class="fs">Token + email</div><span class="fa">&rarr;</span>
+        <div class="fs">Seller acessa /invite/{token}</div><span class="fa">&rarr;</span>
+        <div class="fs">Cria senha + perfil</div><span class="fa">&rarr;</span>
+        <div class="fs" style="border-color:var(--gr)">Onboarding</div>
+      </div>
+      <ul>
+        <li>Token UUID com expiry de 7 dias</li>
+        <li>Auto-cria seller user + admin control</li>
+        <li>Redirect para /onboarding?invited=1</li>
+        <li>Status: pending &rarr; accepted &rarr; revoked</li>
+      </ul>
+    </div>
+    <div>
+      <h2 style="margin-top:0">Autonomy Modes</h2>
+      <table>
+        <tr><th>Modo</th><th>Comportamento</th></tr>
+        <tr><td><strong>Autonomous</strong></td><td>IA responde e gera links sem aprovacao. Seller acompanha.</td></tr>
+        <tr><td><strong>Supervised</strong></td><td>IA sugere acao, seller aprova antes de enviar.</td></tr>
+        <tr><td><strong>Manual</strong></td><td>Seller opera sozinho. IA so classifica e recomenda.</td></tr>
+      </table>
+      <p style="margin-top:8px">Admin define por seller: <code>automationsEnabled</code>, <code>inboxEnabled</code>, <code>autonomyMode</code>, <code>maxAssignedLeads</code>, <code>recoveryTargetPercent</code>.</p>
+    </div>
+  </div>
+
+  <h2>Seller-scoped webhooks</h2>
+  <p>Cada seller tem URL propria: <code>/api/webhooks/shield-gateway/{sellerKey}</code></p>
+  <p>Eventos sao scopados por <code>{sellerKey}:{webhookId}</code>. Admin ve snapshot por seller: events, processed, failed, pending, last error.</p>
+  <div class="pg">09</div>
+</div>
+
+<!-- 10 GAPS REMANESCENTES -->
+<div class="s s--l">
+  <div class="lb">GAPS</div>
+  <div class="ti" style="font-size:30px">O que ainda falta para 10/10</div>
+
+  <div class="g2" style="margin-top:14px">
+    <div class="c c--yl">
+      <h3 style="color:var(--yld)">Retry Page (handoff)</h3>
+      <p style="color:var(--yld)">A pagina <code>/retry/[id]</code> e um placeholder. Precisa redirecionar para a Checkout Platform com a sessao correta. Esforco: <strong>1 dia</strong>.</p>
+    </div>
+    <div class="c c--yl">
+      <h3 style="color:var(--yld)">WhatsApp Interactive Buttons</h3>
+      <p style="color:var(--yld)">Sistema pronto para button_reply no webhook parser, mas envio usa texto numerado (1/2/3). Migrar para botoes nativos melhora UX. Esforco: <strong>2 dias</strong>.</p>
+    </div>
+    <div class="c c--yl">
+      <h3 style="color:var(--yld)">Boleto flow completo</h3>
+      <p style="color:var(--yld)">Metadata de boleto e capturada na normalizacao, mas nao ha flow especifico de envio/lembrete de boleto. Esforco: <strong>2-3 dias</strong>.</p>
+    </div>
+    <div class="c c--yl">
+      <h3 style="color:var(--yld)">Analytics avancado</h3>
+      <p style="color:var(--yld)">Metricas basicas existem. Falta: funnel por estrategia, tempo medio por etapa, heatmap de horarios, A/B testing de mensagens. Esforco: <strong>5 dias</strong>.</p>
+    </div>
+    <div class="c c--l">
+      <h3>Prisma cleanup</h3>
+      <p>schema.prisma ainda existe mas nao e usado. Limpar. <strong>1h</strong>.</p>
+    </div>
+    <div class="c c--l">
+      <h3>Cron automatico</h3>
+      <p>Worker roda via endpoint. Configurar Vercel Cron para executar a cada 1-5 min. <strong>30min</strong>.</p>
+    </div>
+  </div>
+
+  <div class="note note--gr"><strong>Total estimado para 10/10:</strong> 10-12 dias uteis. Nenhum gap e bloqueante. O sistema ja opera end-to-end. Esses sao refinamentos, nao fundacoes.</div>
+  <div class="pg">10</div>
+</div>
+
+<!-- 11 COMPARATIVO ANTES/DEPOIS -->
+<div class="s s--d">
+  <div class="lb">EVOLUCAO</div>
+  <div class="ti">De onde veio, onde esta</div>
+
+  <table style="margin-top:16px">
+    <tr><th style="width:30%">Area</th><th style="width:35%;background:var(--rd)">Antes (audit anterior)</th><th style="width:35%;background:var(--gr)">Agora</th></tr>
+    <tr><td style="color:#cbd5e1"><strong>Worker</strong></td><td style="background:#fef2f2;color:#991b1b">Jobs criados, nunca executados. Sem BullMQ/Redis</td><td style="background:#f0fdf4;color:#166534">Worker real com batch (60), concurrency (4), retry, backoff</td></tr>
+    <tr><td style="color:#cbd5e1"><strong>AI</strong></td><td style="background:#fef2f2;color:#991b1b">Templates puros. Zero chamadas LLM. Score deterministico</td><td style="background:#f0fdf4;color:#166534">Orchestrator 814 linhas, 12 intents, decision tree, OpenAI opcional</td></tr>
+    <tr><td style="color:#cbd5e1"><strong>Messaging</strong></td><td style="background:#fef2f2;color:#991b1b">Scaffolding. Dispatch incompleto. Nada saia</td><td style="background:#f0fdf4;color:#166534">61 templates, 3 canais, send real, status tracking, PIX inline</td></tr>
+    <tr><td style="color:#cbd5e1"><strong>Checkout</strong></td><td style="background:#fef2f2;color:#991b1b">Inexistente</td><td style="background:#f0fdf4;color:#166534">Plataforma standalone. createCheckoutSession() API. PagNet + Stripe</td></tr>
+    <tr><td style="color:#cbd5e1"><strong>Payment Links</strong></td><td style="background:#fef2f2;color:#991b1b">Retry link basico sem checkout real</td><td style="background:#f0fdf4;color:#166534">Links dinamicos com metodo pre-selecionado, attempt tracking</td></tr>
+    <tr><td style="color:#cbd5e1"><strong>Webhook</strong></td><td style="background:#fefce8;color:#854d0e">Processamento sincrono</td><td style="background:#f0fdf4;color:#166534">Async queue, worker process, retry com backoff</td></tr>
+    <tr><td style="color:#cbd5e1"><strong>Multi-seller</strong></td><td style="background:#fefce8;color:#854d0e">Admin panel basico</td><td style="background:#f0fdf4;color:#166534">Invite flow, autonomy modes, seller-scoped webhooks, policies</td></tr>
+    <tr><td style="color:#cbd5e1"><strong>Onboarding</strong></td><td style="background:#fef2f2;color:#991b1b">Inexistente</td><td style="background:#f0fdf4;color:#166534">Checklist, flow steps, module guide, role-specific</td></tr>
+    <tr><td style="color:#cbd5e1"><strong>Readiness</strong></td><td style="background:#fefce8;color:#854d0e">5/10</td><td style="background:#f0fdf4;color:#166534;font-weight:700">8/10</td></tr>
+  </table>
+  <div class="pg">11</div>
+</div>
+
+<!-- 12 ARQUITETURA DE DADOS -->
+<div class="s s--l">
+  <div class="lb">DADOS</div>
+  <div class="ti" style="font-size:30px">Entidades e como se conectam</div>
+
+  <div class="fl" style="margin:12px 0">
+    <div class="fs" style="border-color:var(--rd)">WebhookEvent</div><span class="fa">&rarr;</span>
+    <div class="fs">Payment</div><span class="fa">&rarr;</span>
+    <div class="fs">Customer</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--or)">RecoveryLead</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--vi)">Conversation</div><span class="fa">&rarr;</span>
+    <div class="fs">Messages</div>
+  </div>
+  <div class="fl">
+    <div class="fs">RecoveryLead</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--or)">QueueJobs (5)</div><span class="fa">&rarr;</span>
+    <div class="fs">Worker executa</div><span class="fa">&rarr;</span>
+    <div class="fs" style="border-color:var(--vi)">CheckoutSession</div><span class="fa">&rarr;</span>
+    <div class="fs">PaymentAttempt</div>
+  </div>
+
+  <table style="margin-top:14px">
+    <tr><th>Entidade</th><th>Funcao</th><th>Relacao</th></tr>
+    <tr><td><strong>webhook_events</strong></td><td>Evento bruto do gateway + status de processamento</td><td>1:1 com Payment</td></tr>
+    <tr><td><strong>payments</strong></td><td>Pagamento com status, valor, metodo, failure code</td><td>1:N com PaymentAttempts</td></tr>
+    <tr><td><strong>customers</strong></td><td>Cliente com nome, email, telefone, documento</td><td>1:N com Payments</td></tr>
+    <tr><td><strong>recovery_leads</strong></td><td>Lead de recovery com pipeline status e agente</td><td>1:1 com Payment + Customer</td></tr>
+    <tr><td><strong>conversations</strong></td><td>Thread por lead, canal, status, agente</td><td>1:1 com Lead, 1:N Messages</td></tr>
+    <tr><td><strong>messages</strong></td><td>Mensagem com direcao, status, metadata rica (intent, strategy, link)</td><td>N:1 com Conversation</td></tr>
+    <tr><td><strong>queue_jobs</strong></td><td>Job agendado com tipo, runAt, status, attempts</td><td>N:1 com Lead</td></tr>
+    <tr><td><strong>payment_attempts</strong></td><td>Tentativa de retry com link, attempt number, status</td><td>N:1 com Payment</td></tr>
+    <tr><td><strong>seller_users</strong></td><td>Usuario vendedor com auth, agentName</td><td>1:1 com AdminControl</td></tr>
+    <tr><td><strong>seller_invites</strong></td><td>Convite com token, expiry, status</td><td>Transient &rarr; SellerUser</td></tr>
+    <tr><td><strong>seller_admin_controls</strong></td><td>Policy: autonomy, limits, automations</td><td>1:1 com Seller</td></tr>
+    <tr><td><strong>connection_settings</strong></td><td>Credenciais de todas as integracoes</td><td>Global singleton</td></tr>
+    <tr><td><strong>system_logs</strong></td><td>Audit trail estruturado de tudo</td><td>Append-only</td></tr>
+  </table>
+  <div class="pg">12</div>
+</div>
+
+<!-- 13 VEREDICTO FINAL -->
+<div class="s s--d" style="justify-content:center">
+  <div class="lb">VEREDICTO</div>
+  <div class="ti" style="font-size:38px">Shield Recovery e uma<br>plataforma de infraestrutura</div>
+
+  <div style="max-width:720px;margin-top:16px">
+    <p style="font-size:14px;line-height:1.75;margin-bottom:14px">
+      O projeto nao e mais um CRM com IA. E um <strong>ecossistema de recuperacao de pagamentos</strong>
+      com 3 plataformas integradas, worker real, AI decision engine com 814 linhas de logica,
+      61 templates de mensagem, checkout standalone e multi-seller com autonomy control.
+    </p>
+    <p style="font-size:14px;line-height:1.75;margin-bottom:14px">
+      O fluxo <strong>webhook &rarr; lead &rarr; AI classifica &rarr; WA com selecao de metodo &rarr;
+      cliente escolhe PIX &rarr; AI detecta intent &rarr; gera checkout &rarr; envia link &rarr; paga &rarr; RECOVERED</strong>
+      funciona end-to-end. Cada passo e rastreado, auditavel e configuravel.
+    </p>
+
+    <div class="mr" style="margin-top:20px">
+      <div class="m"><div class="v" style="color:var(--gr)">8/10</div><div class="l">Producao</div></div>
+      <div class="m"><div class="v">15k+</div><div class="l">Linhas server</div></div>
+      <div class="m"><div class="v">814</div><div class="l">Linhas AI engine</div></div>
+      <div class="m"><div class="v">61</div><div class="l">Templates</div></div>
+      <div class="m"><div class="v">12</div><div class="l">Intents AI</div></div>
+    </div>
+
+    <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:18px;margin-top:20px">
+      <p style="font-size:16px;font-weight:700;color:var(--orl);margin-bottom:6px">Proximos 10 dias para 10/10</p>
+      <p style="font-size:12px;margin-bottom:4px">Dia 1-2: Retry page redirect + Vercel Cron setup + Prisma cleanup</p>
+      <p style="font-size:12px;margin-bottom:4px">Dia 3-4: WhatsApp Interactive Buttons nativo</p>
+      <p style="font-size:12px;margin-bottom:4px">Dia 5-7: Boleto flow completo + analytics avancado</p>
+      <p style="font-size:12px">Dia 8-10: Stress test, edge cases, primeiro seller real em producao</p>
+    </div>
+
+    <div style="margin-top:28px;text-align:center;padding:18px;border:1px solid rgba(249,115,22,.3);border-radius:16px;background:rgba(249,115,22,.06)">
+      <p style="font-size:20px;font-weight:800;color:var(--w)">Shield Recovery + Checkout + AI Followup</p>
+      <p style="font-size:13px;color:var(--orl);margin-top:4px">A falha entra. A IA decide. O checkout resolve. A receita volta.</p>
+    </div>
+  </div>
+  <div class="pg">13</div>
+</div>
+
+</body>
+</html>

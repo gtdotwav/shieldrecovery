@@ -129,7 +129,7 @@ const TEMPLATES: MessageTemplate[] = [
       "Geramos um novo link seguro para que você possa finalizar sua compra:\n" +
       "{link}\n\n" +
       "Se precisar de ajuda, basta responder este e-mail.\n\n" +
-      "Atenciosamente,\nEquipe Shield Recovery",
+      "Atenciosamente,\nEquipe PagRecovery",
   },
   {
     id: "email_followup",
@@ -141,7 +141,7 @@ const TEMPLATES: MessageTemplate[] = [
       "de {value}.\n\n" +
       "O link para finalização continua disponível:\n{link}\n\n" +
       "Estamos aqui para ajudar.\n\n" +
-      "Atenciosamente,\nEquipe Shield Recovery",
+      "Atenciosamente,\nEquipe PagRecovery",
     condition: (ctx) => ctx.attemptNumber >= 2,
   },
   {
@@ -149,7 +149,7 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "sms",
     tone: "casual",
     template:
-      "Shield Recovery: {name}, seu pagamento de {value} não foi processado. " +
+      "PagRecovery: {name}, seu pagamento de {value} não foi processado. " +
       "Finalize aqui: {link}",
   },
 ];
@@ -247,11 +247,11 @@ function interpolate(template: string, ctx: MessageContext): string {
   }).format(ctx.cartValue);
 
   const product = ctx.productName ? ` de ${ctx.productName}` : "";
-  const link = ctx.paymentLink ?? "[link de pagamento]";
+  const link = ctx.paymentLink ?? "";
   const pixCode = ctx.pixCode?.trim();
 
   const base = template
-    .replace(/\{name\}/g, ctx.customerName)
+    .replace(/\{name\}/g, ctx.customerName || "cliente")
     .replace(/\{value\}/g, value)
     .replace(/\{product\}/g, product)
     .replace(/\{link\}/g, link);
@@ -269,6 +269,20 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     currency: "BRL",
   }).format(ctx.cartValue);
 
+  const isAskMethod = ctx.nextAction === "ask_payment_method";
+
+  const linkRule = isAskMethod
+    ? [
+        "- NAO inclua nenhum link. O link sera enviado depois que o cliente escolher.",
+        "- Pergunte qual forma de pagamento o cliente prefere: PIX, cartao de credito ou boleto.",
+        "- Liste as opcoes numeradas (1, 2, 3) para facilitar a resposta.",
+      ]
+    : [
+        ctx.paymentLink
+          ? "- Inclua o link exatamente uma vez, no final."
+          : "- Nao mencione link pois ainda nao esta disponivel.",
+      ];
+
   return [
     "Voce escreve mensagens curtas de recovery de pagamento para WhatsApp ou email, em portugues do Brasil.",
     "Objetivo: recuperar a compra com linguagem humana, direta, confiavel e comercial.",
@@ -277,8 +291,9 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     "- Mencione o primeiro nome do cliente.",
     "- Explique o motivo do contato com clareza.",
     "- Convide para concluir o pagamento agora.",
-    "- Inclua o link exatamente uma vez, no final.",
+    ...linkRule,
     "- Nao use markdown, aspas, emojis nem texto tecnico.",
+    "- Nao use placeholders como [link] ou [link de pagamento].",
     "",
     `Canal: ${ctx.channel}`,
     `Cliente: ${ctx.customerName}`,
@@ -286,7 +301,7 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     `Valor: ${value}`,
     `Motivo da falha ou pendencia: ${ctx.failureReason}`,
     `Tentativa numero: ${ctx.attemptNumber}`,
-    `Link de pagamento: ${ctx.paymentLink || "Nao informado"}`,
+    ...(ctx.paymentLink ? [`Link de pagamento: ${ctx.paymentLink}`] : []),
     `Metodo de pagamento: ${ctx.paymentMethod || "Nao informado"}`,
     `Codigo Pix: ${ctx.pixCode || "Nao informado"}`,
     `Tom desejado: ${ctx.tonePreference || "Nao informado"}`,
@@ -350,6 +365,7 @@ async function generateOpenAiText(input: {
       model: "gpt-4.1-mini",
       input: input.prompt,
     }),
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import { appEnv } from "@/server/recovery/config";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { getStorageService } from "@/server/recovery/services/storage";
@@ -34,7 +35,8 @@ export async function handleHealthCheck(request: Request) {
       conversas: inbox.length,
       recuperacoes_ativas: analytics.active_recoveries,
     };
-  } catch {
+  } catch (error) {
+    console.error("[health-check]", error instanceof Error ? error.message : error);
     counts = { error: 1 };
   }
 
@@ -45,12 +47,13 @@ export async function handleHealthCheck(request: Request) {
     database_configured: runtime.databaseConfigured,
     counts,
     webhooks: {
-      shield_gateway: `${baseUrl}/api/webhooks/shield-gateway`,
+      [platformBrand.gateway.slug]: `${baseUrl}${buildGatewayWebhookPath()}`,
       whatsapp: `${baseUrl}/api/webhooks/whatsapp`,
       import: `${baseUrl}/api/import`,
       worker: `${baseUrl}/api/worker/run`,
     },
     integrations: {
+      pagouai: appEnv.pagouAiConfigured,
       supabase: runtime.databaseConfigured,
       whatsapp: runtime.whatsappConfigured,
       email: runtime.emailConfigured,

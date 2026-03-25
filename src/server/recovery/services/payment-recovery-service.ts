@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 
+import QRCode from "qrcode";
+
 import { getSellerAgentProfile } from "@/server/auth/core";
 import { appEnv } from "@/server/recovery/config";
+import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import {
   createOrUpdateShieldLead,
   markShieldLeadLost,
@@ -129,7 +132,7 @@ export class PaymentRecoveryService {
       createStructuredLog({
         eventType: "webhook_received",
         level: "info",
-        message: "Shield Gateway webhook received and queued.",
+        message: "Pagou.ai webhook received and queued.",
         context: {
           webhookId: scopedWebhookId,
           timestamp,
@@ -175,6 +178,101 @@ export class PaymentRecoveryService {
     }
   }
 
+  async handlePagouAiWebhook(input: {
+    rawBody: string;
+    sellerKey?: string | null;
+  }) {
+    const payload = parseJsonBody(input.rawBody);
+    const eventId = extractRawEventId(payload, randomUUID());
+    const scopedWebhookId = scopeWebhookId(eventId, input.sellerKey);
+    const normalizedSellerKey = normalizeSellerIdentity(input.sellerKey);
+    const existingEvent = await this.storage.findWebhookByWebhookId(scopedWebhookId);
+
+    if (existingEvent) {
+      if (!existingEvent.processed && existingEvent.error) {
+        await this.enqueueWebhookProcessing({
+          webhookId: existingEvent.webhookId,
+          timestamp: Math.floor(Date.now() / 1000),
+          sellerKey: normalizedSellerKey,
+        });
+
+        return {
+          ok: true,
+          accepted: true,
+          requeued: true,
+          webhook_id: existingEvent.webhookId,
+          event_id: existingEvent.eventId,
+          event_type: existingEvent.eventType,
+        };
+      }
+
+      return {
+        ok: true,
+        duplicate: existingEvent.processed,
+        accepted: !existingEvent.processed,
+        queued: !existingEvent.processed,
+        webhook_id: existingEvent.webhookId,
+        event_id: existingEvent.eventId,
+        event_type: existingEvent.eventType,
+        seller_key: normalizedSellerKey || null,
+      };
+    }
+
+    const webhookRecord = await this.createInboundRecord(
+      payload,
+      scopedWebhookId,
+      "pagouai",
+    );
+
+    await this.storage.addLog(
+      createStructuredLog({
+        eventType: "webhook_received",
+        level: "info",
+        message: "Pagou.ai webhook received and queued.",
+        context: {
+          webhookId: scopedWebhookId,
+          sellerKey: normalizedSellerKey || null,
+        },
+      }),
+    );
+
+    try {
+      await this.enqueueWebhookProcessing({
+        webhookId: scopedWebhookId,
+        timestamp: Math.floor(Date.now() / 1000),
+        sellerKey: normalizedSellerKey,
+      });
+
+      return {
+        ok: true,
+        accepted: true,
+        queued: true,
+        webhook_id: scopedWebhookId,
+        event_id: webhookRecord.eventId,
+        event_type: webhookRecord.eventType,
+        seller_key: normalizedSellerKey || null,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown processing error.";
+
+      await this.storage.markWebhookFailed(webhookRecord.id, errorMessage);
+      await this.storage.addLog(
+        createStructuredLog({
+          eventType: "processing_error",
+          level: "error",
+          message: "Pagou.ai webhook processing failed.",
+          context: {
+            webhookId: scopedWebhookId,
+            error: errorMessage,
+            sellerKey: normalizedSellerKey || null,
+          },
+        }),
+      );
+      throw error;
+    }
+  }
+
   async importShieldTransactionPayload(rawBody: string) {
     const payload = parseJsonBody(rawBody);
     const fallbackId = `import_${extractRawEventId(payload, randomUUID())}`;
@@ -195,7 +293,7 @@ export class PaymentRecoveryService {
       createStructuredLog({
         eventType: "webhook_received",
         level: "info",
-        message: "Shield transaction imported manually.",
+        message: "Payload de transacao importado manualmente.",
         context: {
           webhookId: fallbackId,
         },
@@ -250,10 +348,7 @@ export class PaymentRecoveryService {
     const runtimeSettings =
       await getConnectionSettingsService().getRuntimeSettings();
     const sellerKey = normalizeSellerIdentity(sellerName);
-
-    return sellerKey
-      ? `${runtimeSettings.appBaseUrl}/api/webhooks/shield-gateway/${sellerKey}`
-      : `${runtimeSettings.appBaseUrl}/api/webhooks/shield-gateway`;
+    return `${runtimeSettings.appBaseUrl}${buildGatewayWebhookPath(sellerKey)}`;
   }
 
   async getSellerWebhookSnapshot(
@@ -934,7 +1029,7 @@ export class PaymentRecoveryService {
     return this.createAndDispatchConversationMessage({
       conversation,
       content: trimmedContent,
-      senderName: input.senderName ?? "Operacao Shield",
+      senderName: input.senderName ?? `${platformBrand.name} Ops`,
       metadata: {
         kind: "operator_note",
         generatedBy: "operator",
@@ -1016,6 +1111,9 @@ export class PaymentRecoveryService {
 
     // Generate checkout link when user selects a payment method (or for other payment intents)
     let retryLink: string | undefined;
+    let resolvedPixCode = latestPaymentMetadata?.pixCode;
+    let resolvedPixQrCode = latestPaymentMetadata?.pixQrCode;
+    let resolvedPixExpiresAt = latestPaymentMetadata?.pixExpiresAt;
     let selectedMethodType: "pix" | "card" | "boleto" | undefined;
 
     if (isMethodSelection && payment && contact) {
@@ -1027,7 +1125,7 @@ export class PaymentRecoveryService {
             ? "card"
             : "boleto";
 
-      retryLink = await this.createImmediatePaymentLink(
+      const paymentResolution = await this.createImmediatePaymentLink(
         payment,
         contact.payment_status,
         contact.payment_method,
@@ -1041,7 +1139,12 @@ export class PaymentRecoveryService {
           createdAt: "",
           updatedAt: "",
         },
+        selectedMethodType,
       );
+      retryLink = paymentResolution.paymentLink;
+      resolvedPixCode = paymentResolution.pixCode ?? resolvedPixCode;
+      resolvedPixQrCode = paymentResolution.pixQrCode ?? resolvedPixQrCode;
+      resolvedPixExpiresAt = paymentResolution.pixExpiresAt ?? resolvedPixExpiresAt;
     } else {
       // Look for existing link in previous messages, or generate one if needed
       retryLink =
@@ -1054,7 +1157,8 @@ export class PaymentRecoveryService {
           .find((message) => message.metadata?.retryLink || message.metadata?.paymentUrl)
           ?.metadata?.retryLink ??
         (payment && contact
-          ? await this.createImmediatePaymentLink(
+          ? (
+              await this.createImmediatePaymentLink(
               payment,
               contact.payment_status,
               contact.payment_method,
@@ -1069,6 +1173,7 @@ export class PaymentRecoveryService {
                 updatedAt: "",
               },
             )
+            ).paymentLink
           : undefined);
     }
 
@@ -1079,7 +1184,7 @@ export class PaymentRecoveryService {
       latestInboundContent: latestInbound?.content,
       latestInboundIntent: detectedIntent,
       retryLink,
-      pixCode: latestPaymentMetadata?.pixCode,
+      pixCode: resolvedPixCode,
       paymentMethod: selectedMethodType ?? contact?.payment_method,
       paymentStatus: contact?.payment_status,
       failureReason: payment?.failureCode ?? contact?.payment_status,
@@ -1092,7 +1197,7 @@ export class PaymentRecoveryService {
     const message = await this.createAndDispatchConversationMessage({
       conversation,
       content,
-      senderName: "IA Shield",
+      senderName: `IA ${platformBrand.name}`,
       metadata: {
         kind: "ai_draft",
         generatedBy: "ai",
@@ -1114,12 +1219,12 @@ export class PaymentRecoveryService {
         gatewayPaymentId: contact?.gateway_payment_id,
         retryLink,
         paymentUrl: retryLink,
-        pixCode: latestPaymentMetadata?.pixCode,
-        pixQrCode: latestPaymentMetadata?.pixQrCode,
-        pixExpiresAt: latestPaymentMetadata?.pixExpiresAt,
+        pixCode: resolvedPixCode,
+        pixQrCode: resolvedPixQrCode,
+        pixExpiresAt: resolvedPixExpiresAt,
         actionLabel: isMethodSelection
           ? `Pagar via ${selectedMethodType === "pix" ? "PIX" : selectedMethodType === "card" ? "Cartão" : "Boleto"}`
-          : latestPaymentMetadata?.pixCode
+          : resolvedPixCode
             ? "Copiar código Pix"
             : retryLink
               ? "Abrir pagamento"
@@ -1173,20 +1278,22 @@ export class PaymentRecoveryService {
 
     return {
       ok: true,
-      service: "shield-recovery",
-      webhook_url: `${baseUrl}/api/webhooks/shield-gateway`,
+      service: platformBrand.slug,
+      webhook_url: `${baseUrl}${buildGatewayWebhookPath()}`,
       whatsapp_webhook_url: `${baseUrl}/api/webhooks/whatsapp`,
       worker_url: `${baseUrl}/api/worker/run`,
       timestamp: new Date().toISOString(),
       signing: {
-        algorithm: "HMAC-SHA256",
-        format: "sha256=<hex_digest_of_timestamp_dot_raw_body>",
+        provider: platformBrand.gateway.name,
+        algorithm: "provider_payload_id",
+        format: "dedupe pelo top-level id e reconciliacao via GET /v2/transactions/{id}",
         tolerance_seconds: runtimeSettings.webhookToleranceSeconds,
       },
       storage_mode: this.storage.mode,
       database_configured: runtimeSettings.databaseConfigured,
-      required_headers: ["X-Signature", "X-Webhook-ID", "X-Timestamp"],
+      required_headers: ["Content-Type: application/json"],
       integrations: {
+        pagouai: appEnv.pagouAiConfigured,
         whatsapp: runtimeSettings.whatsappConfigured,
         email: runtimeSettings.emailConfigured,
         crm: runtimeSettings.crmConfigured,
@@ -1202,13 +1309,18 @@ export class PaymentRecoveryService {
     };
   }
 
-  private async createInboundRecord(payload: unknown, webhookId: string) {
+  private async createInboundRecord(
+    payload: unknown,
+    webhookId: string,
+    source = platformBrand.gateway.slug,
+  ) {
     const optimisticEventType = extractRawEventType(payload);
 
     return this.storage.createWebhookEvent({
       webhookId,
       eventId: extractRawEventId(payload, webhookId),
       eventType: optimisticEventType ?? "unknown",
+      source,
       payload,
     });
   }
@@ -1224,7 +1336,10 @@ export class PaymentRecoveryService {
       return await this.processInboundPayload(input);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Unknown processing error.";
+        error instanceof Error ? error.message : `Unknown processing error: ${String(error)}`;
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      console.error("[webhook-process] Error processing webhook:", input.webhookId, errorMessage, errorStack ?? error);
 
       await this.storage.markWebhookFailed(input.webhookRecordId, errorMessage);
       await this.storage.addLog(
@@ -1235,6 +1350,7 @@ export class PaymentRecoveryService {
           context: {
             webhookId: input.webhookId,
             error: errorMessage,
+            errorStack: errorStack ?? String(error),
             sellerKey: input.sellerKey ?? null,
           },
         }),
@@ -1250,10 +1366,15 @@ export class PaymentRecoveryService {
     timestamp: number;
     sellerKey?: string;
   }) {
-    const normalizedEvent = normalizeShieldGatewayEvent(input.payload, {
-      webhookId: input.webhookId,
-      timestamp: input.timestamp,
-    });
+    const webhookPayload = asRecord(input.payload);
+    const normalizedEvent = await this.enrichNormalizedEventIfNeeded(
+      normalizeShieldGatewayEvent(input.payload, {
+        webhookId: input.webhookId,
+        timestamp: input.timestamp,
+      }),
+      webhookPayload,
+      input.sellerKey,
+    );
     const customer = await this.storage.upsertCustomer(normalizedEvent);
     const payment = await this.storage.upsertPayment(normalizedEvent, customer.id);
     const forcedAssignedAgent = await this.resolveSellerWebhookAgent(input.sellerKey);
@@ -1463,7 +1584,7 @@ export class PaymentRecoveryService {
       control?.sellerEmail ||
       (fallbackMatches ? fallbackSeller.email : undefined) ||
       existingAgent?.email ||
-      `${normalizedSellerKey}@shieldrecovery.local`;
+      `${normalizedSellerKey}@pagrecovery.local`;
 
     if (!resolvedName) {
       throw new HttpError(404, "Seller webhook not recognized.");
@@ -1534,6 +1655,15 @@ export class PaymentRecoveryService {
     const automationPolicy = await this.getAutomationPolicyForSeller(
       input.lead.assignedAgentName,
     );
+    const initialPaymentAsset = await this.resolveInitialPixAsset({
+      payment: input.payment,
+      customer: input.customer,
+      failureReason: input.failureReason,
+      paymentUrl: input.paymentUrl,
+      pixCode: input.pixCode,
+      pixQrCode: input.pixQrCode,
+      pixExpiresAt: input.pixExpiresAt,
+    });
 
     const decision = getAIOrchestrator().decideRecoveryPlan({
       contact: {
@@ -1559,9 +1689,10 @@ export class PaymentRecoveryService {
         unreadCount: 0,
       },
       payment: {
-        pixCode: input.pixCode,
-        pixQrCode: input.pixQrCode,
-        expiresAt: input.pixExpiresAt,
+        paymentLink: initialPaymentAsset.paymentLink,
+        pixCode: initialPaymentAsset.pixCode,
+        pixQrCode: initialPaymentAsset.pixQrCode,
+        expiresAt: initialPaymentAsset.pixExpiresAt,
       },
       automation: {
         sellerActive: automationPolicy.control?.active ?? true,
@@ -1571,7 +1702,6 @@ export class PaymentRecoveryService {
       },
     });
 
-    // Generate "ask payment method" message (no link yet — link comes after user picks method)
     const generated = await generateRecoveryMessage({
       apiKey: runtimeSettings.openAiApiKey,
       context: {
@@ -1584,15 +1714,16 @@ export class PaymentRecoveryService {
           input.payment.status,
         channel: target.channel,
         attemptNumber: 1,
-        paymentMethod: input.payment.paymentMethod,
+        paymentMethod: "pix",
+        paymentLink: initialPaymentAsset.paymentLink,
+        pixCode: initialPaymentAsset.pixCode,
         tonePreference: decision.tone,
-        nextAction: "ask_payment_method",
+        nextAction: "send_initial_message",
         recoveryUrgency: decision.urgency,
         decisionReason: decision.reason,
       },
     });
 
-    // Try sending with interactive WhatsApp buttons first
     const metadata: MessageMetadata = {
       kind: "recovery_prompt",
       generatedBy:
@@ -1602,26 +1733,27 @@ export class PaymentRecoveryService {
       recoveryProbability: decision.classification.probability,
       recoveryScore: decision.classification.score,
       recoveryUrgency: decision.urgency,
-      nextAction: "ask_payment_method",
+      nextAction: "send_initial_message",
       followUpMode: decision.followUpMode,
       decisionReason: decision.reason,
       product: input.lead.product,
-      paymentMethod: input.payment.paymentMethod,
+      paymentMethod: "pix",
       paymentStatus: input.currentPaymentStatus,
       failureReason: input.failureReason,
       paymentValue: input.payment.amount,
       orderId: input.payment.orderId,
       gatewayPaymentId: input.payment.gatewayPaymentId,
-      pixCode: input.pixCode,
-      pixQrCode: input.pixQrCode,
-      pixExpiresAt: input.pixExpiresAt,
-      actionLabel: "Escolher forma de pagamento",
+      retryLink: initialPaymentAsset.paymentLink,
+      paymentUrl: initialPaymentAsset.paymentLink,
+      pixCode: initialPaymentAsset.pixCode,
+      pixQrCode: initialPaymentAsset.pixQrCode,
+      pixExpiresAt: initialPaymentAsset.pixExpiresAt,
+      actionLabel: "Escanear QR Pix",
     };
 
-    // Dispatch interactive buttons (falls back to plain text)
-    const dispatch = await this.messaging.dispatchPaymentMethodButtons({
+    const dispatch = await this.messaging.dispatchOutboundMessage({
       conversation,
-      bodyText: generated.content,
+      content: generated.content,
       metadata,
     });
 
@@ -1639,8 +1771,8 @@ export class PaymentRecoveryService {
       conversationId: conversation.id,
       channel: conversation.channel,
       direction: "outbound",
-      senderAddress: "shield-recovery",
-      senderName: "Shield Recovery",
+      senderAddress: platformBrand.slug,
+      senderName: platformBrand.name,
       content: generated.content,
       status: dispatch.status,
       lead: resolvedLead,
@@ -1661,15 +1793,15 @@ export class PaymentRecoveryService {
         level: dispatch.status === "failed" ? "warn" : "info",
         message:
           input.source === "webhook"
-            ? "Initial follow-up with payment method selection sent from webhook."
-            : "Initial follow-up with payment method selection started manually.",
+            ? "Initial Pix follow-up sent from webhook."
+            : "Initial Pix follow-up started manually.",
         context: {
           leadId: input.lead.leadId,
           conversationId: conversation.id,
           channel: target.channel,
           paymentId: input.payment.id,
           source: input.source,
-          nextAction: "ask_payment_method",
+          nextAction: "send_initial_message",
           strategyId: decision.strategy?.id,
           recoveryProbability: decision.classification.probability,
           deliveryStatus: dispatch.status,
@@ -1685,19 +1817,73 @@ export class PaymentRecoveryService {
     };
   }
 
+  private async resolveInitialPixAsset(input: {
+    payment: PaymentRecord;
+    customer: CustomerRecord;
+    failureReason?: string;
+    paymentUrl?: string;
+    pixCode?: string;
+    pixQrCode?: string;
+    pixExpiresAt?: string;
+  }) {
+    let paymentLink = input.paymentUrl?.trim() || undefined;
+    let pixCode = input.pixCode?.trim() || undefined;
+    let pixQrCode = input.pixQrCode?.trim() || undefined;
+    let pixExpiresAt = input.pixExpiresAt?.trim() || undefined;
+
+    if ((!paymentLink && !pixCode) || (input.payment.paymentMethod === "pix" && !pixCode)) {
+      const paymentResolution = await this.createImmediatePaymentLink(
+        input.payment,
+        input.failureReason,
+        input.payment.paymentMethod || "pix",
+        await this.resolveAppBaseUrl(),
+        input.customer,
+        "pix",
+      );
+
+      paymentLink = paymentResolution.paymentLink ?? paymentLink;
+      pixCode = paymentResolution.pixCode ?? pixCode;
+      pixQrCode = paymentResolution.pixQrCode ?? pixQrCode;
+      pixExpiresAt = paymentResolution.pixExpiresAt ?? pixExpiresAt;
+    }
+
+    pixQrCode = await buildPixQrVisualization(pixCode, pixQrCode);
+
+    return {
+      paymentLink,
+      pixCode,
+      pixQrCode,
+      pixExpiresAt,
+    };
+  }
+
   private async createImmediatePaymentLink(
     payment: PaymentRecord,
     failureReason: string | undefined,
     paymentMethod: string,
     baseUrl: string,
     customer?: CustomerRecord,
-  ) {
-    // Try checkout module first
+    selectedMethodType?: "pix" | "card" | "boleto",
+  ): Promise<{
+    paymentLink?: string;
+    pixCode?: string;
+    pixQrCode?: string;
+    pixExpiresAt?: string;
+  }> {
+    if (appEnv.pagouAiConfigured && selectedMethodType === "pix") {
+      return this.createPagouPixRecovery({
+        payment,
+        failureReason,
+        paymentMethod,
+        baseUrl,
+        customer,
+      });
+    }
+
     try {
-      const { getCheckoutService } = await import("@/server/checkout");
-      const checkoutService = getCheckoutService();
-      const result = await checkoutService.createSession({
-        amount: payment.amount,
+      const { createCheckoutSession } = await import("@/server/checkout");
+      const result = await createCheckoutSession({
+        amount: payment.amount / 100, // Convert cents to reais (checkout platform expects major unit)
         currency: payment.currency,
         description: `Pagamento #${payment.orderId || payment.gatewayPaymentId}`,
         customerName: customer?.name ?? "",
@@ -1714,15 +1900,22 @@ export class PaymentRecoveryService {
         },
       });
 
+      // Append ?method= to pre-select the payment method the user chose
+      let checkoutUrl = result.checkoutUrl;
+      if (selectedMethodType) {
+        const sep = checkoutUrl.includes("?") ? "&" : "?";
+        checkoutUrl = `${checkoutUrl}${sep}method=${selectedMethodType}`;
+      }
+
       await this.storage.createPaymentAttempt({
         paymentId: payment.id,
-        paymentLink: result.checkoutUrl,
+        paymentLink: checkoutUrl,
         failureReason: failureReason ?? payment.failureCode ?? paymentMethod,
       });
 
-      return result.checkoutUrl;
+      return { paymentLink: checkoutUrl };
     } catch {
-      // Fallback to legacy retry link if checkout module fails
+      // Fallback to legacy retry link if checkout platform is unavailable
       const paymentLink = `${baseUrl}/retry/${payment.gatewayPaymentId}?token=${randomUUID()}`;
 
       await this.storage.createPaymentAttempt({
@@ -1731,7 +1924,141 @@ export class PaymentRecoveryService {
         failureReason: failureReason ?? payment.failureCode ?? paymentMethod,
       });
 
-      return paymentLink;
+      return { paymentLink };
+    }
+  }
+
+  private async createPagouPixRecovery(input: {
+    payment: PaymentRecord;
+    failureReason?: string;
+    paymentMethod: string;
+    baseUrl: string;
+    customer?: CustomerRecord;
+  }) {
+    const { createPagouTransaction } = await import("@/server/pagouai/client");
+    const buyerName = input.customer?.name?.trim() || `Cliente ${platformBrand.name}`;
+    const buyerEmail =
+      input.customer?.email?.trim() &&
+      input.customer.email !== "unknown@pagrecovery.local"
+        ? input.customer.email.trim()
+        : undefined;
+    const buyerPhone =
+      input.customer?.phone && input.customer.phone !== "not_provided"
+        ? input.customer.phone
+        : undefined;
+    const description = `Recuperacao #${input.payment.orderId || input.payment.gatewayPaymentId}`;
+    const pagouTransaction = await createPagouTransaction({
+      amount: Math.round(input.payment.amount),
+      currency: input.payment.currency,
+      method: "pix",
+      externalRef: `${input.payment.id}:pix`,
+      notifyUrl: `${input.baseUrl}${buildGatewayWebhookPath()}`,
+      description,
+      buyer: {
+        name: buyerName,
+        email: buyerEmail,
+        phone: buyerPhone,
+        document: input.customer?.document,
+      },
+      metadata: {
+        product: description,
+        campaign: platformBrand.slug,
+        originalGatewayPaymentId: input.payment.gatewayPaymentId,
+        orderId: input.payment.orderId,
+        recoveryLead: true,
+        failureReason: input.failureReason,
+      },
+    });
+
+    const paymentLink =
+      pagouTransaction.paymentUrl ||
+      `${input.baseUrl}/retry/${input.payment.gatewayPaymentId}?provider=${platformBrand.gateway.slug}&transactionId=${encodeURIComponent(pagouTransaction.transactionId)}&method=pix`;
+
+    await this.storage.createPaymentAttempt({
+      paymentId: input.payment.id,
+      paymentLink,
+      failureReason:
+        input.failureReason ?? input.payment.failureCode ?? input.paymentMethod,
+    });
+
+    return {
+      paymentLink,
+      pixCode: pagouTransaction.pixCode,
+      pixQrCode: await buildPixQrVisualization(
+        pagouTransaction.pixCode,
+        pagouTransaction.pixQrCode,
+      ),
+      pixExpiresAt: pagouTransaction.pixExpiresAt,
+    };
+  }
+
+  private async enrichNormalizedEventIfNeeded(
+    normalizedEvent: ReturnType<typeof normalizeShieldGatewayEvent>,
+    rawPayload: Record<string, unknown> | null | undefined,
+    sellerKey?: string,
+  ) {
+    if (!looksLikePagouAiPayload(rawPayload) || !appEnv.pagouAiConfigured) {
+      return normalizedEvent;
+    }
+
+    const missingCustomerDetails =
+      normalizedEvent.customer.email === "unknown@pagrecovery.local" &&
+      normalizedEvent.customer.phone === "not_provided";
+    const missingPixDisplay = normalizedEvent.payment.method === "pix" && !normalizedEvent.metadata.pixCode;
+
+    if (!missingCustomerDetails && !missingPixDisplay) {
+      return normalizedEvent;
+    }
+
+    try {
+      const { retrievePagouTransaction } = await import("@/server/pagouai/client");
+      const pagouTransaction = await retrievePagouTransaction(normalizedEvent.payment.id);
+
+      return {
+        ...normalizedEvent,
+        payment: {
+          ...normalizedEvent.payment,
+          status: pagouTransaction.status || normalizedEvent.payment.status,
+          method: pagouTransaction.method || normalizedEvent.payment.method,
+        },
+        customer: {
+          ...normalizedEvent.customer,
+          name:
+            pagouTransaction.buyerName ||
+            normalizedEvent.customer.name,
+          email:
+            pagouTransaction.buyerEmail ||
+            normalizedEvent.customer.email,
+          phone:
+            pagouTransaction.buyerPhone ||
+            normalizedEvent.customer.phone,
+        },
+        metadata: {
+          ...normalizedEvent.metadata,
+          paymentUrl:
+            pagouTransaction.paymentUrl || normalizedEvent.metadata.paymentUrl,
+          pixCode: pagouTransaction.pixCode || normalizedEvent.metadata.pixCode,
+          pixQrCode:
+            pagouTransaction.pixQrCode || normalizedEvent.metadata.pixQrCode,
+          pixExpiresAt:
+            pagouTransaction.pixExpiresAt || normalizedEvent.metadata.pixExpiresAt,
+        },
+      };
+    } catch (error) {
+      await this.storage.addLog(
+        createStructuredLog({
+          eventType: "processing_error",
+          level: "warn",
+          message: "Pagou.ai reconciliation fallback failed; using webhook payload only.",
+          context: {
+            paymentId: normalizedEvent.payment.id,
+            sellerKey: sellerKey ?? null,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        }),
+      );
+
+      return normalizedEvent;
     }
   }
 
@@ -1771,7 +2098,7 @@ export class PaymentRecoveryService {
       conversationId: input.conversation.id,
       channel: input.conversation.channel,
       direction: "outbound",
-      senderAddress: "shield-recovery",
+      senderAddress: platformBrand.slug,
       senderName: input.senderName,
       content: input.content,
       status: dispatch.status,
@@ -1974,9 +2301,7 @@ function buildSellerWebhookSnapshot(input: {
   appBaseUrl: string;
 }): SellerWebhookSnapshot {
   const sellerKey = normalizeSellerIdentity(input.sellerName);
-  const url = sellerKey
-    ? `${input.appBaseUrl}/api/webhooks/shield-gateway/${sellerKey}`
-    : `${input.appBaseUrl}/api/webhooks/shield-gateway`;
+  const url = `${input.appBaseUrl}${buildGatewayWebhookPath(sellerKey)}`;
   const prefix = `${sellerKey}:`;
   const sellerEvents = sellerKey
     ? input.webhookEvents.filter((event) => event.webhookId.startsWith(prefix))
@@ -2040,27 +2365,76 @@ function isInviteExpired(expiresAt: string) {
 }
 
 function extractRawEventType(payload: unknown): string | undefined {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+  const record = asRecord(payload);
+
+  if (!record) {
     return undefined;
   }
 
   const value =
-    (payload as Record<string, unknown>).event_type ??
-    (payload as Record<string, unknown>).type;
+    record.event_type ??
+    asRecord(record.data)?.event_type ??
+    record.type;
 
   return typeof value === "string" ? value : undefined;
 }
 
 function extractRawEventId(payload: unknown, fallbackWebhookId: string): string {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+  const record = asRecord(payload);
+
+  if (!record) {
     return fallbackWebhookId;
   }
 
   const value =
-    (payload as Record<string, unknown>).event_id ??
-    (payload as Record<string, unknown>).id;
+    record.event_id ??
+    asRecord(record.data)?.id ??
+    record.id;
 
   return typeof value === "string" && value.trim() ? value : fallbackWebhookId;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function looksLikePagouAiPayload(payload: Record<string, unknown> | null | undefined) {
+  if (!payload) {
+    return false;
+  }
+
+  const eventType = asRecord(payload.data)?.event_type;
+
+  return payload.event === "transaction" || typeof eventType === "string";
+}
+
+async function buildPixQrVisualization(
+  pixCode?: string,
+  pixQrCode?: string,
+) {
+  const explicitQr = pixQrCode?.trim();
+
+  if (explicitQr) {
+    return explicitQr;
+  }
+
+  const trimmedPixCode = pixCode?.trim();
+
+  if (!trimmedPixCode) {
+    return undefined;
+  }
+
+  try {
+    return await QRCode.toDataURL(trimmedPixCode, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: 320,
+    });
+  } catch {
+    return undefined;
+  }
 }
 
 function isRecoverableEvent(eventType: SupportedPaymentEvent): eventType is RecoverablePaymentEvent {
@@ -2086,7 +2460,7 @@ function resolveFollowUpTarget(customer: CustomerRecord): {
     };
   }
 
-  if (customer.email && customer.email !== "unknown@shield.local") {
+  if (customer.email && customer.email !== "unknown@pagrecovery.local") {
     return {
       channel: "email",
       contactValue: customer.email,

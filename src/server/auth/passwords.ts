@@ -1,6 +1,6 @@
 import { scryptSync, timingSafeEqual } from "node:crypto";
 
-const PASSWORD_NAMESPACE = "shield-recovery-seller-auth";
+const PASSWORD_NAMESPACE = "pagrecovery-seller-auth";
 
 function deriveKey(password: string) {
   return scryptSync(password, PASSWORD_NAMESPACE, 64);

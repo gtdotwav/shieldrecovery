@@ -36,7 +36,7 @@ import type {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Calendário | Shield Recovery",
+  title: "Calendário | PagRecovery",
 };
 
 type SearchParamValue = string | string[] | undefined;
@@ -137,7 +137,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
           </Link>
           <Link
             href={`/calendar?month=${nextMonth}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+            className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
           >
             Próximo
             <ChevronRight className="h-3.5 w-3.5" />
@@ -173,7 +173,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
         <PlatformSurface className="overflow-hidden p-4 sm:p-5">
             <div className="flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-orange-500">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-500">
                   Movimento do mês
                 </p>
                 <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
@@ -211,13 +211,13 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                         <span
                           className={cn(
                             "text-sm font-semibold",
-                            cell.date === today ? "text-orange-600" : "text-[#111827]",
+                            cell.date === today ? "text-sky-600" : "text-[#111827]",
                           )}
                         >
                           {readDayNumber(cell.date)}
                         </span>
                         {cell.date === selectedDate ? (
-                          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-orange-600">
+                          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-sky-600">
                             aberta
                           </span>
                         ) : null}
@@ -234,7 +234,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
                       <div className="mt-auto pt-5">
                         <p className="text-sm text-[#6b7280]">{getCompactCellDescription(cell)}</p>
-                        <p className="mt-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-orange-600 opacity-0 transition-opacity group-hover:opacity-100">
+                        <p className="mt-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-sky-600 opacity-0 transition-opacity group-hover:opacity-100">
                           Abrir data
                         </p>
                       </div>
@@ -253,7 +253,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
         <PlatformSurface className="p-4 sm:p-5 xl:sticky xl:top-20 xl:self-start">
           <div className="border-b border-black/[0.06] pb-4">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
               Data aberta
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
@@ -337,7 +337,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                     <select
                       name="lane"
                       defaultValue="operations"
-                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-orange-400"
+                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
                     >
                       {laneConfig.map((lane) => (
                         <option key={lane.key} value={lane.key}>
@@ -356,7 +356,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                       type="text"
                       placeholder="O que precisa ficar registrado?"
                       required
-                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-orange-400"
+                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
                     />
                   </label>
 
@@ -368,14 +368,14 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                       name="content"
                       type="text"
                       placeholder="Decisão, bloqueio, hipótese ou atualização relevante."
-                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-orange-400"
+                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
                     />
                   </label>
                 </div>
 
                 <button
                   type="submit"
-                  className="inline-flex h-[42px] items-center justify-center rounded-full bg-orange-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                  className="inline-flex h-[42px] items-center justify-center rounded-full bg-sky-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
                 >
                   Salvar nota
                 </button>
@@ -416,7 +416,7 @@ function DaySummaryLine({
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-start gap-2.5">
         <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-white">
-          <Icon className="h-4 w-4 text-orange-500" />
+          <Icon className="h-4 w-4 text-sky-500" />
         </div>
         <div>
           <p className="text-sm font-medium text-[#111827]">{label}</p>
@@ -443,7 +443,7 @@ function ActivityRow({ activity }: { activity: CalendarActivityItem }) {
       {activity.href ? (
         <Link
           href={activity.href}
-          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-orange-600 transition-colors hover:text-orange-700"
+          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-sky-600 transition-colors hover:text-sky-700"
         >
           Abrir
           <ArrowRight className="h-3.5 w-3.5" />
@@ -576,18 +576,18 @@ function buildCalendarGrid(days: CalendarDaySummary[], month: string) {
 
 function getDaySurfaceClass(day: CalendarDaySummary, isSelected: boolean) {
   if (isSelected) {
-    return "border-orange-500/30 bg-[linear-gradient(180deg,rgba(249,115,22,0.1),rgba(255,255,255,0.96))] shadow-[0_14px_34px_rgba(249,115,22,0.14)]";
+    return "border-sky-500/30 bg-[linear-gradient(180deg,rgba(2,132,199,0.1),rgba(255,255,255,0.96))] shadow-[0_14px_34px_rgba(2,132,199,0.14)]";
   }
 
   if (day.recoveredRevenue > 0) {
-    return "border-orange-500/18 bg-[linear-gradient(180deg,rgba(249,115,22,0.08),rgba(255,255,255,0.96))] hover:border-orange-500/25 hover:shadow-[0_12px_28px_rgba(249,115,22,0.08)]";
+    return "border-sky-500/18 bg-[linear-gradient(180deg,rgba(2,132,199,0.08),rgba(255,255,255,0.96))] hover:border-sky-500/25 hover:shadow-[0_12px_28px_rgba(2,132,199,0.08)]";
   }
 
   if (day.notesCount > 0 || day.automationJobs > 0 || day.outboundMessages + day.inboundMessages > 0) {
-    return "border-black/[0.06] bg-[linear-gradient(180deg,#ffffff,#fafafa)] hover:border-orange-500/18 hover:bg-white";
+    return "border-black/[0.06] bg-[linear-gradient(180deg,#ffffff,#fafafa)] hover:border-sky-500/18 hover:bg-white";
   }
 
-  return "border-black/[0.06] bg-[#fafafa] hover:border-orange-500/14 hover:bg-white";
+  return "border-black/[0.06] bg-[#fafafa] hover:border-sky-500/14 hover:bg-white";
 }
 
 function getCompactCellDescription(day: CalendarDaySummary) {

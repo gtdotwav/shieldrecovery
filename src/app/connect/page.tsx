@@ -31,8 +31,10 @@ import {
 } from "@/components/platform/platform-shell";
 import { CopyButton } from "@/components/ui/copy-button";
 import { formatRelativeTime } from "@/lib/format";
+import { platformBrand } from "@/lib/platform";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { appEnv } from "@/server/recovery/config";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPlatformBootstrapService } from "@/server/recovery/services/platform-bootstrap-service";
@@ -41,7 +43,7 @@ import { getPaymentRecoveryService } from "@/server/recovery/services/payment-re
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Integrações | Shield Recovery",
+  title: "Integrações | PagRecovery",
 };
 
 type ConnectPageProps = {
@@ -98,16 +100,18 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
   const contactableLeads = contacts.filter(
     (contact) =>
       (contact.phone && contact.phone !== "not_provided") ||
-      (contact.email && contact.email !== "unknown@shield.local"),
+      (contact.email && contact.email !== "unknown@pagrecovery.local"),
   ).length;
 
   const integrations: IntegrationStatus[] = [
     {
-      title: "Shield Gateway",
-      active: Boolean(runtimeSettings.webhookSecret),
-      detail: analytics.total_failed_payments
-        ? `${analytics.total_failed_payments} eventos recebidos`
-        : "Pronto para receber",
+      title: platformBrand.gateway.name,
+      active: health.integrations.pagouai,
+      detail: health.integrations.pagouai
+        ? appEnv.pagouAiCardConfigured
+          ? "Pix ativo e public key pronta para checkout card"
+          : "Pix direto ativo; public key opcional para checkout card"
+        : "Defina PAGOUAI_SECRET_KEY no ambiente",
       icon: CreditCard,
     },
     {
@@ -139,7 +143,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       icon: Mail,
     },
     {
-      title: "Shield Lead CRM",
+      title: "CRM Integrado",
       active: runtimeSettings.crmConfigured,
       detail: runtimeSettings.crmConfigured
         ? "Endpoint salvo no banco"
@@ -195,7 +199,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       action={
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
         >
           Recuperação
           <ArrowRight className="h-3.5 w-3.5" />
@@ -234,20 +238,21 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
               Setup da plataforma
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
               Conecte o núcleo da operação.
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
-              Banco, gateway, WhatsApp, CRM e IA ficam aqui. A ideia é simples:
-              configurar pelo front e ler o estado real sem setup escondido.
+              Banco, Pagou.ai, WhatsApp, CRM e IA ficam aqui. A ideia é
+              simples: configurar o que pode viver no runtime e deixar as
+              chaves críticas do gateway prontas para white label via ambiente.
             </p>
           </div>
 
           <div className="rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
-            Ordem ideal: banco, gateway, WhatsApp e IA.
+            Ordem ideal: banco, Pagou.ai, WhatsApp e IA.
           </div>
         </div>
       </PlatformSurface>
@@ -297,8 +302,8 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
 
           <SettingsCard
             eyebrow="Workspace"
-            title="Base pública e segurança do gateway"
-            description="URL oficial, secret do webhook e tolerância do gateway."
+            title="Base pública e compatibilidade"
+            description="URL oficial da operação e parâmetros do webhook legado de compatibilidade."
           >
             <form action={saveConnectionSettingsAction} className="space-y-4">
               <input type="hidden" name="scope" value="workspace" />
@@ -312,7 +317,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
                 label="Webhook secret"
                 name="webhookSecret"
                 defaultValue={runtimeSettings.webhookSecret}
-                placeholder="shield_gateway_secret"
+                placeholder="legacy_webhook_secret"
                 type="password"
               />
               <Field
@@ -324,6 +329,64 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
               />
               <SaveButton />
             </form>
+          </SettingsCard>
+
+          <SettingsCard
+            eyebrow="Gateway"
+            title={`${platformBrand.gateway.name} v2`}
+            description="Este clone usa a API v2 da Pagou.ai para Pix de recovery e reconciliacao de webhooks."
+          >
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <PlatformPill icon={CreditCard}>
+                  {appEnv.pagouAiConfigured
+                    ? "secret key carregada"
+                    : "secret key pendente"}
+                </PlatformPill>
+                <PlatformPill icon={QrCode}>
+                  {appEnv.pagouAiCardConfigured
+                    ? "public key disponivel"
+                    : "checkout card opcional"}
+                </PlatformPill>
+                <PlatformPill>
+                  {appEnv.pagouAiEnvironment === "sandbox"
+                    ? "ambiente sandbox"
+                    : "ambiente producao"}
+                </PlatformPill>
+              </div>
+
+              <div className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+                Pix ja cria transacao direto em <code>/v2/transactions</code> e
+                o webhook reconcilia a cobranca com <code>GET /v2/transactions/{"{id}"}</code>
+                quando faltar contexto no payload. Para habilitar cartao no
+                checkout hospedado da Pagou.ai, mantenha tambem a public key no ambiente.
+              </div>
+
+              <div className="rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+                Variaveis esperadas: <code>PAGOUAI_SECRET_KEY</code>,{" "}
+                <code>PAGOUAI_ENVIRONMENT</code>, <code>PAGOUAI_API_BASE_URL</code>{" "}
+                (opcional) e <code>NEXT_PUBLIC_PAGOUAI_PUBLIC_KEY</code> para card.
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={platformBrand.gateway.docsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+                >
+                  Docs atuais
+                </Link>
+                <Link
+                  href={platformBrand.gateway.legacyDocsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+                >
+                  Docs legados
+                </Link>
+              </div>
+            </div>
           </SettingsCard>
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.9fr)]">
@@ -369,7 +432,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
                     label="Session ID"
                     name="whatsappWebSessionId"
                     defaultValue={runtimeSettings.whatsappWebSessionId}
-                    placeholder="shield-recovery"
+                    placeholder={platformBrand.slug}
                   />
                 ) : null}
                 <div className="grid gap-4 md:grid-cols-2">
@@ -462,7 +525,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
 
                   <div className="flex flex-wrap gap-2">
                     <form action={startWhatsAppQrSessionAction}>
-                      <button className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
+                      <button className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600">
                         <QrCode className="h-4 w-4" />
                         Gerar QR
                       </button>
@@ -514,8 +577,8 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
 
             <SettingsCard
               eyebrow="CRM"
-              title="Shield Lead"
-            description="Conecte a URL e a chave do CRM para sincronizar casos reais."
+              title={platformBrand.crm.name}
+              description="Conecte a URL e a chave do seu CRM para sincronizar casos reais."
             >
               <form action={saveConnectionSettingsAction} className="space-y-4">
                 <input type="hidden" name="scope" value="crm" />
@@ -529,7 +592,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
                   label="API key"
                   name="crmApiKey"
                   defaultValue={runtimeSettings.crmApiKey}
-                  placeholder="shield lead api key"
+                  placeholder="crm api key"
                   type="password"
                 />
                 <SaveButton />
@@ -569,7 +632,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
           <PlatformSurface className="p-4">
             <SectionHeader eyebrow="Endpoints oficiais" title="URLs públicas da operação." compact />
             <div className="mt-4 space-y-3">
-              <SideLine label="Gateway webhook" value={health.webhook_url} />
+              <SideLine label={`${platformBrand.gateway.name} webhook`} value={health.webhook_url} />
               <SideLine
                 label="WhatsApp webhook"
                 value={health.whatsapp_webhook_url}
@@ -672,6 +735,7 @@ function SellerConnectView({
     worker_url: string;
     required_headers: string[];
     integrations: {
+      pagouai: boolean;
       whatsapp: boolean;
       email: boolean;
       crm: boolean;
@@ -699,7 +763,7 @@ function SellerConnectView({
       action={
         <Link
           href="/leads"
-          className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
         >
           Abrir CRM
           <ArrowRight className="h-3.5 w-3.5" />
@@ -736,16 +800,16 @@ function SellerConnectView({
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
               Integrações para seller
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
               Aqui você pega as URLs da sua operação.
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
-              Este seller recebe um webhook próprio para conectar no gateway sem
-              misturar tráfego com o restante da operação. Chaves e credenciais
-              continuam com o admin.
+              Este seller recebe um webhook proprio para conectar na{" "}
+              {platformBrand.gateway.name} sem misturar trafego com o restante
+              da operacao. Chaves e credenciais continuam com o admin.
             </p>
           </div>
 
@@ -758,7 +822,7 @@ function SellerConnectView({
       <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_21rem]">
         <div className="space-y-5">
           <PlatformSurface className="p-5">
-            <SectionHeader eyebrow="Webhook do seller" title="URL exclusiva para o gateway desta operação." />
+            <SectionHeader eyebrow="Webhook do seller" title={`URL exclusiva para a ${platformBrand.gateway.name} desta operacao.`} />
             <div className="mt-4 rounded-2xl border border-black/[0.06] bg-[#f8f8fa] px-4 py-4">
               <p className="break-all text-sm leading-7 text-[#1a1a2e]">
                 {sellerWebhookUrl}
@@ -784,14 +848,16 @@ function SellerConnectView({
           </PlatformSurface>
 
           <PlatformSurface className="p-5">
-            <SectionHeader eyebrow="Headers esperados" title="Campos obrigatórios do gateway." />
+            <SectionHeader eyebrow="Formato minimo" title="O que o endpoint espera receber." />
             <div className="mt-4 flex flex-wrap gap-2">
               {health.required_headers.map((header) => (
                 <PlatformPill key={header}>{header}</PlatformPill>
               ))}
             </div>
             <p className="mt-4 text-sm leading-6 text-[#717182]">
-              O seller pode compartilhar estes headers. O secret continua com o admin.
+              Nesta base, a reconciliacao principal da {platformBrand.gateway.name} usa o id
+              do evento ou da transacao no proprio payload. O seller so precisa
+              apontar a URL correta e manter o envio em JSON.
             </p>
           </PlatformSurface>
         </div>
@@ -900,7 +966,7 @@ function SettingsCard({
 }) {
   return (
     <PlatformSurface className="p-5">
-      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-orange-500">
+      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-sky-500">
         {eyebrow}
       </p>
       <h2 className="mt-2 text-[1.15rem] font-semibold tracking-tight text-[#111827]">
@@ -933,7 +999,7 @@ function Field({
         name={name}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none placeholder:text-[#9ca3af] transition-colors focus:border-orange-300 focus:ring-1 focus:ring-orange-100"
+        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none placeholder:text-[#9ca3af] transition-colors focus:border-sky-300 focus:ring-1 focus:ring-sky-100"
       />
     </label>
   );
@@ -956,7 +1022,7 @@ function SelectField({
       <select
         name={name}
         defaultValue={defaultValue}
-        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none transition-colors focus:border-orange-300 focus:ring-1 focus:ring-orange-100"
+        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none transition-colors focus:border-sky-300 focus:ring-1 focus:ring-sky-100"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -970,7 +1036,7 @@ function SelectField({
 
 function SaveButton({ label = "Salvar configuração" }: { label?: string }) {
   return (
-    <button className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
+    <button className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600">
       <Save className="h-4 w-4" />
       {label}
     </button>
@@ -1016,7 +1082,7 @@ function SectionHeader({
 }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.18em] text-orange-500">{eyebrow}</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-sky-500">{eyebrow}</p>
       <h3
         className={
           compact

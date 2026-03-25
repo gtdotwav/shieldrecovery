@@ -1,5 +1,6 @@
 import QRCode from "qrcode";
 
+import { platformBrand } from "@/lib/platform";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { getStorageService } from "@/server/recovery/services/storage";
 import type {
@@ -381,7 +382,7 @@ export class MessagingService {
         return await this.dispatchViaWebApi({
           apiBaseUrl: runtimeSettings.whatsappApiBaseUrl,
           accessToken: runtimeSettings.whatsappAccessToken,
-          sessionId: runtimeSettings.whatsappWebSessionId || "shield-recovery",
+          sessionId: runtimeSettings.whatsappWebSessionId || platformBrand.slug,
           phone: normalizedPhone,
           content,
           metadata: input.metadata,
@@ -437,7 +438,7 @@ export class MessagingService {
         return await this.dispatchButtonsViaWebApi({
           apiBaseUrl: runtimeSettings.whatsappApiBaseUrl,
           accessToken: runtimeSettings.whatsappAccessToken,
-          sessionId: runtimeSettings.whatsappWebSessionId || "shield-recovery",
+          sessionId: runtimeSettings.whatsappWebSessionId || platformBrand.slug,
           phone: normalizedPhone,
           bodyText: input.bodyText,
         });
@@ -528,13 +529,14 @@ export class MessagingService {
     const config = resolveWebApiConfig(input.apiBaseUrl, input.sessionId);
 
     if (config.kind === "evolution") {
-      // Evolution API: use sendButtons endpoint
-      const buttonsUrl = joinUrl(
+      // Evolution API: use sendText instead of sendButtons.
+      // sendButtons returns 200 but silently fails to deliver on baileys/Web WhatsApp.
+      const textUrl = joinUrl(
         config.baseUrl,
-        `/message/sendButtons/${encodeURIComponent(config.sessionId)}`,
+        `/message/sendText/${encodeURIComponent(config.sessionId)}`,
       );
 
-      const response = await fetch(buttonsUrl, {
+      const response = await fetch(textUrl, {
         method: "POST",
         headers: {
           ...buildWhatsAppApiHeaders(input.accessToken),
@@ -542,31 +544,13 @@ export class MessagingService {
         },
         body: JSON.stringify({
           number: input.phone,
-          title: "Forma de pagamento",
-          description: input.bodyText,
-          footer: "Shield Recovery",
-          buttons: [
-            {
-              type: "reply",
-              buttonId: "pix",
-              buttonText: { displayText: "PIX" },
-            },
-            {
-              type: "reply",
-              buttonId: "cartao",
-              buttonText: { displayText: "Cartao de credito" },
-            },
-            {
-              type: "reply",
-              buttonId: "boleto",
-              buttonText: { displayText: "Boleto" },
-            },
-          ],
+          text: input.bodyText,
         }),
+        signal: AbortSignal.timeout(15_000),
       });
 
       if (!response.ok) {
-        throw new Error(`Evolution API buttons failed (${response.status}).`);
+        throw new Error(`Evolution API sendText failed (${response.status}).`);
       }
 
       const payload = (await safeParseJson(response)) as
@@ -883,7 +867,7 @@ export class MessagingService {
 
     return resolveWebApiConfig(
       settings.whatsappApiBaseUrl,
-      settings.whatsappWebSessionId || "shield-recovery",
+      settings.whatsappWebSessionId || platformBrand.slug,
       settings.whatsappAccessToken,
     );
   }
@@ -1364,7 +1348,7 @@ async function extractWebApiSessionUpdate(payload: unknown) {
         source?.session_id,
         instance?.instanceName,
         payloadRecord.instance,
-      ) ?? "shield-recovery",
+      ) ?? platformBrand.slug,
   });
 }
 
@@ -1420,7 +1404,7 @@ function resolveWebApiConfig(
   accessToken = "",
 ): WebApiConnectionConfig {
   const trimmedBaseUrl = baseUrl.trim().replace(/\/$/, "");
-  const normalizedSessionId = sessionId.trim() || "shield-recovery";
+  const normalizedSessionId = sessionId.trim() || platformBrand.slug;
   const genericSendMatch =
     /\/messages\/send$/i.test(trimmedBaseUrl) ||
     /\/messages$/i.test(trimmedBaseUrl) ||

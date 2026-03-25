@@ -67,7 +67,7 @@ export function scorePriority(contact: FollowUpContact) {
 
 export const STAGE_STYLES: Record<string, string> = {
   NEW_RECOVERY:
-    "border-orange-200 bg-orange-50 text-orange-600",
+    "border-sky-200 bg-sky-50 text-sky-600",
   CONTACTING:
     "border-blue-200 bg-blue-50 text-blue-600",
   WAITING_CUSTOMER:

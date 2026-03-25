@@ -9,7 +9,7 @@ import { getAuthenticatedSession, resolvePostLoginPath } from "@/server/auth/ses
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Login | Shield Recovery",
+  title: "Login | PagRecovery",
 };
 
 type LoginPageProps = {
@@ -34,14 +34,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const configurationMissing = params.error === "config" || !authConfigured;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.08),transparent_22rem),linear-gradient(180deg,#fafbfc_0%,#f3f5f8_100%)] px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(2,132,199,0.08),transparent_22rem),linear-gradient(180deg,#fafbfc_0%,#f3f5f8_100%)] px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl items-center justify-center">
         <div className="grid w-full gap-6 rounded-[2rem] border border-black/[0.06] bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] xl:grid-cols-[1.05fr_0.95fr] xl:p-6">
           <section className="rounded-[1.6rem] bg-[linear-gradient(180deg,#141414_0%,#121826_100%)] p-6 text-white sm:p-8">
             <ShieldRecoveryLogo size="lg" emphasis="strong" className="bg-transparent shadow-none ring-0" />
 
             <div className="mt-10 max-w-lg">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-orange-400">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-sky-400">
                 Acesso protegido
               </p>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -70,7 +70,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
           <section className="flex items-center">
             <div className="w-full rounded-[1.6rem] border border-black/[0.06] bg-[#fbfbfc] p-5 sm:p-6">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-orange-500">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-sky-500">
                 Entrar
               </p>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#111827]">
@@ -110,7 +110,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  placeholder="admin@shieldrecovery.local"
+                  placeholder="admin@pagrecovery.local"
                 />
 
                 <Field
@@ -123,7 +123,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
                 <button
                   type="submit"
-                  className="inline-flex w-full items-center justify-center rounded-[1rem] bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                  className="inline-flex w-full items-center justify-center rounded-[1rem] bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
                 >
                   Entrar na plataforma
                 </button>
@@ -148,7 +148,7 @@ function FeatureRow({
   return (
     <div className="flex items-start gap-3 rounded-[1.1rem] border border-white/10 bg-white/5 px-4 py-4">
       <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/8">
-        <Icon className="h-4.5 w-4.5 text-orange-400" />
+        <Icon className="h-4.5 w-4.5 text-sky-400" />
       </div>
       <div>
         <p className="text-sm font-semibold text-white">{title}</p>
@@ -200,7 +200,7 @@ function Field({
         type={type}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        className="mt-2 w-full rounded-2xl border border-black/[0.08] bg-white px-4 py-3 text-sm text-[#111827] outline-none transition-colors placeholder:text-[#9ca3af] focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
+        className="mt-2 w-full rounded-2xl border border-black/[0.08] bg-white px-4 py-3 text-sm text-[#111827] outline-none transition-colors placeholder:text-[#9ca3af] focus:border-sky-300 focus:ring-2 focus:ring-sky-100"
       />
     </label>
   );

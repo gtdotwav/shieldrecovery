@@ -770,5 +770,5 @@ function countInboundMessagesAfterLatestOutbound(
 }
 
 function isUsableEmail(email?: string | null) {
-  return Boolean(email && email !== "unknown@shield.local");
+  return Boolean(email && email !== "unknown@pagrecovery.local");
 }

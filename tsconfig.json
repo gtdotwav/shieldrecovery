@@ -33,5 +33,5 @@
     "packages/checkout/**/*.ts",
     "packages/checkout/**/*.tsx"
   ],
-  "exclude": ["node_modules", "evolution-api"]
+  "exclude": ["node_modules", "evolution-api", "packages/checkout/src", "packages/checkout 2"]
 }

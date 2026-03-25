@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shield Recovery - Apresentacao do Projeto</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --dark-bg: #11131a;
+    --dark-surface: #1e2130;
+    --orange: #f97316;
+    --orange-light: #fdba74;
+    --orange-glow: rgba(249,115,22,0.15);
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --dark-text: #111827;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background: #0a0b0f;
+  }
+
+  .slide {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  @media print {
+    .slide { page-break-after: always; min-height: 0; padding: 40px 50px; }
+    .slide:last-child { page-break-after: avoid; }
+    body { background: white; }
+  }
+
+  /* ═══ SLIDE VARIANTS ═══ */
+  .slide--dark {
+    background: var(--dark-bg);
+    color: var(--white);
+  }
+  .slide--light {
+    background: var(--white);
+    color: var(--dark-text);
+    border-top: 4px solid var(--orange);
+  }
+  .slide--gradient {
+    background: linear-gradient(135deg, #11131a 0%, #171a24 45%, #1a1f2d 100%);
+    color: var(--white);
+  }
+
+  /* ═══ TYPOGRAPHY ═══ */
+  .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 8px;
+  }
+  .slide--dark .label { color: var(--orange-light); }
+
+  .title {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .slide--light .title { color: var(--dark-text); }
+
+  .subtitle {
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #94a3b8;
+    max-width: 680px;
+  }
+  .slide--light .subtitle { color: var(--gray-500); }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 28px 0 12px 0;
+  }
+  .slide--dark h2 { color: var(--white); }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-700);
+    margin: 16px 0 4px 0;
+  }
+  .slide--dark h3 { color: var(--orange-light); font-size: 16px; }
+
+  p, li {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--gray-700);
+  }
+  .slide--dark p, .slide--dark li { color: #cbd5e1; }
+
+  ul { list-style: none; padding-left: 0; }
+  ul li { padding: 4px 0 4px 20px; position: relative; }
+  ul li::before {
+    content: '\2022';
+    position: absolute;
+    left: 0;
+    color: var(--orange);
+    font-weight: 700;
+  }
+  ul.check li::before { content: '\2713'; color: var(--success); }
+
+  /* ═══ COVER ═══ */
+  .cover { justify-content: flex-start; padding-top: 100px; }
+  .cover .accent-bar {
+    width: 5px;
+    height: 80px;
+    background: var(--orange);
+    border-radius: 3px;
+    margin-bottom: 32px;
+  }
+  .cover .title { font-size: 56px; max-width: 600px; }
+  .cover .subtitle { margin-top: 16px; }
+  .cover .glow {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(249,115,22,0.12), transparent 70%);
+    top: -100px;
+    right: -80px;
+  }
+
+  .stats-bar {
+    display: flex;
+    gap: 0;
+    background: var(--dark-surface);
+    border-radius: 16px;
+    padding: 20px 0;
+    margin-top: 60px;
+  }
+  .stats-bar .stat {
+    flex: 1;
+    padding: 0 24px;
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+  .stats-bar .stat:last-child { border-right: none; }
+  .stats-bar .stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 6px;
+  }
+  .stats-bar .stat-value {
+    font-size: 13px;
+    color: #e2e8f0;
+  }
+
+  .version {
+    position: absolute;
+    bottom: 40px;
+    left: 80px;
+    font-size: 12px;
+    color: #475569;
+  }
+
+  /* ═══ TABLES ═══ */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  th {
+    background: var(--dark-bg);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-align: left;
+    padding: 10px 14px;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gray-200);
+    color: var(--gray-700);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tr:nth-child(even) td { background: var(--gray-100); }
+  tr:nth-child(odd) td { background: var(--white); }
+
+  .compare-table th:first-child { background: var(--danger); }
+  .compare-table th:last-child { background: var(--success); }
+  .compare-table td:first-child { background: #fef2f2; color: #991b1b; }
+  .compare-table td:last-child { background: #f0fdf4; color: #166534; }
+
+  /* ═══ GRID LAYOUTS ═══ */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 16px 0; }
+
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .slide--light .card {
+    background: var(--gray-100);
+    border-color: var(--gray-200);
+  }
+  .card h3 { margin-top: 0; }
+  .card p { font-size: 13px; }
+
+  /* ═══ MODULE CARDS ═══ */
+  .module {
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 14px;
+    padding: 16px 20px;
+    transition: all 0.2s;
+  }
+  .module:hover { border-color: var(--orange); box-shadow: 0 8px 24px rgba(249,115,22,0.08); }
+  .module .route {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dark-text);
+    font-family: 'Courier New', monospace;
+  }
+  .module .module-sub {
+    font-size: 11px;
+    color: var(--orange);
+    font-weight: 600;
+    margin: 4px 0;
+  }
+  .module p { font-size: 12px; margin: 0; }
+
+  /* ═══ PHASE CARDS ═══ */
+  .phase {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin: 12px 0;
+    padding: 16px;
+    background: var(--gray-100);
+    border-radius: 12px;
+    border-left: 4px solid var(--orange);
+  }
+  .phase-num {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--orange);
+    min-width: 36px;
+  }
+  .phase h3 { margin: 0 0 4px 0; color: var(--dark-text); font-size: 14px; }
+  .phase p { font-size: 12px; margin: 2px 0; }
+  .phase .deliverables { color: var(--orange); font-weight: 600; font-size: 11px; }
+
+  /* ═══ CONCLUSION ═══ */
+  .conclusion-item {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--orange-light);
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .conclusion-item:last-child { border-bottom: none; }
+
+  .final-tagline {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--white);
+    text-align: center;
+    margin-top: 48px;
+    padding: 24px;
+    border: 1px solid rgba(249,115,22,0.3);
+    border-radius: 16px;
+    background: rgba(249,115,22,0.06);
+  }
+
+  /* ═══ FLOW DIAGRAM ═══ */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 16px 0;
+  }
+  .flow-step {
+    background: var(--dark-surface);
+    color: var(--white);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(249,115,22,0.2);
+  }
+  .flow-arrow {
+    color: var(--orange);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .slide--light .flow-step {
+    background: var(--gray-100);
+    color: var(--dark-text);
+    border-color: var(--gray-300);
+  }
+
+  /* ═══ DIFF HIGHLIGHTS ═══ */
+  .diff-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(249,115,22,0.15);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 12px 0;
+  }
+  .diff-card h3 {
+    font-size: 18px;
+    color: var(--orange-light);
+    margin: 0 0 8px 0;
+  }
+  .diff-card p { margin: 0; }
+
+  .page-num {
+    position: absolute;
+    bottom: 40px;
+    right: 80px;
+    font-size: 11px;
+    color: #475569;
+    font-weight: 600;
+  }
+  .slide--light .page-num { color: var(--gray-300); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 1: COVER -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--gradient cover">
+  <div class="glow"></div>
+  <div class="accent-bar"></div>
+  <div class="label" style="font-size: 13px; letter-spacing: 0.25em;">SHIELD RECOVERY</div>
+  <div class="title" style="font-size: 56px; margin-top: 12px;">
+    Apresentacao<br>do Projeto
+  </div>
+  <div class="subtitle" style="margin-top: 20px;">
+    Plataforma de recuperacao inteligente de pagamentos<br>
+    com IA, CRM e automacao multicanal.
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-label">Stack</div>
+      <div class="stat-value">Next.js + Supabase + Vercel</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">AI Engine</div>
+      <div class="stat-value">OpenAI + Classificador proprio</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Canais</div>
+      <div class="stat-value">WhatsApp + Email + SMS</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Status</div>
+      <div class="stat-value">MVP funcional em producao</div>
+    </div>
+  </div>
+
+  <div class="version">Versao 1.0 &nbsp;|&nbsp; Marco 2026 &nbsp;|&nbsp; Documento interno</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 2: O QUE E -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">VISAO GERAL</div>
+  <div class="title" style="font-size: 36px;">O que e o Shield Recovery</div>
+  <p style="margin: 12px 0; max-width: 800px;">
+    Shield Recovery e uma plataforma de <strong>recuperacao inteligente de pagamentos</strong> que transforma
+    falhas de cobranca em oportunidades de receita. Quando um pagamento falha no gateway, a plataforma
+    recebe o evento via webhook, classifica automaticamente a falha, aciona estrategias de recuperacao
+    baseadas em IA e executa follow-ups multicanal via WhatsApp, email e SMS.
+  </p>
+  <p style="max-width: 800px;">
+    O objetivo central e <strong>eliminar a receita perdida por falhas tecnicas ou operacionais</strong>,
+    oferecendo uma operacao assistida por inteligencia artificial que gerencia todo o ciclo de vida
+    do recovery: da deteccao da falha ate a confirmacao do pagamento recuperado.
+  </p>
+
+  <h2 style="margin-top: 32px;">Proposta de valor</h2>
+  <ul>
+    <li><strong>Automatizacao end-to-end</strong> &mdash; Da falha de pagamento ate a recuperacao, sem intervencao manual obrigatoria.</li>
+    <li><strong>IA como motor de decisao</strong> &mdash; Classificacao de leads, recomendacao de estrategia e geracao de mensagens por contexto.</li>
+    <li><strong>CRM integrado</strong> &mdash; Leads organizados em pipeline com historico completo de tratativas.</li>
+    <li><strong>Multicanal nativo</strong> &mdash; WhatsApp Cloud API, email via SendGrid e SMS em uma unica plataforma.</li>
+    <li><strong>Real-time via webhooks</strong> &mdash; Integracao direta com gateways para reacao imediata.</li>
+  </ul>
+  <div class="page-num">02</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 3: PROBLEMA -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">PROBLEMA</div>
+  <div class="title" style="font-size: 36px;">A dor que o Shield Recovery resolve</div>
+  <p style="margin: 12px 0; max-width: 800px;">
+    Empresas digitais perdem entre <strong>5% e 15% da receita recorrente</strong> com falhas de pagamento:
+    cartoes recusados, saldo insuficiente, cartoes expirados, timeouts de gateway. Na maioria dos
+    casos, nao existe um processo estruturado de recuperacao.
+  </p>
+
+  <table class="compare-table" style="margin-top: 24px;">
+    <tr>
+      <th style="width: 50%;">ANTES (sem Shield)</th>
+      <th style="width: 50%;">DEPOIS (com Shield)</th>
+    </tr>
+    <tr><td>Falha detectada dias depois</td><td>Falha detectada em segundos via webhook</td></tr>
+    <tr><td>Operador procura manualmente no CRM</td><td>Lead criado automaticamente com contexto completo</td></tr>
+    <tr><td>Mensagem generica enviada por email</td><td>Mensagem personalizada por IA via WhatsApp</td></tr>
+    <tr><td>Sem follow-up sistematico</td><td>Cadencia automatica com escalacao multi-canal</td></tr>
+    <tr><td>Sem visibilidade de metricas</td><td>Dashboard com taxa de recuperacao em tempo real</td></tr>
+    <tr><td>Receita perdida silenciosamente</td><td>Cada centavo rastreado e recuperado</td></tr>
+  </table>
+  <div class="page-num">03</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 4: ARQUITETURA -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">ARQUITETURA</div>
+  <div class="title" style="font-size: 36px;">Stack e fluxo do sistema</div>
+
+  <div class="flow" style="margin: 20px 0;">
+    <div class="flow-step">Gateway</div><span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Webhook</div><span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Normalizer</div><span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Lead Engine</div><span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">AI Classifier</div><span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Strategy</div><span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Messages</div><span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Automation</div><span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">Analytics</div>
+  </div>
+
+  <table style="margin-top: 16px;">
+    <tr><th>#</th><th>Componente</th><th>Funcao</th></tr>
+    <tr><td>1</td><td><strong>Gateway Shield</strong></td><td>Envia evento de falha via webhook</td></tr>
+    <tr><td>2</td><td><strong>Webhook Receiver</strong></td><td>Recebe, valida assinatura HMAC e persiste evento</td></tr>
+    <tr><td>3</td><td><strong>Event Normalizer</strong></td><td>Padroniza payload para contrato interno unificado</td></tr>
+    <tr><td>4</td><td><strong>Lead Engine</strong></td><td>Cria lead no CRM com dados completos do cliente</td></tr>
+    <tr><td>5</td><td><strong>AI Classifier</strong></td><td>Classifica falha e calcula score de recuperabilidade</td></tr>
+    <tr><td>6</td><td><strong>Strategy Engine</strong></td><td>Seleciona a melhor estrategia de abordagem</td></tr>
+    <tr><td>7</td><td><strong>Message Generator</strong></td><td>Gera mensagem personalizada por canal e contexto</td></tr>
+    <tr><td>8</td><td><strong>Recovery Automation</strong></td><td>Agenda e executa cadencia multi-step de follow-up</td></tr>
+    <tr><td>9</td><td><strong>Messaging Service</strong></td><td>Envia via WhatsApp Cloud API / SendGrid / SMS</td></tr>
+    <tr><td>10</td><td><strong>Analytics</strong></td><td>Atualiza metricas de recuperacao em tempo real</td></tr>
+  </table>
+
+  <h2>Stack tecnologico</h2>
+  <ul>
+    <li><strong>Frontend:</strong> Next.js 14+ (App Router), React, Tailwind CSS, shadcn/ui</li>
+    <li><strong>Backend:</strong> Next.js API Routes + Server Actions, TypeScript</li>
+    <li><strong>Banco de dados:</strong> Supabase (Postgres) com fallback local JSON</li>
+    <li><strong>IA:</strong> OpenAI API para classificacao, geracao e recomendacoes</li>
+    <li><strong>Mensageria:</strong> WhatsApp Cloud API, SendGrid (email)</li>
+    <li><strong>Deploy:</strong> Vercel (edge-optimized) &nbsp;|&nbsp; <strong>Filas:</strong> Queue jobs interno (caminho BullMQ/Redis)</li>
+  </ul>
+  <div class="page-num">04</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 5: MODULOS -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">PRODUTO</div>
+  <div class="title" style="font-size: 36px;">Modulos e areas da plataforma</div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;">
+    <div class="module">
+      <div class="route">/ (Home)</div>
+      <div class="module-sub">Pagina institucional</div>
+      <p>Tese do produto, metricas reais do sistema e links para areas operacionais.</p>
+    </div>
+    <div class="module">
+      <div class="route">/dashboard</div>
+      <div class="module-sub">Painel operacional</div>
+      <p>Fila do que exige atencao: metricas de recuperacao, leads prioritarios, gargalos.</p>
+    </div>
+    <div class="module">
+      <div class="route">/leads (CRM)</div>
+      <div class="module-sub">Gestao de carteira por pipeline</div>
+      <p>NEW_RECOVERY &rarr; CONTACTING &rarr; WAITING_CUSTOMER &rarr; RECOVERED &rarr; LOST</p>
+    </div>
+    <div class="module">
+      <div class="route">/inbox</div>
+      <div class="module-sub">Centro de atendimento multicanal</div>
+      <p>Fila de conversas, thread de mensagens, contexto do lead e sugestao de IA.</p>
+    </div>
+    <div class="module">
+      <div class="route">/connect</div>
+      <div class="module-sub">Hub de integracoes</div>
+      <p>Status de cada integracao, credenciais, validacao e testes de conexao.</p>
+    </div>
+    <div class="module">
+      <div class="route">/calendar</div>
+      <div class="module-sub">Visao temporal da operacao</div>
+      <p>Movimento diario com recoveries, leads, automacoes e board operacional.</p>
+    </div>
+    <div class="module">
+      <div class="route">/ai</div>
+      <div class="module-sub">Centro de comando da IA</div>
+      <p>Classificacoes, estrategias ativas, performance e geracao de mensagens.</p>
+    </div>
+    <div class="module">
+      <div class="route">/admin</div>
+      <div class="module-sub">Administracao</div>
+      <p>Gestao de sellers, modo de autonomia, filas de jobs e monitoramento.</p>
+    </div>
+  </div>
+  <div class="page-num">05</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 6: MOTOR DE IA (DARK) -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--dark">
+  <div class="label">INTELIGENCIA ARTIFICIAL</div>
+  <div class="title">Motor de IA do<br>Shield Recovery</div>
+  <p style="max-width: 700px; margin-bottom: 28px;">
+    A IA nao e uma camada cosmetica. E o nucleo de decisao do produto.
+    Cada lead que entra passa por um pipeline de inteligencia que classifica,
+    recomenda e executa a melhor abordagem de recuperacao.
+  </p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Recovery Classifier</h3>
+      <p>Analisa contexto do lead (tipo de falha, valor, metodo de pagamento, tempo desde a falha) e gera um <strong>score de 0 a 100</strong> que determina a prioridade de tratamento.</p>
+    </div>
+    <div class="card">
+      <h3>Strategy Engine</h3>
+      <p><strong>5 estrategias</strong> pre-configuradas: Cartao recusado, Saldo insuficiente, Cartao expirado, Timeout do gateway, Renovacao. Cada uma com cadencia multi-step e multi-canal.</p>
+    </div>
+    <div class="card">
+      <h3>Message Generator</h3>
+      <p>Gera mensagens personalizadas por: nome do cliente, produto, valor, motivo da falha, canal de envio e numero da tentativa. <strong>OpenAI quando configurado, fallback para templates.</strong></p>
+    </div>
+    <div class="card">
+      <h3>AI Orchestrator</h3>
+      <p>Camada central que agrega classificacoes, metricas, timeline e performance de estrategias. Alimenta o <strong>dashboard de IA com dados em tempo real.</strong></p>
+    </div>
+  </div>
+  <div class="page-num">06</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 7: ESTRATEGIAS -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">ESTRATEGIAS</div>
+  <div class="title" style="font-size: 36px;">Playbooks de recuperacao automatica</div>
+  <p style="margin: 8px 0 20px;">Cada tipo de falha aciona uma estrategia composta por steps sequenciais com canais, delays e condicoes de disparo.</p>
+
+  <table>
+    <tr>
+      <th>Estrategia</th>
+      <th>Steps</th>
+      <th>Cadencia</th>
+      <th>Triggers</th>
+    </tr>
+    <tr>
+      <td><strong>Cartao Recusado</strong></td>
+      <td>5</td>
+      <td>WhatsApp (5min) &rarr; WA reminder (2h) &rarr; Email alt (6h) &rarr; CRM update &rarr; Close</td>
+      <td style="font-size: 11px; color: #6b7280;">card_declined, generic_decline, refused</td>
+    </tr>
+    <tr>
+      <td><strong>Saldo Insuficiente</strong></td>
+      <td>3</td>
+      <td>WA empatico + Pix (10min) &rarr; Follow-up Pix (4h) &rarr; Email parcelamento (24h)</td>
+      <td style="font-size: 11px; color: #6b7280;">insufficient_funds</td>
+    </tr>
+    <tr>
+      <td><strong>Cartao Expirado</strong></td>
+      <td>3</td>
+      <td>WA aviso (5min) &rarr; Email instrucoes (1h) &rarr; WA lembrete final (24h)</td>
+      <td style="font-size: 11px; color: #6b7280;">expired_card</td>
+    </tr>
+    <tr>
+      <td><strong>Timeout Gateway</strong></td>
+      <td>3</td>
+      <td>WA tecnico (3min) &rarr; Auto-retry link (3min) &rarr; WA link direto (5min)</td>
+      <td style="font-size: 11px; color: #6b7280;">gateway_timeout, processing_error</td>
+    </tr>
+    <tr>
+      <td><strong>Renovacao</strong></td>
+      <td>3</td>
+      <td>WA renovacao (15min) &rarr; Email detalhado (2h) &rarr; Alerta urgente (3 dias)</td>
+      <td style="font-size: 11px; color: #6b7280;">subscription renewal failures</td>
+    </tr>
+  </table>
+
+  <p style="margin-top: 16px; font-size: 12px; color: #6b7280;">
+    <strong>Nota:</strong> Cada step possui template de mensagem, canal preferido, delay em minutos e condicao opcional (no_response, user_responded, payment_confirmed).
+    As estrategias sao definidas em <code>strategy-engine.ts</code> e serao editaveis via UI na Fase 4.
+  </p>
+  <div class="page-num">07</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 8: MODELO DE DADOS -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">DADOS</div>
+  <div class="title" style="font-size: 36px;">Modelo de dados e entidades</div>
+
+  <table style="margin-top: 16px;">
+    <tr><th style="width: 30%;">Entidade</th><th>Descricao</th></tr>
+    <tr><td><strong>payments</strong></td><td>Pagamentos recebidos do gateway com status, valor, metodo e codigo de falha</td></tr>
+    <tr><td><strong>customers</strong></td><td>Dados do cliente: nome, email, telefone, documento</td></tr>
+    <tr><td><strong>recovery_leads</strong></td><td>Lead de recuperacao com pipeline status, agente assignado, valor e produto</td></tr>
+    <tr><td><strong>conversations</strong></td><td>Conversas por lead com canal, status (open/pending/closed) e agente</td></tr>
+    <tr><td><strong>messages</strong></td><td>Mensagens individuais com direcao, status de entrega, metadata e canal</td></tr>
+    <tr><td><strong>queue_jobs</strong></td><td>Jobs agendados para automacao (recovery-jobs, payment-retry, notification)</td></tr>
+    <tr><td><strong>webhook_events</strong></td><td>Registro de todos os eventos recebidos para auditoria e idempotencia</td></tr>
+    <tr><td><strong>payment_attempts</strong></td><td>Tentativas de retry com link de pagamento e status</td></tr>
+    <tr><td><strong>agents</strong></td><td>Operadores da plataforma com nome, email e status</td></tr>
+    <tr><td><strong>calendar_notes</strong></td><td>Anotacoes operacionais por data e lane (operations, automations, revenue)</td></tr>
+    <tr><td><strong>seller_admin_controls</strong></td><td>Configs por vendedor: autonomia, limites de leads, metas de recuperacao</td></tr>
+    <tr><td><strong>connection_settings</strong></td><td>Credenciais e configs de Gateway, WhatsApp, Email, CRM e IA</td></tr>
+    <tr><td><strong>system_logs</strong></td><td>Log estruturado de eventos: webhooks, recoveries, mensagens, erros</td></tr>
+  </table>
+  <div class="page-num">08</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 9: STATUS ATUAL -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">STATUS</div>
+  <div class="title" style="font-size: 36px;">Estado atual e maturidade</div>
+
+  <div class="grid-2" style="margin-top: 16px;">
+    <div>
+      <h2 style="margin-top: 0; color: #166534;">O que ja esta funcional</h2>
+      <ul class="check">
+        <li>Webhook receiver com validacao HMAC</li>
+        <li>Event Normalizer multi-gateway</li>
+        <li>Pipeline de leads com 5 estagios</li>
+        <li>CRM com listagem e detalhe de leads</li>
+        <li>Inbox de conversas bidirecional</li>
+        <li>5 estrategias de recuperacao configuradas</li>
+        <li>AI Classifier com score de recuperabilidade</li>
+        <li>Message Generator + OpenAI</li>
+        <li>Dashboard com metricas operacionais</li>
+        <li>Auth com roles (admin/seller)</li>
+        <li>Calendario operacional com notas</li>
+        <li>Admin panel para gestao de sellers</li>
+        <li>Worker system para processamento de filas</li>
+        <li>Persistencia Supabase + fallback local</li>
+      </ul>
+    </div>
+    <div>
+      <h2 style="margin-top: 0; color: #991b1b;">O que precisa de consolidacao</h2>
+      <ul>
+        <li>Padronizar camada unica de persistencia (eliminar dualidade Supabase/Prisma)</li>
+        <li>Substituir dados mockados por estados vazios honestos</li>
+        <li>Conectar worker real com BullMQ/Redis</li>
+        <li>Inbox com status real de envio/entrega/leitura</li>
+        <li>Timeline completa por lead com historico</li>
+        <li>Playbooks editaveis via UI</li>
+        <li>WhatsApp Cloud API em producao</li>
+        <li>Reduzir peso visual da interface</li>
+      </ul>
+    </div>
+  </div>
+  <div class="page-num">09</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 10: ROADMAP -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">ROADMAP</div>
+  <div class="title" style="font-size: 36px;">Plano de evolucao por fases</div>
+
+  <div class="phase">
+    <div class="phase-num">0</div>
+    <div>
+      <h3>Consolidacao tecnica</h3>
+      <p>Banco oficial unico, remover codigo morto, alinhar envs, eliminar dados fake de telas internas.</p>
+      <p class="deliverables">Entregas: Persistencia unificada, storage simplificado, health endpoint real</p>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="phase-num">1</div>
+    <div>
+      <h3>Dados reais ponta a ponta</h3>
+      <p>Toda area interna deve ler apenas dado real ou exibir estado vazio honesto.</p>
+      <p class="deliverables">Entregas: Dashboard sem mocks, leads sem placeholders, connect com status real</p>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="phase-num">2</div>
+    <div>
+      <h3>Integracoes reais</h3>
+      <p>Receber dados reais do gateway, conectar canais de comunicacao em producao.</p>
+      <p class="deliverables">Entregas: Gateway definitivo, WhatsApp Cloud API, SendGrid, persistencia de conexoes</p>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="phase-num">3</div>
+    <div>
+      <h3>Inbox e tratativa</h3>
+      <p>Permitir atendimento real dentro do produto com historico completo.</p>
+      <p class="deliverables">Entregas: Inbox funcional, composer, status envio/leitura, historico por conversa</p>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="phase-num">4</div>
+    <div>
+      <h3>CRM e IA operacionais</h3>
+      <p>Transformar /leads em area de execucao comercial assistida por inteligencia artificial.</p>
+      <p class="deliverables">Entregas: Lead detail, timeline, AI summary, recomendacao de funil, playbooks editaveis</p>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="phase-num">5</div>
+    <div>
+      <h3>Fila real e automacao</h3>
+      <p>Automacoes sairem do papel com execucao real de cadencias e retries.</p>
+      <p class="deliverables">Entregas: BullMQ, Redis, workers, cadencias reais, alertas automaticos</p>
+    </div>
+  </div>
+  <div class="page-num">10</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 11: KPIs -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--light">
+  <div class="label">METRICAS</div>
+  <div class="title" style="font-size: 36px;">KPIs e metricas do sistema</div>
+  <p style="margin: 8px 0 16px;">O Shield Recovery rastreia metricas em tempo real para medir eficacia da operacao:</p>
+
+  <table>
+    <tr><th>KPI</th><th>Descricao</th><th>Fonte</th></tr>
+    <tr><td><strong>Taxa de recuperacao</strong></td><td>% de pagamentos falhos que foram recuperados</td><td>RecoveryAnalytics</td></tr>
+    <tr><td><strong>Receita recuperada</strong></td><td>Valor total em R$ dos pagamentos recuperados</td><td>RecoveryAnalytics</td></tr>
+    <tr><td><strong>Tempo medio de recovery</strong></td><td>Horas entre falha e recuperacao confirmada</td><td>RecoveryAnalytics</td></tr>
+    <tr><td><strong>Recoveries ativas</strong></td><td>Leads em tratativa no momento</td><td>Lead pipeline</td></tr>
+    <tr><td><strong>Conversas ativas</strong></td><td>Threads abertas com interacao recente</td><td>Inbox</td></tr>
+    <tr><td><strong>Msgs geradas por dia</strong></td><td>Mensagens criadas pela IA nas ultimas 24h</td><td>AI Orchestrator</td></tr>
+    <tr><td><strong>Performance por estrategia</strong></td><td>Taxa de sucesso e tempo medio por playbook</td><td>Strategy Engine</td></tr>
+  </table>
+
+  <h2>Metricas por vendedor (Admin Panel)</h2>
+  <ul>
+    <li>Leads ativos e aguardando cliente por seller</li>
+    <li>Contagem e valor de recuperacoes realizadas</li>
+    <li>Conversas abertas e nao lidas por seller</li>
+    <li>Taxa de recuperacao plataforma vs taxa real reportada</li>
+    <li>Ultima atividade e modo de autonomia ativo</li>
+  </ul>
+  <div class="page-num">11</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 12: DIFERENCIAIS (DARK) -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--dark">
+  <div class="label">VISAO</div>
+  <div class="title">Diferenciais e visao<br>de longo prazo</div>
+
+  <div style="margin-top: 32px;">
+    <div class="diff-card">
+      <h3>Nao e um CRM generico</h3>
+      <p>E um CRM especializado em recovery, onde cada feature existe exclusivamente para recuperar receita perdida.</p>
+    </div>
+    <div class="diff-card">
+      <h3>IA como copiloto, nao como enfeite</h3>
+      <p>A IA classifica, recomenda e gera. Deixa rastro do que fez e por que fez. O operador decide se executa.</p>
+    </div>
+    <div class="diff-card">
+      <h3>Ecossistema fechado</h3>
+      <p>Webhook, CRM, inbox, automacao e analytics vivem na mesma plataforma. Nao precisa de 5 ferramentas.</p>
+    </div>
+    <div class="diff-card">
+      <h3>Pensado para escala</h3>
+      <p>Supabase + Vercel + filas permitem ir de 10 a 10.000 leads sem reescrever uma linha de codigo.</p>
+    </div>
+    <div class="diff-card">
+      <h3>Autonomia configuravel</h3>
+      <p>Admin controla se o seller opera em modo assistido, supervisionado ou completamente autonomo.</p>
+    </div>
+  </div>
+  <div class="page-num">12</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 13: CONCLUSAO (DARK) -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="slide slide--dark" style="justify-content: center;">
+  <div class="label">CONCLUSAO</div>
+  <div class="title" style="font-size: 40px;">Shield Recovery<br>e um produto real</div>
+
+  <p style="max-width: 700px; margin: 16px 0 32px;">
+    O projeto ja ultrapassou a fase de conceito. Existe backend funcional, pipeline de leads,
+    motor de IA, inbox de conversas, dashboard operacional e sistema de autenticacao.
+    A base arquitetural suporta escala. A proxima fase e industrializar.
+  </p>
+
+  <div style="max-width: 600px;">
+    <div class="conclusion-item">Menos mock, mais dado real</div>
+    <div class="conclusion-item">Menos duplicidade, mais consistencia</div>
+    <div class="conclusion-item">Menos narrativa, mais operacao</div>
+    <div class="conclusion-item">Menos efeito visual, mais hierarquia</div>
+    <div class="conclusion-item">Menos ferramentas externas, mais ecossistema</div>
+  </div>
+
+  <div class="final-tagline">
+    Shield Recovery &mdash; A falha entra. A operacao responde.
+  </div>
+  <div class="page-num">13</div>
+</div>
+
+</body>
+</html>

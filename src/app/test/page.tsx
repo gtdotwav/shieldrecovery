@@ -63,7 +63,7 @@ export default async function TestPage({ searchParams }: TestPageProps) {
       action={
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
         >
           Voltar para recuperação
           <ArrowRight className="h-3.5 w-3.5" />
@@ -120,14 +120,14 @@ export default async function TestPage({ searchParams }: TestPageProps) {
       <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_21rem]">
         <div className="space-y-5">
           <PlatformSurface className="p-5">
-            <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+            <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
               Sessão de validação
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#1a1a2e]">
               Alimente a plataforma só com dados reais do seu teste.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#717182]">
-              Este painel injeta eventos no backend real da Shield Recovery.
+              Este painel injeta eventos no backend real da PagRecovery.
               Tudo o que aparece em dashboard, CRM, conversas e analytics nasce
               daqui ou do webhook oficial. Se quiser validar do zero, limpe a
               base e gere um cenário completo.
@@ -159,7 +159,7 @@ export default async function TestPage({ searchParams }: TestPageProps) {
                   inbound do cliente para validar dashboard, leads e inbox.
                 </p>
                 <form action={seedValidationScenarioAction} className="mt-4">
-                  <button className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
+                  <button className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600">
                     <FlaskConical className="h-4 w-4" />
                     Gerar cenário
                   </button>
@@ -175,7 +175,7 @@ export default async function TestPage({ searchParams }: TestPageProps) {
                   fluxo real de importação.
                 </p>
                 <form action={seedFailedPaymentAction} className="mt-4">
-                  <button className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
+                  <button className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600">
                     Disparar falha
                   </button>
                 </form>
@@ -183,17 +183,17 @@ export default async function TestPage({ searchParams }: TestPageProps) {
 
               <PlatformInset className="p-4">
                 <p className="text-sm font-medium text-[#1a1a2e]">
-                  Simular payload da Shield
+                  Simular payload Pagou.ai
                 </p>
                 <p className="mt-2 text-sm leading-6 text-[#717182]">
-                  Injeta um evento no formato real de transação da Shield, com
+                  Injeta um evento no formato real de transacao da Pagou.ai, com
                   `data.pix.qrcode`, metadata serializada e status
                   `waiting_payment`.
                 </p>
                 <form action={seedShieldTransactionAction} className="mt-4">
                   <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
                     <Link2 className="h-4 w-4" />
-                    Importar payload Shield
+                    Importar payload Pagou.ai
                   </button>
                 </form>
               </PlatformInset>
@@ -232,7 +232,7 @@ export default async function TestPage({ searchParams }: TestPageProps) {
           </PlatformSurface>
 
           <PlatformSurface className="p-5">
-            <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+            <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
               Retry
             </p>
             <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#1a1a2e]">
@@ -243,9 +243,9 @@ export default async function TestPage({ searchParams }: TestPageProps) {
                 name="gatewayPaymentId"
                 defaultValue={latestContacts[0]?.gateway_payment_id ?? ""}
                 placeholder="gateway payment id"
-                className="flex-1 rounded-xl border border-black/10 bg-[#f5f5f7] px-3.5 py-2.5 text-sm text-[#1a1a2e] outline-none placeholder:text-[#9ca3af] focus:border-orange-300 focus:ring-1 focus:ring-orange-200"
+                className="flex-1 rounded-xl border border-black/10 bg-[#f5f5f7] px-3.5 py-2.5 text-sm text-[#1a1a2e] outline-none placeholder:text-[#9ca3af] focus:border-sky-300 focus:ring-1 focus:ring-sky-200"
               />
-              <button className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600">
+              <button className="inline-flex items-center justify-center rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-600">
                 Gerar retry
               </button>
             </form>
@@ -254,7 +254,7 @@ export default async function TestPage({ searchParams }: TestPageProps) {
 
         <div className="space-y-4">
           <PlatformSurface className="p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+            <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
               Endpoints oficiais
             </p>
             <div className="mt-4 space-y-3">
@@ -269,7 +269,7 @@ export default async function TestPage({ searchParams }: TestPageProps) {
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-orange-500">
+            <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
               Casos recentes
             </p>
             <div className="mt-4 space-y-3">

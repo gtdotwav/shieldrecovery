@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
+import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import { appEnv } from "@/server/recovery/config";
 import { createDefaultConnectionSettings } from "@/server/recovery/config";
 import type {
@@ -52,6 +53,7 @@ export interface RecoveryStorage {
     webhookId: string;
     eventId: string;
     eventType: string;
+    source?: string;
     payload: unknown;
   }): Promise<WebhookEventRecord>;
   listWebhookEvents(limit?: number): Promise<WebhookEventRecord[]>;
@@ -388,7 +390,7 @@ class LocalStorageService implements RecoveryStorage {
       state.paymentAttempts = [];
       state.webhookEvents = [];
       state.agents = state.agents.filter(
-        (agent) => !agent.email.endsWith("@shield.local"),
+        (agent) => !agent.email.endsWith("@pagrecovery.local"),
       );
       state.leads = [];
       state.queueJobs = [];
@@ -410,6 +412,7 @@ class LocalStorageService implements RecoveryStorage {
     webhookId: string;
     eventId: string;
     eventType: string;
+    source?: string;
     payload: unknown;
   }): Promise<WebhookEventRecord> {
     return this.mutate((state) => {
@@ -421,7 +424,7 @@ class LocalStorageService implements RecoveryStorage {
         payload: input.payload,
         processed: false,
         duplicate: false,
-        source: "shield-gateway",
+        source: input.source ?? platformBrand.gateway.slug,
         createdAt: new Date().toISOString(),
       };
 
@@ -1469,7 +1472,7 @@ class LocalStorageService implements RecoveryStorage {
   }
 
   getWebhookUrl(): string {
-    return `${appEnv.appBaseUrl}/api/webhooks/shield-gateway`;
+    return `${appEnv.appBaseUrl}${buildGatewayWebhookPath()}`;
   }
 }
 

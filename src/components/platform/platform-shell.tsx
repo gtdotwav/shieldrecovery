@@ -14,11 +14,12 @@ import {
 } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth-actions";
-import { ShieldRecoveryLogo } from "@/components/platform/shield-recovery-logo";
+import { PlatformLogo } from "@/components/platform/platform-logo";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/server/auth/core";
+import { platformBrand } from "@/lib/platform";
 
 type PlatformRoute = {
   href: string;
@@ -35,7 +36,7 @@ export const platformRoutes: PlatformRoute[] = [
   {
     href: "/",
     label: "Home",
-    description: "Shield Recovery",
+    description: platformBrand.name,
     icon: Compass,
     kind: "marketing",
   },
@@ -154,11 +155,10 @@ export function PlatformPage({
         <header className="sticky top-3 z-40 mb-6 sm:mb-10">
           <div className="rounded-[1.2rem] border border-black/[0.06] bg-white px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:rounded-[1.35rem] sm:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <ShieldRecoveryLogo
+              <PlatformLogo
                 size="lg"
                 emphasis="strong"
                 className="max-sm:self-start"
-                textClassName="max-sm:h-10"
               />
 
               <div className="flex flex-col gap-3 lg:items-end">
@@ -173,7 +173,7 @@ export function PlatformPage({
                         className={cn(
                           "shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:px-3.5 sm:text-sm",
                           isActive
-                            ? "bg-orange-500 text-white"
+                            ? "bg-sky-500 text-white"
                             : "text-[#717182] hover:bg-[#f5f5f7] hover:text-[#1a1a2e]",
                         )}
                       >
@@ -223,7 +223,7 @@ export async function PlatformAppPage({
         {/* Icon sidebar */}
         <aside className="fixed top-0 left-0 z-50 hidden h-screen w-[4.5rem] flex-col items-center border-r border-black/[0.05] bg-white py-4 xl:flex">
           <div className="mb-6">
-            <ShieldRecoveryLogo mode="icon" size="lg" />
+            <PlatformLogo mode="icon" size="lg" />
           </div>
 
           <nav className="flex flex-1 flex-col items-center gap-1.5">
@@ -238,13 +238,13 @@ export async function PlatformAppPage({
                   className={cn(
                     "group relative flex h-10 w-10 items-center justify-center rounded-[12px] transition-all",
                     isActive
-                      ? "bg-[rgba(249,115,22,0.12)] text-orange-500 shadow-[inset_0_0_0_1px_rgba(249,115,22,0.18)]"
+                      ? "bg-[rgba(2,132,199,0.12)] text-sky-500 shadow-[inset_0_0_0_1px_rgba(2,132,199,0.18)]"
                       : "text-[#9ca3af] hover:bg-[#f5f5f7] hover:text-[#4b5563]",
                   )}
                 >
                   <route.icon className="h-[18px] w-[18px]" />
                   <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden w-52 -translate-y-1/2 rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-3 text-left shadow-[0_10px_28px_rgba(15,23,42,0.08)] group-hover:block group-focus-visible:block">
-                    <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-orange-500">
+                    <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-sky-500">
                       {route.label}
                     </span>
                     <span className="mt-1 block text-sm leading-5 text-[#6b7280]">
@@ -264,7 +264,7 @@ export async function PlatformAppPage({
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex min-w-0 items-start gap-3 sm:items-center">
                 <div className="xl:hidden">
-                  <ShieldRecoveryLogo mode="icon" size="sm" />
+                  <PlatformLogo mode="icon" size="sm" />
                 </div>
 
                 <div className="min-w-0">
@@ -314,7 +314,7 @@ export async function PlatformAppPage({
                       className={cn(
                         "shrink-0 rounded-[1rem] border px-3 py-2.5 transition-colors min-w-[4.9rem]",
                         isActive
-                          ? "border-orange-200 bg-orange-50 text-orange-600"
+                          ? "border-sky-200 bg-sky-50 text-sky-600"
                           : "border-black/[0.06] bg-white text-[#6b7280] hover:bg-[#f5f5f7] hover:text-[#111827]",
                       )}
                     >
@@ -401,7 +401,7 @@ export function PlatformSectionIntro({
   return (
     <div className={className}>
       {eyebrow ? (
-        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
           {eyebrow}
         </p>
       ) : null}
@@ -443,8 +443,8 @@ export function PlatformMetricCard({
             <p className="mt-0.5 text-xs text-[#9ca3af]">{subtitle}</p>
           )}
         </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgba(249,115,22,0.08)]">
-          <Icon className="h-4.5 w-4.5 text-orange-500" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgba(2,132,199,0.08)]">
+          <Icon className="h-4.5 w-4.5 text-sky-500" />
         </div>
       </div>
     </div>
@@ -467,7 +467,7 @@ export function PlatformPill({
         className,
       )}
     >
-      {Icon ? <Icon className="h-3 w-3 text-orange-500" /> : null}
+      {Icon ? <Icon className="h-3 w-3 text-sky-500" /> : null}
       {children}
     </div>
   );

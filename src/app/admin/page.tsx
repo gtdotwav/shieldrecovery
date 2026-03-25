@@ -34,7 +34,7 @@ import type {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Admin | Shield Recovery",
+  title: "Admin | PagRecovery",
 };
 
 type AdminPageProps = {
@@ -75,7 +75,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       action={
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
         >
           Abrir recuperação
           <ArrowRight className="h-3.5 w-3.5" />
@@ -130,7 +130,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
               Governança da operação
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
@@ -183,7 +183,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     name="query"
                     defaultValue={query}
                     placeholder="Buscar por nome, email ou agente"
-                    className="w-full rounded-full border border-black/[0.08] bg-white px-10 py-2.5 text-sm text-[#111827] outline-none transition focus:border-orange-400"
+                    className="w-full rounded-full border border-black/[0.08] bg-white px-10 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
                   />
                 </label>
               </form>
@@ -359,7 +359,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <ToggleField label="Seller ativo" name="active" defaultChecked />
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
               >
                 <KeyRound className="h-4 w-4" />
                 Salvar acesso
@@ -401,12 +401,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   name="note"
                   rows={3}
                   placeholder="Observação interna ou orientação para esse seller."
-                  className="w-full rounded-[1rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-orange-400"
+                  className="w-full rounded-[1rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
                 />
               </label>
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
               >
                 <KeyRound className="h-4 w-4" />
                 Gerar convite
@@ -632,7 +632,7 @@ function SellerControlCard({
             <select
               name="autonomyMode"
               defaultValue={seller.control.autonomyMode}
-              className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-orange-400"
+              className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
             >
               <option value="assisted">Assistida</option>
               <option value="supervised">Supervisionada</option>
@@ -668,7 +668,7 @@ function SellerControlCard({
             defaultValue={seller.control.notes || ""}
             placeholder="Diretriz, trava operacional ou contexto administrativo."
             rows={3}
-            className="w-full rounded-[1rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-orange-400"
+            className="w-full rounded-[1rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
           />
         </label>
 
@@ -678,7 +678,7 @@ function SellerControlCard({
           </p>
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="inline-flex items-center justify-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
           >
             Salvar controle
           </button>
@@ -702,7 +702,7 @@ function SellerListRow({
       href={buildSellerHref(seller.sellerKey, query)}
       className={
         active
-          ? "block rounded-[1.25rem] border border-orange-200 bg-orange-50/60 px-4 py-4 transition-colors"
+          ? "block rounded-[1.25rem] border border-sky-200 bg-sky-50/60 px-4 py-4 transition-colors"
           : "block rounded-[1.25rem] border border-black/[0.06] bg-[#fafafa] px-4 py-4 transition-colors hover:bg-white"
       }
     >
@@ -814,7 +814,7 @@ function AdminLine({
       <span
         className={
           tone === "warn"
-            ? "text-sm font-semibold text-orange-600"
+            ? "text-sm font-semibold text-sky-600"
             : "text-sm font-semibold text-[#111827]"
         }
       >
@@ -970,7 +970,7 @@ function SectionHeader({
 }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.18em] text-orange-500">{eyebrow}</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-sky-500">{eyebrow}</p>
       <h3
         className={
           compact
@@ -1010,7 +1010,7 @@ function Field({
         defaultValue={defaultValue}
         step={step}
         placeholder={placeholder}
-        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-orange-400"
+        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
       />
     </label>
   );
@@ -1031,7 +1031,7 @@ function ToggleField({
         type="checkbox"
         name={name}
         defaultChecked={defaultChecked}
-        className="h-4 w-4 rounded border-black/15 text-orange-500 focus:ring-orange-400"
+        className="h-4 w-4 rounded border-black/15 text-sky-500 focus:ring-sky-400"
       />
       <span className="text-sm font-medium text-[#111827]">{label}</span>
     </label>

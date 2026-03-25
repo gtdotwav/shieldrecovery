@@ -91,10 +91,10 @@ function buildSamplePayload(kind: SampleKind, options: SamplePayloadOptions = {}
       email:
         options.email ??
         (kind === "failed"
-          ? `falha.${suffix}@shield.local`
+          ? `falha.${suffix}@pagrecovery.local`
           : kind === "pending"
-            ? `pendente.${suffix}@shield.local`
-            : `recuperado.${suffix}@shield.local`),
+            ? `pendente.${suffix}@pagrecovery.local`
+            : `recuperado.${suffix}@pagrecovery.local`),
       phone: options.phone ?? `+5511999${suffix.slice(-6)}`,
     },
     metadata: {
@@ -114,7 +114,7 @@ function buildSamplePayload(kind: SampleKind, options: SamplePayloadOptions = {}
         (options.paymentMethod === "pix" || kind === "pending" || kind === "failed"
           ? `00020101021226830014br.gov.bcb.pix2561pix.test/${paymentId}5204000053039865405${String(
               options.amount ?? (kind === "failed" ? 129900 : 89000),
-            ).slice(0, 5)}5802BR5913Shield Teste6009Sao Paulo62070503***6304ABCD`
+            ).slice(0, 5)}5802BR5913PagRecovery6009Sao Paulo62070503***6304ABCD`
           : undefined),
       pixQrCode: options.pixQrCode,
     },
@@ -234,7 +234,7 @@ export async function seedValidationScenarioAction() {
         customerName: "Rafael Souza",
         email: "rafael.souza@cliente.com",
         phone: "+5511970011223",
-        product: "Shield Recovery Trial",
+        product: "PagRecovery Trial",
         amount: 89000,
         paymentMethod: "credit_card",
         failureCode: "insufficient_funds",
@@ -251,7 +251,7 @@ export async function seedValidationScenarioAction() {
         customerName: "Rafael Souza",
         email: "rafael.souza@cliente.com",
         phone: "+5511970011223",
-        product: "Shield Recovery Trial",
+        product: "PagRecovery Trial",
         amount: 89000,
         paymentMethod: "credit_card",
       }),
@@ -291,7 +291,7 @@ export async function seedShieldTransactionAction() {
 
   await service.importShieldTransactionPayload(
     JSON.stringify({
-      id: `evt_shield_transaction_${suffix}`,
+      id: `evt_pagrecovery_transaction_${suffix}`,
       type: "transaction",
       objectId: `4301${suffix.slice(-6)}`,
       data: {
@@ -308,10 +308,10 @@ export async function seedShieldTransactionAction() {
         metadata: JSON.stringify({
           userId: 33865,
           sessionToken: `session_${suffix}`,
-          paymentUrl: `https://payments.shield.test/secure/${suffix}`,
+          paymentUrl: `https://payments.pagrecovery.test/secure/${suffix}`,
         }),
         secureId: `secure-${suffix}`,
-        secureUrl: `https://payments.shield.test/secure/${suffix}`,
+        secureUrl: `https://payments.pagrecovery.test/secure/${suffix}`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         items: [
@@ -342,7 +342,7 @@ export async function seedShieldTransactionAction() {
   );
 
   refreshOperationalViews();
-  redirect("/test?status=ok&message=Payload%20realista%20da%20Shield%20importado");
+  redirect("/test?status=ok&message=Payload%20realista%20da%20Pagou.ai%20importado");
 }
 
 export async function seedRecoveredPaymentAction() {

@@ -3,12 +3,12 @@ export function hasPhone(value: string) {
 }
 
 export function hasReachableChannel(phone: string, email: string) {
-  return hasPhone(phone) || (Boolean(email) && email !== "unknown@shield.local");
+  return hasPhone(phone) || (Boolean(email) && email !== "unknown@pagrecovery.local");
 }
 
 export function pickBestContact(phone: string, email: string) {
   if (hasPhone(phone)) return phone;
-  if (email && email !== "unknown@shield.local") return email;
+  if (email && email !== "unknown@pagrecovery.local") return email;
   return "Sem contato";
 }
 

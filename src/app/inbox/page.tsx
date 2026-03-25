@@ -35,7 +35,7 @@ import type { InboxConversation } from "@/server/recovery/types";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Conversas | Shield Recovery",
+  title: "Conversas | PagRecovery",
 };
 
 type InboxPageProps = {
@@ -61,7 +61,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     return (
       <PlatformAppPage currentPath="/inbox">
         <PlatformSurface className="p-6 sm:p-7">
-          <p className="text-xs font-semibold uppercase tracking-widest text-orange-500">
+          <p className="text-xs font-semibold uppercase tracking-widest text-sky-500">
             Conversas bloqueadas pelo admin
           </p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900">
@@ -138,7 +138,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       action={
         <Link
           href="/leads"
-          className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
         >
           CRM
           <ArrowRight className="h-3.5 w-3.5" />
@@ -170,7 +170,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-orange-500">
+            <p className="text-xs font-semibold uppercase tracking-widest text-sky-500">
               Central de conversas
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-gray-900">
@@ -216,7 +216,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                   Elas nascem quando o webhook entra e o primeiro follow-up é aberto.
                 </p>
                 {session.role === "admin" ? (
-                  <Link href="/connect" className="mt-3 inline-block text-xs font-medium text-orange-500 hover:underline">
+                  <Link href="/connect" className="mt-3 inline-block text-xs font-medium text-sky-500 hover:underline">
                     Configurar WhatsApp
                   </Link>
                 ) : null}
@@ -298,10 +298,10 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                     type="text"
                     placeholder="Escrever mensagem..."
                     autoComplete="off"
-                    className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-shadow"
+                    className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-shadow"
                   />
                   <ActionButton
-                    className="inline-flex h-[2.625rem] w-[2.625rem] shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white transition-colors hover:bg-orange-600"
+                    className="inline-flex h-[2.625rem] w-[2.625rem] shrink-0 items-center justify-center rounded-xl bg-sky-500 text-white transition-colors hover:bg-sky-600"
                     aria-label="Enviar mensagem"
                   >
                     <Send className="h-4 w-4" />
@@ -339,7 +339,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
 
         {/* ── Contexto do lead ── */}
         <PlatformSurface className="p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-8rem)] lg:self-start lg:overflow-y-auto">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-orange-500">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-sky-500">
             Contexto do lead
           </h3>
 
@@ -392,7 +392,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
                         href={latestRecoveryPrompt.paymentUrl || latestRecoveryPrompt.retryLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-600 transition-colors hover:text-orange-700"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700"
                       >
                         Abrir link de pagamento
                         <ExternalLink className="h-3.5 w-3.5" />
@@ -414,7 +414,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
 
               <Link
                 href={`/leads/${selectedLead.lead_id}`}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-600 transition-colors hover:text-orange-700"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 transition-colors hover:text-sky-700"
               >
                 Abrir lead no CRM
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -444,7 +444,7 @@ function ConversationRow({
     <div
       className={`rounded-xl border px-3 py-2.5 transition-colors ${
         active
-          ? "border-orange-200 bg-orange-50/70 shadow-sm"
+          ? "border-sky-200 bg-sky-50/70 shadow-sm"
           : "border-transparent bg-gray-50/60 hover:border-gray-200 hover:bg-white"
       }`}
     >
@@ -455,7 +455,7 @@ function ConversationRow({
           </p>
           {conversation.unread_count > 0 && (
             <span
-              className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[0.625rem] font-bold tabular-nums text-white"
+              className="flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-500 px-1.5 text-[0.625rem] font-bold tabular-nums text-white"
               aria-label={`${conversation.unread_count} não lidas`}
             >
               {conversation.unread_count}
@@ -495,7 +495,7 @@ function ConversationStatusSelect({
           <ActionButton
             className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${
               currentStatus === opt.status
-                ? "border border-orange-200 bg-orange-50 text-orange-600"
+                ? "border border-sky-200 bg-sky-50 text-sky-600"
                 : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             }`}
           >

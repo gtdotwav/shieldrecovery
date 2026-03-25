@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shield Recovery — Product Overview</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --white:#ffffff;
+  --bg:#f8f9fb;
+  --bg2:#f1f3f6;
+  --surface:#ffffff;
+  --border:rgba(15,23,42,0.07);
+  --border-strong:rgba(15,23,42,0.12);
+  --text:#0f172a;
+  --text2:#334155;
+  --muted:#64748b;
+  --soft:#94a3b8;
+  --orange:#f97316;
+  --orange-dark:#ea580c;
+  --orange-light:#fff7ed;
+  --orange-100:#ffedd5;
+  --orange-200:#fed7aa;
+  --orange-glow:rgba(249,115,22,0.08);
+  --orange-glow2:rgba(249,115,22,0.04);
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --radius:16px;
+  --radius-sm:12px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.04);
+  --shadow:0 4px 24px rgba(0,0,0,0.06);
+  --shadow-lg:0 12px 48px rgba(0,0,0,0.08);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;font-size:15px;line-height:1.7}
+
+.ic{width:20px;height:20px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.ic-sm{width:16px;height:16px}
+.ic-lg{width:24px;height:24px}
+
+/* ═══ TOP BAR ═══ */
+.topbar{position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--orange),#fb923c,var(--orange));z-index:200;transform:scaleX(0);transform-origin:left;transition:transform 0.3s}
+
+/* ═══ NAV ═══ */
+nav{position:fixed;top:3px;left:0;right:0;z-index:150;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;background:rgba(255,255,255,0.88);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--border)}
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--orange),#fb923c);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(249,115,22,0.2)}
+.nav-logo svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-title{font-weight:700;font-size:15px;color:var(--text);letter-spacing:-0.3px}
+.nav-links{display:flex;gap:4px}
+.nav-link{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;text-decoration:none;transition:all 0.2s;letter-spacing:0.2px}
+.nav-link:hover{color:var(--text);background:var(--bg2)}
+.nav-link.active{color:var(--orange);background:var(--orange-glow2)}
+
+/* ═══ SECTIONS ═══ */
+.s{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:100px 48px;position:relative}
+.inner{max-width:1080px;width:100%;margin:0 auto}
+
+/* ═══ TYPOGRAPHY ═══ */
+.tag{display:inline-flex;align-items:center;gap:7px;padding:5px 14px 5px 10px;border-radius:100px;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:20px}
+.tag-orange{background:var(--orange-light);color:var(--orange-dark);border:1px solid var(--orange-100)}
+.tag-muted{background:var(--bg2);color:var(--muted);border:1px solid var(--border)}
+.tag-dot{width:6px;height:6px;border-radius:50%;background:var(--orange)}
+h1{font-size:clamp(40px,5vw,64px);font-weight:700;line-height:1.1;letter-spacing:-2px;color:var(--text)}
+h2{font-size:clamp(30px,3.5vw,44px);font-weight:700;line-height:1.15;letter-spacing:-1.2px;color:var(--text);margin-bottom:16px}
+h3{font-size:18px;font-weight:600;letter-spacing:-0.3px;color:var(--text);margin-bottom:6px}
+.accent{color:var(--orange)}
+.sub{font-size:17px;color:var(--muted);line-height:1.85;font-weight:400;max-width:560px}
+.sub-lg{font-size:19px}
+.sub-center{margin-left:auto;margin-right:auto;text-align:center}
+.body-text{font-size:16px;color:var(--text2);line-height:1.85;font-weight:400}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500}
+
+/* ═══ HERO ═══ */
+.hero{text-align:center}
+.hero h1{margin-bottom:24px}
+.hero .sub{margin:0 auto 60px}
+.hero-logo{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 auto 48px}
+.hero-logo-mark{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--orange),#fb923c);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(249,115,22,0.2)}
+.hero-logo-mark svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hero-logo-text{font-size:32px;font-weight:700;letter-spacing:-1px;color:var(--text)}
+.hero-flow{display:flex;align-items:stretch;justify-content:center;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px;box-shadow:var(--shadow)}
+.hf-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 16px;border-radius:var(--radius-sm);transition:background 0.2s}
+.hf-step:hover{background:var(--orange-glow2)}
+.hf-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--orange)}
+.hf-1 .hf-icon{background:rgba(249,115,22,0.08)}
+.hf-2 .hf-icon{background:rgba(249,115,22,0.06)}
+.hf-3 .hf-icon{background:rgba(249,115,22,0.08)}
+.hf-4 .hf-icon{background:rgba(22,163,74,0.08);color:var(--green)}
+.hf-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px}
+.hf-arrow{display:flex;align-items:center;padding:0 2px}
+.hf-arrow svg{width:20px;height:20px;stroke:var(--orange-200);stroke-width:1.5;fill:none}
+
+/* ═══ TWO-COL ═══ */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+
+/* ═══ PROBLEM ═══ */
+.problem-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:48px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.problem-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--orange),#fb923c)}
+.problem-big{font-size:100px;font-weight:700;color:var(--orange);line-height:1;margin-bottom:16px;letter-spacing:-4px}
+.problem-stat{font-size:18px;font-weight:600;color:var(--text);margin-bottom:8px}
+.problem-desc{font-size:14px;color:var(--muted);line-height:1.7}
+
+/* ═══ PILLARS ═══ */
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:48px}
+.pillar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:36px 28px;transition:all 0.35s cubic-bezier(0.22,1,0.36,1);position:relative;overflow:hidden;box-shadow:var(--shadow-sm)}
+.pillar:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--border-strong)}
+.pillar-stripe{height:3px;border-radius:2px;margin-bottom:24px;width:40px}
+.pillar:nth-child(1) .pillar-stripe{background:var(--orange)}
+.pillar:nth-child(2) .pillar-stripe{background:#fb923c}
+.pillar:nth-child(3) .pillar-stripe{background:var(--orange-dark)}
+.pillar-num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--soft);margin-bottom:16px}
+.pillar h3{font-size:20px;margin-bottom:10px}
+.pillar p{font-size:14px;color:var(--muted);line-height:1.75}
+
+/* ═══ TIMELINE ═══ */
+.timeline{margin-top:48px}
+.tl-item{display:grid;grid-template-columns:56px 1fr;gap:24px;margin-bottom:32px;position:relative}
+.tl-item:not(:last-child)::after{content:'';position:absolute;left:27px;top:56px;bottom:-32px;width:1.5px;background:var(--orange-100)}
+.tl-item:last-child{margin-bottom:0}
+.tl-marker{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1.5px solid var(--border);box-shadow:var(--shadow-sm);position:relative;z-index:1;color:var(--orange)}
+.tl-1 .tl-marker{border-color:rgba(249,115,22,0.2);background:var(--orange-light)}
+.tl-2 .tl-marker{border-color:rgba(249,115,22,0.2);background:var(--orange-light)}
+.tl-3 .tl-marker{border-color:rgba(249,115,22,0.15);background:var(--orange-light)}
+.tl-4 .tl-marker{border-color:rgba(249,115,22,0.15);background:var(--orange-light)}
+.tl-5 .tl-marker{border-color:rgba(22,163,74,0.2);background:var(--green-light);color:var(--green)}
+.tl-body{padding-top:4px}
+.tl-title{font-size:18px;font-weight:600;margin-bottom:6px;color:var(--text)}
+.tl-desc{font-size:14px;color:var(--muted);line-height:1.8}
+.tl-hl{color:var(--text2);font-weight:500}
+
+/* ═══ CHAT ═══ */
+.chat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-lg);max-width:380px}
+.chat-head{padding:14px 18px;background:var(--bg);display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.chat-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--orange),#fb923c);display:flex;align-items:center;justify-content:center}
+.chat-av svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chat-n{font-weight:600;font-size:13px;color:var(--text)}
+.chat-s{font-size:10px;color:var(--green);font-weight:500}
+.chat-body{padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.bbl{max-width:86%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.65}
+.bbl-out{align-self:flex-end;background:var(--surface);color:var(--text2);border:1px solid var(--border);border-bottom-right-radius:4px}
+.bbl-in{align-self:flex-start;background:var(--surface);color:var(--text2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.bbl .ts{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--soft);margin-top:4px}
+.bbl-out .ts{text-align:right}
+.bbl-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.bbl-btn{padding:6px 12px;border-radius:100px;font-size:11px;font-weight:600;border:1px solid var(--orange-200);background:var(--orange-light);color:var(--orange-dark);cursor:pointer;transition:all 0.2s}
+.bbl-btn:hover{background:var(--orange-100)}
+.bbl-sep{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--soft);padding:4px 0}
+.bbl-link{color:var(--orange);font-weight:500;text-decoration:underline;text-underline-offset:2px}
+
+/* ═══ FEATURES ═══ */
+.features{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:48px}
+.feat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px 28px;display:flex;gap:18px;transition:all 0.3s;box-shadow:var(--shadow-sm)}
+.feat:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:var(--shadow)}
+.feat-ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--orange-glow);border:1px solid rgba(249,115,22,0.08);color:var(--orange)}
+.feat h3{font-size:16px;margin-bottom:4px}
+.feat p{font-size:13px;color:var(--muted);line-height:1.7}
+
+/* ═══ AI CARDS ═══ */
+.ai-stack{display:flex;flex-direction:column;gap:12px}
+.ai-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:22px;display:flex;gap:16px;align-items:flex-start;transition:all 0.3s;box-shadow:var(--shadow-sm)}
+.ai-card:hover{border-color:var(--border-strong);transform:translateX(3px)}
+.ai-ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--orange-glow);color:var(--orange)}
+.ai-card h4{font-size:15px;font-weight:600;margin-bottom:3px}
+.ai-card p{font-size:13px;color:var(--muted);line-height:1.65}
+
+/* ═══ SELLERS ═══ */
+.sellers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+.seller{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:36px 24px;text-align:center;transition:all 0.3s;box-shadow:var(--shadow-sm)}
+.seller:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.seller-ic{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;background:var(--orange-glow);border:1px solid rgba(249,115,22,0.06);color:var(--orange)}
+.seller h4{font-size:16px;font-weight:600;margin-bottom:6px}
+.seller p{font-size:13px;color:var(--muted);line-height:1.7}
+
+/* ═══ ECOSYSTEM ═══ */
+.eco-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:48px}
+.eco{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 18px;text-align:center;transition:all 0.3s;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.eco:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.eco::after{content:'';position:absolute;bottom:0;left:24%;right:24%;height:2px;border-radius:2px;background:var(--orange);opacity:0.5}
+.eco-ic{display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:var(--orange)}
+.eco h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.eco p{font-size:12px;color:var(--muted);line-height:1.6}
+.eco-badge{display:flex;align-items:center;justify-content:center;margin-top:28px;gap:16px}
+.eco-line{height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--orange-100),transparent)}
+.eco-label{padding:6px 18px;border-radius:100px;border:1px solid var(--orange-100);background:var(--orange-light);font-size:11px;font-weight:600;color:var(--orange-dark);letter-spacing:0.5px;white-space:nowrap}
+
+/* ═══ CTA ═══ */
+.cta{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:64px 48px;text-align:center;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.cta::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--orange),#fb923c,var(--orange))}
+.cta .sub{margin:0 auto 40px}
+.next-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;text-align:left}
+.next{padding:24px 20px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);transition:all 0.3s}
+.next:hover{border-color:var(--border-strong)}
+.next-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.next-head h4{font-size:14px;font-weight:600}
+.next-ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--orange-glow);color:var(--orange);flex-shrink:0}
+.next p{font-size:12px;color:var(--muted);line-height:1.7}
+
+/* ═══ DIVIDER ═══ */
+.div{max-width:1080px;margin:0 auto;height:1px;background:var(--border)}
+
+/* ═══ FOOTER ═══ */
+footer{padding:40px;text-align:center;border-top:1px solid var(--border)}
+footer p{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--soft);letter-spacing:0.3px}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:900px){
+  .s{padding:80px 20px}
+  .two-col{grid-template-columns:1fr;gap:40px}
+  .pillars,.sellers,.next-grid{grid-template-columns:1fr}
+  .features{grid-template-columns:1fr}
+  .eco-grid{grid-template-columns:repeat(2,1fr)}
+  .hero-flow{flex-direction:column;align-items:stretch}
+  .hf-arrow svg{transform:rotate(90deg)}
+  nav{padding:0 16px}.nav-links{display:none}
+  .chat{max-width:100%}
+}
+
+@media print{
+  nav,.topbar{display:none!important}
+  .s{min-height:auto;page-break-inside:avoid;padding:32px 20px}
+  body{background:#fff}
+  .pillar,.feat,.ai-card,.eco,.seller,.next,.cta,.problem-card,.chat{box-shadow:none!important;border-color:#e0e0e8!important}
+}
+
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.6s cubic-bezier(0.22,1,0.36,1),transform 0.6s cubic-bezier(0.22,1,0.36,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar"></div>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-logo"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+    <span class="nav-title">Shield Recovery</span>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="#hero">Inicio</a>
+    <a class="nav-link" href="#problema">Problema</a>
+    <a class="nav-link" href="#solucao">Plataforma</a>
+    <a class="nav-link" href="#jornada">Jornada</a>
+    <a class="nav-link" href="#demo">Demonstracao</a>
+    <a class="nav-link" href="#painel">Painel</a>
+    <a class="nav-link" href="#ia">Inteligencia</a>
+    <a class="nav-link" href="#sellers">Multi-seller</a>
+    <a class="nav-link" href="#eco">Ecossistema</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="s" id="hero">
+  <div class="inner hero">
+    <div class="hero-logo">
+      <div class="hero-logo-mark"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <span class="hero-logo-text">Shield Recovery</span>
+    </div>
+    <h1>Cada pagamento que falha<br>e uma venda que <span class="accent">quer acontecer</span></h1>
+    <p class="sub sub-lg sub-center">
+      A plataforma que detecta pagamentos recusados e recupera vendas
+      automaticamente — via WhatsApp, e-mail e inteligencia artificial.
+    </p>
+    <div class="hero-flow">
+      <div class="hf-step hf-1">
+        <div class="hf-icon"><svg class="ic ic-lg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        <div class="hf-label">Pagamento falha</div>
+      </div>
+      <div class="hf-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+      <div class="hf-step hf-2">
+        <div class="hf-icon"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M10 21h4"/></svg></div>
+        <div class="hf-label">IA analisa</div>
+      </div>
+      <div class="hf-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+      <div class="hf-step hf-3">
+        <div class="hf-icon"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="hf-label">Contato automatico</div>
+      </div>
+      <div class="hf-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14m-6-6l6 6-6 6"/></svg></div>
+      <div class="hf-step hf-4">
+        <div class="hf-icon"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="hf-label">Venda recuperada</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ PROBLEMA ═══ -->
+<section class="s" id="problema">
+  <div class="inner">
+    <div class="two-col">
+      <div>
+        <div class="tag tag-orange"><span class="tag-dot"></span> O Problema</div>
+        <h2>A maioria das lojas <span class="accent">ignora</span> pagamentos recusados</h2>
+        <p class="body-text">
+          Cartao recusado. Saldo insuficiente. Cartao vencido.
+          Timeout do gateway. O cliente queria comprar — mas algo bloqueou a transacao.
+        </p>
+        <br>
+        <p class="body-text">
+          E a loja nao faz nada. Ninguem entra em contato.
+          Ninguem oferece uma alternativa. A venda morre silenciosamente.
+        </p>
+      </div>
+      <div class="reveal">
+        <div class="problem-card">
+          <div class="problem-big">0</div>
+          <div class="problem-stat">Acoes tomadas pela maioria das lojas</div>
+          <p class="problem-desc">
+            O negocio medio nao tem nenhum processo de recuperacao.
+            O cliente fica sem suporte — e a receita vai embora com ele.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ SOLUCAO ═══ -->
+<section class="s" id="solucao">
+  <div class="inner" style="text-align:center">
+    <div class="tag tag-orange"><span class="tag-dot"></span> A Plataforma</div>
+    <h2>Um ecossistema completo de<br><span class="accent">recuperacao inteligente</span></h2>
+    <p class="sub sub-center">
+      Nao e um plugin. E uma plataforma completa — com IA, checkout proprio,
+      mensageria multicanal e CRM integrado.
+    </p>
+    <div class="pillars">
+      <div class="pillar reveal">
+        <div class="pillar-stripe"></div>
+        <div class="pillar-num mono">01</div>
+        <h3>Recovery Engine</h3>
+        <p>Motor que detecta pagamentos falhos em tempo real e decide automaticamente a melhor estrategia de contato. Opera de forma autonoma ou com supervisao humana.</p>
+      </div>
+      <div class="pillar reveal">
+        <div class="pillar-stripe"></div>
+        <div class="pillar-num mono">02</div>
+        <h3>Checkout Platform</h3>
+        <p>Plataforma de pagamento standalone que gera links personalizados. PIX, cartao ou boleto — o cliente escolhe o metodo e finaliza o pagamento sem friccao.</p>
+      </div>
+      <div class="pillar reveal">
+        <div class="pillar-stripe"></div>
+        <div class="pillar-num mono">03</div>
+        <h3>AI Followup</h3>
+        <p>Inteligencia conversacional que entende o contexto do cliente, responde perguntas, oferece alternativas e escala para um operador quando necessario.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ JORNADA ═══ -->
+<section class="s" id="jornada">
+  <div class="inner">
+    <div style="text-align:center;max-width:640px;margin:0 auto 8px">
+      <div class="tag tag-muted"><span class="tag-dot"></span> Jornada do Cliente</div>
+      <h2>O que o cliente <span class="accent">realmente vive</span></h2>
+      <p class="sub sub-center">
+        A experiencia e natural e transparente.
+        O cliente sente que alguem da loja esta cuidando do caso pessoalmente.
+      </p>
+    </div>
+    <div class="timeline">
+      <div class="tl-item tl-1 reveal">
+        <div class="tl-marker"><svg class="ic ic-lg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        <div class="tl-body">
+          <div class="tl-title">O pagamento falha</div>
+          <p class="tl-desc">Joao tenta comprar um curso de R$ 497. Cartao recusado por saldo insuficiente. Ele fecha o site. Mas o <span class="tl-hl">Shield Recovery ja recebeu o alerta automaticamente</span>.</p>
+        </div>
+      </div>
+      <div class="tl-item tl-2 reveal">
+        <div class="tl-marker"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="tl-body">
+          <div class="tl-title">Contato em minutos</div>
+          <p class="tl-desc">Joao recebe no WhatsApp: <span class="tl-hl">"Oi Joao, notamos que seu pagamento nao foi processado. Gostaria de tentar por PIX, cartao ou boleto?"</span></p>
+        </div>
+      </div>
+      <div class="tl-item tl-3 reveal">
+        <div class="tl-marker"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+        <div class="tl-body">
+          <div class="tl-title">Resposta imediata</div>
+          <p class="tl-desc">Joao escolhe PIX. A IA entende e gera um <span class="tl-hl">link de pagamento personalizado</span>. Em segundos, o checkout abre com o QR Code pronto.</p>
+        </div>
+      </div>
+      <div class="tl-item tl-4 reveal">
+        <div class="tl-marker"><svg class="ic ic-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div class="tl-body">
+          <div class="tl-title">Caso nao responda</div>
+          <p class="tl-desc">Follow-up automatico apos algumas horas. Em seguida, e-mail com o link de pagamento. <span class="tl-hl">Cada etapa e calibrada para nao ser invasiva.</span></p>
+        </div>
+      </div>
+      <div class="tl-item tl-5 reveal">
+        <div class="tl-marker"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="tl-body">
+          <div class="tl-title">Venda recuperada</div>
+          <p class="tl-desc">Joao paga via PIX. O sistema confirma automaticamente, atualiza o CRM e notifica o vendedor. <span class="tl-hl">Uma transacao perdida se transforma em receita.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ DEMO ═══ -->
+<section class="s" id="demo">
+  <div class="inner">
+    <div class="two-col">
+      <div>
+        <div class="tag tag-orange"><span class="tag-dot"></span> Demonstracao</div>
+        <h2>Comunicacao que<br><span class="accent">recupera vendas</span></h2>
+        <p class="body-text">
+          As mensagens sao curtas, empaticas e diretas.
+          O cliente percebe atendimento humano, mesmo quando a IA esta operando.
+        </p>
+        <br>
+        <p class="body-text">
+          Quando o cliente solicita atendimento humano, a transferencia e imediata.
+          O operador recebe o historico completo da conversa.
+        </p>
+      </div>
+      <div class="chat reveal">
+        <div class="chat-head">
+          <div class="chat-av"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div>
+            <div class="chat-n">Shield Recovery</div>
+            <div class="chat-s">Online</div>
+          </div>
+        </div>
+        <div class="chat-body">
+          <div class="bbl bbl-out">
+            Oi Joao, notamos que o pagamento de R$ 497 do curso nao foi processado. Gostaria de tentar por outro metodo?
+            <div class="bbl-btns">
+              <span class="bbl-btn">PIX</span>
+              <span class="bbl-btn">Cartao</span>
+              <span class="bbl-btn">Boleto</span>
+            </div>
+            <div class="ts">10:32</div>
+          </div>
+          <div class="bbl bbl-in">
+            PIX
+            <div class="ts">10:34</div>
+          </div>
+          <div class="bbl bbl-out">
+            Perfeito. Segue o link para pagamento via PIX:<br><br>
+            <span class="bbl-link">checkout.shield.io/pay/ax8k2</span>
+            <div class="ts">10:34</div>
+          </div>
+          <div class="bbl-sep">2 minutos depois</div>
+          <div class="bbl bbl-in">
+            Pago.
+            <div class="ts">10:36</div>
+          </div>
+          <div class="bbl bbl-out">
+            Pagamento confirmado. Seu acesso foi liberado. Qualquer duvida, estamos a disposicao.
+            <div class="ts">10:36</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ PAINEL ═══ -->
+<section class="s" id="painel">
+  <div class="inner">
+    <div style="text-align:center;max-width:640px;margin:0 auto">
+      <div class="tag tag-muted"><span class="tag-dot"></span> Para o Vendedor</div>
+      <h2>Tudo em <span class="accent">um so lugar</span></h2>
+      <p class="sub sub-center">
+        Sem alternar entre ferramentas. Todo o fluxo de recuperacao
+        acontece em uma unica plataforma integrada.
+      </p>
+    </div>
+    <div class="features">
+      <div class="feat reveal">
+        <div class="feat-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
+        <div>
+          <h3>Dashboard em Tempo Real</h3>
+          <p>Casos em recuperacao, taxa de sucesso, receita recuperada e pendencias que exigem atencao — consolidados em um unico painel.</p>
+        </div>
+      </div>
+      <div class="feat reveal">
+        <div class="feat-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></div>
+        <div>
+          <h3>CRM de Leads</h3>
+          <p>Cada pagamento falho se torna um lead que avanca por etapas: Novo, Contatando, Aguardando, Recuperado ou Perdido.</p>
+        </div>
+      </div>
+      <div class="feat reveal">
+        <div class="feat-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div>
+          <h3>Inbox Unificada</h3>
+          <p>Conversas de WhatsApp e e-mail em um unico feed. O operador visualiza o contexto completo e decide se intervem ou deixa a IA continuar.</p>
+        </div>
+      </div>
+      <div class="feat reveal">
+        <div class="feat-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+        <div>
+          <h3>Automacoes</h3>
+          <p>Controle total sobre o que a IA executa automaticamente e o que requer aprovacao. Cada vendedor configura seu nivel de autonomia.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ IA ═══ -->
+<section class="s" id="ia">
+  <div class="inner">
+    <div class="two-col">
+      <div>
+        <div class="tag tag-orange"><span class="tag-dot"></span> Inteligencia Artificial</div>
+        <h2>Motor de decisao<br><span class="accent">especializado</span></h2>
+        <p class="body-text">
+          Nao e um chatbot generico. E um motor de decisao construido
+          com um unico objetivo: maximizar a recuperacao de pagamentos.
+        </p>
+        <br>
+        <p class="body-text">
+          Identifica o motivo da falha, avalia a probabilidade de recuperacao
+          e executa a melhor acao — ou encaminha para um operador humano.
+        </p>
+      </div>
+      <div class="ai-stack">
+        <div class="ai-card reveal">
+          <div class="ai-ic"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <div>
+            <h4>Classificacao do motivo</h4>
+            <p>Cartao recusado, saldo insuficiente, cartao expirado — cada motivo aciona uma estrategia de recuperacao diferente.</p>
+          </div>
+        </div>
+        <div class="ai-card reveal">
+          <div class="ai-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M2 20h.01M7 20v-4M12 20V8M17 20V4M22 20v-8"/></svg></div>
+          <div>
+            <h4>Priorizacao inteligente</h4>
+            <p>Combina multiplos sinais — valor da transacao, canal disponivel, tempo desde a falha — para priorizar os casos com maior potencial.</p>
+          </div>
+        </div>
+        <div class="ai-card reveal">
+          <div class="ai-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <div>
+            <h4>Tom de comunicacao adaptativo</h4>
+            <p>Empatico quando ha frustracao. Objetivo quando o cliente precisa apenas de um link. Cada contexto recebe o tom adequado.</p>
+          </div>
+        </div>
+        <div class="ai-card reveal">
+          <div class="ai-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div>
+            <h4>Escalacao para humano</h4>
+            <p>Quando o cliente solicita atendimento humano, a IA transfere imediatamente. Sem insistencia, sem resistencia.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ MULTI-SELLER ═══ -->
+<section class="s" id="sellers">
+  <div class="inner">
+    <div style="text-align:center;max-width:640px;margin:0 auto">
+      <div class="tag tag-muted"><span class="tag-dot"></span> Escalabilidade</div>
+      <h2>Arquitetura <span class="accent">multi-seller</span></h2>
+      <p class="sub sub-center">
+        Projetada para operar com dezenas, centenas ou milhares de sellers simultaneamente —
+        cada um com ambiente isolado, dados proprios e regras independentes.
+      </p>
+    </div>
+    <div class="sellers">
+      <div class="seller reveal">
+        <div class="seller-ic"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h4>Isolamento de dados</h4>
+        <p>Leads, conversas e metricas totalmente separadas por seller. Privacidade e seguranca por design.</p>
+      </div>
+      <div class="seller reveal">
+        <div class="seller-ic"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+        <h4>Webhook dedicado</h4>
+        <p>Cada seller recebe sua URL propria de integracao. Configuracao plug-and-play com qualquer gateway.</p>
+      </div>
+      <div class="seller reveal">
+        <div class="seller-ic"><svg class="ic ic-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+        <h4>Autonomia configuravel</h4>
+        <p>Modo automatico, supervisionado ou manual. Cada seller define como a inteligencia artificial opera em sua conta.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="div"></div>
+
+<!-- ═══ ECOSSISTEMA ═══ -->
+<section class="s" id="eco">
+  <div class="inner">
+    <div style="text-align:center;max-width:640px;margin:0 auto">
+      <div class="tag tag-orange"><span class="tag-dot"></span> Visao Geral</div>
+      <h2>O ecossistema <span class="accent">completo</span></h2>
+      <p class="sub sub-center">Quatro modulos integrados que operam como um motor unico.</p>
+    </div>
+    <div class="eco-grid">
+      <div class="eco reveal">
+        <div class="eco-ic"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <h4>Deteccao</h4>
+        <p>Webhooks capturam falhas em tempo real.</p>
+      </div>
+      <div class="eco reveal">
+        <div class="eco-ic"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><path d="M10 21h4"/></svg></div>
+        <h4>Inteligencia</h4>
+        <p>IA classifica, prioriza e decide a estrategia.</p>
+      </div>
+      <div class="eco reveal">
+        <div class="eco-ic"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <h4>Comunicacao</h4>
+        <p>WhatsApp, e-mail e SMS no canal adequado.</p>
+      </div>
+      <div class="eco reveal">
+        <div class="eco-ic"><svg class="ic ic-lg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        <h4>Checkout</h4>
+        <p>Links personalizados. PIX, cartao, boleto.</p>
+      </div>
+    </div>
+    <div class="eco-badge">
+      <div class="eco-line"></div>
+      <div class="eco-label">Orquestrados por IA</div>
+      <div class="eco-line"></div>
+    </div>
+
+    <div class="cta" style="margin-top:56px">
+      <h2>Proximas <span class="accent">etapas</span></h2>
+      <p class="sub sub-center">
+        O motor esta construido. O foco agora e polir a experiencia e preparar o go-to-market.
+      </p>
+      <div class="next-grid">
+        <div class="next reveal">
+          <div class="next-head">
+            <div class="next-ic"><svg class="ic ic-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+            <h4>Interface final</h4>
+          </div>
+          <p>Dashboard, CRM e Inbox com experiencia visual de produto pronto para onboarding de clientes.</p>
+        </div>
+        <div class="next reveal">
+          <div class="next-head">
+            <div class="next-ic"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+            <h4>Integracoes</h4>
+          </div>
+          <p>Conexao direta com gateways brasileiros e expansao dos canais de comunicacao.</p>
+        </div>
+        <div class="next reveal">
+          <div class="next-head">
+            <div class="next-ic"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+            <h4>Go-to-Market</h4>
+          </div>
+          <p>Modelo SaaS com mensalidade fixa e taxa de sucesso. Cada venda recuperada gera valor para a plataforma.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Shield Recovery &middot; Next.js &middot; Supabase &middot; Vercel &middot; Marco 2026</p>
+</footer>
+
+<script>
+const bar=document.getElementById('topbar');
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement.scrollHeight-window.innerHeight;
+  bar.style.transform='scaleX('+(window.scrollY/h)+')';
+});
+const links=document.querySelectorAll('.nav-link');
+const sects=document.querySelectorAll('section[id]');
+const navObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      links.forEach(l=>l.classList.remove('active'));
+      const m=document.querySelector('.nav-link[href="#'+e.target.id+'"]');
+      if(m)m.classList.add('active');
+    }
+  });
+},{threshold:0.3});
+sects.forEach(s=>navObs.observe(s));
+const revealEls=document.querySelectorAll('.reveal');
+const revObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
+},{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+revealEls.forEach(el=>revObs.observe(el));
+</script>
+</body>
+</html>

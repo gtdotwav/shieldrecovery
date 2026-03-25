@@ -29,7 +29,7 @@ import { getPaymentRecoveryService } from "@/server/recovery/services/payment-re
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Guia | Shield Recovery",
+  title: "Guia | PagRecovery",
 };
 
 type OnboardingModule = {
@@ -117,7 +117,7 @@ export default async function OnboardingPage() {
       action={
         <Link
           href={roleHomeHref}
-          className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
         >
           Ir para {session.role === "admin" ? "Recuperação" : "CRM"}
           <ArrowRight className="h-3.5 w-3.5" />
@@ -154,7 +154,7 @@ export default async function OnboardingPage() {
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_20rem] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
               Onboarding da plataforma
             </p>
             <h2 className="mt-2 max-w-[18ch] text-3xl font-semibold tracking-tight text-[#111827] sm:text-[2.2rem]">
@@ -182,7 +182,7 @@ export default async function OnboardingPage() {
         <PlatformSurface className="p-5 sm:p-6">
           <div className="flex items-center justify-between border-b border-black/[0.06] pb-4">
             <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
                 Ordem recomendada
               </p>
               <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
@@ -202,7 +202,7 @@ export default async function OnboardingPage() {
                 className="rounded-[1.4rem] border border-black/[0.06] bg-white px-4 py-4 transition-colors hover:bg-[#fbfbfc]"
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(249,115,22,0.1)] text-sm font-semibold text-orange-600">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(2,132,199,0.1)] text-sm font-semibold text-sky-600">
                     {index + 1}
                   </div>
                   <div>
@@ -210,7 +210,7 @@ export default async function OnboardingPage() {
                     <p className="mt-1 text-sm leading-6 text-[#6b7280]">
                       {step.description}
                     </p>
-                    <p className="mt-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-orange-500">
+                    <p className="mt-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-sky-500">
                       {step.outcome}
                     </p>
                   </div>
@@ -221,7 +221,7 @@ export default async function OnboardingPage() {
         </PlatformSurface>
 
         <PlatformSurface className="p-4 sm:p-5">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
             Checklist do ambiente
           </p>
           <h3 className="mt-2 text-xl font-semibold tracking-tight text-[#111827]">
@@ -256,7 +256,7 @@ export default async function OnboardingPage() {
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_20rem]">
         <PlatformSurface className="p-5 sm:p-6">
           <div className="border-b border-black/[0.06] pb-4">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
               O que cada área faz
             </p>
             <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
@@ -303,7 +303,7 @@ export default async function OnboardingPage() {
 
         <div className="space-y-5">
           <PlatformSurface className="p-4 sm:p-5">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
               Próxima ação
             </p>
             <h3 className="mt-2 text-xl font-semibold tracking-tight text-[#111827]">
@@ -314,7 +314,7 @@ export default async function OnboardingPage() {
             </p>
             <Link
               href={nextAction.href}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
             >
               {nextAction.ctaLabel}
               <ArrowRight className="h-4 w-4" />
@@ -322,7 +322,7 @@ export default async function OnboardingPage() {
           </PlatformSurface>
 
           <PlatformSurface className="p-4 sm:p-5">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
               URLs importantes
             </p>
             <div className="mt-4 space-y-3">
@@ -333,7 +333,7 @@ export default async function OnboardingPage() {
           </PlatformSurface>
 
           <PlatformSurface className="p-4 sm:p-5">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-orange-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
               Estado do motor
             </p>
             <div className="mt-4 space-y-3">

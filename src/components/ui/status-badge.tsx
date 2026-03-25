@@ -4,7 +4,7 @@ type BadgeVariant = "accent" | "neutral" | "success" | "warning";
 
 const VARIANT_STYLES: Record<BadgeVariant, string> = {
   accent:
-    "border-orange-200 bg-orange-50 text-orange-600",
+    "border-sky-200 bg-sky-50 text-sky-600",
   neutral: "border-black/10 bg-[#f5f5f7] text-[#717182]",
   success:
     "border-green-200 bg-green-50 text-green-600",

@@ -26,7 +26,15 @@ export async function handleWhatsAppWebhookVerification(request: Request) {
 
 export async function handleWhatsAppWebhook(request: Request) {
   const service = new MessagingService();
-  const rawBody = await request.text();
+  let rawBody: string;
+  try {
+    rawBody = await request.text();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Failed to read request body." },
+      { status: 400 },
+    );
+  }
 
   try {
     const result = await service.handleWhatsAppWebhook(rawBody);
@@ -52,7 +60,7 @@ async function buildErrorResponse(error: unknown) {
         source: "whatsapp",
       },
     }),
-  );
+  ).catch(() => {});
 
   return NextResponse.json(
     {

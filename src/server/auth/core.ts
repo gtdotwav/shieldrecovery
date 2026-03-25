@@ -1,4 +1,4 @@
-const SESSION_COOKIE_NAME = "shield_recovery_session";
+const SESSION_COOKIE_NAME = "pagrecovery_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 const publicRoutePrefixes = [
@@ -9,6 +9,8 @@ const publicRoutePrefixes = [
   "/checkout/",
   "/api/checkout/",
   "/api/webhooks/",
+  "/api/worker/",
+  "/api/cron/",
   "/webhooks/",
 ];
 
@@ -22,9 +24,9 @@ type SessionPayload = {
 
 function getAuthConfig() {
   const sellerFallbackEmail =
-    process.env.NODE_ENV === "production" ? "" : "seller@shieldrecovery.local";
+    process.env.NODE_ENV === "production" ? "" : "seller@pagrecovery.local";
   const sellerFallbackPassword =
-    process.env.NODE_ENV === "production" ? "" : "ShieldSeller@2026!";
+    process.env.NODE_ENV === "production" ? "" : "PagRecoverySeller@2026!";
   const sellerFallbackAgentName =
     process.env.NODE_ENV === "production" ? "" : "Carla";
 
@@ -53,7 +55,6 @@ const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/ai", roles: ["admin", "seller"] },
   { prefix: "/leads", roles: ["admin", "seller"] },
   { prefix: "/api/settings/connections", roles: ["admin"] },
-  { prefix: "/api/worker/run", roles: ["admin"] },
   { prefix: "/api/health", roles: ["admin"] },
   { prefix: "/api/import", roles: ["admin"] },
   { prefix: "/api/payments/retry", roles: ["admin"] },
