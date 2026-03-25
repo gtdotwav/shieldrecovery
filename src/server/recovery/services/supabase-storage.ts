@@ -985,12 +985,27 @@ export class SupabaseStorageService implements RecoveryStorage {
     const timestamp = new Date().toISOString();
     const normalizedContact = normalizeContactValue(input.channel, input.contactValue);
 
-    const { data: existing } = await this.supabase
+    const { data: exactExisting } = await this.supabase
       .from("conversations")
       .select("*, agent:agents(*)")
       .eq("channel", input.channel)
       .eq("contact_value", normalizedContact)
       .maybeSingle();
+
+    let existing = exactExisting;
+
+    if (!existing && (input.channel === "whatsapp" || input.channel === "sms")) {
+      const { data: legacyCandidates } = await this.supabase
+        .from("conversations")
+        .select("*, agent:agents(*)")
+        .eq("channel", input.channel)
+        .order("updated_at", { ascending: false });
+
+      existing =
+        ((legacyCandidates as DatabaseConversationRow[] | null) || []).find((item) => {
+          return normalizeContactValue(item.channel, item.contact_value) === normalizedContact;
+        }) ?? null;
+    }
 
     if (existing) {
       const { data, error } = await this.supabase
@@ -2024,7 +2039,15 @@ function mapMessage(data: DatabaseMessageRow): MessageRecord {
 
 function normalizePhone(value?: string) {
   if (!value) return "";
-  return value.replace(/\D/g, "");
+  const digits = value.replace(/\D/g, "");
+
+  if (!digits) return "";
+  if (digits.startsWith("55")) return digits;
+  if (digits.length === 10 || digits.length === 11) {
+    return `55${digits}`;
+  }
+
+  return digits;
 }
 
 function normalizeEmail(value?: string) {

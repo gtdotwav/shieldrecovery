@@ -827,13 +827,11 @@ export class MessagingService {
       : undefined;
 
     if (!response.ok) {
+      const errorMessage = extractWebApiError(payload);
+
       return {
         status: "failed",
-        error:
-          (typeof payload?.error === "string"
-            ? payload.error
-            : payload?.error?.message) ??
-          `WhatsApp Web API returned ${response.status}.`,
+        error: errorMessage || `WhatsApp Web API returned ${response.status}.`,
       };
     }
 
@@ -1371,7 +1369,7 @@ function normalizeStatus(status: string): MessageStatus {
 }
 
 function normalizePhone(value: string) {
-  return value.replace(/\D/g, "");
+  return normalizeBrazilPhone(value.replace(/\D/g, ""));
 }
 
 function normalizeWhatsAppRemoteJid(value?: string) {
@@ -1712,13 +1710,52 @@ function extractWebApiError(payload: unknown) {
   const record = asRecord(payload);
   const response = asRecord(record?.response);
   const error = asRecord(record?.error);
+  const responseMessage = response?.message;
+  const responseMessageItems = Array.isArray(responseMessage)
+    ? responseMessage
+        .map((item) => {
+          const entry = asRecord(item);
+
+          return firstString(
+            typeof item === "string" ? item : undefined,
+            entry?.message,
+            entry?.error,
+            typeof entry?.number === "string" && entry?.exists === false
+              ? `Numero ${entry.number} nao existe no WhatsApp.`
+              : undefined,
+            typeof entry?.jid === "string" && entry?.exists === false
+              ? `JID ${entry.jid} nao existe no WhatsApp.`
+              : undefined,
+          );
+        })
+        .filter((item): item is string => Boolean(item))
+    : [];
 
   return (
     firstString(
+      ...responseMessageItems,
       record?.message,
-      response?.message,
+      typeof responseMessage === "string" ? responseMessage : undefined,
       error?.message,
       typeof record?.error === "string" ? record.error : undefined,
     ) ?? ""
   );
+}
+
+function normalizeBrazilPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+
+  if (!digits) {
+    return "";
+  }
+
+  if (digits.startsWith("55")) {
+    return digits;
+  }
+
+  if (digits.length === 10 || digits.length === 11) {
+    return `55${digits}`;
+  }
+
+  return digits;
 }
