@@ -7,6 +7,7 @@ import {
   ChevronRight,
   MessageCircleMore,
   NotebookPen,
+  Plus,
   Wallet,
 } from "lucide-react";
 
@@ -17,10 +18,10 @@ import {
 import {
   PlatformAppPage,
   PlatformInset,
-  PlatformPill,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { formatCurrency } from "@/lib/format";
+import { platformBrand } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
@@ -36,7 +37,7 @@ import type {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Calendário | PagRecovery",
+  title: "Calendário",
 };
 
 type SearchParamValue = string | string[] | undefined;
@@ -48,27 +49,35 @@ type CalendarPageProps = {
   }>;
 };
 
-const weekdayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"];
+const weekdayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
 const laneConfig: Array<{
   key: CalendarNoteLane;
   title: string;
-  description: string;
+  icon: string;
+  color: string;
+  dot: string;
 }> = [
   {
     key: "operations",
     title: "Operação",
-    description: "Combinados, bloqueios e foco do dia.",
+    icon: "ops",
+    color: "text-blue-500",
+    dot: "bg-blue-500",
   },
   {
     key: "automations",
     title: "Automações",
-    description: "IA, filas, ajustes e pontos de fluxo.",
+    icon: "auto",
+    color: "text-purple-500",
+    dot: "bg-purple-500",
   },
   {
     key: "revenue",
     title: "Receita",
-    description: "Observações comerciais e leitura de faturamento.",
+    icon: "rev",
+    color: "text-emerald-500",
+    dot: "bg-emerald-500",
   },
 ];
 
@@ -103,400 +112,642 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     createEmptyDay(selectedDate);
   const selectedActivities = snapshot.activities
     .filter((item) => item.date === selectedDate)
-    .slice(0, 12);
+    .slice(0, 24);
   const selectedNotes = snapshot.notes.filter((note) => note.date === selectedDate);
   const selectedMessages = selectedDay.outboundMessages + selectedDay.inboundMessages;
   const monthRecoveredRevenue = snapshot.days.reduce(
     (sum, day) => sum + day.recoveredRevenue,
     0,
   );
+  const monthRecoveredCount = snapshot.days.reduce(
+    (sum, day) => sum + day.recoveredCount,
+    0,
+  );
   const monthLabel = formatMonthLabel(snapshot.month);
+  const monthCapitalized = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
   const prevMonth = shiftMonth(snapshot.month, -1);
   const nextMonth = shiftMonth(snapshot.month, 1);
   const today = todayDateKey();
   const grid = buildCalendarGrid(snapshot.days, snapshot.month);
   const movementDays = snapshot.days.filter(hasDayMovement).length;
+  const totalMessages = snapshot.days.reduce(
+    (sum, day) => sum + day.outboundMessages + day.inboundMessages,
+    0,
+  );
+  const totalAutomations = snapshot.days.reduce(
+    (sum, day) => sum + day.automationJobs,
+    0,
+  );
+
+  const maxDayRevenue = Math.max(
+    ...snapshot.days.map((day) => day.recoveredRevenue),
+    1,
+  );
 
   return (
-    <PlatformAppPage
-      currentPath="/calendar"
-      action={
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/calendar?month=${prevMonth}`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#6b7280] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-            Anterior
-          </Link>
-          <Link
-            href={`/calendar?month=${toMonthKey(new Date())}&date=${today}`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#6b7280] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
-          >
-            Hoje
-          </Link>
-          <Link
-            href={`/calendar?month=${nextMonth}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
-          >
-            Próximo
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      }
-    >
-      <PlatformSurface className="overflow-hidden p-5 sm:p-6">
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_18rem] xl:items-end">
-          <div>
-            <div className="flex flex-wrap gap-2">
-              <PlatformPill icon={CalendarDays}>{monthLabel}</PlatformPill>
+    <PlatformAppPage currentPath="/calendar">
+      {/* ── Header row: month navigation + KPIs ── */}
+      <PlatformSurface className="p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          {/* Month nav */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <Link
+                href={`/calendar?month=${prevMonth}`}
+                className="glass-button-secondary flex h-9 w-9 items-center justify-center rounded-lg"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Link>
+              <Link
+                href={`/calendar?month=${nextMonth}`}
+                className="glass-button-secondary flex h-9 w-9 items-center justify-center rounded-lg"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
 
-            <h2 className="mt-4 max-w-[16ch] text-3xl font-semibold tracking-tight text-[#111827] sm:text-[2.3rem]">
-              Veja o mês por movimento. Abra a data para o detalhe.
-            </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-[#6b7280]">
-              A visão mensal agora ficou seca de propósito: só mostra o que
-              movimentou cada dia. Timeline, notas e contexto operacional ficam
-              concentrados na data selecionada.
-            </p>
+            <div>
+              <h2 className="text-[1.65rem] font-semibold tracking-tight text-gray-900 dark:text-white">
+                {monthCapitalized}
+              </h2>
+              <p className="text-[0.78rem] text-gray-500 dark:text-gray-400">
+                {movementDays} dias ativos · {formatShortDate(selectedDate)} selecionado
+              </p>
+            </div>
+
+            <Link
+              href={`/calendar?month=${toMonthKey(new Date())}&date=${today}`}
+              className="muted-pill ml-1 hidden rounded-md px-2.5 py-1 text-[0.68rem] font-medium transition-all hover:border-[var(--accent-soft)] hover:text-[var(--accent)] sm:inline-flex"
+            >
+              Hoje
+            </Link>
           </div>
 
-          <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
-            {movementDays} dias com movimento, {formatCurrency(monthRecoveredRevenue)}{" "}
-            recuperado e {formatShortDate(selectedDate)} aberta agora.
+          {/* KPI strip */}
+          <div className="flex flex-wrap gap-2.5">
+            <KpiBadge
+              icon={Wallet}
+              label="Recuperado"
+              value={formatCurrency(monthRecoveredRevenue)}
+              highlight
+            />
+            <KpiBadge
+              icon={CalendarDays}
+              label="Recuperações"
+              value={String(monthRecoveredCount)}
+            />
+            <KpiBadge
+              icon={MessageCircleMore}
+              label="Mensagens"
+              value={String(totalMessages)}
+            />
+            <KpiBadge
+              icon={Bot}
+              label="Automações"
+              value={String(totalAutomations)}
+            />
           </div>
         </div>
       </PlatformSurface>
 
-      <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_24rem]">
-        <PlatformSurface className="overflow-hidden p-4 sm:p-5">
-            <div className="flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-sky-500">
-                  Movimento do mês
-                </p>
-                <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
-                  {monthLabel}
-                </h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <PlatformPill>{movementDays} dias com movimento</PlatformPill>
-              </div>
+      {/* ── Calendar grid ── */}
+      <PlatformSurface className="mt-3 p-3 sm:p-4">
+        <div className="overflow-x-auto">
+          <div className="min-w-[54rem]">
+            {/* Weekday headers */}
+            <div className="grid grid-cols-7">
+              {weekdayLabels.map((label, i) => (
+                <div
+                  key={label}
+                  className={cn(
+                    "pb-2.5 text-center text-[0.62rem] font-semibold uppercase tracking-[0.2em]",
+                    i >= 5
+                      ? "text-gray-300 dark:text-gray-600"
+                      : "text-gray-400 dark:text-gray-500",
+                  )}
+                >
+                  {label}
+                </div>
+              ))}
             </div>
 
-          <div className="mt-4 overflow-x-auto">
-            <div className="min-w-[58rem]">
-              <div className="grid grid-cols-7 gap-2">
-                {weekdayLabels.map((label) => (
+            {/* Day cells */}
+            <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-200 dark:bg-gray-800">
+              {grid.map((cell, index) =>
+                cell ? (
+                  <DayCell
+                    key={cell.date}
+                    cell={cell}
+                    month={snapshot.month}
+                    isSelected={cell.date === selectedDate}
+                    isToday={cell.date === today}
+                    isWeekend={index % 7 >= 5}
+                    maxRevenue={maxDayRevenue}
+                  />
+                ) : (
                   <div
-                    key={label}
-                    className="px-3 pb-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ca3af]"
-                  >
-                    {label}
-                  </div>
-                ))}
-
-                {grid.map((cell, index) =>
-                  cell ? (
-                    <Link
-                      key={cell.date}
-                      href={`/calendar?month=${snapshot.month}&date=${cell.date}`}
-                      className={cn(
-                        "group flex min-h-[8.75rem] flex-col rounded-xl border px-3.5 py-3 transition-all",
-                        getDaySurfaceClass(cell, cell.date === selectedDate),
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span
-                          className={cn(
-                            "text-sm font-semibold",
-                            cell.date === today ? "text-sky-600" : "text-[#111827]",
-                          )}
-                        >
-                          {readDayNumber(cell.date)}
-                        </span>
-                        {cell.date === selectedDate ? (
-                          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-sky-600">
-                            aberta
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className="mt-5">
-                        <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[#9ca3af]">
-                          Movimentado
-                        </p>
-                        <p className="mt-1 text-lg font-semibold tracking-tight text-[#111827] sm:text-xl">
-                          {cell.recoveredRevenue > 0 ? formatCompactCurrency(cell.recoveredRevenue) : "R$ 0"}
-                        </p>
-                      </div>
-
-                      <div className="mt-auto pt-5">
-                        <p className="text-sm text-[#6b7280]">{getCompactCellDescription(cell)}</p>
-                        <p className="mt-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-sky-600 opacity-0 transition-opacity group-hover:opacity-100">
-                          Abrir data
-                        </p>
-                      </div>
-                    </Link>
-                  ) : (
-                    <div
-                      key={`empty-${index}`}
-                      className="min-h-[8.75rem] rounded-xl border border-dashed border-black/[0.05] bg-transparent"
-                    />
-                  ),
-                )}
-              </div>
-            </div>
-          </div>
-        </PlatformSurface>
-
-        <PlatformSurface className="p-4 sm:p-5 xl:sticky xl:top-20 xl:self-start">
-          <div className="border-b border-black/[0.06] pb-4">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
-              Data aberta
-            </p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
-              {formatFullDate(selectedDate)}
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-[#6b7280]">
-              Aqui entra o detalhe completo do dia: volume, timeline e notas da
-              operação.
-            </p>
-          </div>
-
-          <div className="mt-4">
-            <PlatformInset className="grid gap-3 p-4">
-              <DaySummaryLine
-                icon={Wallet}
-                label="Movimentado"
-                value={formatCurrency(selectedDay.recoveredRevenue)}
-                detail={`${selectedDay.recoveredCount} recuperações`}
-              />
-              <DaySummaryLine
-                icon={MessageCircleMore}
-                label="Mensagens"
-                value={String(selectedMessages)}
-                detail={`${selectedDay.outboundMessages} saídas · ${selectedDay.inboundMessages} entradas`}
-              />
-              <DaySummaryLine
-                icon={Bot}
-                label="Automações"
-                value={String(selectedDay.automationJobs)}
-                detail="jobs ligados à carteira visível"
-              />
-              <DaySummaryLine
-                icon={NotebookPen}
-                label="Notas"
-                value={String(selectedNotes.length)}
-                detail="contexto salvo nesta data"
-              />
-            </PlatformInset>
-          </div>
-
-          <div className="mt-5 border-t border-black/[0.06] pt-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ca3af]">
-                Timeline
-              </p>
-              <span className="text-xs text-[#9ca3af]">{selectedActivities.length} eventos</span>
-            </div>
-
-            <div className="mt-3 space-y-2.5">
-              {selectedActivities.length === 0 ? (
-                <PlatformInset className="p-4">
-                  <p className="text-sm text-[#9ca3af]">
-                    Sem movimentação registrada neste dia.
-                  </p>
-                </PlatformInset>
-              ) : (
-                selectedActivities.map((activity) => (
-                  <ActivityRow key={activity.id} activity={activity} />
-                ))
+                    key={`empty-${index}`}
+                    className="min-h-[6.5rem] bg-gray-50/50 dark:bg-[#0f0f0f]"
+                  />
+                ),
               )}
             </div>
-          </div>
-          <div className="mt-5 border-t border-black/[0.06] pt-4">
-            <div className="flex flex-col gap-3">
-              <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#9ca3af]">
-                  Notas do dia
-                </p>
-                <p className="mt-1 text-sm leading-6 text-[#6b7280]">
-                  Tudo o que não cabe no número do calendário fica registrado aqui.
-                </p>
+
+            {/* Legend */}
+            <div className="mt-2.5 flex items-center gap-5 px-1">
+              <div className="flex items-center gap-3 text-[0.62rem] text-gray-400 dark:text-gray-500">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> Recuperação
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400" /> Mensagens
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-purple-400" /> Automação
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" /> Notas
+                </span>
               </div>
-
-              <form action={createCalendarNoteAction} className="space-y-3">
-                <input type="hidden" name="date" value={selectedDate} />
-                <div className="grid gap-3">
-                  <label className="space-y-1">
-                    <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
-                      Faixa
-                    </span>
-                    <select
-                      name="lane"
-                      defaultValue="operations"
-                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
-                    >
-                      {laneConfig.map((lane) => (
-                        <option key={lane.key} value={lane.key}>
-                          {lane.title}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="space-y-1">
-                    <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
-                      Título
-                    </span>
-                    <input
-                      name="title"
-                      type="text"
-                      placeholder="O que precisa ficar registrado?"
-                      required
-                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
+              <div className="ml-auto flex items-center gap-1.5 text-[0.58rem] text-gray-300 dark:text-gray-600">
+                <span>baixo</span>
+                <div className="flex gap-0.5">
+                  {[0.06, 0.12, 0.2, 0.3, 0.45].map((opacity) => (
+                    <span
+                      key={opacity}
+                      className="h-2.5 w-2.5 rounded-sm"
+                      style={{ background: `rgba(var(--accent-rgb, 249,115,22), ${opacity})` }}
                     />
-                  </label>
-
-                  <label className="space-y-1">
-                    <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
-                      Contexto
-                    </span>
-                    <input
-                      name="content"
-                      type="text"
-                      placeholder="Decisão, bloqueio, hipótese ou atualização relevante."
-                      className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
-                    />
-                  </label>
+                  ))}
                 </div>
-
-                <button
-                  type="submit"
-                  className="inline-flex h-[42px] items-center justify-center rounded-full bg-sky-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
-                >
-                  Salvar nota
-                </button>
-              </form>
-
-              <div className="space-y-3 border-t border-black/[0.06] pt-4">
-                {laneConfig.map((lane) => (
-                  <NoteLaneSection
-                    key={lane.key}
-                    lane={lane}
-                    notes={selectedNotes.filter((note) => note.lane === lane.key)}
-                    month={snapshot.month}
-                    currentUserEmail={session.email}
-                    currentUserRole={session.role}
-                  />
-                ))}
+                <span>alto</span>
               </div>
             </div>
           </div>
+        </div>
+      </PlatformSurface>
+
+      {/* ── Selected day detail ── */}
+      <div className="mt-3 grid gap-3 xl:grid-cols-[1fr_1fr]">
+        {/* Left — Summary + Timeline */}
+        <PlatformSurface className="flex flex-col p-5 sm:p-6">
+          {/* Date header */}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+                Dia selecionado
+              </p>
+              <h3 className="mt-1 text-xl font-semibold tracking-tight text-gray-900 dark:text-white">
+                {formatFullDate(selectedDate)}
+              </h3>
+            </div>
+            {selectedDate === today ? (
+              <span className="success-pill rounded-md px-2 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
+                Hoje
+              </span>
+            ) : null}
+          </div>
+
+          {/* KPI grid */}
+          <div className="mt-5 grid grid-cols-2 gap-2.5">
+            <DayMetric
+              icon={Wallet}
+              label="Recuperado"
+              value={formatCurrency(selectedDay.recoveredRevenue)}
+              detail={`${selectedDay.recoveredCount} operações`}
+              accent
+            />
+            <DayMetric
+              icon={MessageCircleMore}
+              label="Mensagens"
+              value={String(selectedMessages)}
+              detail={`${selectedDay.outboundMessages} env · ${selectedDay.inboundMessages} rec`}
+            />
+            <DayMetric
+              icon={Bot}
+              label="Automações"
+              value={String(selectedDay.automationJobs)}
+              detail="jobs executados"
+            />
+            <DayMetric
+              icon={NotebookPen}
+              label="Notas"
+              value={String(selectedNotes.length)}
+              detail="registros salvos"
+            />
+          </div>
+
+          {/* Timeline */}
+          <div className="mt-5 flex-1 border-t border-gray-100 dark:border-gray-800 pt-5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+                Timeline
+              </h4>
+              <span className="muted-pill rounded-md px-2 py-0.5 text-[0.62rem] font-medium">
+                {selectedActivities.length}
+              </span>
+            </div>
+
+            {selectedActivities.length === 0 ? (
+              <PlatformInset className="mt-3 px-4 py-6 text-center">
+                <CalendarDays className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
+                <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+                  Nenhuma atividade neste dia.
+                </p>
+              </PlatformInset>
+            ) : (
+              <div className="relative mt-3">
+                {/* Vertical connector */}
+                <div className="absolute left-[1.05rem] top-3 bottom-3 w-px bg-gray-100 dark:bg-gray-800" />
+
+                <div className="space-y-0.5">
+                  {selectedActivities.map((activity, i) => (
+                    <TimelineRow
+                      key={activity.id}
+                      activity={activity}
+                      isFirst={i === 0}
+                      isLast={i === selectedActivities.length - 1}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </PlatformSurface>
-      </section>
+
+        {/* Right — Notes */}
+        <PlatformSurface className="flex flex-col p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-gray-400 dark:text-gray-500">
+                Notas do dia
+              </p>
+              <h3 className="mt-1 text-lg font-semibold tracking-tight text-gray-900 dark:text-white">
+                Registro operacional
+              </h3>
+            </div>
+            <span className="muted-pill rounded-md px-2 py-0.5 text-[0.62rem] font-medium">
+              {selectedNotes.length}
+            </span>
+          </div>
+
+          {/* Note form */}
+          <form action={createCalendarNoteAction} className="mt-5">
+            <input type="hidden" name="date" value={selectedDate} />
+
+            <PlatformInset className="p-3.5">
+              <div className="grid gap-2.5 sm:grid-cols-[1fr_2fr]">
+                <select
+                  name="lane"
+                  defaultValue="operations"
+                  className="h-9 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-2.5 text-[0.78rem] text-gray-700 dark:text-gray-300 outline-none transition focus:border-[var(--accent)]/40"
+                >
+                  {laneConfig.map((lane) => (
+                    <option key={lane.key} value={lane.key}>
+                      {lane.title}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  name="title"
+                  type="text"
+                  placeholder="Título da nota..."
+                  required
+                  className="h-9 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-3 text-[0.78rem] text-gray-900 dark:text-gray-100 placeholder:text-gray-300 dark:placeholder:text-gray-600 outline-none transition focus:border-[var(--accent)]/40"
+                />
+              </div>
+
+              <textarea
+                name="content"
+                rows={2}
+                placeholder="Contexto adicional — decisão, bloqueio, hipótese..."
+                className="mt-2.5 w-full resize-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-[0.78rem] leading-relaxed text-gray-900 dark:text-gray-100 placeholder:text-gray-300 dark:placeholder:text-gray-600 outline-none transition focus:border-[var(--accent)]/40"
+              />
+
+              <div className="mt-2.5 flex justify-end">
+                <button
+                  type="submit"
+                  className="glass-button-primary inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[0.72rem] font-semibold"
+                >
+                  <Plus className="h-3 w-3" />
+                  Salvar
+                </button>
+              </div>
+            </PlatformInset>
+          </form>
+
+          {/* Notes by lane */}
+          <div className="mt-5 flex-1 space-y-4 border-t border-gray-100 dark:border-gray-800 pt-5">
+            {laneConfig.map((lane) => {
+              const laneNotes = selectedNotes.filter((note) => note.lane === lane.key);
+              return (
+                <NoteLane
+                  key={lane.key}
+                  lane={lane}
+                  notes={laneNotes}
+                  month={snapshot.month}
+                  currentUserEmail={session.email}
+                  currentUserRole={session.role}
+                />
+              );
+            })}
+
+            {selectedNotes.length === 0 ? (
+              <PlatformInset className="px-4 py-6 text-center">
+                <NotebookPen className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
+                <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+                  Nenhuma nota registrada neste dia.
+                </p>
+              </PlatformInset>
+            ) : null}
+          </div>
+        </PlatformSurface>
+      </div>
     </PlatformAppPage>
   );
 }
 
-function DaySummaryLine({
+/* ══════════════════════════════════════════════════════
+   Sub-components
+   ══════════════════════════════════════════════════════ */
+
+function KpiBadge({
+  icon: Icon,
+  label,
+  value,
+  highlight,
+}: {
+  icon: typeof Wallet;
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "glass-inset flex items-center gap-2.5 rounded-xl px-3.5 py-2.5",
+        highlight && "border-[var(--accent-soft)]",
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-7 w-7 items-center justify-center rounded-lg",
+          highlight
+            ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+            : "bg-white dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-500",
+        )}
+      >
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <div>
+        <p
+          className={cn(
+            "text-sm font-semibold tabular-nums",
+            highlight ? "text-[var(--accent)]" : "text-gray-900 dark:text-white",
+          )}
+        >
+          {value}
+        </p>
+        <p className="text-[0.58rem] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
+          {label}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Calendar day cell ── */
+
+function DayCell({
+  cell,
+  month,
+  isSelected,
+  isToday,
+  isWeekend,
+  maxRevenue,
+}: {
+  cell: CalendarDaySummary;
+  month: string;
+  isSelected: boolean;
+  isToday: boolean;
+  isWeekend: boolean;
+  maxRevenue: number;
+}) {
+  const hasMovement = hasDayMovement(cell);
+  const intensity = cell.recoveredRevenue > 0
+    ? Math.max(0.05, (cell.recoveredRevenue / maxRevenue) * 0.35)
+    : 0;
+
+  return (
+    <Link
+      href={`/calendar?month=${month}&date=${cell.date}`}
+      className={cn(
+        "group relative flex min-h-[6.5rem] flex-col p-2.5 transition-all duration-150",
+        isSelected
+          ? "z-10 bg-white dark:bg-[#1a1a1a] shadow-[inset_0_0_0_2px_var(--accent)]"
+          : isWeekend
+            ? "bg-gray-50 dark:bg-[#0f0f0f] hover:bg-white dark:hover:bg-[#151515]"
+            : "bg-white dark:bg-[#141414] hover:bg-gray-50/50 dark:hover:bg-[#181818]",
+      )}
+      style={
+        intensity > 0 && !isSelected
+          ? { background: `rgba(var(--accent-rgb, 249,115,22), ${intensity})` }
+          : undefined
+      }
+    >
+      {/* Day number */}
+      <div className="flex items-center justify-between">
+        <span
+          className={cn(
+            "flex h-6 w-6 items-center justify-center rounded-full text-[0.78rem] font-semibold leading-none",
+            isToday
+              ? "bg-[var(--accent)] text-white shadow-sm"
+              : isSelected
+                ? "text-[var(--accent)]"
+                : "text-gray-700 dark:text-gray-300",
+          )}
+        >
+          {readDayNumber(cell.date)}
+        </span>
+
+        {/* Micro-dots */}
+        <div className="flex items-center gap-0.5">
+          {cell.outboundMessages + cell.inboundMessages > 0 ? (
+            <span className="h-1 w-1 rounded-full bg-blue-400" />
+          ) : null}
+          {cell.automationJobs > 0 ? (
+            <span className="h-1 w-1 rounded-full bg-purple-400" />
+          ) : null}
+          {cell.notesCount > 0 ? (
+            <span className="h-1 w-1 rounded-full bg-amber-400" />
+          ) : null}
+        </div>
+      </div>
+
+      {/* Revenue / status */}
+      <div className="mt-auto">
+        {cell.recoveredRevenue > 0 ? (
+          <>
+            <p className="text-[0.78rem] font-bold tabular-nums text-[var(--accent)]">
+              {formatCompactCurrency(cell.recoveredRevenue)}
+            </p>
+            <p className="text-[0.58rem] text-gray-400 dark:text-gray-500">
+              {cell.recoveredCount} rec
+            </p>
+          </>
+        ) : hasMovement ? (
+          <p className="text-[0.62rem] text-gray-400 dark:text-gray-500">
+            {getCompactDescription(cell)}
+          </p>
+        ) : (
+          <p className="text-[0.62rem] text-gray-300 dark:text-gray-700">—</p>
+        )}
+      </div>
+
+      {/* Hover hint */}
+      <span className="absolute inset-x-0 bottom-0 h-0.5 bg-[var(--accent)] opacity-0 transition-opacity group-hover:opacity-100" />
+    </Link>
+  );
+}
+
+/* ── Day detail KPI card ── */
+
+function DayMetric({
   icon: Icon,
   label,
   value,
   detail,
+  accent,
 }: {
   icon: typeof Wallet;
   label: string;
   value: string;
   detail: string;
+  accent?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="flex items-start gap-2.5">
-        <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-white">
-          <Icon className="h-4 w-4 text-sky-500" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-[#111827]">{label}</p>
-          <p className="mt-1 text-sm leading-6 text-[#6b7280]">{detail}</p>
-        </div>
-      </div>
-      <p className="text-sm font-semibold text-[#111827]">{value}</p>
-    </div>
-  );
-}
-
-function ActivityRow({ activity }: { activity: CalendarActivityItem }) {
-  return (
-    <div className="rounded-[1rem] border border-black/[0.06] bg-[#fafafa] px-3.5 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-[#111827]">{activity.title}</p>
-          <p className="mt-1 text-sm text-[#6b7280]">{activity.detail}</p>
-        </div>
-        <span className="shrink-0 text-[0.68rem] uppercase tracking-[0.16em] text-[#9ca3af]">
-          {formatClock(activity.at)}
+    <div className="glass-inset rounded-xl p-3.5">
+      <div className="flex items-center gap-2">
+        <Icon
+          className={cn(
+            "h-3.5 w-3.5",
+            accent ? "text-[var(--accent)]" : "text-gray-400 dark:text-gray-500",
+          )}
+        />
+        <span className="text-[0.62rem] font-medium uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
+          {label}
         </span>
       </div>
-      {activity.href ? (
-        <Link
-          href={activity.href}
-          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-sky-600 transition-colors hover:text-sky-700"
-        >
-          Abrir
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      ) : null}
+      <p
+        className={cn(
+          "mt-2.5 text-[1.35rem] font-semibold tabular-nums tracking-tight",
+          accent ? "text-[var(--accent)]" : "text-gray-900 dark:text-white",
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-[0.68rem] text-gray-400 dark:text-gray-500">{detail}</p>
     </div>
   );
 }
 
-function NoteLaneSection({
+/* ── Timeline row ── */
+
+function TimelineRow({
+  activity,
+  isFirst,
+  isLast,
+}: {
+  activity: CalendarActivityItem;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  return (
+    <div className="group relative flex gap-3 py-2 pl-1">
+      {/* Dot on the timeline */}
+      <div className="relative z-10 mt-1.5 flex h-[0.55rem] w-[0.55rem] shrink-0 items-center justify-center">
+        <span className="h-[0.45rem] w-[0.45rem] rounded-full bg-gray-300 transition-colors group-hover:bg-[var(--accent)] dark:bg-gray-600" />
+      </div>
+
+      {/* Content */}
+      <div className="min-w-0 flex-1 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-[#111111]/50 px-3.5 py-2.5 transition-colors group-hover:border-gray-200 dark:group-hover:border-gray-700 group-hover:bg-gray-50 dark:group-hover:bg-[#111111]">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.78rem] font-medium text-gray-800 dark:text-gray-200">
+              {activity.title}
+            </p>
+            <p className="mt-0.5 text-[0.72rem] leading-relaxed text-gray-500 dark:text-gray-400">
+              {activity.detail}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="font-mono text-[0.62rem] tabular-nums text-gray-400 dark:text-gray-500">
+              {formatClock(activity.at)}
+            </span>
+            {activity.href ? (
+              <Link
+                href={activity.href}
+                className="flex h-5 w-5 items-center justify-center rounded text-gray-300 transition-colors hover:text-[var(--accent)] dark:text-gray-600"
+              >
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Note lane section ── */
+
+function NoteLane({
   lane,
   notes,
   month,
   currentUserEmail,
   currentUserRole,
 }: {
-  lane: { key: CalendarNoteLane; title: string; description: string };
+  lane: { key: CalendarNoteLane; title: string; dot: string; color: string };
   notes: CalendarNoteRecord[];
   month: string;
   currentUserEmail: string;
   currentUserRole: "admin" | "seller";
 }) {
+  if (notes.length === 0) return null;
+
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h4 className="text-sm font-semibold text-[#111827]">{lane.title}</h4>
-          <p className="mt-1 text-sm leading-6 text-[#6b7280]">{lane.description}</p>
-        </div>
-        <span className="rounded-full border border-black/[0.06] bg-white px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#6b7280]">
+    <div>
+      <div className="flex items-center gap-2">
+        <span className={cn("h-1.5 w-1.5 rounded-full", lane.dot)} />
+        <h4 className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
+          {lane.title}
+        </h4>
+        <span className="muted-pill ml-auto rounded px-1.5 py-0.5 text-[0.58rem]">
           {notes.length}
         </span>
       </div>
 
-      {notes.length === 0 ? (
-        <div className="rounded-[1rem] border border-dashed border-black/[0.08] bg-white/70 px-3.5 py-4 text-sm text-[#9ca3af]">
-          Nenhuma nota nesta faixa ainda.
-        </div>
-      ) : (
-        notes.map((note) => {
+      <div className="mt-2 space-y-1.5">
+        {notes.map((note) => {
           const canDelete =
             currentUserRole === "admin" || note.createdByEmail === currentUserEmail;
 
           return (
             <div
               key={note.id}
-              className="rounded-[1rem] border border-black/[0.06] bg-white px-3.5 py-3"
+              className="glass-inset rounded-lg px-3.5 py-3"
             >
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#111827]">{note.title}</p>
+                  <p className="text-[0.82rem] font-semibold text-gray-800 dark:text-gray-200">
+                    {note.title}
+                  </p>
                   {note.content ? (
-                    <p className="mt-2 text-sm leading-6 text-[#4b5563]">{note.content}</p>
+                    <p className="mt-1 text-[0.78rem] leading-relaxed text-gray-500 dark:text-gray-400">
+                      {note.content}
+                    </p>
                   ) : null}
                 </div>
                 {canDelete ? (
@@ -505,33 +756,34 @@ function NoteLaneSection({
                     <input type="hidden" name="month" value={month} />
                     <button
                       type="submit"
-                      className="shrink-0 rounded-full border border-black/[0.08] px-2.5 py-1 text-[0.68rem] font-medium text-[#6b7280] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+                      className="shrink-0 rounded-md px-2 py-1 text-[0.62rem] font-medium text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                     >
-                      Apagar
+                      remover
                     </button>
                   </form>
                 ) : null}
               </div>
-              <p className="mt-3 text-[0.72rem] uppercase tracking-[0.14em] text-[#9ca3af]">
+              <p className="mt-2 font-mono text-[0.58rem] text-gray-300 dark:text-gray-600">
                 {note.createdByRole} · {note.createdByEmail} · {formatClock(note.updatedAt)}
               </p>
             </div>
           );
-        })
-      )}
+        })}
+      </div>
     </div>
   );
 }
+
+/* ══════════════════════════════════════════════════════
+   Helpers
+   ══════════════════════════════════════════════════════ */
 
 function readSearchParam(value: SearchParamValue) {
   return Array.isArray(value) ? value[0] : value;
 }
 
 function normalizeMonthParam(value?: string) {
-  if (value && /^\d{4}-\d{2}$/.test(value)) {
-    return value;
-  }
-
+  if (value && /^\d{4}-\d{2}$/.test(value)) return value;
   return toMonthKey(new Date());
 }
 
@@ -541,15 +793,9 @@ function resolveSelectedDate(
   days: CalendarDaySummary[],
 ) {
   const daySet = new Set(days.map((day) => day.date));
-  if (value && daySet.has(value)) {
-    return value;
-  }
-
+  if (value && daySet.has(value)) return value;
   const today = todayDateKey();
-  if (today.startsWith(month) && daySet.has(today)) {
-    return today;
-  }
-
+  if (today.startsWith(month) && daySet.has(today)) return today;
   return days[0]?.date ?? `${month}-01`;
 }
 
@@ -570,40 +816,7 @@ function buildCalendarGrid(days: CalendarDaySummary[], month: string) {
   const [yearValue, monthValue] = month.split("-");
   const firstDay = new Date(Date.UTC(Number(yearValue), Number(monthValue) - 1, 1, 12, 0, 0));
   const offset = (firstDay.getUTCDay() + 6) % 7;
-
   return [...Array.from({ length: offset }, () => null), ...days];
-}
-
-function getDaySurfaceClass(day: CalendarDaySummary, isSelected: boolean) {
-  if (isSelected) {
-    return "border-sky-500/30 bg-[linear-gradient(180deg,rgba(2,132,199,0.1),rgba(255,255,255,0.96))] shadow-[0_14px_34px_rgba(2,132,199,0.14)]";
-  }
-
-  if (day.recoveredRevenue > 0) {
-    return "border-sky-500/18 bg-[linear-gradient(180deg,rgba(2,132,199,0.08),rgba(255,255,255,0.96))] hover:border-sky-500/25 hover:shadow-[0_12px_28px_rgba(2,132,199,0.08)]";
-  }
-
-  if (day.notesCount > 0 || day.automationJobs > 0 || day.outboundMessages + day.inboundMessages > 0) {
-    return "border-black/[0.06] bg-[linear-gradient(180deg,#ffffff,#fafafa)] hover:border-sky-500/18 hover:bg-white";
-  }
-
-  return "border-black/[0.06] bg-[#fafafa] hover:border-sky-500/14 hover:bg-white";
-}
-
-function getCompactCellDescription(day: CalendarDaySummary) {
-  if (day.recoveredRevenue > 0) {
-    return `${day.recoveredCount} recuperação${day.recoveredCount === 1 ? "" : "es"}`;
-  }
-  if (day.newLeads > 0) {
-    return `${day.newLeads} lead${day.newLeads === 1 ? "" : "s"} em carteira`;
-  }
-  if (day.outboundMessages + day.inboundMessages > 0) {
-    return `${day.outboundMessages + day.inboundMessages} interação${day.outboundMessages + day.inboundMessages === 1 ? "" : "ões"}`;
-  }
-  if (day.automationJobs > 0 || day.notesCount > 0) {
-    return "Operação registrada";
-  }
-  return "Sem movimento";
 }
 
 function hasDayMovement(day: CalendarDaySummary) {
@@ -618,20 +831,26 @@ function hasDayMovement(day: CalendarDaySummary) {
   );
 }
 
+function getCompactDescription(day: CalendarDaySummary) {
+  const parts: string[] = [];
+  if (day.newLeads > 0) parts.push(`${day.newLeads} lead${day.newLeads > 1 ? "s" : ""}`);
+  const msgs = day.outboundMessages + day.inboundMessages;
+  if (msgs > 0) parts.push(`${msgs} msg`);
+  if (day.automationJobs > 0) parts.push(`${day.automationJobs} job${day.automationJobs > 1 ? "s" : ""}`);
+  if (day.notesCount > 0) parts.push(`${day.notesCount} nota${day.notesCount > 1 ? "s" : ""}`);
+  return parts.join(" · ") || "Atividade";
+}
+
 function formatMonthLabel(month: string) {
   const [yearValue, monthValue] = month.split("-");
   const date = new Date(Date.UTC(Number(yearValue), Number(monthValue) - 1, 1, 12, 0, 0));
-  return new Intl.DateTimeFormat("pt-BR", {
-    month: "long",
-    year: "numeric",
-  }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(date);
 }
 
 function formatShortDate(date: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  }).format(new Date(`${date}T12:00:00.000Z`));
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(
+    new Date(`${date}T12:00:00.000Z`),
+  );
 }
 
 function formatFullDate(date: string) {
@@ -652,7 +871,6 @@ function formatClock(value: string) {
 
 function formatCompactCurrency(value: number) {
   if (!value) return "R$ 0";
-
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -677,12 +895,10 @@ function toMonthKey(value: Date) {
 }
 
 function todayDateKey() {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
+  return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  });
-
-  return formatter.format(new Date());
+  }).format(new Date());
 }

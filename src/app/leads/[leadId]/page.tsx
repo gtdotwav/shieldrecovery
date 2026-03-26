@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
+  ChevronRight,
   Clock,
   CreditCard,
   Mail,
@@ -113,6 +114,14 @@ export default async function LeadDetailPage({ params }: PageProps) {
         </Link>
       }
     >
+      <nav className="mb-4 flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500">
+        <Link href="/leads" className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+          CRM
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="text-gray-700 dark:text-gray-200">{lead.customer_name}</span>
+      </nav>
+
       <section className="grid gap-5 2xl:grid-cols-[minmax(0,1.35fr)_20rem]">
         <div className="space-y-5">
           <PlatformSurface className="p-5 sm:p-6">
@@ -415,7 +424,7 @@ function StageAction({
       "cursor-default border border-sky-200 bg-sky-50 text-sky-600";
   } else if (variant === "success") {
     buttonClass =
-      "border border-green-200 bg-green-50 text-green-600 hover:bg-green-100";
+      "border border-[var(--accent)]/20 bg-[var(--accent)]/5 text-[var(--accent)] hover:bg-[var(--accent)]/10";
   } else if (variant === "danger") {
     buttonClass =
       "border border-red-200 bg-red-50 text-red-500 hover:bg-red-100";

@@ -113,7 +113,7 @@ export const TextRevealCard = ({
       onPointerLeave={resetReveal}
       onPointerMove={(event) => updateRevealWidth(event.clientX)}
       className={cn(
-        "relative w-full overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-[rgba(7,22,17,0.78)] p-6 touch-none sm:p-7 backdrop-blur-[22px]",
+        "relative w-full overflow-hidden rounded-[1.75rem] border border-gray-200 dark:border-gray-800 bg-[rgba(7,22,17,0.78)] p-6 touch-none sm:p-7 backdrop-blur-[22px]",
         className,
       )}
     >
@@ -170,7 +170,7 @@ export const TextRevealCardTitle = ({
   children: React.ReactNode;
   className?: string;
 }) => {
-  return <h2 className={twMerge("mb-2 text-lg text-white", className)}>{children}</h2>;
+  return <h2 className={twMerge("mb-2 text-lg text-gray-900 dark:text-white", className)}>{children}</h2>;
 };
 
 export const TextRevealCardDescription = ({
@@ -180,7 +180,7 @@ export const TextRevealCardDescription = ({
   children: React.ReactNode;
   className?: string;
 }) => {
-  return <p className={twMerge("text-sm text-[rgba(255,255,255,0.62)]", className)}>{children}</p>;
+  return <p className={twMerge("text-sm text-gray-500 dark:text-gray-400", className)}>{children}</p>;
 };
 
 const Stars = () => {

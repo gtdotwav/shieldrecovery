@@ -58,7 +58,7 @@ export default async function RetryPaymentPage({
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-black/[0.06] bg-[#f8fafc] p-4">
+          <div className="rounded-2xl border border-black/[0.06] bg-gray-50 dark:bg-[#111111] p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">
               Estado atual
             </p>
@@ -67,14 +67,14 @@ export default async function RetryPaymentPage({
               canal de recovery.
             </p>
           </div>
-          <div className="rounded-2xl border border-black/[0.06] bg-[#f8fafc] p-4">
+          <div className="rounded-2xl border border-black/[0.06] bg-gray-50 dark:bg-[#111111] p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">
               Proximo passo
             </p>
             <p className="mt-2 text-sm leading-6 text-[#334155]">
-              Para Pix via Pagou.ai, esta tela ja exibe QR e copia-e-cola. Para
-              cartao, o proximo passo natural e ativar Payment Element com a
-              chave publica do projeto.
+              Para Pix, esta tela centraliza QR e copia-e-cola dentro da{" "}
+              {platformBrand.name}. O cliente recebe apenas o link seguro do
+              nosso fluxo, sem QR direto no chat.
             </p>
           </div>
         </div>
@@ -102,14 +102,14 @@ async function renderPagouPixRetry(input: {
         <div className="grid w-full gap-6 rounded-[2rem] border border-black/[0.08] bg-white p-8 shadow-[0_26px_120px_rgba(15,23,42,0.08)] lg:grid-cols-[minmax(0,0.95fr)_minmax(20rem,1.05fr)]">
           <section className="rounded-[1.5rem] border border-sky-100 bg-[linear-gradient(180deg,#eff6ff,#f8fafc)] p-6">
             <p className="text-[0.72rem] uppercase tracking-[0.28em] text-sky-600">
-              Pix Pagou.ai
+              Pix {platformBrand.name}
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#082f49]">
               Pagamento pronto para copiar ou escanear.
             </h1>
             <p className="mt-3 text-sm leading-7 text-[#475569]">
               Esta cobranca foi criada para o fluxo de recovery da{" "}
-              {platformBrand.name}. Assim que o Pagou.ai confirmar o pagamento,
+              {platformBrand.name}. Assim que o gateway confirmar o pagamento,
               o webhook atualiza o caso automaticamente.
             </p>
 
@@ -131,7 +131,7 @@ async function renderPagouPixRetry(input: {
 
           <section className="flex flex-col justify-between">
             <div>
-              <div className="rounded-[1.25rem] border border-black/[0.06] bg-[#f8fafc] p-4">
+              <div className="rounded-[1.25rem] border border-black/[0.06] bg-gray-50 dark:bg-[#111111] p-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">
                   Status atual
                 </p>
@@ -145,7 +145,7 @@ async function renderPagouPixRetry(input: {
                   Codigo Pix copia e cola
                 </p>
                 <p className="mt-3 break-all rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 font-mono text-xs leading-6 text-[#0f172a]">
-                  {pixCode || "Nao informado pela Pagou.ai."}
+                  {pixCode || "Nao informado pelo gateway."}
                 </p>
               </div>
 
@@ -158,17 +158,9 @@ async function renderPagouPixRetry(input: {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              {transaction.paymentUrl ? (
-                <Link
-                  href={transaction.paymentUrl}
-                  className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-700"
-                >
-                  Abrir na Pagou.ai
-                </Link>
-              ) : null}
               <Link
                 href="/"
-                className="inline-flex items-center rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#082f49] transition-colors hover:bg-[#f8fafc]"
+                className="inline-flex items-center rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#082f49] transition-colors hover:bg-gray-50 dark:bg-[#111111]"
               >
                 Voltar para a plataforma
               </Link>
@@ -188,7 +180,7 @@ async function renderPagouPixRetry(input: {
             Nao foi possivel carregar a cobranca Pix agora.
           </h1>
           <p className="mt-4 text-sm leading-7 text-[#64748b]">
-            A transacao do Pagou.ai nao respondeu neste momento. Tente novamente
+            A transacao do gateway nao respondeu neste momento. Tente novamente
             em instantes ou use o fluxo de reenvio dentro da plataforma.
           </p>
           <div className="mt-6 rounded-[1.25rem] border border-red-100 bg-red-50 px-5 py-4">
@@ -207,7 +199,7 @@ async function renderPagouPixRetry(input: {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.1rem] border border-black/[0.06] bg-[#f8fafc] p-4">
+    <div className="rounded-[1.1rem] border border-black/[0.06] bg-gray-50 dark:bg-[#111111] p-4">
       <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">{label}</p>
       <p className="mt-2 break-all text-sm font-medium text-[#082f49]">{value}</p>
     </div>

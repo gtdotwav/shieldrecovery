@@ -177,10 +177,23 @@ export class MessagingService {
     }
 
     for (const inboundMessage of inboundMessages) {
-      const conversationId = await this.processInboundMessage(inboundMessage);
+      try {
+        const conversationId = await this.processInboundMessage(inboundMessage);
 
-      if (conversationId) {
-        touchedConversationIds.add(conversationId);
+        if (conversationId) {
+          touchedConversationIds.add(conversationId);
+        }
+      } catch (error) {
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "processing_error",
+            level: "error",
+            message: `Failed to process inbound message from ${inboundMessage.from}.`,
+            context: {
+              error: error instanceof Error ? error.message : String(error),
+            },
+          }),
+        ).catch(() => {});
       }
     }
 
@@ -701,9 +714,23 @@ export class MessagingService {
       );
 
       if (automationPolicy.enabled && automationPolicy.autonomous) {
-        await recoveryService.sendAiConversationReply({
-          conversationId: conversation.id,
-        });
+        try {
+          await recoveryService.sendAiConversationReply({
+            conversationId: conversation.id,
+          });
+        } catch (error) {
+          await this.storage.addLog(
+            createStructuredLog({
+              eventType: "processing_error",
+              level: "error",
+              message: "AI reply failed after inbound message.",
+              context: {
+                conversationId: conversation.id,
+                error: error instanceof Error ? error.message : String(error),
+              },
+            }),
+          ).catch(() => {});
+        }
       }
     }
 
@@ -772,17 +799,6 @@ export class MessagingService {
   }): Promise<DispatchOutboundMessageResult> {
     const body = buildOutboundWhatsAppText(input.content, input.metadata);
     const config = resolveWebApiConfig(input.apiBaseUrl, input.sessionId);
-    const payment =
-      input.metadata?.kind === "recovery_prompt"
-        ? {
-            url: input.metadata.paymentUrl ?? input.metadata.retryLink,
-            pixCode: input.metadata.pixCode,
-            pixQrCode: input.metadata.pixQrCode,
-            amount: input.metadata.paymentValue,
-            method: input.metadata.paymentMethod,
-            actionLabel: input.metadata.actionLabel,
-          }
-        : undefined;
 
     const response =
       config.kind === "evolution"
@@ -796,6 +812,7 @@ export class MessagingService {
               number: input.phone,
               text: body,
             }),
+            signal: AbortSignal.timeout(15_000),
           })
         : await fetch(config.sendUrl, {
             method: "POST",
@@ -809,8 +826,8 @@ export class MessagingService {
               message: body,
               text: body,
               preview_url: true,
-              payment,
             }),
+            signal: AbortSignal.timeout(15_000),
           });
 
     const payload = (await safeParseJson(response)) as
@@ -1387,10 +1404,6 @@ function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata) 
 
   if (actionUrl && !content.includes(actionUrl)) {
     sections.push(`Link de pagamento:\n${actionUrl}`);
-  }
-
-  if (metadata.pixCode && !content.includes(metadata.pixCode)) {
-    sections.push(`Codigo Pix copia e cola:\n${metadata.pixCode}`);
   }
 
   return sections.filter(Boolean).join("\n\n");

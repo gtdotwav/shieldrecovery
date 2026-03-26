@@ -67,13 +67,13 @@ export function scorePriority(contact: FollowUpContact) {
 
 export const STAGE_STYLES: Record<string, string> = {
   NEW_RECOVERY:
-    "border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.12)] text-[#9bf4be]",
+    "border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--accent-strong)] dark:text-[var(--accent)]",
   CONTACTING:
-    "border-[rgba(15,164,122,0.2)] bg-[rgba(15,164,122,0.14)] text-[#7fe7c3]",
+    "border-[var(--accent)]/15 bg-[var(--accent)]/8 text-[var(--accent-strong)] dark:text-[var(--accent)]/80",
   WAITING_CUSTOMER:
-    "border-[rgba(255,255,255,0.09)] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.74)]",
+    "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400",
   RECOVERED:
-    "border-[rgba(30,215,96,0.2)] bg-[rgba(30,215,96,0.12)] text-[#8df0b1]",
+    "border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--accent-strong)] dark:text-[var(--accent)]",
   LOST:
-    "border-[rgba(255,122,116,0.18)] bg-[rgba(255,122,116,0.1)] text-[#ffb5af]",
+    "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400",
 };

@@ -27,6 +27,7 @@ import {
 } from "@/components/platform/platform-shell";
 import { StageBadge } from "@/components/ui/stage-badge";
 import { formatCurrency, formatRelativeTime } from "@/lib/format";
+import { platformBrand } from "@/lib/platform";
 import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
@@ -47,7 +48,7 @@ import type { FollowUpContact } from "@/server/recovery/types";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Automações | PagRecovery",
+  title: "Automações",
 };
 
 export default async function AIPage() {
@@ -436,13 +437,21 @@ function SellerAutomationWorkspace({
 
             <div className="mt-4 space-y-3">
               {sellerQueue.length === 0 ? (
-                <PlatformInset className="p-5 text-center">
-                  <p className="text-sm text-[#6b7280]">
+                <PlatformInset className="p-6 text-center">
+                  <Bot className="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
+                  <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
                     Nenhum caso classificado ainda.
                   </p>
-                  <p className="mt-1 text-xs text-[#9ca3af]">
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                     Quando a carteira entrar, a prioridade aparece aqui.
                   </p>
+                  <Link
+                    href="/leads"
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
+                  >
+                    Verificar CRM
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
                 </PlatformInset>
               ) : (
                 sellerQueue.map((item) => (
@@ -557,14 +566,14 @@ function ActivityRow({ entry }: { entry: AIActivityEntry }) {
 function ActivityIcon({ type }: { type: AIActivityType }) {
   const iconMap: Record<AIActivityType, { icon: typeof Bot; color: string }> = {
     sequence_started: { icon: Play, color: "text-blue-500" },
-    message_sent: { icon: Send, color: "text-green-500" },
+    message_sent: { icon: Send, color: "text-[var(--accent)]" },
     payment_intent_detected: { icon: CreditCard, color: "text-amber-500" },
     escalated_to_human: { icon: User, color: "text-red-500" },
-    recovery_closed: { icon: CheckCircle2, color: "text-green-500" },
+    recovery_closed: { icon: CheckCircle2, color: "text-[var(--accent)]" },
     strategy_selected: { icon: Zap, color: "text-purple-500" },
     lead_classified: { icon: Brain, color: "text-cyan-500" },
     follow_up_scheduled: { icon: Clock, color: "text-sky-500" },
-    response_detected: { icon: MessageCircle, color: "text-emerald-500" },
+    response_detected: { icon: MessageCircle, color: "text-[var(--accent)]" },
   };
 
   const config = iconMap[type] ?? { icon: Bot, color: "text-[#9ca3af]" };
@@ -616,7 +625,7 @@ function ClassifiedLeadRow({
   classification: RecoveryClassification;
 }) {
   const probColors: Record<RecoveryProbability, string> = {
-    high: "bg-green-500",
+    high: "bg-[var(--accent)]",
     medium: "bg-amber-500",
     low: "bg-sky-500",
     manual: "bg-red-500",
@@ -861,7 +870,7 @@ function StatusLine({
   detail?: string;
 }) {
   const styles = {
-    running: { dot: "bg-green-500", text: "text-green-600", label: "Online" },
+    running: { dot: "bg-[var(--accent)]", text: "text-[var(--accent)]", label: "Online" },
     pending: { dot: "bg-amber-500", text: "text-amber-600", label: "Pendente" },
     error: { dot: "bg-red-500", text: "text-red-600", label: "Erro" },
   };

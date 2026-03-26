@@ -1,32 +1,44 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import { requireAuthenticatedSession } from "@/server/auth/session";
-import { CALENDAR_NOTE_LANES, type CalendarNoteLane } from "@/server/recovery/types";
+import { CALENDAR_NOTE_LANES } from "@/server/recovery/types";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
-function isCalendarLane(value: string): value is CalendarNoteLane {
-  return (CALENDAR_NOTE_LANES as readonly string[]).includes(value);
-}
+const createCalendarNoteSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data deve estar no formato YYYY-MM-DD"),
+  lane: z.enum(CALENDAR_NOTE_LANES),
+  title: z.string().min(1, "Titulo obrigatorio"),
+  content: z.string().optional(),
+});
+
+const deleteCalendarNoteSchema = z.object({
+  noteId: z.string().min(1, "ID da nota obrigatorio"),
+  month: z.string().regex(/^\d{4}-\d{2}$/, "Mes deve estar no formato YYYY-MM"),
+});
 
 export async function createCalendarNoteAction(formData: FormData) {
   const session = await requireAuthenticatedSession(["admin", "seller"]);
   const service = getPaymentRecoveryService();
-  const date = String(formData.get("date") ?? "");
-  const lane = String(formData.get("lane") ?? "");
-  const title = String(formData.get("title") ?? "").trim();
-  const content = String(formData.get("content") ?? "").trim();
 
-  if (!date || !isCalendarLane(lane) || !title) {
+  const parsed = createCalendarNoteSchema.safeParse({
+    date: formData.get("date") ?? "",
+    lane: formData.get("lane") ?? "",
+    title: String(formData.get("title") ?? "").trim(),
+    content: String(formData.get("content") ?? "").trim() || undefined,
+  });
+
+  if (!parsed.success) {
     return;
   }
 
   await service.createCalendarNote({
-    date,
-    lane,
-    title,
-    content: content || undefined,
+    date: parsed.data.date,
+    lane: parsed.data.lane,
+    title: parsed.data.title,
+    content: parsed.data.content,
     createdByEmail: session.email,
     createdByRole: session.role,
   });
@@ -37,12 +49,17 @@ export async function createCalendarNoteAction(formData: FormData) {
 export async function deleteCalendarNoteAction(formData: FormData) {
   const session = await requireAuthenticatedSession(["admin", "seller"]);
   const service = getPaymentRecoveryService();
-  const noteId = String(formData.get("noteId") ?? "");
-  const month = String(formData.get("month") ?? "");
 
-  if (!noteId || !month) {
+  const parsed = deleteCalendarNoteSchema.safeParse({
+    noteId: formData.get("noteId") ?? "",
+    month: formData.get("month") ?? "",
+  });
+
+  if (!parsed.success) {
     return;
   }
+
+  const { noteId, month } = parsed.data;
 
   const snapshot = await service.getCalendarSnapshot({ month });
   const note = snapshot.notes.find((item) => item.id === noteId);

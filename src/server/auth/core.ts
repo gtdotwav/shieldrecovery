@@ -4,6 +4,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 const publicRoutePrefixes = [
   "/",
   "/login",
+  "/quiz",
   "/invite/",
   "/retry/",
   "/checkout/",
@@ -11,6 +12,7 @@ const publicRoutePrefixes = [
   "/api/webhooks/",
   "/api/worker/",
   "/api/cron/",
+  "/api/auth/token",
   "/webhooks/",
 ];
 
@@ -22,26 +24,43 @@ type SessionPayload = {
   exp: number;
 };
 
-function getAuthConfig() {
-  const sellerFallbackEmail =
-    process.env.NODE_ENV === "production" ? "" : "seller@pagrecovery.local";
-  const sellerFallbackPassword =
-    process.env.NODE_ENV === "production" ? "" : "PagRecoverySeller@2026!";
-  const sellerFallbackAgentName =
-    process.env.NODE_ENV === "production" ? "" : "Carla";
+type CredentialSet = {
+  adminEmail: string;
+  adminPassword: string;
+  sellerEmail: string;
+  sellerPassword: string;
+  sellerAgentName: string;
+};
 
+function getAuthConfig() {
   return {
-    adminEmail: process.env.PLATFORM_AUTH_EMAIL?.trim().toLowerCase() ?? "",
-    adminPassword: process.env.PLATFORM_AUTH_PASSWORD?.trim() ?? "",
-    sellerEmail:
-      process.env.PLATFORM_SELLER_AUTH_EMAIL?.trim().toLowerCase() ??
-      sellerFallbackEmail,
-    sellerPassword:
-      process.env.PLATFORM_SELLER_AUTH_PASSWORD?.trim() ?? sellerFallbackPassword,
-    sellerAgentName:
-      process.env.PLATFORM_SELLER_AGENT_NAME?.trim() ?? sellerFallbackAgentName,
     secret: process.env.PLATFORM_AUTH_SECRET?.trim() ?? "",
+    primary: {
+      adminEmail: process.env.PLATFORM_AUTH_EMAIL?.trim().toLowerCase() ?? "",
+      adminPassword: process.env.PLATFORM_AUTH_PASSWORD?.trim() ?? "",
+      sellerEmail: process.env.PLATFORM_SELLER_AUTH_EMAIL?.trim().toLowerCase() ?? "",
+      sellerPassword: process.env.PLATFORM_SELLER_AUTH_PASSWORD?.trim() ?? "",
+      sellerAgentName: process.env.PLATFORM_SELLER_AGENT_NAME?.trim() ?? "",
+    } satisfies CredentialSet,
   };
+}
+
+function getAllCredentialSets(): CredentialSet[] {
+  const { primary } = getAuthConfig();
+  const sets: CredentialSet[] = [primary];
+
+  const shieldAdmin = process.env.SHIELD_AUTH_EMAIL?.trim().toLowerCase();
+  if (shieldAdmin) {
+    sets.push({
+      adminEmail: shieldAdmin,
+      adminPassword: process.env.SHIELD_AUTH_PASSWORD?.trim() ?? "",
+      sellerEmail: process.env.SHIELD_SELLER_AUTH_EMAIL?.trim().toLowerCase() ?? "",
+      sellerPassword: process.env.SHIELD_SELLER_AUTH_PASSWORD?.trim() ?? "",
+      sellerAgentName: process.env.SHIELD_SELLER_AGENT_NAME?.trim() ?? process.env.PLATFORM_SELLER_AGENT_NAME?.trim() ?? "",
+    });
+  }
+
+  return sets;
 }
 
 const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
@@ -60,6 +79,12 @@ const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/api/payments/retry", roles: ["admin"] },
   { prefix: "/api/analytics/recovery", roles: ["admin"] },
   { prefix: "/api/followups/contacts", roles: ["admin"] },
+  { prefix: "/api/export", roles: ["admin"] },
+  { prefix: "/api/leads", roles: ["admin", "seller"] },
+  { prefix: "/api/inbox", roles: ["admin", "seller"] },
+  { prefix: "/api/dashboard", roles: ["admin"] },
+  { prefix: "/api/admin", roles: ["admin"] },
+  { prefix: "/api/calendar", roles: ["admin", "seller"] },
   { prefix: "/analytics/recovery", roles: ["admin"] },
   { prefix: "/followups/contacts", roles: ["admin"] },
   { prefix: "/imports/shield-transaction", roles: ["admin"] },
@@ -110,10 +135,12 @@ export function getSessionTtlSeconds() {
 
 export function isAuthConfigured() {
   const config = getAuthConfig();
-  return Boolean(
-    config.secret &&
-      ((config.adminEmail && config.adminPassword) ||
-        (config.sellerEmail && config.sellerPassword)),
+  if (!config.secret) return false;
+  const sets = getAllCredentialSets();
+  return sets.some(
+    (s) =>
+      (s.adminEmail && s.adminPassword) ||
+      (s.sellerEmail && s.sellerPassword),
   );
 }
 
@@ -121,28 +148,19 @@ export async function authenticateCredentials(input: {
   email: string;
   password: string;
 }) {
-  const config = getAuthConfig();
+  const { secret } = getAuthConfig();
+  if (!secret) return null;
+
   const email = input.email.trim().toLowerCase();
   const password = input.password.trim();
 
-  if (
-    config.adminEmail &&
-    config.adminPassword &&
-    config.secret &&
-    email === config.adminEmail &&
-    password === config.adminPassword
-  ) {
-    return { email, role: "admin" as const };
-  }
-
-  if (
-    config.sellerEmail &&
-    config.sellerPassword &&
-    config.secret &&
-    email === config.sellerEmail &&
-    password === config.sellerPassword
-  ) {
-    return { email, role: "seller" as const };
+  for (const set of getAllCredentialSets()) {
+    if (set.adminEmail && set.adminPassword && email === set.adminEmail && password === set.adminPassword) {
+      return { email, role: "admin" as const };
+    }
+    if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && password === set.sellerPassword) {
+      return { email, role: "seller" as const };
+    }
   }
 
   return null;
@@ -222,14 +240,14 @@ function normalizeName(value?: string | null) {
 }
 
 export function getSellerAgentName() {
-  return getAuthConfig().sellerAgentName;
+  return getAuthConfig().primary.sellerAgentName;
 }
 
 export function getSellerAgentProfile() {
-  const config = getAuthConfig();
+  const { primary } = getAuthConfig();
   return {
-    name: config.sellerAgentName,
-    email: config.sellerEmail,
+    name: primary.sellerAgentName,
+    email: primary.sellerEmail,
     phone: "",
   };
 }

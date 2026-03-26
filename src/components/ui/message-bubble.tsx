@@ -12,11 +12,11 @@ export function MessageBubble({ message }: { message: MessageRecord }) {
       <div
         className={`max-w-[80%] rounded-2xl ${
           recoveryCard
-            ? "glass-panel qr-panel w-full max-w-[30rem] overflow-hidden border border-[rgba(30,215,96,0.16)] bg-[rgba(10,33,26,0.74)] p-0"
+            ? "glass-panel qr-panel w-full max-w-[30rem] overflow-hidden border border-[var(--accent)]/16 bg-[var(--background-elevated)] p-0"
             : `px-4 py-2.5 ${
                 inbound
-                  ? "glass-inset text-[rgba(255,255,255,0.88)]"
-                  : "glass-panel border border-[rgba(30,215,96,0.14)] text-[rgba(255,255,255,0.9)]"
+                  ? "glass-inset text-gray-800 dark:text-gray-200"
+                  : "glass-panel border border-[var(--accent)]/14 text-gray-800 dark:text-gray-200"
               }`
         }`}
       >
@@ -30,7 +30,7 @@ export function MessageBubble({ message }: { message: MessageRecord }) {
               </p>
             ) : null}
             <p className="text-sm leading-relaxed">{message.content}</p>
-            <p className="mt-1.5 text-[0.6875rem] text-[rgba(255,255,255,0.42)]">
+            <p className="mt-1.5 text-[0.6875rem] text-gray-400 dark:text-gray-500">
               {labelForMessageStatus(message.status)}
               {" · "}
               {formatMessageTime(message.createdAt)}
@@ -47,17 +47,17 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
 
   return (
     <>
-      <div className="border-b border-white/8 bg-[linear-gradient(180deg,rgba(30,215,96,0.08),rgba(255,255,255,0.03))] px-4 py-3">
+      <div className="border-b border-gray-200 dark:border-gray-800 bg-[linear-gradient(180deg,var(--accent-soft),rgba(255,255,255,0.03))] px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[0.625rem] font-bold uppercase tracking-[0.26em] text-[var(--accent)]">
               Disparo inicial
             </p>
-            <p className="mt-1 text-sm font-semibold text-white">
+            <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
               {metadata?.product || "Recuperação de pagamento"}
             </p>
           </div>
-          <span className="shrink-0 rounded-full border border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.12)] px-2.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-[#98efba]">
+          <span className="shrink-0 rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/12 px-2.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-[var(--accent)]">
             {message.status === "queued" ? "na fila" : "registrado"}
           </span>
         </div>
@@ -87,7 +87,7 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
           ) : null}
         </div>
 
-        <p className="text-sm leading-relaxed text-[rgba(255,255,255,0.84)]">
+        <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200">
           {message.content}
         </p>
 
@@ -100,9 +100,9 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
             <img
               src={metadata.pixQrCode}
               alt="QR Code Pix"
-              className="mt-2 h-64 w-64 max-w-full rounded-xl border border-white/10 bg-white object-contain p-2"
+              className="mt-2 h-64 w-64 max-w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-white object-contain p-2"
             />
-            <p className="mt-2 text-xs text-[rgba(255,255,255,0.56)]">
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               Escaneie este QR Code para concluir o pagamento.
             </p>
           </div>
@@ -113,7 +113,7 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
             <p className="font-mono text-[0.625rem] font-bold uppercase tracking-[0.26em] text-[var(--accent)]">
               Código Pix
             </p>
-            <p className="mt-1.5 break-words font-mono text-xs leading-5 text-[rgba(255,255,255,0.72)]">
+            <p className="mt-1.5 break-words font-mono text-xs leading-5 text-gray-600 dark:text-gray-300">
               {metadata.pixCode}
             </p>
           </div>
@@ -130,7 +130,7 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
           </a>
         ) : null}
 
-        <p className="text-[0.6875rem] text-[rgba(255,255,255,0.42)]">
+        <p className="text-[0.6875rem] text-gray-400 dark:text-gray-500">
           {formatMessageTime(message.createdAt)}
         </p>
       </div>
@@ -141,10 +141,10 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
 function KeyValue({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.2em] text-[rgba(255,255,255,0.42)]">
+      <p className="font-mono text-[0.625rem] font-semibold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
         {label}
       </p>
-      <p className="mt-0.5 text-sm font-medium text-[rgba(255,255,255,0.82)]">{value}</p>
+      <p className="mt-0.5 text-sm font-medium text-gray-700 dark:text-gray-200">{value}</p>
     </div>
   );
 }

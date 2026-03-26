@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { platformBrand } from "@/lib/platform";
 import { appEnv } from "@/server/recovery/config";
 import { HttpError } from "@/server/recovery/utils/http-error";
 
@@ -68,7 +69,7 @@ export async function createPagouTransaction(
       metadata: input.metadata ? JSON.stringify(input.metadata) : undefined,
     }),
     headers: {
-      "X-Request-Id": `pagrecovery_${randomUUID()}`,
+      "X-Request-Id": `${platformBrand.slug}_${randomUUID()}`,
     },
   });
 

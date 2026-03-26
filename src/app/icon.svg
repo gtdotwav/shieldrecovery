@@ -1,13 +1,13 @@
 <svg viewBox="0 0 210 260" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="stroke" x1="24" y1="24" x2="182" y2="246" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#4BE38C" />
-      <stop offset="0.55" stop-color="#1ED760" />
-      <stop offset="1" stop-color="#0FA47A" />
+      <stop stop-color="#fb923c" />
+      <stop offset="0.55" stop-color="#f97316" />
+      <stop offset="1" stop-color="#ea580c" />
     </linearGradient>
     <linearGradient id="fill" x1="42" y1="26" x2="168" y2="246" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#1f6b4f" />
-      <stop offset="1" stop-color="#0d3d2f" />
+      <stop stop-color="#7c2d12" />
+      <stop offset="1" stop-color="#431407" />
     </linearGradient>
     <clipPath id="shape">
       <path
@@ -17,7 +17,7 @@
       />
     </clipPath>
   </defs>
-  <rect width="210" height="260" rx="48" fill="#081812" />
+  <rect width="210" height="260" rx="48" fill="#0d0d0d" />
   <path
     d="M63.866 23.5H140.3C170.925 23.5 186.5 39.243 186.5 70.236V108.95C186.5 137.677 171.907 157.977 144.353 168.618L91.318 188.863L76.194 246.5H24.5L46.377 163.355C53.264 137.186 71.916 118.069 96.712 109.772L121.813 101.175C137.302 95.83 144.975 84.723 144.975 69.278C144.975 51.902 133.592 42.004 113.825 42.004H74.886L67.784 76.454H27.625L41.772 31.631C43.649 25.689 48.9 23.5 63.866 23.5Z"
     fill="url(#fill)"
@@ -26,8 +26,8 @@
     stroke-linejoin="round"
   />
   <g clip-path="url(#shape)" opacity="0.96">
-    <rect x="18" y="18" width="175" height="232" fill="#0f231b" />
-    <g fill="#206b4f">
+    <rect x="18" y="18" width="175" height="232" fill="#1a1a1a" />
+    <g fill="#9a3412">
       <rect x="33" y="37" width="9" height="9" />
       <rect x="42" y="37" width="9" height="9" />
       <rect x="60" y="37" width="9" height="9" />
@@ -86,7 +86,7 @@
       <rect x="132" y="145" width="9" height="9" />
       <rect x="150" y="145" width="9" height="9" />
     </g>
-    <g fill="#48d085">
+    <g fill="#fb923c">
       <rect x="42" y="46" width="9" height="9" />
       <rect x="51" y="46" width="9" height="9" />
       <rect x="87" y="46" width="9" height="9" />
@@ -123,7 +123,7 @@
       <rect x="132" y="100" width="9" height="9" />
       <rect x="150" y="100" width="9" height="9" />
     </g>
-    <g stroke="#5be198" stroke-width="7" fill="none" opacity="0.9">
+    <g stroke="#f97316" stroke-width="7" fill="none" opacity="0.9">
       <rect x="31.5" y="34.5" width="36" height="36" />
       <rect x="128.5" y="34.5" width="36" height="36" />
       <rect x="31.5" y="189.5" width="36" height="36" />

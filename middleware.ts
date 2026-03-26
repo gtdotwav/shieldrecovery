@@ -36,7 +36,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const token = request.cookies.get(getSessionCookieName())?.value;
+  const bearerToken = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const cookieToken = request.cookies.get(getSessionCookieName())?.value;
+  const token = bearerToken ?? cookieToken;
   const session = await verifySessionToken(token);
 
   if (session) {

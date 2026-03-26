@@ -4,13 +4,13 @@ type BadgeVariant = "accent" | "neutral" | "success" | "warning";
 
 const VARIANT_STYLES: Record<BadgeVariant, string> = {
   accent:
-    "border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.12)] text-[#9bf4be]",
+    "border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--accent-strong)] dark:text-[var(--accent)]",
   neutral:
-    "border-white/10 bg-white/5 text-[rgba(255,255,255,0.64)]",
+    "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400",
   success:
-    "border-[rgba(30,215,96,0.2)] bg-[rgba(30,215,96,0.12)] text-[#8df0b1]",
+    "border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--accent-strong)] dark:text-[var(--accent)]",
   warning:
-    "border-[rgba(248,210,106,0.18)] bg-[rgba(248,210,106,0.1)] text-[#f4dd93]",
+    "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400",
 };
 
 export function StatusBadge({
@@ -24,6 +24,8 @@ export function StatusBadge({
 }) {
   return (
     <span
+      role="status"
+      aria-label={`${label}`}
       className={cn(
         "inline-flex rounded-full border px-2.5 py-0.5 text-[0.65rem] uppercase tracking-[0.18em]",
         VARIANT_STYLES[variant],

@@ -39,13 +39,14 @@ export function PlatformLogo({
     return (
       <div className={cn("flex items-center justify-center", className)}>
         <Image
-          src="/brand/pagrecovery-mark.png"
+          src={platformBrand.mark}
           alt={platformBrand.name}
           width={256}
           height={256}
           className={cn(
             markSizeClass,
-            "object-contain drop-shadow-[0_10px_26px_rgba(30,215,96,0.2)]",
+            "object-contain",
+            `drop-shadow-[0_10px_26px_${platformBrand.accentGlow}]`,
             iconClassName,
           )}
           priority
@@ -58,10 +59,11 @@ export function PlatformLogo({
     return (
       <div className={cn("inline-flex items-center", frameClass, className)}>
         <Image
-          src="/brand/pagrecovery-logo.png"
+          src={platformBrand.logo}
           alt={platformBrand.name}
-          width={1600}
-          height={1600}
+          width={332}
+          height={332}
+          sizes="332px"
           className={cn(
             wordmarkSizeClass,
             "object-contain brightness-[1.02] [filter:drop-shadow(0_10px_24px_rgba(0,0,0,0.28))]",
@@ -82,7 +84,7 @@ export function PlatformLogo({
       )}
     >
       <Image
-        src="/brand/pagrecovery-mark.png"
+        src={platformBrand.mark}
         alt={platformBrand.name}
         width={256}
         height={256}
@@ -90,7 +92,7 @@ export function PlatformLogo({
         priority
       />
       <div className={cn("min-w-0", textClassName)}>
-        <p className="text-[2rem] font-bold tracking-[-0.06em] text-white">
+        <p className="text-[2rem] font-bold tracking-[-0.06em] text-gray-900 dark:text-white">
           {platformBrand.name}
         </p>
       </div>

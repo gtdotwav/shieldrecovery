@@ -5,17 +5,21 @@ import {
   BookOpen,
   Bot,
   CalendarDays,
-  Compass,
+  ChevronRight,
   FlaskConical,
   Inbox,
+  LayoutDashboard,
   Link2,
   LogOut,
+  MessageSquare,
+  Settings,
   ShieldCheck,
-  UsersRound,
+  Users,
 } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth-actions";
 import { PlatformLogo } from "@/components/platform/platform-logo";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
 import { cn } from "@/lib/utils";
@@ -38,7 +42,7 @@ export const platformRoutes: PlatformRoute[] = [
     href: "/",
     label: "Home",
     description: platformBrand.name,
-    icon: Compass,
+    icon: LayoutDashboard,
     kind: "marketing",
   },
   {
@@ -69,7 +73,7 @@ export const platformRoutes: PlatformRoute[] = [
     href: "/connect",
     label: "Integracoes",
     description: "O que esta ativo e o que falta.",
-    icon: Link2,
+    icon: Settings,
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },
@@ -85,7 +89,7 @@ export const platformRoutes: PlatformRoute[] = [
     href: "/leads",
     label: "CRM",
     description: "Qual caso mover agora.",
-    icon: UsersRound,
+    icon: Users,
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },
@@ -93,7 +97,7 @@ export const platformRoutes: PlatformRoute[] = [
     href: "/inbox",
     label: "Conversas",
     description: "Quem precisa de resposta.",
-    icon: Inbox,
+    icon: MessageSquare,
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },
@@ -133,6 +137,35 @@ function getVisibleRoutes(role?: UserRole) {
   });
 }
 
+function getInitials(email: string) {
+  const name = email.split("@")[0] ?? "";
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getRoleLabel(role: UserRole) {
+  return role === "admin" ? "Admin" : "Seller";
+}
+
+/* ── Shield logo mark (3x3 dot grid) ── */
+
+function ShieldMark() {
+  return (
+    <div className="mb-6 w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center">
+      <div className="grid grid-cols-3 gap-[3px] w-6 h-6">
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-50" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-50" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] opacity-50" />
+      </div>
+    </div>
+  );
+}
+
 /* ── Marketing / public shell ── */
 
 export function PlatformPage({
@@ -151,7 +184,7 @@ export function PlatformPage({
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <main className="mx-auto max-w-[88rem] px-4 pb-20 pt-4 sm:px-6 sm:pt-6 lg:px-8">
         <header className="sticky top-4 z-40 mb-6">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/80 px-5 py-3.5 backdrop-blur-sm sm:px-6">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)]/95 px-5 py-3.5 backdrop-blur-sm sm:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <PlatformLogo size="lg" emphasis="strong" className="max-sm:self-start" />
 
@@ -167,8 +200,8 @@ export function PlatformPage({
                         className={cn(
                           "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
                           isActive
-                            ? "border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.08)] text-[var(--accent)]"
-                            : "border-[var(--border)] bg-transparent text-white/50 hover:bg-white/[0.03] hover:text-white/70",
+                            ? "border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--accent)]"
+                            : "border-[var(--border)] bg-transparent text-[var(--muted)] hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)]",
                         )}
                       >
                         {route.label}
@@ -208,142 +241,169 @@ export async function PlatformAppPage({
     visibleRoutes.find((route) => route.kind === "app") ??
     visibleRoutes[0];
   const appRoutes = visibleRoutes.filter((route) => route.kind === "app");
+  const initials = getInitials(session.email);
+  const roleLabel = getRoleLabel(session.role);
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      {/* ─── Desktop sidebar ─── */}
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[14.5rem] flex-col border-r border-[var(--border)] bg-[var(--background)] xl:flex">
-        {/* Brand */}
-        <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-[var(--border)] px-4">
-          <PlatformLogo mode="icon" size="sm" className="scale-[0.68]" />
-          <span className="text-[0.82rem] font-semibold tracking-[-0.02em] text-white/90">
-            {platformBrand.name}
-          </span>
+    <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-300">
+      {/* ─── Desktop sidebar (icon-only, w-16) ─── */}
+      <aside className="hidden md:flex w-16 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex-col items-center py-4 justify-between shrink-0 h-screen sticky top-0 transition-colors duration-300">
+        <div className="flex flex-col items-center gap-1">
+          <ShieldMark />
+
+          {appRoutes.map((route) => {
+            const isActive = currentPath === route.href;
+
+            return (
+              <Link
+                key={route.href}
+                href={route.href}
+                title={route.label}
+                className={cn(
+                  "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                  isActive
+                    ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                    : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+                )}
+              >
+                <route.icon className="w-5 h-5" />
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
-          <p className="mb-1.5 px-3 text-[0.58rem] font-medium uppercase tracking-[0.1em] text-white/25">
-            Menu
-          </p>
-          <div className="space-y-0.5">
-            {appRoutes.map((route) => {
-              const isActive = currentPath === route.href;
-
-              return (
-                <Link
-                  key={route.href}
-                  href={route.href}
-                  title={route.description}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-lg px-3 py-[0.45rem] text-[0.8rem] font-medium transition-colors",
-                    isActive
-                      ? "bg-[rgba(30,215,96,0.07)] text-[var(--accent)]"
-                      : "text-white/45 hover:bg-white/[0.03] hover:text-white/70",
-                  )}
-                >
-                  <route.icon className="h-[15px] w-[15px] shrink-0" />
-                  {route.label}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-
-        {/* Footer */}
-        <div className="shrink-0 border-t border-[var(--border)] px-2.5 py-2.5">
-          <div className="mb-1.5 px-3">
-            <span className="rounded bg-white/[0.05] px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.06em] text-white/35">
-              {session.role}
-            </span>
-          </div>
+        <div className="flex flex-col items-center gap-1">
           <form action={logoutAction}>
             <button
               type="submit"
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-[0.45rem] text-[0.8rem] font-medium text-white/35 transition-colors hover:bg-white/[0.03] hover:text-white/55"
+              title="Sair"
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
             >
-              <LogOut className="h-[15px] w-[15px]" />
-              Sair
+              <LogOut className="w-5 h-5" />
             </button>
           </form>
+          <ThemeToggle />
         </div>
       </aside>
 
-      {/* ─── Main content ─── */}
-      <div className="min-w-0 flex-1 xl:pl-[14.5rem]">
-        {/* Header */}
-        <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between px-5 py-3.5 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3">
-              <div className="xl:hidden">
-                <PlatformLogo mode="icon" size="sm" className="scale-[0.7]" />
-              </div>
-              <div>
-                <nav className="hidden items-center gap-1.5 text-xs sm:flex">
-                  <Link
-                    href="/"
-                    className="text-white/30 transition-colors hover:text-white/50"
-                  >
-                    {platformBrand.name}
-                  </Link>
-                  <span className="text-white/15">/</span>
-                  <span className="font-medium text-white/60">
-                    {currentRoute.label}
-                  </span>
-                </nav>
-                <h1 className="text-[0.95rem] font-semibold tracking-[-0.02em] text-white sm:mt-0.5 sm:text-lg">
-                  {currentRoute.label}
-                </h1>
-              </div>
-            </div>
+      {/* ─── Mobile bottom nav ─── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-2 py-1.5 transition-colors duration-300">
+        {appRoutes.slice(0, 4).map((route) => {
+          const isActive = currentPath === route.href;
 
-            <div className="flex items-center gap-2.5">
-              {action}
-              <form action={logoutAction} className="xl:hidden">
-                <button
-                  type="submit"
-                  className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-white/45 transition-colors hover:bg-white/[0.03]"
-                >
-                  Sair
-                </button>
-              </form>
+          return (
+            <Link
+              key={route.href}
+              href={route.href}
+              className={cn(
+                "flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg transition-colors",
+                isActive
+                  ? "text-[var(--accent)]"
+                  : "text-gray-400 dark:text-gray-500",
+              )}
+            >
+              <route.icon className="w-5 h-5" />
+              <span style={{ fontSize: "10px" }}>{route.label}</span>
+            </Link>
+          );
+        })}
+        <MobileMoreMenu routes={appRoutes.slice(4)} currentPath={currentPath} />
+      </nav>
+
+      {/* ─── Main area ─── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-transparent px-4 md:px-6 h-12 md:h-14 flex items-center justify-between shrink-0 transition-colors duration-300">
+          <nav className="flex items-center gap-1.5 text-xs md:text-sm text-gray-500 dark:text-gray-500">
+            <Link
+              href="/"
+              className="hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
+            >
+              Home
+            </Link>
+            <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <span className="hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer hidden sm:inline">
+              {roleLabel}
+            </span>
+            <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5 hidden sm:block" />
+            <span className="text-gray-900 dark:text-white">
+              {currentRoute.label}
+            </span>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            {action}
+            <span className="text-sm text-gray-600 dark:text-gray-300 hidden sm:inline">
+              {session.email.split("@")[0]}
+            </span>
+            <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-xs md:text-sm font-semibold">
+              {initials}
             </div>
           </div>
         </header>
 
-        {/* Mobile bottom nav */}
-        <div className="xl:hidden">
-          <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border)] bg-[var(--background)]">
-            <div className="flex items-stretch gap-0.5 overflow-x-auto px-2 py-1.5 pb-[calc(env(safe-area-inset-bottom)+0.375rem)]">
-              {appRoutes.map((route) => {
-                const isActive = currentPath === route.href;
-
-                return (
-                  <Link
-                    key={route.href}
-                    href={route.href}
-                    className={cn(
-                      "flex shrink-0 flex-col items-center gap-0.5 rounded-lg px-3 py-2 transition-colors",
-                      isActive
-                        ? "text-[var(--accent)]"
-                        : "text-white/35 hover:text-white/55",
-                    )}
-                  >
-                    <route.icon className="h-4 w-4" />
-                    <span className="text-[0.6rem] font-medium leading-none">
-                      {route.label}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-        </div>
-
         {/* Page content */}
-        <main className="mx-auto max-w-[86rem] px-5 py-5 pb-24 sm:px-6 sm:py-6 lg:px-8 xl:pb-8">
+        <main id="main-content" className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 pb-20 md:pb-6">
           {children}
         </main>
+      </div>
+    </div>
+  );
+}
+
+/* ── Mobile "More" dropdown ── */
+
+function MobileMoreMenu({
+  routes,
+  currentPath,
+}: {
+  routes: PlatformRoute[];
+  currentPath: string;
+}) {
+  const isActive = routes.some((r) => r.href === currentPath);
+
+  return (
+    <div className="relative group">
+      <button
+        className={cn(
+          "flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg transition-colors",
+          isActive
+            ? "text-[var(--accent)]"
+            : "text-gray-400 dark:text-gray-500",
+        )}
+      >
+        <Inbox className="w-5 h-5" />
+        <span style={{ fontSize: "10px" }}>Mais</span>
+      </button>
+      <div className="absolute bottom-full right-0 mb-2 hidden group-focus-within:block bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg min-w-[160px] py-1 z-50">
+        {routes.map((route) => {
+          const active = currentPath === route.href;
+
+          return (
+            <Link
+              key={route.href}
+              href={route.href}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2 text-sm transition-colors",
+                active
+                  ? "text-[var(--accent)] bg-[var(--accent)]/5"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800",
+              )}
+            >
+              <route.icon className="w-4 h-4" />
+              {route.label}
+            </Link>
+          );
+        })}
+        <form action={logoutAction} className="border-t border-gray-200 dark:border-gray-800 mt-1 pt-1">
+          <button
+            type="submit"
+            className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 w-full transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -361,7 +421,7 @@ export function PlatformSurface({
   return (
     <div
       className={cn(
-        "rounded-xl border border-[var(--border)] bg-white/[0.025]",
+        "rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] transition-colors duration-300",
         className,
       )}
     >
@@ -380,7 +440,7 @@ export function PlatformInset({
   return (
     <div
       className={cn(
-        "rounded-lg border border-white/[0.05] bg-white/[0.02]",
+        "rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#111111]",
         className,
       )}
     >
@@ -407,20 +467,23 @@ export function PlatformSectionIntro({
   return (
     <div className={className}>
       {eyebrow ? (
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[var(--accent)]/55">
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[var(--accent)]/70">
           {eyebrow}
         </p>
       ) : null}
-      <TitleTag
-        className={cn(
-          "max-w-[28ch] text-xl font-semibold tracking-[-0.02em] text-white sm:text-2xl",
-          eyebrow && "mt-2",
-        )}
-      >
-        {title}
-      </TitleTag>
+      <div className="flex items-center gap-2.5">
+        <div className="w-1 h-7 bg-[var(--accent)] rounded-full" />
+        <TitleTag
+          className={cn(
+            "text-gray-900 dark:text-white text-xl font-semibold tracking-[-0.02em] sm:text-2xl",
+            eyebrow && "mt-2",
+          )}
+        >
+          {title}
+        </TitleTag>
+      </div>
       {description ? (
-        <p className="mt-2 max-w-xl text-sm leading-6 text-white/48">
+        <p className="mt-1 ml-3.5 text-xs sm:text-sm text-gray-400 dark:text-gray-500">
           {description}
         </p>
       ) : null}
@@ -445,23 +508,23 @@ export function PlatformMetricCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-[var(--border)] bg-white/[0.025] px-5 py-4",
+        "rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] px-5 py-4 transition-colors duration-300",
         className,
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-white/38">
+          <p className="text-[0.68rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
             {label}
           </p>
-          <p className="text-[1.85rem] font-semibold tracking-[-0.03em] text-white sm:text-[2rem]">
+          <p className="text-[1.85rem] font-semibold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2rem]">
             {value}
           </p>
           {subtitle ? (
-            <p className="mt-0.5 text-xs text-white/42">{subtitle}</p>
+            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{subtitle}</p>
           ) : null}
         </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[rgba(30,215,96,0.06)] text-[var(--accent)]/60">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)]/10 text-[var(--accent)]">
           <Icon className="h-[17px] w-[17px]" />
         </div>
       </div>
@@ -481,11 +544,11 @@ export function PlatformPill({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-white/[0.025] px-2.5 py-1 text-[0.68rem] font-medium text-white/50",
+        "inline-flex items-center gap-1.5 rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] px-2.5 py-1 text-[0.68rem] font-medium text-gray-500 dark:text-gray-400",
         className,
       )}
     >
-      {Icon ? <Icon className="h-3 w-3 text-[var(--accent)]/50" /> : null}
+      {Icon ? <Icon className="h-3 w-3 text-[var(--accent)]/60" /> : null}
       {children}
     </div>
   );

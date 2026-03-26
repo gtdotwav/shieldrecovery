@@ -24,6 +24,7 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { formatCurrency } from "@/lib/format";
+import { platformBrand } from "@/lib/platform";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
@@ -127,7 +128,7 @@ export default async function TestPage({ searchParams }: TestPageProps) {
               Alimente a plataforma só com dados reais do seu teste.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#717182]">
-              Este painel injeta eventos no backend real da PagRecovery.
+              Este painel injeta eventos no backend real da {platformBrand.name}.
               Tudo o que aparece em dashboard, CRM, conversas e analytics nasce
               daqui ou do webhook oficial. Se quiser validar do zero, limpe a
               base e gere um cenário completo.

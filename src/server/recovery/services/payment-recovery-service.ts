@@ -1224,12 +1224,10 @@ export class PaymentRecoveryService {
         pixQrCode: resolvedPixQrCode,
         pixExpiresAt: resolvedPixExpiresAt,
         actionLabel: isMethodSelection
-          ? `Pagar via ${selectedMethodType === "pix" ? "PIX" : selectedMethodType === "card" ? "Cartão" : "Boleto"}`
-          : resolvedPixCode
-            ? "Copiar código Pix"
-            : retryLink
-              ? "Abrir pagamento"
-              : undefined,
+          ? "Abrir pagamento"
+          : retryLink
+            ? "Abrir pagamento"
+            : undefined,
       },
       logMessage: isMethodSelection
         ? `AI generated checkout link after ${selectedMethodType} method selection.`
@@ -1340,7 +1338,7 @@ export class PaymentRecoveryService {
         pixCode: refreshedPayment.pixCode,
         pixQrCode: refreshedPayment.pixQrCode,
         pixExpiresAt: refreshedPayment.pixExpiresAt,
-        actionLabel: "Copiar codigo Pix",
+        actionLabel: "Abrir pagamento",
       },
       logMessage: "Scheduled Pix follow-up generated with refreshed payment.",
       eventType: "ai_reply_generated",
@@ -1861,14 +1859,8 @@ export class PaymentRecoveryService {
       pixCode: initialPaymentAsset.pixCode,
       pixQrCode: initialPaymentAsset.pixQrCode,
       pixExpiresAt: initialPaymentAsset.pixExpiresAt,
-      actionLabel: "Escanear QR Pix",
+      actionLabel: "Abrir pagamento",
     };
-
-    const dispatch = await this.messaging.dispatchOutboundMessage({
-      conversation,
-      content: generated.content,
-      metadata,
-    });
 
     const resolvedLead =
       input.lead ??
@@ -1880,20 +1872,52 @@ export class PaymentRecoveryService {
             email: conversation.contactValue,
           }));
 
-    const message = await this.storage.createMessage({
-      conversationId: conversation.id,
-      channel: conversation.channel,
-      direction: "outbound",
-      senderAddress: platformBrand.slug,
-      senderName: platformBrand.name,
-      content: generated.content,
-      status: dispatch.status,
-      lead: resolvedLead,
-      customerId: input.customer.id,
-      providerMessageId: dispatch.providerMessageId,
-      error: dispatch.error,
-      metadata,
-    });
+    const shouldDelayInitialWhatsApp =
+      input.source === "webhook" && target.channel === "whatsapp";
+
+    let deliveryStatus: MessageRecord["status"] = "queued";
+    let providerMessageId: string | undefined;
+    let dispatchError: string | undefined;
+    let message: MessageRecord;
+
+    if (shouldDelayInitialWhatsApp) {
+      message = await this.storage.createMessage({
+        conversationId: conversation.id,
+        channel: conversation.channel,
+        direction: "outbound",
+        senderAddress: platformBrand.slug,
+        senderName: platformBrand.name,
+        content: generated.content,
+        status: "queued",
+        lead: resolvedLead,
+        customerId: input.customer.id,
+        metadata,
+      });
+    } else {
+      const dispatch = await this.messaging.dispatchOutboundMessage({
+        conversation,
+        content: generated.content,
+        metadata,
+      });
+
+      deliveryStatus = dispatch.status;
+      providerMessageId = dispatch.providerMessageId;
+      dispatchError = dispatch.error;
+      message = await this.storage.createMessage({
+        conversationId: conversation.id,
+        channel: conversation.channel,
+        direction: "outbound",
+        senderAddress: platformBrand.slug,
+        senderName: platformBrand.name,
+        content: generated.content,
+        status: dispatch.status,
+        lead: resolvedLead,
+        customerId: input.customer.id,
+        providerMessageId: dispatch.providerMessageId,
+        error: dispatch.error,
+        metadata,
+      });
+    }
 
     await this.storage.updateConversationStatus({
       conversationId: conversation.id,
@@ -1903,22 +1927,26 @@ export class PaymentRecoveryService {
     await this.storage.addLog(
       createStructuredLog({
         eventType: "recovery_started",
-        level: dispatch.status === "failed" ? "warn" : "info",
+        level: deliveryStatus === "failed" ? "warn" : "info",
         message:
-          input.source === "webhook"
-            ? "Initial Pix follow-up sent from webhook."
-            : "Initial Pix follow-up started manually.",
+          shouldDelayInitialWhatsApp
+            ? "Initial payment recovery prepared from webhook with 6-minute delay."
+            : input.source === "webhook"
+              ? "Initial payment recovery sent from webhook."
+              : "Initial payment recovery started manually.",
         context: {
           leadId: input.lead.leadId,
           conversationId: conversation.id,
           channel: target.channel,
           paymentId: input.payment.id,
           source: input.source,
+          delayedDispatch: shouldDelayInitialWhatsApp,
           nextAction: "send_initial_message",
           strategyId: decision.strategy?.id,
           recoveryProbability: decision.classification.probability,
-          deliveryStatus: dispatch.status,
-          dispatchError: dispatch.error,
+          providerMessageId,
+          deliveryStatus,
+          dispatchError,
         },
       }),
     );
@@ -1939,7 +1967,10 @@ export class PaymentRecoveryService {
     pixQrCode?: string;
     pixExpiresAt?: string;
   }) {
-    let paymentLink = input.paymentUrl?.trim() || undefined;
+    let paymentLink = await this.resolveHostedPaymentLink({
+      payment: input.payment,
+      paymentUrl: input.paymentUrl,
+    });
     let pixCode = input.pixCode?.trim() || undefined;
     let pixQrCode = input.pixQrCode?.trim() || undefined;
     let pixExpiresAt = input.pixExpiresAt?.trim() || undefined;
@@ -1968,6 +1999,36 @@ export class PaymentRecoveryService {
       pixQrCode,
       pixExpiresAt,
     };
+  }
+
+  private async resolveHostedPaymentLink(input: {
+    payment: PaymentRecord;
+    paymentUrl?: string;
+  }) {
+    const providedUrl = input.paymentUrl?.trim();
+    const baseUrl = await this.resolveAppBaseUrl();
+
+    if (providedUrl?.startsWith(`${baseUrl}/retry/`)) {
+      return providedUrl;
+    }
+
+    if (
+      appEnv.pagouAiConfigured &&
+      input.payment.paymentMethod?.toLowerCase() === "pix"
+    ) {
+      const params = new URLSearchParams({
+        provider: platformBrand.gateway.slug,
+        method: "pix",
+      });
+
+      if (input.payment.gatewayPaymentId.trim()) {
+        params.set("transactionId", input.payment.gatewayPaymentId);
+      }
+
+      return `${baseUrl}/retry/${input.payment.gatewayPaymentId}?${params.toString()}`;
+    }
+
+    return providedUrl;
   }
 
   private async createImmediatePaymentLink(
@@ -2027,8 +2088,19 @@ export class PaymentRecoveryService {
       });
 
       return { paymentLink: checkoutUrl };
-    } catch {
+    } catch (error) {
       // Fallback to legacy retry link if checkout platform is unavailable
+      await this.storage.addLog(
+        createStructuredLog({
+          eventType: "processing_error",
+          level: "warn",
+          message: "Checkout platform unavailable, using fallback link.",
+          context: {
+            paymentId: payment.id,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        }),
+      ).catch(() => {});
       const paymentLink = `${baseUrl}/retry/${payment.gatewayPaymentId}?token=${randomUUID()}`;
 
       await this.storage.createPaymentAttempt({
@@ -2083,9 +2155,7 @@ export class PaymentRecoveryService {
       },
     });
 
-    const paymentLink =
-      pagouTransaction.paymentUrl ||
-      `${input.baseUrl}/retry/${input.payment.gatewayPaymentId}?provider=${platformBrand.gateway.slug}&transactionId=${encodeURIComponent(pagouTransaction.transactionId)}&method=pix`;
+    const paymentLink = `${input.baseUrl}/retry/${input.payment.gatewayPaymentId}?provider=${platformBrand.gateway.slug}&transactionId=${encodeURIComponent(pagouTransaction.transactionId)}&method=pix`;
 
     await this.storage.createPaymentAttempt({
       paymentId: input.payment.id,

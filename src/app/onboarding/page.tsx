@@ -16,6 +16,7 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { formatCurrency } from "@/lib/format";
+import { platformBrand } from "@/lib/platform";
 import { canRoleAccessAgent, type UserRole } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
@@ -26,10 +27,10 @@ import {
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata = {
-  title: "Guia | PagRecovery",
+  title: "Guia",
 };
 
 type OnboardingModule = {
@@ -238,7 +239,7 @@ export default async function OnboardingPage() {
                   <span
                     className={
                       item.ready
-                        ? "inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-green-700"
+                        ? "inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/5 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]"
                         : "inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-amber-700"
                     }
                   >
@@ -706,7 +707,7 @@ function GuideState({
         <span
           className={
             ready
-              ? "inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-green-700"
+              ? "inline-flex items-center gap-1 rounded-full bg-[var(--accent)]/5 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]"
               : "inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-amber-700"
           }
         >

@@ -24,6 +24,7 @@ import {
 } from "@/components/platform/platform-shell";
 import { CopyButton } from "@/components/ui/copy-button";
 import { formatCurrency, formatRelativeTime } from "@/lib/format";
+import { platformBrand } from "@/lib/platform";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import type {
@@ -34,7 +35,7 @@ import type {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Admin | PagRecovery",
+  title: "Admin",
 };
 
 type AdminPageProps = {
@@ -190,15 +191,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
 
             {snapshot.sellers.length === 0 ? (
-              <div className="pt-4">
-                <p className="text-lg font-semibold text-[#111827]">
+              <PlatformInset className="mt-4 p-6 text-center">
+                <UsersRound className="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
+                <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
                   Nenhum seller/agente operacional apareceu ainda.
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[#6b7280]">
+                <p className="mt-1.5 text-sm leading-6 text-gray-500 dark:text-gray-400">
                   Assim que a operação atribuir leads ou conversar com clientes,
                   os sellers entram aqui automaticamente para controle administrativo.
                 </p>
-              </div>
+                <Link
+                  href="/connect"
+                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
+                >
+                  Configurar integrações
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </PlatformInset>
             ) : (
               <div className="mt-4 space-y-2">
                 {filteredSellers.length === 0 ? (
@@ -323,9 +332,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <SectionHeader eyebrow="Acessos seller" title="Contas já persistidas." compact />
             <div className="mt-4 space-y-3">
               {snapshot.sellerUsers.length === 0 ? (
-                <p className="text-sm leading-6 text-[#6b7280]">
-                  Ainda não existem contas de seller persistidas.
-                </p>
+                <PlatformInset className="p-4 text-center">
+                  <KeyRound className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Ainda não existem contas de seller persistidas.
+                  </p>
+                </PlatformInset>
               ) : (
                 snapshot.sellerUsers.map((seller) => (
                   <AdminAccessRow key={seller.id} seller={seller} />
@@ -422,9 +434,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             />
             <div className="mt-4 space-y-3">
               {activeInvites.length === 0 ? (
-                <p className="text-sm leading-6 text-[#6b7280]">
-                  Nenhum convite gerado ainda.
-                </p>
+                <PlatformInset className="p-4 text-center">
+                  <KeyRound className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    Nenhum convite gerado ainda.
+                  </p>
+                </PlatformInset>
               ) : (
                 activeInvites.slice(0, 8).map((invite) => (
                   <SellerInviteRow key={invite.id} invite={invite} />
@@ -447,12 +462,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
 
         {snapshot.sellerUsers.length === 0 ? (
-          <PlatformInset className="mt-4 p-5">
-            <p className="text-sm font-medium text-[#111827]">
+          <PlatformInset className="mt-4 p-6 text-center">
+            <KeyRound className="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
+            <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
               Nenhum seller cadastrado ainda.
             </p>
-            <p className="mt-1 text-sm leading-6 text-[#6b7280]">
-              Assim que você criar os acessos, a lista completa aparece aqui.
+            <p className="mt-1.5 text-sm leading-6 text-gray-500 dark:text-gray-400">
+              Crie acessos manualmente ou envie convites para que os sellers finalizem o cadastro.
             </p>
           </PlatformInset>
         ) : (

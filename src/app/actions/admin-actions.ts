@@ -2,12 +2,25 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import { getStorageService } from "@/server/recovery/services/storage";
 import type { SellerAutonomyMode } from "@/server/recovery/types";
 import { hashPlatformPassword } from "@/server/auth/passwords";
+
+const saveSellerUserSchema = z.object({
+  email: z.string().email("Email invalido"),
+  displayName: z.string().optional(),
+  agentName: z.string().min(1, "Nome do agente obrigatorio"),
+  password: z.string().optional(),
+  active: z.boolean(),
+});
+
+const createSellerInviteSchema = z.object({
+  email: z.string().email("Email do seller obrigatorio"),
+});
 
 function revalidateAdminRoutes() {
   revalidatePath("/admin");
@@ -20,15 +33,20 @@ function revalidateAdminRoutes() {
 export async function saveSellerUserAction(formData: FormData) {
   await requireAuthenticatedSession(["admin"]);
 
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const displayName = String(formData.get("displayName") ?? "").trim();
-  const agentName = String(formData.get("agentName") ?? "").trim();
-  const password = String(formData.get("password") ?? "").trim();
-  const active = formData.get("active") === "on";
+  const parsed = saveSellerUserSchema.safeParse({
+    email: String(formData.get("email") ?? "").trim().toLowerCase(),
+    displayName: String(formData.get("displayName") ?? "").trim() || undefined,
+    agentName: String(formData.get("agentName") ?? "").trim(),
+    password: String(formData.get("password") ?? "").trim() || undefined,
+    active: formData.get("active") === "on",
+  });
 
-  if (!email || !agentName) {
-    redirect("/admin?status=error&message=Seller%20invalido");
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? "Seller invalido";
+    redirect(`/admin?status=error&message=${encodeURIComponent(message)}`);
   }
+
+  const { email, displayName, agentName, password, active } = parsed.data;
 
   const existingSeller = await getStorageService().findSellerUserByEmail(email);
 
@@ -59,15 +77,20 @@ export async function saveSellerUserAction(formData: FormData) {
 export async function createSellerInviteAction(formData: FormData) {
   const session = await requireAuthenticatedSession(["admin"]);
 
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const emailParsed = createSellerInviteSchema.safeParse({
+    email: String(formData.get("email") ?? "").trim().toLowerCase(),
+  });
+
+  if (!emailParsed.success) {
+    const message = emailParsed.error.issues[0]?.message ?? "Email do seller obrigatorio";
+    redirect(`/admin?status=error&message=${encodeURIComponent(message)}`);
+  }
+
+  const email = emailParsed.data.email;
   const suggestedDisplayName = String(formData.get("suggestedDisplayName") ?? "").trim();
   const agentName = String(formData.get("agentName") ?? "").trim();
   const note = String(formData.get("note") ?? "").trim();
   const expiresInDays = Number(String(formData.get("expiresInDays") ?? "7"));
-
-  if (!email) {
-    redirect("/admin?status=error&message=Email%20do%20seller%20obrigatorio");
-  }
 
   try {
     await getPaymentRecoveryService().createSellerInvite({

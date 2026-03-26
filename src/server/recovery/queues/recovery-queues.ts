@@ -8,6 +8,9 @@ import type {
   RecoveryLeadRecord,
 } from "@/server/recovery/types";
 
+const INITIAL_WHATSAPP_DELAY_MINUTES = 6;
+const REFRESHED_PIX_FOLLOW_UP_DELAY_MINUTES = 12;
+
 export function buildRecoveryWorkflowJobs(input: {
   lead: RecoveryLeadRecord;
   payment: PaymentRecord;
@@ -21,21 +24,31 @@ export function buildRecoveryWorkflowJobs(input: {
       paymentId: input.payment.id,
       eventType: input.event.event_type,
     }),
-    createJob("notification-jobs", "whatsapp-initial", now + 5 * 60_000, {
+    createJob(
+      "notification-jobs",
+      "whatsapp-initial",
+      now + INITIAL_WHATSAPP_DELAY_MINUTES * 60_000,
+      {
       leadId: input.lead.leadId,
       channel: "whatsapp",
       template: "payment_recovery_initial",
-    }),
+      },
+    ),
     createJob("notification-jobs", "email-reminder", now + 30 * 60_000, {
       leadId: input.lead.leadId,
       channel: "email",
       template: "payment_recovery_email",
     }),
-    createJob("notification-jobs", "whatsapp-follow-up", now + 6 * 60_000, {
+    createJob(
+      "notification-jobs",
+      "whatsapp-follow-up",
+      now + REFRESHED_PIX_FOLLOW_UP_DELAY_MINUTES * 60_000,
+      {
       leadId: input.lead.leadId,
       channel: "whatsapp",
       template: "payment_recovery_follow_up",
-    }),
+      },
+    ),
     createJob("recovery-jobs", "agent-task", now + 24 * 60 * 60_000, {
       leadId: input.lead.leadId,
       taskType: "ai_follow_up",

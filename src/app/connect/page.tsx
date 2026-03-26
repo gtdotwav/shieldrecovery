@@ -41,10 +41,10 @@ import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPlatformBootstrapService } from "@/server/recovery/services/platform-bootstrap-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export const metadata = {
-  title: "Integrações | PagRecovery",
+  title: "Integrações",
 };
 
 type ConnectPageProps = {
@@ -1110,7 +1110,7 @@ function IntegrationLine({ item }: { item: IntegrationStatus }) {
       </div>
       <div
         className={`h-2.5 w-2.5 rounded-full ${
-          item.active ? "bg-green-500" : "bg-[#d1d5db]"
+          item.active ? "bg-[var(--accent)]" : "bg-[#d1d5db]"
         }`}
       />
     </div>

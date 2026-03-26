@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   CreditCard,
   Clock,
+  Download,
   TrendingUp,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ import { StageBadge } from "@/components/ui/stage-badge";
 import { TimeBadge } from "@/components/ui/time-badge";
 import { hasPhone, pickBestContact } from "@/lib/contact";
 import { formatCurrency } from "@/lib/format";
+import { platformBrand } from "@/lib/platform";
 import { recommendedNextAction, scorePriority } from "@/lib/stage";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -27,7 +29,7 @@ import type { FollowUpContact } from "@/server/recovery/types";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Recuperacao | PagRecovery",
+  title: "Recuperação",
 };
 
 export default async function DashboardPage() {
@@ -74,13 +76,23 @@ export default async function DashboardPage() {
     <PlatformAppPage
       currentPath="/dashboard"
       action={
-        <Link
-          href="/leads"
-          className="glass-button-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold"
-        >
-          Abrir CRM
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="/api/export/contacts"
+            download
+            className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Exportar CSV
+          </a>
+          <Link
+            href="/leads"
+            className="glass-button-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold"
+          >
+            Abrir CRM
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       }
     >
       {/* KPI cards */}
@@ -114,22 +126,22 @@ export default async function DashboardPage() {
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(17rem,0.85fr)]">
         <div className="space-y-5">
           {/* Chart */}
-          <PlatformSurface className="p-5 sm:p-6">
+          <PlatformSurface className="p-5 sm:p-6 lg:p-7">
             <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
-                Evolucao mensal
-              </p>
-              <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-white">
-                Recuperadas vs. abertas
-              </h3>
+                <p className="font-mono text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+                  Evolucao mensal
+                </p>
+                <h3 className="mt-1.5 text-base font-semibold tracking-[-0.02em] text-[var(--foreground)]">
+                  Recuperadas vs. abertas
+                </h3>
               </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <LegendPill color="bg-[#1ED760]">recuperadas</LegendPill>
-                <LegendPill color="bg-white/50">abertas</LegendPill>
+              <div className="flex flex-wrap gap-2">
+                <LegendPill color="bg-[var(--accent)]">recuperadas</LegendPill>
+                <LegendPill color="bg-[var(--muted)] opacity-50">abertas</LegendPill>
               </div>
             </div>
-            <div className="mt-4">
+            <div className="mt-5 -mx-1">
               <RecoveryChart data={chartData} />
             </div>
           </PlatformSurface>
@@ -138,16 +150,16 @@ export default async function DashboardPage() {
           <PlatformSurface className="p-5 sm:p-6">
             <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
+                <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
                   Prioridades
                 </p>
-                <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-white">
+                <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-gray-900 dark:text-white">
                   Casos que abrem o dia
                 </h3>
               </div>
               <Link
                 href="/leads"
-                className="text-sm font-medium text-[var(--accent)] transition-colors hover:text-[#72f2a2]"
+                className="text-sm font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent)]"
               >
                 Ver todos
               </Link>
@@ -156,7 +168,7 @@ export default async function DashboardPage() {
             <div className="mt-4 space-y-2.5">
               {prioritizedContacts.length === 0 ? (
                 <PlatformInset className="p-6 text-center">
-                  <p className="text-sm text-[rgba(255,255,255,0.54)]">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     Nenhum caso ativo na carteira.
                   </p>
                 </PlatformInset>
@@ -173,7 +185,7 @@ export default async function DashboardPage() {
         <div className="space-y-5 xl:sticky xl:top-20 xl:self-start">
           {/* Portfolio health */}
           <PlatformSurface className="p-5">
-            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
+            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
               Saude da carteira
             </p>
             <div className="mt-4 space-y-2.5">
@@ -190,15 +202,15 @@ export default async function DashboardPage() {
 
           {/* Channel coverage */}
           <PlatformSurface className="p-5">
-            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
+            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
               Canais disponiveis
             </p>
             <div className="mt-4 space-y-3.5">
-              <ChannelBar label="WhatsApp" count={whatsappCount} total={contacts.length} color="bg-[#1ED760]" />
-              <ChannelBar label="Email" count={emailCount} total={contacts.length} color="bg-[#0FA47A]" />
+              <ChannelBar label="WhatsApp" count={whatsappCount} total={contacts.length} color="bg-[var(--accent)]" />
+              <ChannelBar label="Email" count={emailCount} total={contacts.length} color="bg-[var(--accent-strong)]" />
             </div>
             {contacts.length > 0 ? (
-              <p className="mt-4 text-xs text-[rgba(255,255,255,0.42)]">
+              <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
                 {contacts.length} contatos no total
               </p>
             ) : null}
@@ -219,7 +231,7 @@ function LegendPill({
   children: React.ReactNode;
 }) {
   return (
-    <span className="muted-pill inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[0.68rem] font-medium">
+    <span className="muted-pill inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-mono text-[0.62rem] font-medium uppercase tracking-[0.06em]">
       <span className={`h-2 w-2 rounded-full ${color}`} />
       {children}
     </span>
@@ -242,12 +254,12 @@ function ChannelBar({
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium text-[rgba(255,255,255,0.82)]">{label}</span>
-        <span className="text-sm tabular-nums text-[rgba(255,255,255,0.64)]">
-          {count} <span className="text-[rgba(255,255,255,0.38)]">({pct}%)</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
+        <span className="text-sm tabular-nums text-gray-500 dark:text-gray-400">
+          {count} <span className="text-gray-400 dark:text-gray-500">({pct}%)</span>
         </span>
       </div>
-      <div className="mt-1.5 h-1.5 rounded-full bg-white/6">
+      <div className="mt-1.5 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800">
         <div
           className={`h-1.5 rounded-full transition-all ${color}`}
           style={{ width: `${pct}%` }}
@@ -269,9 +281,9 @@ function MetricLine({
   return (
     <div className="glass-inset rounded-xl px-3.5 py-2.5">
       <div className="flex items-center justify-between gap-4">
-      <span className="text-sm text-[rgba(255,255,255,0.6)]">{label}</span>
+      <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
       <span
-        className={`text-sm font-semibold tabular-nums ${highlight ? "text-[var(--accent)]" : "text-white"}`}
+        className={`text-sm font-semibold tabular-nums ${highlight ? "text-[var(--accent)]" : "text-gray-900 dark:text-white"}`}
       >
         {value}
       </span>
@@ -289,13 +301,13 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-semibold text-white">
+            <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
               {contact.customer_name}
             </p>
             <StageBadge stage={contact.lead_status} />
             <TimeBadge updatedAt={contact.updated_at} />
           </div>
-          <p className="mt-1 text-xs text-[rgba(255,255,255,0.42)]">
+          <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
             {contact.product || "Produto nao informado"} · {pickBestContact(contact.phone, contact.email)}
           </p>
         </div>
@@ -316,8 +328,8 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
 function DetailPill({ label, value }: { label: string; value: string }) {
   return (
     <span className="muted-pill inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs">
-      <span className="text-[rgba(255,255,255,0.42)]">{label}:</span>
-      <span className="font-medium text-[rgba(255,255,255,0.8)]">{value}</span>
+      <span className="text-gray-400 dark:text-gray-500">{label}:</span>
+      <span className="font-medium text-gray-700 dark:text-gray-200">{value}</span>
     </span>
   );
 }

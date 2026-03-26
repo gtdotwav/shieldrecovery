@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CircleAlert, Phone, UsersRound } from "lucide-react";
+import { ArrowRight, CircleAlert, Phone, Search, UsersRound } from "lucide-react";
 
 import { transitionLeadStage } from "@/app/actions/recovery-actions";
 import {
@@ -22,6 +22,7 @@ import {
   recommendedNextAction,
   scorePriority,
 } from "@/lib/stage";
+import { platformBrand } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
@@ -35,7 +36,7 @@ import type {
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "CRM | PagRecovery",
+  title: "CRM",
 };
 
 type SearchParamValue = string | string[] | undefined;
@@ -44,6 +45,7 @@ type LeadsPageProps = {
   searchParams?: Promise<{
     view?: SearchParamValue;
     scope?: SearchParamValue;
+    q?: SearchParamValue;
   }>;
 };
 
@@ -63,6 +65,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const params = (await searchParams) ?? {};
   const currentView = readViewMode(params.view);
   const currentScope = readScopeMode(params.scope);
+  const searchQuery = readSearchQuery(params.q);
 
   const service = getPaymentRecoveryService();
   const sellerIdentity =
@@ -77,7 +80,11 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
     ),
   );
 
-  const sortedContacts = [...contacts].sort(compareLeads);
+  const searchedContacts = searchQuery
+    ? contacts.filter((c) => matchesContactQuery(c, searchQuery))
+    : contacts;
+
+  const sortedContacts = [...searchedContacts].sort(compareLeads);
   const activeContacts = sortedContacts.filter(isOpenLead);
   const filteredContacts = filterContactsByScope(sortedContacts, currentScope);
 
@@ -136,13 +143,13 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
         <PlatformSurface className="p-4 sm:p-5">
           <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
+              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
                 CRM operacional
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-white">
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-gray-900 dark:text-white">
                 Lista para operar, kanban para apoiar.
               </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[rgba(255,255,255,0.6)]">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
                 A operação principal fica na lista. O kanban continua disponível
                 só como apoio visual para leitura de etapa.
               </p>
@@ -154,7 +161,20 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
             <div className="flex flex-col items-start gap-2 lg:items-end">
               <ScopeSwitcher currentView={currentView} currentScope={currentScope} />
-              <p className="text-xs text-[rgba(255,255,255,0.38)]">Lista como padrão.</p>
+              <form className="w-full lg:max-w-xs">
+                <input type="hidden" name="view" value={currentView} />
+                <input type="hidden" name="scope" value={currentScope} />
+                <label className="relative block">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                  <input
+                    type="search"
+                    name="q"
+                    defaultValue={searchQuery}
+                    placeholder="Buscar por nome, email ou telefone"
+                    className="w-full rounded-lg border border-black/[0.08] bg-white px-10 py-2 text-sm text-gray-900 outline-none transition focus:border-[var(--accent)] dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white"
+                  />
+                </label>
+              </form>
             </div>
           </div>
 
@@ -169,19 +189,19 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
         <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <PlatformSurface className="p-4">
-            <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
+            <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
               Caso em foco
             </h3>
             {focusedLead ? (
               <div className="mt-4 space-y-3">
                 <div>
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
                     {focusedLead.customer_name}
                   </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--accent)]">
                     {formatCurrency(focusedLead.payment_value)}
                   </p>
-                  <p className="mt-1 text-xs text-[rgba(255,255,255,0.42)]">
+                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                     {focusedLead.product || "Produto não informado"}
                   </p>
                 </div>
@@ -207,17 +227,17 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     value={formatDateTime(focusedLead.updated_at)}
                   />
                 </div>
-                <div className="rounded-[1rem] border border-[rgba(30,215,96,0.16)] bg-[linear-gradient(180deg,rgba(30,215,96,0.18),rgba(15,164,122,0.14))] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                  <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-[rgba(255,255,255,0.44)]">
+                <div className="rounded-[1rem] border border-[var(--accent)]/16 bg-[linear-gradient(180deg,var(--accent-soft),rgba(255,255,255,0.03))] px-3 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                  <p className="font-mono text-xs font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
                     Próxima ação
                   </p>
-                  <p className="mt-1 text-sm text-white">
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
                     {recommendedNextAction(focusedLead)}
                   </p>
                 </div>
                 <Link
                   href={`/leads/${focusedLead.lead_id}`}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--accent)] transition-colors hover:text-[#72f2a2]"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent)]"
                 >
                   Abrir detalhe do lead
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -225,8 +245,8 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
               </div>
             ) : (
               <PlatformInset className="mt-3 p-4">
-                  <p className="text-sm text-[rgba(255,255,255,0.54)]">Nenhum lead nesta carteira.</p>
-                <p className="mt-1 text-xs text-[rgba(255,255,255,0.38)]">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Nenhum lead nesta carteira.</p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                   Quando novos casos entrarem, o foco da operação aparece aqui.
                 </p>
               </PlatformInset>
@@ -234,7 +254,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/35">
+            <h3 className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
               Leitura da carteira
             </h3>
             <div className="mt-4 space-y-2.5">
@@ -252,13 +272,13 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     <div className="flex items-center gap-2">
                       <StageBadge stage={stage} />
                     </div>
-                    <span className="text-sm font-medium text-white">{count}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{count}</span>
                   </div>
                 );
               })}
               <div className="glass-inset flex items-center justify-between rounded-[0.95rem] px-3 py-2.5">
-                <span className="text-sm text-[rgba(255,255,255,0.58)]">Sem responsável</span>
-                <span className="text-sm font-medium text-white">{unassignedCount}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Sem responsável</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">{unassignedCount}</span>
               </div>
             </div>
           </PlatformSurface>
@@ -339,8 +359,8 @@ function SwitcherLink({
       className={cn(
         "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] transition-colors",
         active
-          ? "bg-[rgba(30,215,96,0.16)] text-[var(--accent)]"
-          : "text-[rgba(255,255,255,0.58)] hover:bg-white/6 hover:text-white",
+          ? "bg-[var(--accent)]/16 text-[var(--accent)]"
+          : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/6 hover:text-gray-900 dark:hover:text-white",
       )}
     >
       {children}
@@ -352,10 +372,10 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
   if (contacts.length === 0) {
     return (
       <PlatformInset className="p-6 text-center">
-        <p className="text-sm text-[rgba(255,255,255,0.56)]">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Nenhum lead encontrado nessa visualização.
         </p>
-        <p className="mt-1 text-xs text-[rgba(255,255,255,0.38)]">
+        <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
           Ajuste o filtro ou aguarde a próxima entrada da carteira.
         </p>
       </PlatformInset>
@@ -366,7 +386,7 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
     <>
       <div className="hidden lg:block">
         <div className="glass-panel overflow-hidden rounded-xl">
-          <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 border-b bg-[rgba(255,255,255,0.03)] px-4 py-3 text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
+          <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 border-b bg-gray-50 dark:bg-white/[0.03] px-4 py-3 text-[0.65rem] font-medium uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500">
             <span>Lead</span>
             <span>Etapa</span>
             <span>Valor</span>
@@ -375,7 +395,7 @@ function LeadListView({ contacts }: { contacts: FollowUpContact[] }) {
             <span>Atualizado</span>
             <span className="text-right">Ação</span>
           </div>
-          <div className="divide-y divide-white/6">
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {contacts.map((contact) => (
               <LeadTableRow key={contact.lead_id} contact={contact} />
             ))}
@@ -411,7 +431,7 @@ function LeadKanbanView({
       {visibleLanes.map((lane) => (
         <div key={lane.key} className="glass-panel min-w-[17rem] rounded-xl p-3 xl:min-w-0">
           <div className="flex items-center justify-between pb-3">
-            <p className="text-sm font-medium text-white">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
               {mapStageLabel(lane.key)}
             </p>
             <span className="muted-pill rounded-full px-2 py-0.5 text-[0.65rem]">
@@ -420,8 +440,8 @@ function LeadKanbanView({
           </div>
           <div className="space-y-2.5">
             {lane.leads.length === 0 ? (
-              <div className="glass-inset rounded-xl border border-dashed border-white/10 px-3 py-5 text-center">
-                <p className="text-xs text-[rgba(255,255,255,0.42)]">Vazio</p>
+              <div className="glass-inset rounded-xl border border-dashed border-gray-200 dark:border-gray-800 px-3 py-5 text-center">
+                <p className="text-xs text-gray-400 dark:text-gray-500">Vazio</p>
               </div>
             ) : (
               lane.leads.map((contact) => (
@@ -439,20 +459,20 @@ function LeadTableRow({ contact }: { contact: FollowUpContact }) {
   const isTerminal = isTerminalLead(contact);
 
   return (
-    <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.03]">
+    <div className="grid grid-cols-[minmax(0,1.55fr)_0.9fr_0.95fr_1.1fr_0.8fr_0.9fr_0.82fr] gap-3 px-4 py-3.5 transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.03]">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <Link
             href={`/leads/${contact.lead_id}`}
-            className="truncate text-sm font-semibold text-white transition-colors hover:text-[var(--accent)]"
+            className="truncate text-sm font-semibold text-gray-900 dark:text-white transition-colors hover:text-[var(--accent)]"
           >
             {contact.customer_name}
           </Link>
         </div>
-        <p className="mt-1 truncate text-xs text-[rgba(255,255,255,0.42)]">
+        <p className="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
           {contact.product || "Produto não informado"}
         </p>
-        <p className="mt-1 truncate text-xs text-[rgba(255,255,255,0.58)]">
+        <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
           {mapPaymentMethod(contact.payment_method)} ·{" "}
           {mapPaymentStatus(contact.payment_status)}
         </p>
@@ -467,15 +487,15 @@ function LeadTableRow({ contact }: { contact: FollowUpContact }) {
       </div>
 
       <div className="min-w-0 self-center">
-        <p className="truncate text-sm text-[rgba(255,255,255,0.78)]">
+        <p className="truncate text-sm text-gray-700 dark:text-gray-300">
           {pickBestContact(contact.phone, contact.email)}
         </p>
-        <p className="mt-1 truncate text-xs text-[rgba(255,255,255,0.42)]">
+        <p className="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
           {hasPhone(contact.phone) ? "WhatsApp prioritário" : "Email prioritário"}
         </p>
       </div>
 
-      <div className="flex items-center text-sm text-[rgba(255,255,255,0.78)]">
+      <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
         {contact.assigned_agent || "Sem responsável"}
       </div>
 
@@ -486,7 +506,7 @@ function LeadTableRow({ contact }: { contact: FollowUpContact }) {
       <div className="flex items-center justify-end gap-2">
         <Link
           href={`/leads/${contact.lead_id}`}
-          className="text-xs font-medium text-[rgba(255,255,255,0.54)] transition-colors hover:text-white"
+          className="text-xs font-medium text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-900 dark:hover:text-white"
         >
           Abrir
         </Link>
@@ -509,11 +529,11 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
         <div className="min-w-0">
           <Link
             href={`/leads/${contact.lead_id}`}
-            className="block truncate text-sm font-semibold text-white transition-colors hover:text-[var(--accent)]"
+            className="block truncate text-sm font-semibold text-gray-900 dark:text-white transition-colors hover:text-[var(--accent)]"
           >
             {contact.customer_name}
           </Link>
-          <p className="mt-1 truncate text-xs text-[rgba(255,255,255,0.42)]">
+          <p className="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
             {contact.product || "Produto não informado"}
           </p>
         </div>
@@ -527,16 +547,16 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
         <TimeBadge updatedAt={contact.updated_at} />
       </div>
 
-      <div className="mt-3 grid gap-2 text-sm text-[rgba(255,255,255,0.72)] sm:grid-cols-2">
+      <div className="mt-3 grid gap-2 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2">
         <DetailBlock label="Contato" value={pickBestContact(contact.phone, contact.email)} />
         <DetailBlock label="Dono" value={contact.assigned_agent || "Sem responsável"} />
       </div>
 
       <div className="glass-inset mt-3 rounded-[0.95rem] px-3 py-2.5">
-        <p className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
+        <p className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500">
           Próxima ação
         </p>
-        <p className="mt-1 text-xs leading-5 text-[rgba(255,255,255,0.72)]">
+        <p className="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">
           {recommendedNextAction(contact)}
         </p>
       </div>
@@ -544,7 +564,7 @@ function LeadCompactCard({ contact }: { contact: FollowUpContact }) {
       <div className="mt-3 flex items-center justify-between gap-3">
         <Link
           href={`/leads/${contact.lead_id}`}
-          className="text-xs font-medium text-[rgba(255,255,255,0.54)] transition-colors hover:text-white"
+          className="text-xs font-medium text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-900 dark:hover:text-white"
         >
           Abrir detalhe
         </Link>
@@ -594,7 +614,7 @@ function LeadAction({
           compact ? "px-2.75 py-1.5" : "px-3.25 py-1.5",
           isPrimary
             ? "glass-button-primary text-[0.72rem] uppercase tracking-[0.14em]"
-            : "border border-[rgba(30,215,96,0.18)] bg-[rgba(255,255,255,0.02)] text-[var(--accent)] hover:bg-[rgba(30,215,96,0.08)] text-[0.72rem] uppercase tracking-[0.14em]",
+            : "border border-[var(--accent)]/18 bg-gray-50 dark:bg-white/[0.02] text-[var(--accent)] hover:bg-[var(--accent)]/8 text-[0.72rem] uppercase tracking-[0.14em]",
         )}
       >
         {label}
@@ -606,8 +626,8 @@ function LeadAction({
 function DetailLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-[rgba(255,255,255,0.42)]">{label}</span>
-      <span className="truncate text-right text-sm text-[rgba(255,255,255,0.78)]">{value}</span>
+      <span className="text-xs text-gray-400 dark:text-gray-500">{label}</span>
+      <span className="truncate text-right text-sm text-gray-700 dark:text-gray-300">{value}</span>
     </div>
   );
 }
@@ -615,12 +635,31 @@ function DetailLine({ label, value }: { label: string; value: string }) {
 function DetailBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-white/35">
+      <p className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm text-[rgba(255,255,255,0.78)]">{value}</p>
+      <p className="mt-1 truncate text-sm text-gray-700 dark:text-gray-300">{value}</p>
     </div>
   );
+}
+
+function readSearchQuery(value: SearchParamValue): string {
+  const selected = Array.isArray(value) ? value[0] : value;
+  return typeof selected === "string" ? selected.trim() : "";
+}
+
+function matchesContactQuery(contact: FollowUpContact, query: string): boolean {
+  if (!query) return true;
+  const needle = query.toLowerCase();
+  const haystack = [
+    contact.customer_name,
+    contact.email,
+    contact.phone,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(needle);
 }
 
 function readViewMode(value: SearchParamValue): ViewMode {

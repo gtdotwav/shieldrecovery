@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { ArrowRight, Calculator, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { platformBrand } from "@/lib/platform";
 
 /* ───────── constants ───────── */
 
@@ -81,25 +82,25 @@ export function RecoveryCalculator() {
         <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-[var(--accent)]/70">
           Simulador
         </p>
-        <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-white sm:text-[2.2rem]">
+        <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
           Quanto você pode recuperar?
         </h2>
-        <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-white/40">
+        <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
           Insira os dados do seu negócio e veja a projeção de receita
-          recuperável com a PagRecovery.
+          recuperável com a {platformBrand.name}.
         </p>
       </div>
 
       <div className="mx-auto mt-14 max-w-[62rem]">
-        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[rgba(6,20,15,0.5)] shadow-[0_32px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-[rgba(10,10,10,0.5)] shadow-[0_32px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl">
           <div className="grid lg:grid-cols-[1.1fr_1fr]">
             {/* ─── Inputs ─── */}
-            <div className="border-b border-white/[0.04] p-6 sm:p-8 lg:border-b-0 lg:border-r">
+            <div className="border-b border-gray-100 dark:border-gray-800 p-6 sm:p-8 lg:border-b-0 lg:border-r">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[rgba(30,215,96,0.06)]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]/6">
                   <Calculator className="h-4 w-4 text-[var(--accent)]/60" />
                 </div>
-                <h3 className="text-[0.88rem] font-semibold text-white/80">
+                <h3 className="text-[0.88rem] font-semibold text-gray-700 dark:text-gray-200">
                   Dados do negócio
                 </h3>
               </div>
@@ -111,7 +112,7 @@ export function RecoveryCalculator() {
                     key={preset.label}
                     type="button"
                     onClick={() => applyPreset(preset)}
-                    className="rounded-md border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-[0.68rem] font-medium text-white/40 transition-colors hover:border-[rgba(30,215,96,0.15)] hover:bg-[rgba(30,215,96,0.04)] hover:text-white/65"
+                    className="rounded-md border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.02] px-3 py-1.5 text-[0.68rem] font-medium text-gray-400 dark:text-gray-500 transition-colors hover:border-[var(--accent)]/15 hover:bg-[var(--accent)]/[0.04] hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     {preset.label}
                   </button>
@@ -131,23 +132,24 @@ export function RecoveryCalculator() {
                 {/* Failure rate */}
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="text-[0.72rem] font-medium text-white/50">
+                    <label className="text-[0.72rem] font-medium text-gray-500 dark:text-gray-400">
                       Taxa de falha
                     </label>
-                    <span className="text-[0.72rem] font-semibold tabular-nums text-white/70">
+                    <span className="text-[0.72rem] font-semibold tabular-nums text-gray-600 dark:text-gray-300">
                       {failureRate}%
                     </span>
                   </div>
                   <input
                     type="range"
+                    aria-label="Taxa de falha em percentual"
                     min={1}
                     max={40}
                     step={1}
                     value={failureRate}
                     onChange={(e) => setFailureRate(Number(e.target.value))}
-                    className="mt-2.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/[0.06] accent-[var(--accent)] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--accent)] [&::-webkit-slider-thumb]:bg-[var(--accent)] [&::-webkit-slider-thumb]:shadow-[0_2px_8px_rgba(30,215,96,0.3)]"
+                    className="mt-2.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-100 dark:bg-white/[0.06] accent-[var(--accent)] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--accent)] [&::-webkit-slider-thumb]:bg-[var(--accent)] [&::-webkit-slider-thumb]:shadow-[0_2px_8px_var(--accent-glow)]"
                   />
-                  <div className="mt-1.5 flex justify-between text-[0.55rem] text-white/20">
+                  <div className="mt-1.5 flex justify-between text-[0.55rem] text-gray-300 dark:text-gray-600">
                     <span>1%</span>
                     <span>Média do mercado: 8–15%</span>
                     <span>40%</span>
@@ -164,20 +166,20 @@ export function RecoveryCalculator() {
                 />
               </div>
 
-              <p className="mt-6 text-[0.6rem] leading-4 text-white/20">
+              <p className="mt-6 text-[0.6rem] leading-4 text-gray-300 dark:text-gray-600">
                 * Projeção baseada em taxa de recuperação de {(RECOVERY_RATE * 100).toFixed(0)}%,
-                média observada em operações ativas da PagRecovery.
+                média observada em operações ativas da {platformBrand.name}.
               </p>
             </div>
 
             {/* ─── Results ─── */}
             <div className="relative flex flex-col justify-center p-6 sm:p-8">
               {/* Subtle background glow */}
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(30,215,96,0.03),transparent_70%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--accent-soft),transparent_70%)]" />
 
               <div className="relative space-y-6">
                 <div>
-                  <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-white/30">
+                  <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-600">
                     Perda mensal estimada
                   </p>
                   <p className="mt-1.5 text-[1.6rem] font-bold tracking-tight text-[#ff7a74]/80 sm:text-[1.85rem]">
@@ -185,7 +187,7 @@ export function RecoveryCalculator() {
                   </p>
                 </div>
 
-                <div className="h-px bg-white/[0.05]" />
+                <div className="h-px bg-gray-100 dark:bg-white/[0.05]" />
 
                 <div>
                   <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[var(--accent)]/50">
@@ -194,24 +196,24 @@ export function RecoveryCalculator() {
                   <p className="mt-1.5 text-[2rem] font-bold tracking-tight text-[var(--accent)] sm:text-[2.4rem]">
                     +{formatBRL(results.monthlyRecovered)}
                   </p>
-                  <p className="mt-1 text-[0.72rem] text-white/30">
+                  <p className="mt-1 text-[0.72rem] text-gray-400 dark:text-gray-600">
                     ~{results.transactionsRecovered} transações/mês
                   </p>
                 </div>
 
-                <div className="h-px bg-white/[0.05]" />
+                <div className="h-px bg-gray-100 dark:bg-white/[0.05]" />
 
-                <div className="rounded-xl border border-[rgba(30,215,96,0.08)] bg-[rgba(30,215,96,0.03)] px-5 py-4">
+                <div className="rounded-xl border border-[var(--accent)]/8 bg-[var(--accent)]/[0.03] px-5 py-4">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-[var(--accent)]/50" />
                     <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[var(--accent)]/50">
                       Projeção anual
                     </p>
                   </div>
-                  <p className="mt-2 text-[2.2rem] font-bold tracking-tight text-white sm:text-[2.6rem]">
+                  <p className="mt-2 text-[2.2rem] font-bold tracking-tight text-gray-900 dark:text-white sm:text-[2.6rem]">
                     {formatBRL(results.annualRecovered)}
                   </p>
-                  <p className="mt-1 text-[0.72rem] text-white/30">
+                  <p className="mt-1 text-[0.72rem] text-gray-400 dark:text-gray-600">
                     em receita que seria perdida
                   </p>
                 </div>
@@ -249,11 +251,11 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="text-[0.72rem] font-medium text-white/50">
+      <label className="text-[0.72rem] font-medium text-gray-500 dark:text-gray-400">
         {label}
       </label>
       <div className="relative mt-1.5">
-        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[0.78rem] font-medium text-white/25">
+        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[0.78rem] font-medium text-gray-400 dark:text-gray-600">
           {prefix}
         </span>
         <input
@@ -262,10 +264,10 @@ function InputField({
           value={value}
           onChange={onChange}
           placeholder="0,00"
-          className="w-full rounded-lg border border-white/[0.07] bg-white/[0.03] py-2.5 pl-10 pr-4 text-[0.88rem] font-semibold tabular-nums text-white/80 outline-none transition-colors placeholder:text-white/15 focus:border-[rgba(30,215,96,0.25)] focus:ring-1 focus:ring-[rgba(30,215,96,0.08)]"
+          className="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.03] py-2.5 pl-10 pr-4 text-[0.88rem] font-semibold tabular-nums text-gray-700 dark:text-gray-200 outline-none transition-colors placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:border-[var(--accent)]/25 focus:ring-1 focus:ring-[var(--accent)]/8"
         />
       </div>
-      <p className="mt-1 text-[0.6rem] text-white/20">{hint}</p>
+      <p className="mt-1 text-[0.6rem] text-gray-300 dark:text-gray-600">{hint}</p>
     </div>
   );
 }

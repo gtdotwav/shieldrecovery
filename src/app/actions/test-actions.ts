@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { platformBrand } from "@/lib/platform";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
@@ -114,7 +115,7 @@ function buildSamplePayload(kind: SampleKind, options: SamplePayloadOptions = {}
         (options.paymentMethod === "pix" || kind === "pending" || kind === "failed"
           ? `00020101021226830014br.gov.bcb.pix2561pix.test/${paymentId}5204000053039865405${String(
               options.amount ?? (kind === "failed" ? 129900 : 89000),
-            ).slice(0, 5)}5802BR5913PagRecovery6009Sao Paulo62070503***6304ABCD`
+            ).slice(0, 5)}5802BR5913${platformBrand.name.replace(/\s/g, "")}6009Sao Paulo62070503***6304ABCD`
           : undefined),
       pixQrCode: options.pixQrCode,
     },
@@ -234,7 +235,7 @@ export async function seedValidationScenarioAction() {
         customerName: "Rafael Souza",
         email: "rafael.souza@cliente.com",
         phone: "+5511970011223",
-        product: "PagRecovery Trial",
+        product: `${platformBrand.name} Trial`,
         amount: 89000,
         paymentMethod: "credit_card",
         failureCode: "insufficient_funds",
@@ -251,7 +252,7 @@ export async function seedValidationScenarioAction() {
         customerName: "Rafael Souza",
         email: "rafael.souza@cliente.com",
         phone: "+5511970011223",
-        product: "PagRecovery Trial",
+        product: `${platformBrand.name} Trial`,
         amount: 89000,
         paymentMethod: "credit_card",
       }),

@@ -14,6 +14,7 @@ import {
   PlatformPill,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
+import { platformBrand } from "@/lib/platform";
 import {
   TextRevealCard,
   TextRevealCardDescription,
@@ -41,7 +42,7 @@ const modules: ModuleCard[] = [
     description:
       "Liga WhatsApp, email, CRM e playbooks para que a operação comece do jeito certo.",
     icon: Link2,
-    tone: "from-[rgba(30,215,96,0.18)] to-transparent",
+    tone: "from-[var(--accent-soft)] to-transparent",
   },
   {
     href: "/dashboard",
@@ -49,7 +50,7 @@ const modules: ModuleCard[] = [
     description:
       "Mostra o que merece atenção agora, o que está mais quente e onde a receita pode voltar.",
     icon: BarChart3,
-    tone: "from-[rgba(15,164,122,0.16)] to-transparent",
+    tone: "from-[var(--accent-soft)] to-transparent",
   },
   {
     href: "/leads",
@@ -57,7 +58,7 @@ const modules: ModuleCard[] = [
     description:
       "Organiza o CRM por funil, perfil e momento do cliente com apoio da IA.",
     icon: UsersRound,
-    tone: "from-[rgba(30,215,96,0.14)] to-transparent",
+    tone: "from-[var(--accent-soft)] to-transparent",
   },
 ];
 
@@ -104,15 +105,15 @@ export function RecoveryCommandCenter({
 
   return (
     <PlatformSurface className="p-5 sm:p-6">
-      <div className="flex flex-col gap-4 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-4 border-b border-gray-200 dark:border-gray-800 pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[0.72rem] uppercase tracking-[0.28em] text-[var(--accent)]">
             Preview da plataforma
           </p>
-          <h2 className="mt-3 max-w-[13ch] text-balance text-3xl font-semibold tracking-[-0.06em] text-white sm:text-[2.4rem]">
+          <h2 className="mt-3 max-w-[13ch] text-balance text-3xl font-semibold tracking-[-0.06em] text-gray-900 dark:text-white sm:text-[2.4rem]">
             Plataforma única para recuperar receita.
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[rgba(255,255,255,0.62)]">
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-500 dark:text-gray-400">
             O produto inteiro foi organizado para parecer software vivo: cada
             módulo tem função clara, a operação tem contexto e a IA ajuda a
             reduzir dúvida do time.
@@ -127,13 +128,13 @@ export function RecoveryCommandCenter({
           <div className="grid gap-3 sm:grid-cols-3">
             {previewMetrics.map((metric) => (
               <PlatformInset key={metric.label} className="p-4">
-                <p className="text-[0.68rem] uppercase tracking-[0.22em] text-[rgba(255,255,255,0.44)]">
+                <p className="text-[0.68rem] uppercase tracking-[0.22em] text-gray-400 dark:text-gray-500">
                   {metric.label}
                 </p>
-                <p className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
+                <p className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-gray-900 dark:text-white">
                   {metric.value}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[rgba(255,255,255,0.62)]">
+                <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
                   {metric.detail}
                 </p>
               </PlatformInset>
@@ -152,15 +153,15 @@ export function RecoveryCommandCenter({
                 />
                 <div className="relative">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="rounded-[1rem] border border-[rgba(30,215,96,0.18)] bg-[rgba(30,215,96,0.1)] p-2.5">
+                    <div className="rounded-[1rem] border border-[var(--accent)]/18 bg-[var(--accent)]/10 p-2.5">
                       <module.icon className="h-4 w-4 text-[var(--accent)]" />
                     </div>
-                    <ArrowUpRight className="h-4 w-4 text-white/36 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--accent)]" />
+                    <ArrowUpRight className="h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--accent)]" />
                   </div>
-                  <h3 className="mt-5 text-xl font-semibold tracking-[-0.05em] text-white">
+                  <h3 className="mt-5 text-xl font-semibold tracking-[-0.05em] text-gray-900 dark:text-white">
                     {module.title}
                   </h3>
-                  <p className="mt-3 text-sm leading-7 text-[rgba(255,255,255,0.62)]">
+                  <p className="mt-3 text-sm leading-7 text-gray-500 dark:text-gray-400">
                     {module.description}
                   </p>
                 </div>
@@ -182,7 +183,7 @@ export function RecoveryCommandCenter({
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--accent)]">
                     etapa 0{index + 1}
                   </p>
-                  <p className="mt-3 text-sm leading-7 text-[rgba(255,255,255,0.62)]">{item}</p>
+                  <p className="mt-3 text-sm leading-7 text-gray-500 dark:text-gray-400">{item}</p>
                 </div>
               ))}
             </div>
@@ -192,18 +193,18 @@ export function RecoveryCommandCenter({
         <div className="space-y-4">
           <TextRevealCard
             text="Parecia perda inevitável."
-            revealText="PagRecovery enxerga receita recuperavel."
-            className="glass-panel rounded-xl border-white/10 px-5 py-5"
+            revealText={`${platformBrand.name} enxerga receita recuperavel.`}
+            className="glass-panel rounded-xl border-gray-200 dark:border-gray-800 px-5 py-5"
             showStars={false}
           >
             <div className="mb-4 flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.22em] text-[var(--accent)]">
               <Sparkles className="h-4 w-4" />
               Leitura estratégica
             </div>
-            <TextRevealCardTitle className="max-w-[14ch] text-[1.65rem] font-semibold tracking-[-0.06em] text-white">
+            <TextRevealCardTitle className="max-w-[14ch] text-[1.65rem] font-semibold tracking-[-0.06em] text-gray-900 dark:text-white">
               A operação ganha contexto antes do contato.
             </TextRevealCardTitle>
-            <TextRevealCardDescription className="max-w-[30ch] text-sm leading-7 text-[rgba(255,255,255,0.62)]">
+            <TextRevealCardDescription className="max-w-[30ch] text-sm leading-7 text-gray-500 dark:text-gray-400">
               O foco deixa de ser a falha técnica e passa a ser a melhor forma
               de trazer a receita de volta.
             </TextRevealCardDescription>
@@ -220,7 +221,7 @@ export function RecoveryCommandCenter({
                   key={signal}
                   className="glass-inset rounded-[1.1rem] px-4 py-3"
                 >
-                  <p className="text-sm leading-7 text-[rgba(255,255,255,0.62)]">{signal}</p>
+                  <p className="text-sm leading-7 text-gray-500 dark:text-gray-400">{signal}</p>
                 </div>
               ))}
             </div>

@@ -2,13 +2,14 @@ import Link from "next/link";
 import { ArrowRight, KeyRound, UserRound } from "lucide-react";
 
 import { completeSellerInviteAction } from "@/app/actions/seller-invite-actions";
+import { platformBrand } from "@/lib/platform";
 import { PlatformLogo } from "@/components/platform/platform-logo";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Convite | PagRecovery",
+  title: `Convite | ${platformBrand.name}`,
 };
 
 type InvitePageProps = {
