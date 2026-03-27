@@ -77,25 +77,25 @@ export function RecoveryCalculator() {
   }, []);
 
   return (
-    <section className="relative z-10 mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+    <section className="relative z-10 mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
       <div className="text-center">
-        <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-[var(--accent)]/70">
+        <p className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]/70 sm:text-[0.65rem] sm:tracking-[0.3em]">
           Simulador
         </p>
-        <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+        <h2 className="mt-3 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:mt-4 sm:text-[1.75rem] lg:text-[2.2rem]">
           Quanto você pode recuperar?
         </h2>
-        <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+        <p className="mx-auto mt-3 max-w-lg text-[0.88rem] leading-6 text-gray-400 dark:text-gray-500 sm:mt-4 sm:text-[0.95rem] sm:leading-7">
           Insira os dados do seu negócio e veja a projeção de receita
           recuperável com a {platformBrand.name}.
         </p>
       </div>
 
-      <div className="mx-auto mt-14 max-w-[62rem]">
-        <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-[rgba(10,10,10,0.5)] shadow-[0_32px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+      <div className="mx-auto mt-10 max-w-[62rem] sm:mt-14">
+        <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-[rgba(10,10,10,0.5)] shadow-[0_20px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:rounded-2xl sm:shadow-[0_32px_80px_rgba(0,0,0,0.3)]">
           <div className="grid lg:grid-cols-[1.1fr_1fr]">
             {/* ─── Inputs ─── */}
-            <div className="border-b border-gray-100 dark:border-gray-800 p-6 sm:p-8 lg:border-b-0 lg:border-r">
+            <div className="border-b border-gray-100 dark:border-gray-800 p-5 sm:p-8 lg:border-b-0 lg:border-r">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]/6">
                   <Calculator className="h-4 w-4 text-[var(--accent)]/60" />
@@ -173,7 +173,7 @@ export function RecoveryCalculator() {
             </div>
 
             {/* ─── Results ─── */}
-            <div className="relative flex flex-col justify-center p-6 sm:p-8">
+            <div className="relative flex flex-col justify-center p-5 sm:p-8">
               {/* Subtle background glow */}
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--accent-soft),transparent_70%)]" />
 

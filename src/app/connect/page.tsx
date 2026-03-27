@@ -207,7 +207,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       action={
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-700"
         >
           Recuperação
           <ArrowRight className="h-3.5 w-3.5" />
@@ -246,7 +246,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-green-600">
               Setup da plataforma
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
@@ -533,7 +533,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
 
                   <div className="flex flex-wrap gap-2">
                     <form action={startWhatsAppQrSessionAction}>
-                      <button className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600">
+                      <button className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700">
                         <QrCode className="h-4 w-4" />
                         Gerar QR
                       </button>
@@ -773,7 +773,7 @@ function SellerConnectView({
       action={
         <Link
           href="/leads"
-          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-700"
         >
           Abrir CRM
           <ArrowRight className="h-3.5 w-3.5" />
@@ -810,7 +810,7 @@ function SellerConnectView({
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-green-600">
               Integrações para seller
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
@@ -996,7 +996,7 @@ function SettingsCard({
 }) {
   return (
     <PlatformSurface className="p-5">
-      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-sky-500">
+      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-green-600">
         {eyebrow}
       </p>
       <h2 className="mt-2 text-[1.15rem] font-semibold tracking-tight text-[#111827]">
@@ -1029,7 +1029,7 @@ function Field({
         name={name}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none placeholder:text-[#9ca3af] transition-colors focus:border-sky-300 focus:ring-1 focus:ring-sky-100"
+        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none placeholder:text-[#9ca3af] transition-colors focus:border-green-400 focus:ring-1 focus:ring-green-100"
       />
     </label>
   );
@@ -1052,7 +1052,7 @@ function SelectField({
       <select
         name={name}
         defaultValue={defaultValue}
-        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none transition-colors focus:border-sky-300 focus:ring-1 focus:ring-sky-100"
+        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none transition-colors focus:border-green-400 focus:ring-1 focus:ring-green-100"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -1085,7 +1085,7 @@ function TextareaField({
         defaultValue={defaultValue}
         placeholder={placeholder}
         rows={6}
-        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-3 text-sm leading-6 text-[#111827] outline-none placeholder:text-[#9ca3af] transition-colors focus:border-sky-300 focus:ring-1 focus:ring-sky-100"
+        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3.5 py-3 text-sm leading-6 text-[#111827] outline-none placeholder:text-[#9ca3af] transition-colors focus:border-green-400 focus:ring-1 focus:ring-green-100"
       />
     </label>
   );
@@ -1093,7 +1093,7 @@ function TextareaField({
 
 function SaveButton({ label = "Salvar configuração" }: { label?: string }) {
   return (
-    <button className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600">
+    <button className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700">
       <Save className="h-4 w-4" />
       {label}
     </button>
@@ -1139,7 +1139,7 @@ function SectionHeader({
 }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.18em] text-sky-500">{eyebrow}</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-green-600">{eyebrow}</p>
       <h3
         className={
           compact

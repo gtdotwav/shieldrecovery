@@ -40,7 +40,6 @@ import { HeroParticles } from "@/components/landing/hero-particles";
 import { LiveDemo } from "@/components/landing/live-demo";
 import { MagneticButton } from "@/components/landing/magnetic-button";
 import { Marquee } from "@/components/landing/marquee";
-import { PhoneMockup } from "@/components/landing/phone-mockup";
 import { RecoveryCalculator } from "@/components/landing/recovery-calculator";
 import { Reveal } from "@/components/landing/scroll-reveal";
 import { ScrollProgress } from "@/components/landing/scroll-progress";
@@ -123,30 +122,31 @@ export default async function Home() {
       />
 
       {/* ═══ Navigation ═══ */}
-      <nav className="relative z-30 mx-auto flex max-w-[82rem] items-center justify-between px-6 py-5 sm:px-8 lg:px-10">
+      <nav className="relative z-30 mx-auto flex max-w-[82rem] items-center justify-between px-4 py-3 sm:px-8 sm:py-5 lg:px-10">
         <Image
           src={b.logo}
           alt={b.name}
           width={176}
           height={176}
-          sizes="(min-width: 640px) 176px, 128px"
-          className="h-[8rem] w-auto object-contain sm:h-[11rem]"
+          sizes="(min-width: 640px) 176px, 96px"
+          className="h-[5rem] w-auto object-contain sm:h-[8rem] lg:h-[11rem]"
           style={{ filter: `drop-shadow(0 8px 24px rgba(${rgb},0.12))` }}
           priority
         />
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <AdminAccessButton />
           <MagneticButton>
             <Link
               href="/quiz"
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all"
+              className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-white transition-all sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm"
               style={{
                 background: b.accent,
                 boxShadow: `0 12px 32px ${b.accentGlow}`,
               }}
             >
-              Abrir plataforma
-              <ArrowRight className="h-4 w-4" />
+              <span className="hidden sm:inline">Abrir plataforma</span>
+              <span className="sm:hidden">Acessar</span>
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Link>
           </MagneticButton>
         </div>
@@ -154,7 +154,7 @@ export default async function Home() {
 
       <main className="relative z-10">
         {/* ═══════════════════════ HERO ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 pb-20 pt-6 sm:px-8 sm:pt-12 lg:px-10 lg:pt-16">
+        <section className="relative mx-auto max-w-[82rem] px-4 pb-14 pt-2 sm:px-8 sm:pb-20 sm:pt-12 lg:px-10 lg:pt-16">
           {/* Particle canvas */}
           <div className="pointer-events-none absolute inset-0 z-0">
             <HeroParticles />
@@ -198,7 +198,7 @@ export default async function Home() {
                     />
                   </span>
                   <span
-                    className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] opacity-80"
+                    className="text-[0.6rem] font-semibold uppercase tracking-[0.15em] opacity-80 sm:text-[0.7rem] sm:tracking-[0.2em]"
                     style={{ color: b.accent }}
                   >
                     Recuperação autônoma com IA
@@ -209,7 +209,7 @@ export default async function Home() {
               <HeroHeading />
 
               <Reveal direction="up" delay={400}>
-                <p className="mt-7 max-w-[36rem] text-[1.05rem] leading-[1.8] text-gray-500 dark:text-gray-400 sm:text-[1.1rem] lg:mx-0">
+                <p className="mt-5 max-w-[36rem] text-[0.92rem] leading-[1.7] text-gray-500 dark:text-gray-400 sm:mt-7 sm:text-[1.05rem] sm:leading-[1.8] lg:mx-0">
                   Quando um pagamento falha, nossa IA contata o cliente em 2 minutos
                   via WhatsApp com link direto. Resultado: até 38% da receita perdida
                   recuperada — sem intervenção humana.
@@ -217,11 +217,11 @@ export default async function Home() {
               </Reveal>
 
               <Reveal direction="up" delay={500}>
-                <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row lg:justify-start">
+                <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:gap-4 lg:justify-start">
                   <MagneticButton>
                     <Link
                       href="/quiz"
-                      className="group inline-flex items-center gap-2.5 rounded-xl px-8 py-3.5 text-[0.92rem] font-semibold text-white transition-all hover:brightness-110"
+                      className="group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[0.85rem] font-semibold text-white transition-all hover:brightness-110 sm:gap-2.5 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
                       style={{
                         background: b.accent,
                         boxShadow: `0 12px 32px ${b.accentGlow}`,
@@ -233,7 +233,7 @@ export default async function Home() {
                   </MagneticButton>
                   <a
                     href="#como-funciona"
-                    className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.03] px-8 py-3.5 text-[0.92rem] font-medium text-gray-500 dark:text-gray-400 backdrop-blur-sm transition-all hover:border-gray-300 dark:hover:border-white/14 hover:text-gray-700 dark:hover:text-gray-200"
+                    className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.03] px-6 py-3 text-[0.85rem] font-medium text-gray-500 dark:text-gray-400 backdrop-blur-sm transition-all hover:border-gray-300 dark:hover:border-white/14 hover:text-gray-700 dark:hover:text-gray-200 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
                   >
                     Como funciona
                     <ArrowDown className="h-4 w-4" />
@@ -242,44 +242,12 @@ export default async function Home() {
               </Reveal>
             </div>
 
-            {/* Phone mockup - desktop */}
-            <Reveal direction="right" delay={600} className="hidden lg:flex lg:justify-end">
-              <PhoneMockup className="animate-float" />
-            </Reveal>
           </div>
 
-          {/* Live metrics */}
-          <Reveal direction="up" delay={300}>
-            <div className="relative z-10 mx-auto mt-20 max-w-[60rem]">
-              <div
-                className="overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.4)] backdrop-blur-xl"
-                style={{
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  background: `${cardBg},0.6)`,
-                }}
-              >
-                <div className="grid grid-cols-2 sm:grid-cols-4">
-                  <LiveMetric value={analytics.total_failed_payments.toString()} label="Eventos capturados" icon={Zap} />
-                  <LiveMetric value={analytics.active_recoveries.toString()} label="Em recuperação" icon={Clock} />
-                  <LiveMetric value={analytics.recovered_payments.toString()} label="Recuperados" icon={CheckCircle2} />
-                  <LiveMetric value={formatCurrency(portfolioValue)} label="Carteira ativa" icon={TrendingUp} />
-                </div>
-                <div className="flex items-center justify-center gap-2 border-t border-gray-100 dark:border-gray-800 py-3">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-40" style={{ background: b.accent }} />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: b.accent }} />
-                  </span>
-                  <p className="font-mono text-[0.55rem] uppercase tracking-[0.24em] text-gray-400 dark:text-gray-600">
-                    dados ao vivo da operação
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Reveal>
         </section>
 
         {/* ═══════════════════════ MARQUEE TRUST BAR ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-0 pb-20">
+        <section className="relative mx-auto max-w-[82rem] px-0 pb-12 sm:pb-20">
           <Reveal direction="up">
             <Marquee speed={40} className="py-6" >
               <MarqueeItem icon={ShieldCheck} text="LGPD Compliant" />
@@ -311,20 +279,20 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ IMPACT NUMBERS ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Impacto real</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Números que falam por si
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+              <p className="mx-auto mt-3 max-w-lg text-[0.88rem] leading-6 text-gray-400 dark:text-gray-500 sm:mt-4 sm:text-[0.95rem] sm:leading-7">
                 Métricas da operação ativa — dados reais, não projeções.
               </p>
             </div>
           </Reveal>
 
-          <div className="mx-auto mt-14 grid max-w-[56rem] gap-4 sm:grid-cols-3">
+          <div className="mx-auto mt-10 grid max-w-[56rem] gap-3 sm:mt-14 sm:gap-4 sm:grid-cols-3">
             <Reveal direction="up" delay={0}>
               <TiltCard>
                 <ImpactCard
@@ -358,21 +326,21 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ BEFORE / AFTER ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Antes vs depois</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 O que muda com recuperação ativa
               </h2>
             </div>
           </Reveal>
 
-          <div className="mx-auto mt-14 grid max-w-[60rem] gap-6 lg:grid-cols-2">
+          <div className="mx-auto mt-10 grid max-w-[60rem] gap-4 sm:mt-14 sm:gap-6 lg:grid-cols-2">
             <Reveal direction="left" delay={100}>
               <TiltCard>
                 <div
-                  className="rounded-2xl px-7 py-8"
+                  className="rounded-2xl px-5 py-6 sm:px-7 sm:py-8"
                   style={{
                     border: "1px solid rgba(239,68,68,0.12)",
                     background: "rgba(239,68,68,0.03)",
@@ -398,7 +366,7 @@ export default async function Home() {
             <Reveal direction="right" delay={100}>
               <TiltCard>
                 <div
-                  className="rounded-2xl px-7 py-8"
+                  className="rounded-2xl px-5 py-6 sm:px-7 sm:py-8"
                   style={{
                     border: `1px solid rgba(${rgb},0.12)`,
                     background: `rgba(${rgb},0.03)`,
@@ -431,11 +399,11 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ HOW IT WORKS ═══════════════════════ */}
-        <section id="como-funciona" className="relative mx-auto max-w-[82rem] scroll-mt-8 px-6 py-24 sm:px-8 lg:px-10">
+        <section id="como-funciona" className="relative mx-auto max-w-[82rem] scroll-mt-8 px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Como funciona</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Da falha à recuperação em minutos
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
@@ -444,7 +412,7 @@ export default async function Home() {
             </div>
           </Reveal>
 
-          <div className="mx-auto mt-14 grid max-w-[60rem] gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mx-auto mt-10 grid max-w-[60rem] gap-3 sm:mt-14 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { n: "01", icon: Zap, title: "Webhook detecta", desc: "Falha de pagamento capturada via webhook do gateway em tempo real." },
               { n: "02", icon: Bot, title: "IA personaliza", desc: "Analisa valor, método, histórico e define tom e momento ideal." },
@@ -460,21 +428,12 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ═══════════════════════ PHONE MOCKUP (mobile) ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 pb-16 sm:px-8 lg:hidden lg:px-10">
-          <Reveal direction="scale">
-            <div className="flex justify-center">
-              <PhoneMockup />
-            </div>
-          </Reveal>
-        </section>
-
         {/* ═══════════════════════ RESULTS ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Resultados</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Recuperação que funciona
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
@@ -483,7 +442,7 @@ export default async function Home() {
             </div>
           </Reveal>
 
-          <div className="mx-auto mt-14 grid max-w-[60rem] gap-4 sm:grid-cols-3">
+          <div className="mx-auto mt-10 grid max-w-[60rem] gap-3 sm:mt-14 sm:gap-4 sm:grid-cols-3">
             <Reveal direction="up" delay={0}>
               <TiltCard>
                 <ResultCard
@@ -528,12 +487,12 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ FEATURES ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
-          <div className="grid items-start gap-16 lg:grid-cols-[1fr_1.25fr]">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+          <div className="grid items-start gap-10 sm:gap-16 lg:grid-cols-[1fr_1.25fr]">
             <Reveal direction="left">
               <div className="lg:sticky lg:top-24">
                 <SectionEyebrow>Plataforma completa</SectionEyebrow>
-                <h2 className="mt-4 max-w-[16ch] text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem] sm:leading-[1.15]">
+                <h2 className="mt-4 max-w-[16ch] text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem] sm:leading-[1.15]">
                   Tudo que sua operação precisa em um lugar
                 </h2>
                 <p className="mt-5 max-w-md text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
@@ -597,11 +556,11 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ SECURITY & COMPLIANCE ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Segurança & Compliance</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Infraestrutura de nível enterprise
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
@@ -647,11 +606,11 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ PRICING ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Modelo de negócio</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Alinhamento total de incentivos
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
@@ -705,10 +664,10 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ SOCIAL PROOF / WAITLIST ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="scale">
             <div
-              className="mx-auto max-w-[48rem] overflow-hidden rounded-2xl px-8 py-14 text-center backdrop-blur-xl sm:px-12 sm:py-16"
+              className="mx-auto max-w-[48rem] overflow-hidden rounded-2xl px-5 py-10 text-center backdrop-blur-xl sm:px-12 sm:py-16"
               style={{
                 border: `1px solid rgba(${rgb},0.10)`,
                 background: `${cardBg},0.5)`,
@@ -731,18 +690,18 @@ export default async function Home() {
                 Responda o quiz e garanta sua vaga.
               </p>
 
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
+              <div className="mt-8 grid grid-cols-3 gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-6">
                 <WaitlistStat value={<CountUp end={50} duration={2000} />} label="vagas disponíveis" />
-                <div className="h-8 w-px" style={{ background: `rgba(${rgb},0.12)` }} />
+                <div className="hidden h-8 w-px sm:block" style={{ background: `rgba(${rgb},0.12)` }} />
                 <WaitlistStat value={<CountUp end={0} duration={1000} prefix="R$" />} label="setup gratuito" />
-                <div className="h-8 w-px" style={{ background: `rgba(${rgb},0.12)` }} />
+                <div className="hidden h-8 w-px sm:block" style={{ background: `rgba(${rgb},0.12)` }} />
                 <WaitlistStat value={<CountUp end={5} duration={1500} suffix=" min" />} label="para integrar" />
               </div>
 
-              <MagneticButton className="mt-10">
+              <MagneticButton className="mt-8 sm:mt-10">
                 <Link
                   href="/quiz"
-                  className="group inline-flex items-center gap-2.5 rounded-xl px-8 py-3.5 text-[0.92rem] font-semibold text-white transition-all hover:brightness-110"
+                  className="group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[0.85rem] font-semibold text-white transition-all hover:brightness-110 sm:gap-2.5 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
                   style={{
                     background: b.accent,
                     boxShadow: `0 12px 32px ${b.accentGlow}`,
@@ -759,11 +718,11 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ FAQ ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Perguntas frequentes</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Tudo que você precisa saber
               </h2>
             </div>
@@ -779,11 +738,11 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ COMPARISON ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Comparativo</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Por que não fazer internamente?
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
@@ -793,53 +752,55 @@ export default async function Home() {
           </Reveal>
 
           <Reveal direction="up" delay={100}>
-            <div
-              className="mx-auto mt-14 max-w-[56rem] overflow-hidden rounded-2xl"
-              style={{
-                border: "1px solid rgba(255,255,255,0.06)",
-                background: `${cardBg},0.4)`,
-              }}
-            >
-              {/* Table header */}
-              <div className="grid grid-cols-4 border-b border-white/[0.04]">
-                <div className="px-5 py-4">
-                  <span className="text-[0.68rem] font-semibold text-gray-500">Critério</span>
+            <div className="mx-auto mt-14 max-w-[56rem] overflow-x-auto rounded-2xl [-webkit-overflow-scrolling:touch]">
+              <div
+                className="min-w-[32rem] overflow-hidden rounded-2xl"
+                style={{
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: `${cardBg},0.4)`,
+                }}
+              >
+                {/* Table header */}
+                <div className="grid grid-cols-4 border-b border-white/[0.04]">
+                  <div className="px-4 py-4 sm:px-5">
+                    <span className="text-[0.68rem] font-semibold text-gray-500">Critério</span>
+                  </div>
+                  <div className="border-l border-white/[0.04] px-4 py-4 text-center sm:px-5">
+                    <span className="text-[0.68rem] font-semibold text-gray-500">Manual</span>
+                  </div>
+                  <div className="border-l border-white/[0.04] px-4 py-4 text-center sm:px-5">
+                    <span className="text-[0.68rem] font-semibold text-gray-500">Gateway</span>
+                  </div>
+                  <div className="border-l px-4 py-4 text-center sm:px-5" style={{ borderColor: `rgba(${rgb},0.12)`, background: `rgba(${rgb},0.04)` }}>
+                    <span className="text-[0.68rem] font-bold" style={{ color: b.accent }}>{b.name}</span>
+                  </div>
                 </div>
-                <div className="border-l border-white/[0.04] px-5 py-4 text-center">
-                  <span className="text-[0.68rem] font-semibold text-gray-500">Manual</span>
-                </div>
-                <div className="border-l border-white/[0.04] px-5 py-4 text-center">
-                  <span className="text-[0.68rem] font-semibold text-gray-500">Gateway nativo</span>
-                </div>
-                <div className="border-l px-5 py-4 text-center" style={{ borderColor: `rgba(${rgb},0.12)`, background: `rgba(${rgb},0.04)` }}>
-                  <span className="text-[0.68rem] font-bold" style={{ color: b.accent }}>{b.name}</span>
-                </div>
-              </div>
 
-              {/* Table rows */}
-              {[
-                { label: "Tempo de resposta", manual: "Horas/dias", gateway: "~30 min", ours: "2 min" },
-                { label: "Canal de contato", manual: "E-mail, telefone", gateway: "E-mail", ours: "WhatsApp + IA" },
-                { label: "Personalização", manual: "Baixa", gateway: "Genérica", ours: "IA contextual" },
-                { label: "Disponibilidade", manual: "Horário comercial", gateway: "24/7", ours: "24/7" },
-                { label: "Escala", manual: "Limitada pela equipe", gateway: "Limitada", ours: "Infinita" },
-                { label: "Taxa de recuperação", manual: "5-10%", gateway: "10-15%", ours: "35-40%" },
-              ].map((row) => (
-                <div key={row.label} className="grid grid-cols-4 border-b border-white/[0.03] last:border-b-0">
-                  <div className="px-5 py-3.5">
-                    <span className="text-[0.72rem] font-medium text-gray-300">{row.label}</span>
+                {/* Table rows */}
+                {[
+                  { label: "Tempo de resposta", manual: "Horas/dias", gateway: "~30 min", ours: "2 min" },
+                  { label: "Canal de contato", manual: "E-mail", gateway: "E-mail", ours: "WhatsApp + IA" },
+                  { label: "Personalização", manual: "Baixa", gateway: "Genérica", ours: "IA contextual" },
+                  { label: "Disponibilidade", manual: "Horário comercial", gateway: "24/7", ours: "24/7" },
+                  { label: "Escala", manual: "Limitada", gateway: "Limitada", ours: "Infinita" },
+                  { label: "Taxa de recuperação", manual: "5-10%", gateway: "10-15%", ours: "35-40%" },
+                ].map((row) => (
+                  <div key={row.label} className="grid grid-cols-4 border-b border-white/[0.03] last:border-b-0">
+                    <div className="px-4 py-3 sm:px-5 sm:py-3.5">
+                      <span className="text-[0.68rem] font-medium text-gray-300 sm:text-[0.72rem]">{row.label}</span>
+                    </div>
+                    <div className="border-l border-white/[0.04] px-4 py-3 text-center sm:px-5 sm:py-3.5">
+                      <span className="text-[0.68rem] text-gray-500 sm:text-[0.72rem]">{row.manual}</span>
+                    </div>
+                    <div className="border-l border-white/[0.04] px-4 py-3 text-center sm:px-5 sm:py-3.5">
+                      <span className="text-[0.68rem] text-gray-500 sm:text-[0.72rem]">{row.gateway}</span>
+                    </div>
+                    <div className="border-l px-4 py-3 text-center sm:px-5 sm:py-3.5" style={{ borderColor: `rgba(${rgb},0.12)`, background: `rgba(${rgb},0.03)` }}>
+                      <span className="text-[0.68rem] font-semibold sm:text-[0.72rem]" style={{ color: b.accent }}>{row.ours}</span>
+                    </div>
                   </div>
-                  <div className="border-l border-white/[0.04] px-5 py-3.5 text-center">
-                    <span className="text-[0.72rem] text-gray-500">{row.manual}</span>
-                  </div>
-                  <div className="border-l border-white/[0.04] px-5 py-3.5 text-center">
-                    <span className="text-[0.72rem] text-gray-500">{row.gateway}</span>
-                  </div>
-                  <div className="border-l px-5 py-3.5 text-center" style={{ borderColor: `rgba(${rgb},0.12)`, background: `rgba(${rgb},0.03)` }}>
-                    <span className="text-[0.72rem] font-semibold" style={{ color: b.accent }}>{row.ours}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </Reveal>
         </section>
@@ -847,7 +808,7 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ INTEGRATION ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div
               className="overflow-hidden rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl"
@@ -865,10 +826,10 @@ export default async function Home() {
                 style={{ background: `radial-gradient(ellipse at bottom right, rgba(${rgb},0.04), transparent 50%)` }}
               />
 
-              <div className="relative grid gap-10 px-8 py-14 sm:px-12 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:px-14">
+              <div className="relative grid gap-8 px-5 py-10 sm:gap-10 sm:px-12 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:px-14">
                 <div>
                   <SectionEyebrow>Integração em minutos</SectionEyebrow>
-                  <h2 className="mt-4 max-w-[16ch] text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem] sm:leading-[1.15]">
+                  <h2 className="mt-4 max-w-[16ch] text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem] sm:leading-[1.15]">
                     Conecte seu gateway e comece a recuperar
                   </h2>
                   <p className="mt-4 max-w-md text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
@@ -899,10 +860,10 @@ export default async function Home() {
         </section>
 
         {/* ═══════════════════════ CTA FINAL ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-6 py-24 sm:px-8 lg:px-10">
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="scale">
             <div
-              className="relative overflow-hidden rounded-2xl px-8 py-16 text-center shadow-[0_40px_100px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:px-14 sm:py-24"
+              className="relative overflow-hidden rounded-2xl px-5 py-12 text-center shadow-[0_40px_100px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:px-14 sm:py-24"
               style={{
                 border: `1px solid rgba(${rgb},0.08)`,
                 background: `linear-gradient(135deg, rgba(${rgb},0.04), ${cardBg},0.6), rgba(${rgb},0.03))`,
@@ -929,18 +890,18 @@ export default async function Home() {
                 >
                   <TrendingUp className="h-6 w-6" style={{ color: b.accent }} />
                 </div>
-                <h2 className="text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem] lg:text-[2.8rem]">
+                <h2 className="text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2rem] lg:text-[2.8rem]">
                   Pare de perder receita
                 </h2>
                 <p className="mx-auto mt-5 max-w-lg text-[1rem] leading-7 text-gray-400 dark:text-gray-500">
                   Cada minuto sem recuperação ativa é dinheiro na mesa.
                   Configure em minutos. Resultados no primeiro dia.
                 </p>
-                <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+                <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
                   <MagneticButton>
                     <Link
                       href="/quiz"
-                      className="group inline-flex items-center gap-2.5 rounded-xl px-8 py-3.5 text-[0.92rem] font-semibold text-white transition-all hover:brightness-110"
+                      className="group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[0.85rem] font-semibold text-white transition-all hover:brightness-110 sm:gap-2.5 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
                       style={{
                         background: b.accent,
                         boxShadow: `0 12px 32px ${b.accentGlow}`,
@@ -957,7 +918,7 @@ export default async function Home() {
         </section>
 
         {/* ═══════════════════════ FOOTER ═══════════════════════ */}
-        <footer className="relative mx-auto max-w-[82rem] px-6 pb-10 pt-4 sm:px-8 lg:px-10">
+        <footer className="relative mx-auto max-w-[82rem] px-4 pb-10 pt-4 sm:px-8 lg:px-10">
           <div className="border-t border-gray-100 dark:border-gray-800 pt-12">
             <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
               {/* Brand */}
@@ -1045,7 +1006,7 @@ function GlowDivider() {
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
   return (
     <p
-      className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.3em] opacity-70"
+      className="font-mono text-[0.58rem] font-semibold uppercase tracking-[0.2em] opacity-70 sm:text-[0.65rem] sm:tracking-[0.3em]"
       style={{ color: b.accent }}
     >
       {children}
@@ -1053,15 +1014,6 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LiveMetric({ value, label, icon: Icon }: { value: string; label: string; icon: LucideIcon }) {
-  return (
-    <div className="flex flex-col items-center gap-2 border-r border-gray-100 dark:border-gray-800 px-4 py-6 last:border-r-0 sm:py-7">
-      <Icon className="h-4 w-4 opacity-40" style={{ color: b.accent }} />
-      <p className="text-[1.5rem] font-bold tracking-tight text-gray-900 dark:text-white sm:text-[1.7rem]">{value}</p>
-      <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600">{label}</p>
-    </div>
-  );
-}
 
 function MarqueeItem({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
   return (
@@ -1094,17 +1046,17 @@ function ImpactCard({
 }) {
   return (
     <div
-      className="card-hover-glow rounded-2xl px-7 py-8 text-center backdrop-blur-sm"
+      className="card-hover-glow rounded-xl px-5 py-6 text-center backdrop-blur-sm sm:rounded-2xl sm:px-7 sm:py-8"
       style={{
         border: "1px solid rgba(255,255,255,0.05)",
         background: `${cardBg},0.5)`,
         ["--card-glow-rgb" as string]: rgb,
       }}
     >
-      <p className="text-[2.8rem] font-bold leading-none tracking-tight" style={{ color: b.accent }}>
+      <p className="text-[2.2rem] font-bold leading-none tracking-tight sm:text-[2.8rem]" style={{ color: b.accent }}>
         {value}
       </p>
-      <p className="mt-3 text-[0.88rem] font-semibold text-gray-700 dark:text-gray-200">{label}</p>
+      <p className="mt-2 text-[0.82rem] font-semibold text-gray-700 dark:text-gray-200 sm:mt-3 sm:text-[0.88rem]">{label}</p>
       <p className="mt-1.5 text-[0.72rem] text-gray-400 dark:text-gray-600">{sublabel}</p>
     </div>
   );
@@ -1138,7 +1090,7 @@ function ResultCard({
 }) {
   return (
     <div
-      className="card-hover-glow rounded-2xl px-7 py-8 text-center backdrop-blur-sm"
+      className="card-hover-glow rounded-xl px-5 py-6 text-center backdrop-blur-sm sm:rounded-2xl sm:px-7 sm:py-8"
       style={{
         border: "1px solid rgba(255,255,255,0.05)",
         background: `${cardBg},0.45)`,
@@ -1146,7 +1098,7 @@ function ResultCard({
       }}
     >
       <div
-        className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+        className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-lg sm:mb-4 sm:h-10 sm:w-10 sm:rounded-xl"
         style={{
           border: `1px solid rgba(${rgb},0.12)`,
           background: `rgba(${rgb},0.06)`,
@@ -1164,10 +1116,10 @@ function ResultCard({
       >
         {category}
       </span>
-      <p className="mt-4 text-[2.2rem] font-bold leading-none tracking-tight" style={{ color: b.accent }}>
+      <p className="mt-3 text-[1.8rem] font-bold leading-none tracking-tight sm:mt-4 sm:text-[2.2rem]" style={{ color: b.accent }}>
         {value}
       </p>
-      <p className="mt-2 text-[0.78rem] leading-[1.6] text-gray-400 dark:text-gray-500">
+      <p className="mt-1.5 text-[0.72rem] leading-[1.6] text-gray-400 dark:text-gray-500 sm:mt-2 sm:text-[0.78rem]">
         {description}
       </p>
     </div>
@@ -1230,10 +1182,10 @@ function FeatureCard({ icon: Icon, title, description }: { icon: LucideIcon; tit
 function WaitlistStat({ value, label }: { value: React.ReactNode; label: string }) {
   return (
     <div className="text-center">
-      <p className="text-[1.6rem] font-bold tracking-tight" style={{ color: b.accent }}>
+      <p className="text-[1.3rem] font-bold tracking-tight sm:text-[1.6rem]" style={{ color: b.accent }}>
         {value}
       </p>
-      <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-600">
+      <p className="font-mono text-[0.45rem] uppercase tracking-[0.15em] text-gray-500 dark:text-gray-600 sm:text-[0.52rem] sm:tracking-[0.2em]">
         {label}
       </p>
     </div>
@@ -1255,7 +1207,7 @@ function PricingCard({
 }) {
   return (
     <div
-      className="card-hover-glow rounded-2xl px-7 py-8 text-center backdrop-blur-sm"
+      className="card-hover-glow rounded-xl px-5 py-6 text-center backdrop-blur-sm sm:rounded-2xl sm:px-7 sm:py-8"
       style={{
         border: highlighted
           ? `1px solid rgba(${rgb},0.15)`

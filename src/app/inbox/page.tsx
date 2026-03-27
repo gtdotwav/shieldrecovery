@@ -269,7 +269,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
               </div>
 
               {/* Mensagens */}
-              <div className="min-h-[20rem] flex-1 space-y-3 overflow-y-auto py-4 lg:max-h-[calc(100vh-18rem)] lg:pr-1">
+              <div className="min-h-[12rem] max-h-[calc(100vh-22rem)] flex-1 space-y-3 overflow-y-auto py-4 sm:min-h-[20rem] lg:max-h-[calc(100vh-18rem)] lg:pr-1">
                 {selectedMessages.length === 0 ? (
                   <div className="flex h-full items-center justify-center">
                     <p className="text-sm text-gray-400 dark:text-gray-500">

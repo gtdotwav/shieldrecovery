@@ -310,7 +310,7 @@ export async function PlatformAppPage({
       </aside>
 
       {/* ─── Mobile bottom nav ─── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-2 py-1.5 transition-colors duration-300">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-1 py-2 safe-bottom transition-colors duration-300">
         {appRoutes.slice(0, 4).map((route) => {
           const isActive = currentPath === route.href;
 
@@ -319,14 +319,14 @@ export async function PlatformAppPage({
               key={route.href}
               href={route.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg transition-colors",
+                "flex flex-col items-center gap-0.5 min-w-[3rem] min-h-[2.75rem] justify-center px-1.5 rounded-lg transition-colors",
                 isActive
                   ? "text-[var(--accent)]"
                   : "text-gray-400 dark:text-gray-500",
               )}
             >
-              <route.icon className="w-5 h-5" />
-              <span style={{ fontSize: "10px" }}>{route.label}</span>
+              <route.icon className="w-5 h-5 shrink-0" />
+              <span className="text-[0.6rem] leading-tight truncate max-w-[4rem]">{route.label}</span>
             </Link>
           );
         })}
@@ -366,7 +366,7 @@ export async function PlatformAppPage({
         </header>
 
         {/* Page content */}
-        <main id="main-content" className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 pb-20 md:pb-6">
+        <main id="main-content" className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 pb-16 md:pb-6">
           {children}
         </main>
       </div>
@@ -389,14 +389,14 @@ function MobileMoreMenu({
     <div className="relative group">
       <button
         className={cn(
-          "flex flex-col items-center gap-0.5 py-1 px-2 rounded-lg transition-colors",
+          "flex flex-col items-center gap-0.5 min-w-[3rem] min-h-[2.75rem] justify-center px-1.5 rounded-lg transition-colors",
           isActive
             ? "text-[var(--accent)]"
             : "text-gray-400 dark:text-gray-500",
         )}
       >
-        <Inbox className="w-5 h-5" />
-        <span style={{ fontSize: "10px" }}>Mais</span>
+        <Inbox className="w-5 h-5 shrink-0" />
+        <span className="text-[0.6rem] leading-tight">Mais</span>
       </button>
       <div className="absolute bottom-full right-0 mb-2 hidden group-focus-within:block bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg min-w-[160px] py-1 z-50">
         {routes.map((route) => {

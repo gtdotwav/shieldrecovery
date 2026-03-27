@@ -171,7 +171,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     name="q"
                     defaultValue={searchQuery}
                     placeholder="Buscar por nome, email ou telefone"
-                    className="w-full rounded-lg border border-black/[0.08] bg-white px-10 py-2 text-sm text-gray-900 outline-none transition focus:border-[var(--accent)] dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white"
+                    className="w-full rounded-lg border border-black/[0.08] bg-white px-10 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[var(--accent)] dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white"
                   />
                 </label>
               </form>

@@ -2045,13 +2045,27 @@ export class PaymentRecoveryService {
     pixExpiresAt?: string;
   }> {
     if (appEnv.pagouAiConfigured && selectedMethodType === "pix") {
-      return this.createPagouPixRecovery({
-        payment,
-        failureReason,
-        paymentMethod,
-        baseUrl,
-        customer,
-      });
+      try {
+        return await this.createPagouPixRecovery({
+          payment,
+          failureReason,
+          paymentMethod,
+          baseUrl,
+          customer,
+        });
+      } catch (error) {
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "processing_error",
+            level: "warn",
+            message: "Pagou.ai unavailable, using fallback link.",
+            context: {
+              paymentId: payment.id,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          }),
+        ).catch(() => {});
+      }
     }
 
     try {

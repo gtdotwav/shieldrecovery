@@ -31,7 +31,7 @@ export function HeroHeading() {
   return (
     <h1
       ref={ref}
-      className="mt-10 text-balance text-[2.5rem] font-bold leading-[1.1] tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[3.5rem] lg:text-[4.2rem]"
+      className="mt-6 text-balance text-[2rem] font-bold leading-[1.1] tracking-[-0.03em] text-gray-900 dark:text-white sm:mt-10 sm:text-[3rem] lg:text-[4.2rem]"
     >
       {plainWords.map((word, i) => (
         <motion.span

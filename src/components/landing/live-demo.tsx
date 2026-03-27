@@ -230,20 +230,20 @@ export function LiveDemo() {
   return (
     <section
       ref={sectionRef}
-      className="relative z-10 mx-auto max-w-[82rem] px-6 pb-24 sm:px-8 lg:px-10"
+      className="relative z-10 mx-auto max-w-[82rem] px-4 pb-16 sm:px-8 sm:pb-24 lg:px-10"
     >
       {/* Header */}
-      <div className="mb-14 text-center">
+      <div className="mb-8 text-center sm:mb-14">
         <p
-          className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.3em] opacity-70"
+          className="font-mono text-[0.6rem] font-semibold uppercase tracking-[0.2em] opacity-70 sm:text-[0.65rem] sm:tracking-[0.3em]"
           style={{ color: b.accent }}
         >
           Operação ao vivo
         </p>
-        <h2 className="mt-4 text-balance text-[1.75rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2.2rem]">
+        <h2 className="mt-3 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:mt-4 sm:text-[1.75rem] lg:text-[2.2rem]">
           Veja a IA recuperando em tempo real
         </h2>
-        <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+        <p className="mx-auto mt-3 max-w-lg text-[0.88rem] leading-6 text-gray-400 dark:text-gray-500 sm:mt-4 sm:text-[0.95rem] sm:leading-7">
           Enquanto você foca no negócio, a {b.name} trabalha 24/7 recuperando
           cada pagamento falhado automaticamente.
         </p>
@@ -252,7 +252,7 @@ export function LiveDemo() {
       {/* ── Monitor ── */}
       <div className="mx-auto max-w-[66rem]">
         <div
-          className="relative overflow-hidden rounded-2xl p-2.5 shadow-[0_40px_80px_-12px_rgba(0,0,0,0.7)]"
+          className="relative overflow-hidden rounded-xl p-1.5 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] sm:rounded-2xl sm:p-2.5 sm:shadow-[0_40px_80px_-12px_rgba(0,0,0,0.7)]"
           style={{
             border: "1px solid rgba(255,255,255,0.06)",
             background: "rgba(8,8,8,0.75)",
@@ -275,8 +275,8 @@ export function LiveDemo() {
           </AnimatePresence>
 
           {/* ── Top bar ── */}
-          <div className="flex items-center justify-between px-4 py-2.5">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="relative flex h-2 w-2">
                 <span
                   className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-40"
@@ -288,14 +288,34 @@ export function LiveDemo() {
                 />
               </span>
               <span
-                className="font-mono text-[0.55rem] uppercase tracking-[0.2em]"
+                className="font-mono text-[0.45rem] uppercase tracking-[0.15em] sm:text-[0.55rem] sm:tracking-[0.2em]"
                 style={{ color: `rgba(${rgb},0.5)` }}
               >
                 {b.name} AI — Ativo
               </span>
             </div>
 
-            {/* Timeline steps */}
+            {/* Mobile timeline dots */}
+            <div className="flex items-center gap-1.5 sm:hidden">
+              {TIMELINE_STEPS.map((step) => {
+                const stepPhaseIdx = phaseIndex(step.activatesAt);
+                const isCompleted = currentPhaseIdx > stepPhaseIdx;
+                const isActive = currentPhaseIdx === stepPhaseIdx;
+                return (
+                  <motion.span
+                    key={step.label}
+                    className="h-1.5 w-1.5 rounded-full"
+                    animate={{
+                      background: isActive || isCompleted ? b.accent : "rgba(255,255,255,0.12)",
+                      scale: isActive ? 1.3 : 1,
+                    }}
+                    transition={{ duration: 0.4 }}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Desktop timeline steps */}
             <div className="hidden items-center gap-1 sm:flex">
               {TIMELINE_STEPS.map((step, i) => {
                 const stepPhaseIdx = phaseIndex(step.activatesAt);
@@ -380,7 +400,35 @@ export function LiveDemo() {
             />
 
             {/* Content grid */}
-            <div className="relative z-10 grid h-[26rem] sm:h-[28rem] lg:grid-cols-[1fr_1.4fr]">
+            <div className="relative z-10 grid h-[22rem] sm:h-[28rem] lg:grid-cols-[1fr_1.4fr]">
+              {/* ─── Mobile mini stats (visible < lg) ─── */}
+              <div className="flex items-center justify-between border-b border-white/[0.04] px-4 py-2 lg:hidden"
+                style={{ background: `rgba(${cardBg},0.5)` }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    <span className="text-[0.55rem] text-gray-500">12 novos</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+                    <span className="text-[0.55rem] text-gray-500">34 ativos</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <motion.span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: b.accent }}
+                      animate={phase === "confirmed" ? { scale: [1, 1.4, 1] } : { scale: 1 }}
+                      transition={{ duration: 0.4 }}
+                    />
+                    <span className="text-[0.55rem]" style={{ color: phase === "confirmed" ? b.accent : "rgb(107,114,128)" }}>
+                      {recoveredCount} recuperados
+                    </span>
+                  </div>
+                </div>
+                <span className="font-mono text-[0.5rem] text-gray-600">{formatElapsed(elapsed)}</span>
+              </div>
+
               {/* ─── CRM Panel ─── */}
               <div className="hidden border-r border-white/[0.04] lg:flex lg:flex-col">
                 <div className="flex items-center gap-2 border-b border-white/[0.04] px-4 py-3">
@@ -484,21 +532,21 @@ export function LiveDemo() {
               {/* ─── Chat Panel ─── */}
               <div className="flex flex-col">
                 {/* Chat header */}
-                <div className="flex items-center gap-3 border-b border-white/[0.04] px-5 py-3">
+                <div className="flex items-center gap-2 border-b border-white/[0.04] px-3 py-2 sm:gap-3 sm:px-5 sm:py-3">
                   <div
-                    className="flex h-8 w-8 items-center justify-center rounded-full"
+                    className="flex h-7 w-7 items-center justify-center rounded-full sm:h-8 sm:w-8"
                     style={{ background: `rgba(${rgb},0.08)` }}
                   >
                     <span
-                      className="text-[0.6rem] font-bold"
+                      className="text-[0.55rem] font-bold sm:text-[0.6rem]"
                       style={{ color: `rgba(${rgb},0.7)` }}
                     >
                       CR
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[0.75rem] font-semibold text-gray-200">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="text-[0.68rem] font-semibold text-gray-200 sm:text-[0.75rem]">
                         Carlos R.
                       </span>
                       <AnimatePresence mode="wait">
@@ -547,7 +595,7 @@ export function LiveDemo() {
                 {/* Messages */}
                 <div
                   ref={chatRef}
-                  className="flex-1 space-y-3 overflow-y-auto p-4"
+                  className="flex-1 space-y-2 overflow-y-auto p-3 sm:space-y-3 sm:p-4"
                 >
                   <AnimatePresence>
                     {CONVERSATION.slice(0, visibleMessages).map((msg, i) => (
@@ -575,21 +623,21 @@ export function LiveDemo() {
                 </div>
 
                 {/* Input bar */}
-                <div className="border-t border-white/[0.04] bg-black/30 p-3 backdrop-blur-md">
-                  <div className="flex items-center gap-2 rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2">
+                <div className="border-t border-white/[0.04] bg-black/30 p-2 backdrop-blur-md sm:p-3">
+                  <div className="flex items-center gap-1.5 rounded-lg border border-white/[0.04] bg-white/[0.02] px-2.5 py-1.5 sm:gap-2 sm:px-3 sm:py-2">
                     <Bot
-                      className="h-3.5 w-3.5"
+                      className="h-3 w-3 sm:h-3.5 sm:w-3.5"
                       style={{ color: `rgba(${rgb},0.3)` }}
                     />
                     <span
-                      className="flex-1 text-[0.7rem] font-light"
+                      className="flex-1 text-[0.6rem] font-light sm:text-[0.7rem]"
                       style={{ color: `rgba(${rgb},0.2)` }}
                     >
                       IA respondendo automaticamente...
                     </span>
-                    <div className="flex h-6 w-6 items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.03]">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.03] sm:h-6 sm:w-6">
                       <Send
-                        className="h-3 w-3"
+                        className="h-2.5 w-2.5 sm:h-3 sm:w-3"
                         style={{ color: `rgba(${rgb},0.3)` }}
                       />
                     </div>
@@ -603,8 +651,8 @@ export function LiveDemo() {
               className="relative z-10 grid grid-cols-3 border-t border-white/[0.04]"
               style={{ background: `rgba(${cardBg},0.8)` }}
             >
-              {/* Timer */}
-              <div className="flex items-center justify-center gap-2 px-4 py-2.5">
+              {/* Timer — hidden on mobile since it's in the mobile mini stats */}
+              <div className="hidden items-center justify-center gap-2 px-4 py-2.5 sm:flex">
                 <Clock className="h-3 w-3 text-gray-600" />
                 <span className="font-mono text-[0.7rem] tabular-nums text-gray-400">
                   {formatElapsed(elapsed)}
@@ -612,7 +660,7 @@ export function LiveDemo() {
               </div>
 
               {/* Status badge */}
-              <div className="flex items-center justify-center border-x border-white/[0.04] px-4 py-2.5">
+              <div className="col-span-2 flex items-center justify-center border-white/[0.04] px-3 py-2 sm:col-span-1 sm:border-x sm:px-4 sm:py-2.5">
                 <AnimatePresence mode="wait">
                   {statusBadge && (
                     <motion.div
@@ -628,7 +676,7 @@ export function LiveDemo() {
                         style={{ background: statusBadge.color }}
                       />
                       <span
-                        className="text-[0.6rem] font-semibold"
+                        className="text-[0.55rem] font-semibold sm:text-[0.6rem]"
                         style={{ color: statusBadge.color }}
                       >
                         {statusBadge.label}
@@ -639,20 +687,20 @@ export function LiveDemo() {
               </div>
 
               {/* Recovered amount */}
-              <div className="flex items-center justify-center gap-1.5 px-4 py-2.5">
+              <div className="flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5">
                 <AnimatePresence>
                   {(phase === "confirmed" || phase === "complete") && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-1.5"
+                      className="flex items-center gap-1"
                     >
                       <CheckCircle2
                         className="h-3 w-3"
                         style={{ color: b.accent }}
                       />
                       <span
-                        className="text-[0.68rem] font-bold"
+                        className="text-[0.6rem] font-bold sm:text-[0.68rem]"
                         style={{ color: b.accent }}
                       >
                         +R$ 1.297,00
@@ -676,55 +724,55 @@ function ChatBubble({ message }: { message: Message }) {
 
   if (message.type === "payment_link") {
     return (
-      <div className="flex items-start gap-2 max-w-[88%]">
+      <div className="flex items-start gap-1.5 max-w-[92%] sm:gap-2 sm:max-w-[88%]">
         <div
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full sm:h-5 sm:w-5"
           style={{ background: `rgba(${rgb},0.08)` }}
         >
-          <Bot className="h-2.5 w-2.5" style={{ color: `rgba(${rgb},0.7)` }} />
+          <Bot className="h-2 w-2 sm:h-2.5 sm:w-2.5" style={{ color: `rgba(${rgb},0.7)` }} />
         </div>
         <div
-          className="overflow-hidden rounded-2xl rounded-tl-sm"
+          className="overflow-hidden rounded-xl rounded-tl-sm sm:rounded-2xl"
           style={{
             border: `1px solid rgba(${rgb},0.12)`,
             background: `rgba(${rgb},0.04)`,
           }}
         >
-          <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-lg"
+              className="flex h-7 w-7 items-center justify-center rounded-lg sm:h-9 sm:w-9"
               style={{ background: b.accent }}
             >
-              <QrCode className="h-4 w-4 text-white" />
+              <QrCode className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
             </div>
             <div>
-              <p className="text-[0.72rem] font-semibold text-white/80">
+              <p className="text-[0.65rem] font-semibold text-white/80 sm:text-[0.72rem]">
                 Pagamento via PIX
               </p>
-              <p className="text-[0.58rem] text-white/40">
+              <p className="text-[0.5rem] text-white/40 sm:text-[0.58rem]">
                 Aprovação instantânea
               </p>
             </div>
           </div>
           <div
-            className="border-t px-4 py-2.5"
+            className="border-t px-3 py-2 sm:px-4 sm:py-2.5"
             style={{ borderColor: `rgba(${rgb},0.08)` }}
           >
             <p
-              className="text-[1.15rem] font-bold tracking-tight"
+              className="text-[0.95rem] font-bold tracking-tight sm:text-[1.15rem]"
               style={{ color: b.accent }}
             >
               {message.text}
             </p>
-            <p className="mt-0.5 font-mono text-[0.48rem] text-white/25">
+            <p className="mt-0.5 font-mono text-[0.42rem] text-white/25 sm:text-[0.48rem]">
               pay.{b.slug}.com/c/xK9m2
             </p>
           </div>
           <div
-            className="px-4 py-2.5 text-center"
+            className="px-3 py-2 text-center sm:px-4 sm:py-2.5"
             style={{ background: b.accent }}
           >
-            <p className="text-[0.72rem] font-semibold text-white">
+            <p className="text-[0.65rem] font-semibold text-white sm:text-[0.72rem]">
               Pagar agora →
             </p>
           </div>
@@ -735,15 +783,15 @@ function ChatBubble({ message }: { message: Message }) {
 
   if (message.type === "confirmation") {
     return (
-      <div className="flex items-start gap-2 max-w-[88%]">
+      <div className="flex items-start gap-1.5 max-w-[92%] sm:gap-2 sm:max-w-[88%]">
         <div
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full sm:h-5 sm:w-5"
           style={{ background: `rgba(${rgb},0.08)` }}
         >
-          <Bot className="h-2.5 w-2.5" style={{ color: `rgba(${rgb},0.7)` }} />
+          <Bot className="h-2 w-2 sm:h-2.5 sm:w-2.5" style={{ color: `rgba(${rgb},0.7)` }} />
         </div>
         <div
-          className="flex items-center gap-3 rounded-2xl rounded-tl-sm px-4 py-3"
+          className="flex items-center gap-2 rounded-xl rounded-tl-sm px-3 py-2 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3"
           style={{
             border: `1px solid rgba(${rgb},0.15)`,
             background: `rgba(${rgb},0.08)`,
@@ -755,18 +803,18 @@ function ChatBubble({ message }: { message: Message }) {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <CheckCircle2
-              className="h-5 w-5 shrink-0"
+              className="h-4 w-4 shrink-0 sm:h-5 sm:w-5"
               style={{ color: b.accent }}
             />
           </motion.div>
           <div>
             <p
-              className="text-[0.75rem] font-bold"
+              className="text-[0.68rem] font-bold sm:text-[0.75rem]"
               style={{ color: b.accent }}
             >
               Pagamento Confirmado!
             </p>
-            <p className="text-[0.6rem] text-white/50">
+            <p className="text-[0.52rem] text-white/50 sm:text-[0.6rem]">
               {message.text}
             </p>
           </div>
@@ -778,22 +826,22 @@ function ChatBubble({ message }: { message: Message }) {
   // Regular text bubble
   return (
     <div
-      className={`flex items-start gap-2 ${isAi ? "" : "flex-row-reverse"} max-w-[88%] ${isAi ? "" : "ml-auto"}`}
+      className={`flex items-start gap-1.5 sm:gap-2 ${isAi ? "" : "flex-row-reverse"} max-w-[92%] sm:max-w-[88%] ${isAi ? "" : "ml-auto"}`}
     >
       <div
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full sm:h-5 sm:w-5"
         style={{
           background: isAi ? `rgba(${rgb},0.08)` : "rgba(255,255,255,0.04)",
         }}
       >
         {isAi ? (
-          <Bot className="h-2.5 w-2.5" style={{ color: `rgba(${rgb},0.7)` }} />
+          <Bot className="h-2 w-2 sm:h-2.5 sm:w-2.5" style={{ color: `rgba(${rgb},0.7)` }} />
         ) : (
-          <User className="h-2.5 w-2.5 text-gray-500" />
+          <User className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-gray-500" />
         )}
       </div>
       <div
-        className={`rounded-2xl px-3.5 py-2.5 ${
+        className={`rounded-xl px-3 py-2 sm:rounded-2xl sm:px-3.5 sm:py-2.5 ${
           isAi ? "rounded-tl-sm" : "rounded-tr-sm"
         }`}
         style={{
@@ -806,7 +854,7 @@ function ChatBubble({ message }: { message: Message }) {
         }}
       >
         <p
-          className={`text-[0.72rem] leading-relaxed ${
+          className={`text-[0.65rem] leading-relaxed sm:text-[0.72rem] ${
             isAi ? "" : "text-gray-400"
           }`}
           style={isAi ? { color: `rgba(${rgb},0.65)` } : undefined}
@@ -814,7 +862,7 @@ function ChatBubble({ message }: { message: Message }) {
           {message.text}
         </p>
         <p
-          className="mt-0.5 text-[0.45rem]"
+          className="mt-0.5 text-[0.4rem] sm:text-[0.45rem]"
           style={{
             color: isAi ? `rgba(${rgb},0.2)` : "rgba(255,255,255,0.15)",
           }}
@@ -829,15 +877,15 @@ function ChatBubble({ message }: { message: Message }) {
 
 function TypingIndicator() {
   return (
-    <div className="flex items-start gap-2 max-w-[88%]">
+    <div className="flex items-start gap-1.5 max-w-[88%] sm:gap-2">
       <div
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full sm:h-5 sm:w-5"
         style={{ background: `rgba(${rgb},0.08)` }}
       >
-        <Bot className="h-2.5 w-2.5" style={{ color: `rgba(${rgb},0.7)` }} />
+        <Bot className="h-2 w-2 sm:h-2.5 sm:w-2.5" style={{ color: `rgba(${rgb},0.7)` }} />
       </div>
       <div
-        className="rounded-2xl rounded-tl-sm px-4 py-2.5"
+        className="rounded-xl rounded-tl-sm px-3 py-2 sm:rounded-2xl sm:px-4 sm:py-2.5"
         style={{
           border: `1px solid rgba(${rgb},0.06)`,
           background: `rgba(${rgb},0.04)`,
