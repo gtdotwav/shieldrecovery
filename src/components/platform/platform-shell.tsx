@@ -12,6 +12,7 @@ import {
   Link2,
   LogOut,
   MessageSquare,
+  PhoneCall,
   Settings,
   ShieldCheck,
   Users,
@@ -35,6 +36,7 @@ type PlatformRoute = {
   allowedRoles?: UserRole[];
   devOnly?: boolean;
   experimental?: boolean;
+  external?: boolean;
 };
 
 export const platformRoutes: PlatformRoute[] = [
@@ -116,6 +118,15 @@ export const platformRoutes: PlatformRoute[] = [
     icon: FlaskConical,
     kind: "app",
     allowedRoles: ["admin"],
+  },
+  {
+    href: "https://frontend-mtttt.vercel.app",
+    label: "CallCenter",
+    description: "Agente de voz IA para recuperacao de clientes.",
+    icon: PhoneCall,
+    kind: "app",
+    allowedRoles: ["admin"],
+    external: true,
   },
 ];
 
@@ -252,19 +263,31 @@ export async function PlatformAppPage({
           <ShieldMark />
 
           {appRoutes.map((route) => {
-            const isActive = currentPath === route.href;
+            const isActive = !route.external && currentPath === route.href;
+            const linkClass = cn(
+              "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+              isActive
+                ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+            );
 
-            return (
+            return route.external ? (
+              <a
+                key={route.href}
+                href={route.href}
+                title={route.label}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={linkClass}
+              >
+                <route.icon className="w-5 h-5" />
+              </a>
+            ) : (
               <Link
                 key={route.href}
                 href={route.href}
                 title={route.label}
-                className={cn(
-                  "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-                  isActive
-                    ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                    : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
-                )}
+                className={linkClass}
               >
                 <route.icon className="w-5 h-5" />
               </Link>
@@ -377,18 +400,30 @@ function MobileMoreMenu({
       </button>
       <div className="absolute bottom-full right-0 mb-2 hidden group-focus-within:block bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg min-w-[160px] py-1 z-50">
         {routes.map((route) => {
-          const active = currentPath === route.href;
+          const active = !route.external && currentPath === route.href;
+          const itemClass = cn(
+            "flex items-center gap-2.5 px-3 py-2 text-sm transition-colors",
+            active
+              ? "text-[var(--accent)] bg-[var(--accent)]/5"
+              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800",
+          );
 
-          return (
+          return route.external ? (
+            <a
+              key={route.href}
+              href={route.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={itemClass}
+            >
+              <route.icon className="w-4 h-4" />
+              {route.label}
+            </a>
+          ) : (
             <Link
               key={route.href}
               href={route.href}
-              className={cn(
-                "flex items-center gap-2.5 px-3 py-2 text-sm transition-colors",
-                active
-                  ? "text-[var(--accent)] bg-[var(--accent)]/5"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800",
-              )}
+              className={itemClass}
             >
               <route.icon className="w-4 h-4" />
               {route.label}
