@@ -379,14 +379,18 @@ export class SupabaseStorageService implements RecoveryStorage {
     const existing = byGatewayId?.[0] ?? null;
 
     if (existing) {
+      const updatePayload: Record<string, unknown> = {
+        name: normalizedEvent.customer.name,
+        email: normalizedEvent.customer.email,
+        phone: normalizedPhone,
+        updated_at: new Date().toISOString(),
+      };
+      if (normalizedEvent.customer.document) {
+        updatePayload.document = normalizedEvent.customer.document;
+      }
       const { data, error } = await this.supabase
         .from("customers")
-        .update({
-          name: normalizedEvent.customer.name,
-          email: normalizedEvent.customer.email,
-          phone: normalizedPhone,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", existing.id)
         .select()
         .single();
@@ -404,13 +408,17 @@ export class SupabaseStorageService implements RecoveryStorage {
     const emailMatch = byEmail?.[0] ?? null;
 
     if (emailMatch) {
+      const emailUpdatePayload: Record<string, unknown> = {
+        name: normalizedEvent.customer.name,
+        phone: normalizedPhone,
+        updated_at: new Date().toISOString(),
+      };
+      if (normalizedEvent.customer.document) {
+        emailUpdatePayload.document = normalizedEvent.customer.document;
+      }
       const { data, error } = await this.supabase
         .from("customers")
-        .update({
-          name: normalizedEvent.customer.name,
-          phone: normalizedPhone,
-          updated_at: new Date().toISOString(),
-        })
+        .update(emailUpdatePayload)
         .eq("id", emailMatch.id)
         .select()
         .single();
@@ -419,14 +427,18 @@ export class SupabaseStorageService implements RecoveryStorage {
     }
 
     // Insert new customer
+    const insertPayload: Record<string, unknown> = {
+      gateway_customer_id: normalizedEvent.customer.id,
+      name: normalizedEvent.customer.name,
+      email: normalizedEvent.customer.email,
+      phone: normalizedPhone,
+    };
+    if (normalizedEvent.customer.document) {
+      insertPayload.document = normalizedEvent.customer.document;
+    }
     const { data, error } = await this.supabase
       .from("customers")
-      .insert({
-        gateway_customer_id: normalizedEvent.customer.id,
-        name: normalizedEvent.customer.name,
-        email: normalizedEvent.customer.email,
-        phone: normalizedPhone,
-      })
+      .insert(insertPayload)
       .select()
       .single();
     if (error) throw new Error(`Failed to insert customer: ${error.message}`);

@@ -223,6 +223,20 @@ export function normalizeShieldGatewayEvent(
           payment.buyer_phone,
         ) ??
         "not_provided",
+      document:
+        pickString(
+          customer.document,
+          customer.cpf,
+          customer.cnpj,
+          customer.tax_id,
+          customer.taxId,
+          payload.document,
+          payload.cpf,
+          payment.buyer_document,
+          payment.document,
+          metadata?.document,
+          metadata?.cpf,
+        ) ?? undefined,
     },
     metadata: {
       product:

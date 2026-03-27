@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
@@ -17,10 +18,8 @@ import {
   Layers,
   LineChart,
   Lock,
-  Mail,
   MessageSquare,
   QrCode,
-  Scale,
   Server,
   Shield,
   ShieldCheck,
@@ -34,22 +33,23 @@ import {
 
 import { AdminAccessButton } from "@/components/landing/admin-access";
 import { CountUp } from "@/components/landing/count-up";
-import { FaqSection } from "@/components/landing/faq-section";
 import { HeroHeading } from "@/components/landing/hero-heading";
 import { HeroParticles } from "@/components/landing/hero-particles";
-import { LiveDemo } from "@/components/landing/live-demo";
 import { MagneticButton } from "@/components/landing/magnetic-button";
 import { Marquee } from "@/components/landing/marquee";
-import { RecoveryCalculator } from "@/components/landing/recovery-calculator";
 import { Reveal } from "@/components/landing/scroll-reveal";
 import { ScrollProgress } from "@/components/landing/scroll-progress";
 import { TiltCard } from "@/components/landing/tilt-card";
 import { PlatformLogo } from "@/components/platform/platform-logo";
-import { formatCurrency } from "@/lib/format";
 import { platformBrand } from "@/lib/platform";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
-export const dynamic = "force-dynamic";
+// Heavy below-fold components — lazy loaded
+const LiveDemo = dynamic(() => import("@/components/landing/live-demo").then(m => ({ default: m.LiveDemo })));
+const RecoveryCalculator = dynamic(() => import("@/components/landing/recovery-calculator").then(m => ({ default: m.RecoveryCalculator })));
+const FaqSection = dynamic(() => import("@/components/landing/faq-section").then(m => ({ default: m.FaqSection })));
+
+export const revalidate = 60;
 
 // ── Brand-derived tokens ──
 const b = platformBrand;
@@ -108,17 +108,16 @@ export default async function Home() {
             "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
+      {/* Consolidated glow orbs — single compositing layer instead of 3 blurred ones */}
       <div
-        className="pointer-events-none fixed left-[-10%] top-[-8%] z-0 h-[600px] w-[600px] rounded-full blur-[120px]"
-        style={{ background: `rgba(${rgb},0.07)` }}
-      />
-      <div
-        className="pointer-events-none fixed right-[-8%] top-[30%] z-0 h-[500px] w-[500px] rounded-full blur-[100px]"
-        style={{ background: `rgba(${rgb},0.05)` }}
-      />
-      <div
-        className="pointer-events-none fixed bottom-[-10%] left-[30%] z-0 h-[400px] w-[400px] rounded-full blur-[100px]"
-        style={{ background: `rgba(${rgb},0.04)` }}
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background: `
+            radial-gradient(circle 600px at -10% -8%, rgba(${rgb},0.07), transparent 60%),
+            radial-gradient(circle 500px at 108% 30%, rgba(${rgb},0.05), transparent 60%),
+            radial-gradient(circle 400px at 30% 110%, rgba(${rgb},0.04), transparent 60%)
+          `,
+        }}
       />
 
       {/* ═══ Navigation ═══ */}
@@ -129,6 +128,7 @@ export default async function Home() {
           width={176}
           height={176}
           sizes="(min-width: 640px) 176px, 96px"
+          quality={80}
           className="h-[5rem] w-auto object-contain sm:h-[8rem] lg:h-[11rem]"
           style={{ filter: `drop-shadow(0 8px 24px rgba(${rgb},0.12))` }}
           priority
@@ -167,6 +167,7 @@ export default async function Home() {
               width={672}
               height={672}
               sizes="672px"
+              quality={60}
               className="h-[42rem] w-[42rem] object-contain"
               aria-hidden="true"
               loading="lazy"
@@ -479,10 +480,14 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ LIVE DEMO ═══════════════════════ */}
-        <LiveDemo />
+        <div className="content-auto">
+          <LiveDemo />
+        </div>
 
         {/* ═══════════════════════ CALCULATOR ═══════════════════════ */}
-        <RecoveryCalculator />
+        <div className="content-auto">
+          <RecoveryCalculator />
+        </div>
 
         <GlowDivider />
 
@@ -875,8 +880,10 @@ export default async function Home() {
                   alt=""
                   width={600}
                   height={600}
+                  quality={50}
                   className="h-[28rem] w-[28rem] object-contain"
                   aria-hidden="true"
+                  loading="lazy"
                 />
               </div>
 

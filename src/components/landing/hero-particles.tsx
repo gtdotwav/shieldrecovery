@@ -33,8 +33,8 @@ export function HeroParticles({ className = "" }: { className?: string }) {
 
     const isMobile = rect.width < 768;
     const count = isMobile
-      ? Math.min(30, Math.floor((rect.width * rect.height) / 20000))
-      : Math.min(70, Math.floor((rect.width * rect.height) / 10000));
+      ? Math.min(20, Math.floor((rect.width * rect.height) / 25000))
+      : Math.min(45, Math.floor((rect.width * rect.height) / 14000));
 
     particlesRef.current = Array.from({ length: count }, () => ({
       x: Math.random() * rect.width,
@@ -61,11 +61,17 @@ export function HeroParticles({ className = "" }: { className?: string }) {
 
     const [r, g, bv] = platformBrand.accentRgb.split(",").map(Number);
     const isMobile = window.innerWidth < 768;
-    const connectionDist = isMobile ? 0 : 130;
+    const connectionDist = isMobile ? 0 : 120;
+    const connectionDistSq = connectionDist * connectionDist;
 
     init();
 
+    // Throttled mouse handler — update at most every 32ms (~30fps)
+    let lastMouseTime = 0;
     const handleMouse = (e: MouseEvent) => {
+      const now = e.timeStamp;
+      if (now - lastMouseTime < 32) return;
+      lastMouseTime = now;
       const rect = canvas.getBoundingClientRect();
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
@@ -73,7 +79,7 @@ export function HeroParticles({ className = "" }: { className?: string }) {
       mouseRef.current = { x: -9999, y: -9999 };
     };
 
-    window.addEventListener("mousemove", handleMouse);
+    window.addEventListener("mousemove", handleMouse, { passive: true });
     window.addEventListener("mouseleave", handleLeave);
     window.addEventListener("resize", init);
 
@@ -97,8 +103,9 @@ export function HeroParticles({ className = "" }: { className?: string }) {
         // Mouse repulsion
         const dx = mouse.x - p.x;
         const dy = mouse.y - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 160 && dist > 0) {
+        const distSq = dx * dx + dy * dy;
+        if (distSq < 25600 && distSq > 0) { // 160^2
+          const dist = Math.sqrt(distSq);
           const force = ((160 - dist) / 160) * 0.015;
           p.vx -= (dx / dist) * force;
           p.vy -= (dy / dist) * force;
@@ -129,21 +136,23 @@ export function HeroParticles({ className = "" }: { className?: string }) {
         ctx!.fill();
       }
 
-      // Draw connections (desktop only)
-      if (connectionDist > 0) {
+      // Draw connections (desktop only, every other frame for perf)
+      if (connectionDist > 0 && (t & 1) === 0) {
+        ctx!.lineWidth = 0.5;
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
             const dx = particles[i].x - particles[j].x;
+            // Early exit: skip if single axis already exceeds distance
+            if (dx > connectionDist || dx < -connectionDist) continue;
             const dy = particles[i].y - particles[j].y;
+            if (dy > connectionDist || dy < -connectionDist) continue;
             const d = dx * dx + dy * dy;
-            const maxD = connectionDist * connectionDist;
-            if (d < maxD) {
-              const alpha = (1 - d / maxD) * 0.1;
+            if (d < connectionDistSq) {
+              const alpha = (1 - d / connectionDistSq) * 0.1;
               ctx!.beginPath();
               ctx!.moveTo(particles[i].x, particles[i].y);
               ctx!.lineTo(particles[j].x, particles[j].y);
               ctx!.strokeStyle = `rgba(${r},${g},${bv},${alpha})`;
-              ctx!.lineWidth = 0.5;
               ctx!.stroke();
             }
           }

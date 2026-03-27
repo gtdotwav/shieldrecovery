@@ -155,6 +155,7 @@ export type NormalizedPaymentEvent = {
     name: string;
     email: string;
     phone: string;
+    document?: string;
   };
   metadata: {
     product?: string;

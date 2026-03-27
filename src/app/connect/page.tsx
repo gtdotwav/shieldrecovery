@@ -190,6 +190,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
         runtimeSettings={runtimeSettings}
         health={health}
         whatsappSessionStatus={whatsappSession.sessionStatus}
+        whatsappSession={whatsappSession}
         integrations={integrations}
         sellerDisplayName={sellerIdentity?.displayName ?? sellerIdentity?.agentName ?? "Seller"}
         sellerWebhookUrl={await service.getGatewayWebhookUrlForSeller(
@@ -253,14 +254,14 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
               Conecte o núcleo da operação.
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
-              Banco, Pagou.ai, WhatsApp, CRM e IA ficam aqui. A ideia é
+              Banco, Gateway, WhatsApp, CRM e IA ficam aqui. A ideia é
               simples: configurar o que pode viver no runtime e deixar as
               chaves críticas do gateway prontas para white label via ambiente.
             </p>
           </div>
 
           <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
-            Ordem ideal: banco, Pagou.ai, WhatsApp e IA.
+            Ordem ideal: banco, gateway, WhatsApp e IA.
           </div>
         </div>
       </PlatformSurface>
@@ -342,7 +343,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
           <SettingsCard
             eyebrow="Gateway"
             title={`${platformBrand.gateway.name} v2`}
-            description="Este clone usa a API v2 da Pagou.ai para Pix de recovery e reconciliacao de webhooks."
+            description="Gateway de pagamento para Pix de recovery e reconciliação de webhooks."
           >
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
@@ -367,7 +368,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
                 Pix ja cria transacao direto em <code>/v2/transactions</code> e
                 o webhook reconcilia a cobranca com <code>GET /v2/transactions/{"{id}"}</code>
                 quando faltar contexto no payload. Para habilitar cartao no
-                checkout hospedado da Pagou.ai, mantenha tambem a public key no ambiente.
+                checkout hospedado do gateway, mantenha tambem a public key no ambiente.
               </div>
 
               <div className="rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-4 text-sm leading-6 text-[#6b7280]">
@@ -721,6 +722,7 @@ function SellerConnectView({
   runtimeSettings,
   health,
   whatsappSessionStatus,
+  whatsappSession,
   integrations,
   sellerDisplayName,
   sellerWebhookUrl,
@@ -752,6 +754,12 @@ function SellerConnectView({
     };
   };
   whatsappSessionStatus: string;
+  whatsappSession: {
+    sessionStatus: string;
+    qrCode?: string;
+    connectedPhone?: string;
+    error?: string;
+  };
   integrations: IntegrationStatus[];
   sellerDisplayName: string;
   sellerWebhookUrl: string;
@@ -818,8 +826,8 @@ function SellerConnectView({
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
               Este seller recebe um webhook proprio para conectar na{" "}
-              {platformBrand.gateway.name} sem misturar trafego com o restante
-              da operacao. Chaves e credenciais continuam com o admin.
+              SuperPay sem misturar trafego com o restante
+              da operacao. Basta enviar ao dev a URL do webhook abaixo.
             </p>
           </div>
 
@@ -832,7 +840,7 @@ function SellerConnectView({
       <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_21rem]">
         <div className="space-y-5">
           <PlatformSurface className="p-5">
-            <SectionHeader eyebrow="Webhook do seller" title={`URL exclusiva para a ${platformBrand.gateway.name} desta operacao.`} />
+            <SectionHeader eyebrow="Webhook do seller" title="URL exclusiva para a SuperPay desta operação." />
             <div className="mt-4 rounded-2xl border border-black/[0.06] bg-[#f8f8fa] px-4 py-4">
               <p className="break-all text-sm leading-7 text-[#1a1a2e]">
                 {sellerWebhookUrl}
@@ -858,17 +866,126 @@ function SellerConnectView({
           </PlatformSurface>
 
           <PlatformSurface className="p-5">
-            <SectionHeader eyebrow="Formato minimo" title="O que o endpoint espera receber." />
-            <div className="mt-4 flex flex-wrap gap-2">
-              {health.required_headers.map((header) => (
-                <PlatformPill key={header}>{header}</PlatformPill>
-              ))}
-            </div>
-            <p className="mt-4 text-sm leading-6 text-[#717182]">
-              Nesta base, a reconciliacao principal da {platformBrand.gateway.name} usa o id
-              do evento ou da transacao no proprio payload. O seller so precisa
-              apontar a URL correta e manter o envio em JSON.
+            <SectionHeader eyebrow="Documentação SuperPay" title="Payload esperado pelo webhook." />
+            <p className="mt-3 text-sm leading-6 text-[#717182]">
+              Envie um <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">POST</code> com
+              JSON para a URL acima. O endpoint aceita qualquer evento de pagamento — a recuperação
+              inicia automaticamente quando o status for <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">failed</code>,{" "}
+              <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">refused</code> ou{" "}
+              <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">expired</code>.
             </p>
+            <div className="mt-4 rounded-2xl border border-black/[0.06] bg-[#1a1a2e] p-4 text-sm leading-6">
+              <pre className="overflow-x-auto text-[#c8ccd4]">
+{`POST ${sellerWebhookUrl}
+Content-Type: application/json
+
+{
+  "event_type": "payment_failed",
+  "payment": {
+    "id": "txn_abc123",
+    "order_id": "pedido_456",
+    "amount": 19900,
+    "currency": "BRL",
+    "method": "pix",
+    "status": "failed",
+    "failure_code": "insufficient_funds"
+  },
+  "customer": {
+    "name": "João Silva",
+    "email": "joao@email.com",
+    "phone": "5511999998888",
+    "cpf": "12345678900"
+  },
+  "metadata": {
+    "product": "Plano Premium"
+  }
+}`}
+              </pre>
+            </div>
+            <div className="mt-4 space-y-3">
+              <p className="text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-[#6b7280]">Campos obrigatórios</p>
+              <div className="grid gap-2 text-sm">
+                <SideLine label="payment.id" value="ID único da transação na SuperPay" />
+                <SideLine label="payment.amount" value="Valor em centavos (19900 = R$ 199,00)" />
+                <SideLine label="payment.method" value="pix | credit_card | boleto" />
+                <SideLine label="payment.status" value="failed | refused | expired | paid" />
+                <SideLine label="customer.name" value="Nome completo do cliente" />
+                <SideLine label="customer.phone" value="WhatsApp com DDI (5511999998888)" />
+                <SideLine label="customer.cpf" value="CPF do cliente (somente números)" />
+              </div>
+            </div>
+            <div className="mt-4 rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-3 text-sm leading-6 text-[#6b7280]">
+              Métodos suportados: <span className="font-medium text-[#1a1a2e]">PIX</span> e{" "}
+              <span className="font-medium text-[#1a1a2e]">Cartão de crédito</span>. O campo{" "}
+              <code className="rounded bg-[#f0f0f3] px-1 py-0.5">event_type</code> pode ser omitido
+              — se não enviado, o sistema infere pelo <code className="rounded bg-[#f0f0f3] px-1 py-0.5">status</code>.
+            </div>
+          </PlatformSurface>
+
+          <PlatformSurface className="p-5">
+            <SectionHeader eyebrow="WhatsApp" title="Conecte o WhatsApp da sua operação." />
+            {runtimeSettings.whatsappProvider !== "web_api" ? (
+              <div className="mt-4 rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-5 text-sm text-[#6b7280]">
+                O admin ainda não habilitou o modo QR. Peça para ativar o provider{" "}
+                <span className="font-medium text-[#1a1a2e]">WhatsApp Web API</span>.
+              </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <PlatformPill icon={QrCode}>
+                    {describeQrStatus(whatsappSession.sessionStatus)}
+                  </PlatformPill>
+                  {whatsappSession.connectedPhone ? (
+                    <PlatformPill>{whatsappSession.connectedPhone}</PlatformPill>
+                  ) : null}
+                </div>
+
+                {whatsappSession.qrCode ? (
+                  <div className="flex justify-center rounded-xl border border-black/[0.06] bg-[#f8f9fb] p-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={whatsappSession.qrCode}
+                      alt="QR Code do WhatsApp"
+                      className="h-64 w-64 rounded-xl bg-white object-contain p-3 shadow-sm"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-5 text-sm text-[#6b7280]">
+                    Nenhum QR disponível. Gere um novo código para escanear com o WhatsApp do seu número.
+                  </div>
+                )}
+
+                {whatsappSession.error ? (
+                  <p className="text-sm text-red-500">{whatsappSession.error}</p>
+                ) : null}
+
+                <div className="flex flex-wrap gap-2">
+                  <form action={startWhatsAppQrSessionAction}>
+                    <button className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700">
+                      <QrCode className="h-4 w-4" />
+                      Gerar QR
+                    </button>
+                  </form>
+                  <form action={refreshWhatsAppQrSessionAction}>
+                    <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
+                      <RefreshCw className="h-4 w-4" />
+                      Atualizar
+                    </button>
+                  </form>
+                  <form action={disconnectWhatsAppQrSessionAction}>
+                    <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
+                      <Unplug className="h-4 w-4" />
+                      Desconectar
+                    </button>
+                  </form>
+                </div>
+
+                <p className="text-sm leading-6 text-[#717182]">
+                  Abra o WhatsApp no celular, vá em Dispositivos conectados e escaneie o QR acima.
+                  A sessão conecta automaticamente e os webhooks de mensagem recebida chegam na nossa URL.
+                </p>
+              </div>
+            )}
           </PlatformSurface>
 
           <PlatformSurface className="p-5">

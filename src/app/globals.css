@@ -493,3 +493,14 @@ textarea:focus-visible {
 .card-hover-glow:hover {
   animation: border-glow 2s ease infinite;
 }
+
+/* ── Offscreen content optimization ── */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
+
+/* ── GPU-accelerated marquee ── */
+.animate-marquee {
+  will-change: transform;
+}

@@ -147,3 +147,17 @@ export async function handlePagouAiHealth(
 ) {
   return handleShieldGatewayHealth(request, options);
 }
+
+export async function handleSuperPayWebhook(
+  request: Request,
+  options?: { sellerKey?: string | null },
+) {
+  return handlePagouAiWebhook(request, options);
+}
+
+export async function handleSuperPayHealth(
+  request: Request,
+  options?: { sellerKey?: string | null },
+) {
+  return handleShieldGatewayHealth(request, options);
+}
