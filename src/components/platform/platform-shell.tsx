@@ -246,9 +246,20 @@ export async function PlatformAppPage({
   children: React.ReactNode;
 }) {
   const session = await requireAuthenticatedSession();
-  const visibleRoutes = getVisibleRoutes(session.role);
+  const callcenterKey = process.env.CALLCENTER_AUTO_KEY ?? "";
+  const allRoutes = platformRoutes.map((r) =>
+    r.external
+      ? { ...r, href: `https://frontend-mtttt.vercel.app/auto-login?key=${callcenterKey}` }
+      : r,
+  );
+  const visibleRoutes = allRoutes.filter((route) => {
+    if (route.devOnly) return false;
+    if (route.experimental && !appEnv.experimentalPagesEnabled) return false;
+    if (route.allowedRoles && !route.allowedRoles.includes(session.role)) return false;
+    return true;
+  });
   const currentRoute =
-    visibleRoutes.find((route) => route.href === currentPath) ??
+    visibleRoutes.find((route) => !route.external && route.href === currentPath) ??
     visibleRoutes.find((route) => route.kind === "app") ??
     visibleRoutes[0];
   const appRoutes = visibleRoutes.filter((route) => route.kind === "app");
