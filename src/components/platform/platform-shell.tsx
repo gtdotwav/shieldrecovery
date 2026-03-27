@@ -126,6 +126,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: PhoneCall,
     kind: "app",
     allowedRoles: ["admin", "seller"],
+    external: true,
   },
 ];
 
@@ -201,19 +202,20 @@ export function PlatformPage({
               <div className="flex flex-col gap-3 lg:items-end">
                 <nav className="flex flex-wrap items-center gap-1.5">
                   {visibleRoutes.map((route) => {
-                    const isActive = currentPath === route.href;
+                    const isActive = !route.external && currentPath === route.href;
+                    const cls = cn(
+                      "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                      isActive
+                        ? "border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--accent)]"
+                        : "border-[var(--border)] bg-transparent text-[var(--muted)] hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)]",
+                    );
 
-                    return (
-                      <Link
-                        key={route.href}
-                        href={route.href}
-                        className={cn(
-                          "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-                          isActive
-                            ? "border-[var(--accent)]/20 bg-[var(--accent)]/10 text-[var(--accent)]"
-                            : "border-[var(--border)] bg-transparent text-[var(--muted)] hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)]",
-                        )}
-                      >
+                    return route.external ? (
+                      <a key={route.href} href={route.href} className={cls}>
+                        {route.label}
+                      </a>
+                    ) : (
+                      <Link key={route.href} href={route.href} className={cls}>
                         {route.label}
                       </Link>
                     );
@@ -311,19 +313,21 @@ export async function PlatformAppPage({
       {/* ─── Mobile bottom nav ─── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-1 py-2 safe-bottom transition-colors duration-300">
         {appRoutes.slice(0, 4).map((route) => {
-          const isActive = currentPath === route.href;
+          const isActive = !route.external && currentPath === route.href;
+          const cls = cn(
+            "flex flex-col items-center gap-0.5 min-w-[3rem] min-h-[2.75rem] justify-center px-1.5 rounded-lg transition-colors",
+            isActive
+              ? "text-[var(--accent)]"
+              : "text-gray-400 dark:text-gray-500",
+          );
 
-          return (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                "flex flex-col items-center gap-0.5 min-w-[3rem] min-h-[2.75rem] justify-center px-1.5 rounded-lg transition-colors",
-                isActive
-                  ? "text-[var(--accent)]"
-                  : "text-gray-400 dark:text-gray-500",
-              )}
-            >
+          return route.external ? (
+            <a key={route.href} href={route.href} className={cls}>
+              <route.icon className="w-5 h-5 shrink-0" />
+              <span className="text-[0.6rem] leading-tight truncate max-w-[4rem]">{route.label}</span>
+            </a>
+          ) : (
+            <Link key={route.href} href={route.href} className={cls}>
               <route.icon className="w-5 h-5 shrink-0" />
               <span className="text-[0.6rem] leading-tight truncate max-w-[4rem]">{route.label}</span>
             </Link>
