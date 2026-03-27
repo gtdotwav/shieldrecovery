@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   CreditCard,
   Database,
@@ -866,59 +867,20 @@ function SellerConnectView({
           </PlatformSurface>
 
           <PlatformSurface className="p-5">
-            <SectionHeader eyebrow="Documentação SuperPay" title="Payload esperado pelo webhook." />
+            <SectionHeader eyebrow="Documentação" title="Tudo que seu dev precisa para integrar." />
             <p className="mt-3 text-sm leading-6 text-[#717182]">
-              Envie um <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">POST</code> com
-              JSON para a URL acima. O endpoint aceita qualquer evento de pagamento — a recuperação
-              inicia automaticamente quando o status for <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">failed</code>,{" "}
-              <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">refused</code> ou{" "}
-              <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">expired</code>.
+              A documentação completa da API explica como disparar webhooks, o formato dos payloads,
+              os eventos suportados e como a plataforma processa cada transação automaticamente.
             </p>
-            <div className="mt-4 rounded-2xl border border-black/[0.06] bg-[#1a1a2e] p-4 text-sm leading-6">
-              <pre className="overflow-x-auto text-[#c8ccd4]">
-{`POST ${sellerWebhookUrl}
-Content-Type: application/json
-
-{
-  "event_type": "payment_failed",
-  "payment": {
-    "id": "txn_abc123",
-    "order_id": "pedido_456",
-    "amount": 19900,
-    "currency": "BRL",
-    "method": "pix",
-    "status": "failed",
-    "failure_code": "insufficient_funds"
-  },
-  "customer": {
-    "name": "João Silva",
-    "email": "joao@email.com",
-    "phone": "5511999998888",
-    "cpf": "12345678900"
-  },
-  "metadata": {
-    "product": "Plano Premium"
-  }
-}`}
-              </pre>
-            </div>
-            <div className="mt-4 space-y-3">
-              <p className="text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-[#6b7280]">Campos obrigatórios</p>
-              <div className="grid gap-2 text-sm">
-                <SideLine label="payment.id" value="ID único da transação na SuperPay" />
-                <SideLine label="payment.amount" value="Valor em centavos (19900 = R$ 199,00)" />
-                <SideLine label="payment.method" value="pix | credit_card | boleto" />
-                <SideLine label="payment.status" value="failed | refused | expired | paid" />
-                <SideLine label="customer.name" value="Nome completo do cliente" />
-                <SideLine label="customer.phone" value="WhatsApp com DDI (5511999998888)" />
-                <SideLine label="customer.cpf" value="CPF do cliente (somente números)" />
-              </div>
-            </div>
-            <div className="mt-4 rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-3 text-sm leading-6 text-[#6b7280]">
-              Métodos suportados: <span className="font-medium text-[#1a1a2e]">PIX</span> e{" "}
-              <span className="font-medium text-[#1a1a2e]">Cartão de crédito</span>. O campo{" "}
-              <code className="rounded bg-[#f0f0f3] px-1 py-0.5">event_type</code> pode ser omitido
-              — se não enviado, o sistema infere pelo <code className="rounded bg-[#f0f0f3] px-1 py-0.5">status</code>.
+            <div className="mt-4">
+              <Link
+                href="/connect/docs"
+                className="inline-flex items-center gap-2 rounded-full bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+              >
+                <BookOpen className="h-4 w-4" />
+                Abrir documentação da API
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
           </PlatformSurface>
 
