@@ -125,7 +125,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Agente de voz IA para recuperacao de clientes.",
     icon: PhoneCall,
     kind: "app",
-    allowedRoles: ["admin"],
+    allowedRoles: ["admin", "seller"],
     external: true,
   },
 ];
