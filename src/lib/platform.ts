@@ -83,12 +83,26 @@ const activeBrand =
 export const platformBrand: BrandConfig =
   brands[activeBrand] ?? brands.pagrecovery;
 
-export function buildGatewayWebhookPath(sellerKey?: string | null) {
+const gatewayRegistry: Record<string, { name: string; webhookBasePath: string }> = {
+  superpay: { name: "SuperPay", webhookBasePath: "/api/webhooks/superpay" },
+  pagouai: { name: "Pagou.ai", webhookBasePath: "/api/webhooks/pagouai" },
+  "shield-gateway": { name: "Shield Gateway", webhookBasePath: "/api/webhooks/shield-gateway" },
+};
+
+export function resolveGateway(slug?: string | null) {
+  if (slug && gatewayRegistry[slug]) {
+    return gatewayRegistry[slug];
+  }
+  return { name: platformBrand.gateway.name, webhookBasePath: platformBrand.gateway.webhookBasePath };
+}
+
+export function buildGatewayWebhookPath(sellerKey?: string | null, gatewaySlug?: string | null) {
+  const gateway = resolveGateway(gatewaySlug);
   const normalizedSellerKey = sellerKey?.trim();
 
   if (!normalizedSellerKey) {
-    return platformBrand.gateway.webhookBasePath;
+    return gateway.webhookBasePath;
   }
 
-  return `${platformBrand.gateway.webhookBasePath}/${normalizedSellerKey}`;
+  return `${gateway.webhookBasePath}/${normalizedSellerKey}`;
 }

@@ -235,6 +235,7 @@ type DatabaseSellerAdminControlRow = {
   inbox_enabled: boolean;
   automations_enabled: boolean;
   autonomy_mode: SellerAdminControlRecord["autonomyMode"];
+  gateway_slug?: string | null;
   notes?: string | null;
   updated_at: string;
 };
@@ -1636,6 +1637,7 @@ export class SupabaseStorageService implements RecoveryStorage {
       automations_enabled:
         input.automationsEnabled ?? existing?.automationsEnabled ?? true,
       autonomy_mode: input.autonomyMode ?? existing?.autonomyMode ?? "autonomous",
+      gateway_slug: input.gatewaySlug?.trim() || existing?.gatewaySlug || null,
       notes: input.notes?.trim() || existing?.notes || null,
       updated_at: now,
     };
@@ -1827,6 +1829,7 @@ function mapSellerAdminControl(
     inboxEnabled: data.inbox_enabled,
     automationsEnabled: data.automations_enabled,
     autonomyMode: data.autonomy_mode,
+    gatewaySlug: data.gateway_slug ?? undefined,
     notes: data.notes ?? undefined,
     updatedAt: toIsoStringOrNow(data.updated_at),
   };

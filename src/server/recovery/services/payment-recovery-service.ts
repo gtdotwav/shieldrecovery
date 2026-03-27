@@ -348,7 +348,8 @@ export class PaymentRecoveryService {
     const runtimeSettings =
       await getConnectionSettingsService().getRuntimeSettings();
     const sellerKey = normalizeSellerIdentity(sellerName);
-    return `${runtimeSettings.appBaseUrl}${buildGatewayWebhookPath(sellerKey)}`;
+    const control = await this.getSellerAdminControlForName(sellerName);
+    return `${runtimeSettings.appBaseUrl}${buildGatewayWebhookPath(sellerKey, control?.gatewaySlug)}`;
   }
 
   async getSellerWebhookSnapshot(

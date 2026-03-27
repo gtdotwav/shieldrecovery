@@ -33,7 +33,7 @@ import {
 } from "@/components/platform/platform-shell";
 import { CopyButton } from "@/components/ui/copy-button";
 import { formatRelativeTime } from "@/lib/format";
-import { platformBrand } from "@/lib/platform";
+import { platformBrand, resolveGateway } from "@/lib/platform";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
@@ -199,6 +199,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
         )}
         sellerWebhookSnapshot={sellerWebhookSnapshot}
         sellerAiGuidance={sellerControl?.notes ?? ""}
+        sellerGatewayName={resolveGateway(sellerControl?.gatewaySlug).name}
       />
     );
   }
@@ -729,6 +730,7 @@ function SellerConnectView({
   sellerWebhookUrl,
   sellerWebhookSnapshot,
   sellerAiGuidance,
+  sellerGatewayName,
 }: {
   activeCount: number;
   analyticsTotal: number;
@@ -775,6 +777,7 @@ function SellerConnectView({
     status: "idle" | "healthy" | "attention";
   } | null;
   sellerAiGuidance: string;
+  sellerGatewayName: string;
 }) {
   return (
     <PlatformAppPage
@@ -827,7 +830,7 @@ function SellerConnectView({
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
               Este seller recebe um webhook proprio para conectar na{" "}
-              SuperPay sem misturar trafego com o restante
+              {sellerGatewayName} sem misturar trafego com o restante
               da operacao. Basta enviar ao dev a URL do webhook abaixo.
             </p>
           </div>
@@ -841,7 +844,7 @@ function SellerConnectView({
       <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_21rem]">
         <div className="space-y-5">
           <PlatformSurface className="p-5">
-            <SectionHeader eyebrow="Webhook do seller" title="URL exclusiva para a SuperPay desta operação." />
+            <SectionHeader eyebrow="Webhook do seller" title={`URL exclusiva para a ${sellerGatewayName} desta operação.`} />
             <div className="mt-4 rounded-2xl border border-black/[0.06] bg-[#f8f8fa] px-4 py-4">
               <p className="break-all text-sm leading-7 text-[#1a1a2e]">
                 {sellerWebhookUrl}

@@ -420,6 +420,7 @@ export type SellerAdminControlRecord = {
   inboxEnabled: boolean;
   automationsEnabled: boolean;
   autonomyMode: SellerAutonomyMode;
+  gatewaySlug?: string;
   notes?: string;
   updatedAt: string;
 };
@@ -435,6 +436,7 @@ export type SellerAdminControlInput = {
   inboxEnabled?: boolean;
   automationsEnabled?: boolean;
   autonomyMode?: SellerAutonomyMode;
+  gatewaySlug?: string;
   notes?: string;
 };
 
