@@ -797,8 +797,25 @@ export class MessagingService {
     content: string;
     metadata?: MessageMetadata;
   }): Promise<DispatchOutboundMessageResult> {
-    const body = buildOutboundWhatsAppText(input.content, input.metadata);
     const config = resolveWebApiConfig(input.apiBaseUrl, input.sessionId);
+
+    // Send QR code image first (if PIX available and Evolution API)
+    const pixQrCode = input.metadata?.pixQrCode;
+    if (pixQrCode && config.kind === "evolution") {
+      try {
+        await this.sendEvolutionMedia({
+          config,
+          accessToken: input.accessToken,
+          phone: input.phone,
+          base64Image: pixQrCode,
+          caption: "QR Code Pix - escaneie para pagar",
+        });
+      } catch {
+        // QR image send failed — continue with text message
+      }
+    }
+
+    const body = buildOutboundWhatsAppText(input.content, input.metadata);
 
     const response =
       config.kind === "evolution"
@@ -862,6 +879,43 @@ export class MessagingService {
         payload?.data?.messageId ??
         payload?.messages?.[0]?.id,
     };
+  }
+
+  private async sendEvolutionMedia(input: {
+    config: WebApiConnectionConfig;
+    accessToken: string;
+    phone: string;
+    base64Image: string;
+    caption?: string;
+  }) {
+    const mediaUrl = joinUrl(
+      input.config.baseUrl,
+      `/message/sendMedia/${encodeURIComponent(input.config.sessionId)}`,
+    );
+
+    // Strip data URL prefix to get raw base64
+    const base64Data = input.base64Image.replace(/^data:image\/\w+;base64,/, "");
+
+    const response = await fetch(mediaUrl, {
+      method: "POST",
+      headers: {
+        ...buildWhatsAppApiHeaders(input.accessToken),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        number: input.phone,
+        mediatype: "image",
+        mimetype: "image/png",
+        media: base64Data,
+        caption: input.caption ?? "",
+        fileName: "pix-qrcode.png",
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Evolution sendMedia failed (${response.status}).`);
+    }
   }
 
   private resolveWebApiConfig(settings: {
@@ -1395,13 +1449,19 @@ function normalizeWhatsAppRemoteJid(value?: string) {
 }
 
 function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata) {
-  if (metadata?.kind !== "recovery_prompt") {
+  if (!metadata || (metadata.kind !== "recovery_prompt" && metadata.kind !== "ai_draft")) {
     return content;
   }
 
   const sections = [content.trim()];
-  const actionUrl = metadata.paymentUrl ?? metadata.retryLink;
 
+  // Add PIX copy-paste code when available
+  const pixCode = metadata.pixCode?.trim();
+  if (pixCode && !content.includes(pixCode)) {
+    sections.push(`Chave Pix copia e cola:\n${pixCode}`);
+  }
+
+  const actionUrl = metadata.paymentUrl ?? metadata.retryLink;
   if (actionUrl && !content.includes(actionUrl)) {
     sections.push(`Link de pagamento:\n${actionUrl}`);
   }

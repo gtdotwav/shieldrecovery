@@ -63,8 +63,8 @@ const TEMPLATES: MessageTemplate[] = [
     tone: "empathetic",
     template:
       "Oi {name}, tudo bem? Identificamos que o pagamento do seu pedido{product} no valor de {value} ficou pendente. " +
-      "Para facilitar, deixei o pagamento via Pix pronto para voce concluir com seguranca agora. " +
-      "Se precisar, tambem posso te ajudar por aqui.",
+      "Enviei o QR Code do Pix logo acima e a chave copia e cola vem aqui embaixo para facilitar. " +
+      "Se precisar de ajuda, estou por aqui.",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" && ctx.paymentMethod === "pix",
   },
@@ -74,7 +74,7 @@ const TEMPLATES: MessageTemplate[] = [
     tone: "urgent",
     template:
       "{name}, o pagamento do seu pedido{product} no valor de {value} ainda nao foi concluido. " +
-      "Para nao perder a continuidade da compra, deixei o Pix pronto para voce finalizar agora com seguranca.",
+      "O QR Code do Pix esta logo acima e a chave copia e cola vem aqui embaixo para voce finalizar agora.",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" &&
       ctx.paymentMethod === "pix" &&
@@ -86,8 +86,8 @@ const TEMPLATES: MessageTemplate[] = [
     tone: "empathetic",
     template:
       "Oi {name}, tudo bem? Vi que sua compra{product} ficou em aberto. " +
-      "Para facilitar sua retomada, deixei o pagamento via Pix pronto para voce concluir agora com seguranca. " +
-      "Se precisar, tambem posso te orientar por aqui.",
+      "Enviei o QR Code do Pix logo acima e a chave copia e cola vem aqui embaixo para facilitar sua retomada. " +
+      "Se precisar, estou por aqui.",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" &&
       ctx.paymentMethod === "pix" &&
@@ -309,9 +309,10 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     : isPixFirstInitial
       ? [
           "- Informe que o pagamento via Pix ja esta pronto.",
-          "- Convide o cliente a concluir agora com linguagem segura e natural, sem enviar QR nem codigo Pix bruto.",
+          "- Diga que a imagem do QR Code e a chave Pix copia e cola foram enviados logo acima.",
+          "- Convide o cliente a escanear o QR ou copiar a chave para pagar.",
           ctx.paymentLink
-            ? "- Inclua o link exatamente uma vez, no final."
+            ? "- Inclua o link exatamente uma vez, no final, como alternativa."
             : "- Nao mencione link pois ainda nao esta disponivel.",
         ]
     : [
@@ -328,7 +329,7 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     "- Mencione o primeiro nome do cliente.",
     "- Explique o motivo do contato com clareza.",
     "- Convide para concluir o pagamento agora.",
-    "- Nunca envie QR Code, imagem ou codigo Pix bruto na mensagem.",
+    "- NAO inclua o codigo Pix nem QR no corpo da mensagem (eles sao enviados automaticamente em separado).",
     `- Use apenas o link seguro da ${platformBrand.name} quando houver link disponivel.`,
     ...linkRule,
     "- Nao use markdown, aspas, emojis nem texto tecnico.",
@@ -376,7 +377,7 @@ function buildReplyPrompt(input: ConversationReplyContext) {
     "- Responda a ultima mensagem do cliente.",
     "- Mostre ajuda e conduza para a conclusao do pagamento.",
     "- Se houver link, inclua-o uma vez no final.",
-    "- Nunca envie QR Code, imagem ou codigo Pix bruto na resposta.",
+    "- NAO inclua o codigo Pix nem QR no corpo da resposta (eles sao enviados automaticamente em separado).",
     `- Se houver cobranca ativa, direcione sempre para o link seguro da ${platformBrand.name}.`,
     "- Nao use markdown, aspas, listas, emojis ou linguagem robotica.",
     ...(input.sellerGuidance
@@ -459,7 +460,7 @@ function buildFallbackReply(input: ConversationReplyContext) {
   }
 
   if (input.latestInboundIntent === "payment_method_pix") {
-    return `Perfeito, ${name}. Seu pagamento via Pix${product} ja esta pronto para conclusao.${retrySentence}`;
+    return `Perfeito, ${name}. Enviei o QR Code do Pix${product} logo acima e a chave copia e cola vem aqui embaixo.${retrySentence}`;
   }
 
   if (input.latestInboundIntent === "payment_method_card") {
