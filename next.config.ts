@@ -17,6 +17,18 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: configDirectory,
   },
+  async rewrites() {
+    return [
+      {
+        source: "/calling",
+        destination: "https://frontend-mtttt.vercel.app/auto-login",
+      },
+      {
+        source: "/calling/:path*",
+        destination: "https://frontend-mtttt.vercel.app/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

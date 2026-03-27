@@ -120,13 +120,12 @@ export const platformRoutes: PlatformRoute[] = [
     allowedRoles: ["admin"],
   },
   {
-    href: "https://frontend-mtttt.vercel.app/auto-login",
+    href: "/calling",
     label: "CallCenter",
     description: "Agente de voz IA para recuperacao de clientes.",
     icon: PhoneCall,
     kind: "app",
     allowedRoles: ["admin", "seller"],
-    external: true,
   },
 ];
 
