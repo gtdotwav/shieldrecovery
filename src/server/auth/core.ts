@@ -262,11 +262,11 @@ export function canRoleAccessAgent(
   }
 
   const sellerAgentName = viewerAgentName ?? getSellerAgentName();
-  if (!assignedAgent) {
-    return true;
+  if (!sellerAgentName) {
+    return false;
   }
 
-  if (!sellerAgentName) {
+  if (!assignedAgent) {
     return false;
   }
 
