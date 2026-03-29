@@ -1,13 +1,13 @@
 <svg viewBox="0 0 210 260" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="stroke" x1="24" y1="24" x2="182" y2="246" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fb923c" />
-      <stop offset="0.55" stop-color="#f97316" />
-      <stop offset="1" stop-color="#ea580c" />
+      <stop stop-color="#4ade80" />
+      <stop offset="0.55" stop-color="#22c55e" />
+      <stop offset="1" stop-color="#16a34a" />
     </linearGradient>
     <linearGradient id="fill" x1="42" y1="26" x2="168" y2="246" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7c2d12" />
-      <stop offset="1" stop-color="#431407" />
+      <stop stop-color="#14532d" />
+      <stop offset="1" stop-color="#052e16" />
     </linearGradient>
     <clipPath id="shape">
       <path
@@ -27,7 +27,7 @@
   />
   <g clip-path="url(#shape)" opacity="0.96">
     <rect x="18" y="18" width="175" height="232" fill="#1a1a1a" />
-    <g fill="#9a3412">
+    <g fill="#166534">
       <rect x="33" y="37" width="9" height="9" />
       <rect x="42" y="37" width="9" height="9" />
       <rect x="60" y="37" width="9" height="9" />
@@ -86,7 +86,7 @@
       <rect x="132" y="145" width="9" height="9" />
       <rect x="150" y="145" width="9" height="9" />
     </g>
-    <g fill="#fb923c">
+    <g fill="#4ade80">
       <rect x="42" y="46" width="9" height="9" />
       <rect x="51" y="46" width="9" height="9" />
       <rect x="87" y="46" width="9" height="9" />
@@ -123,7 +123,7 @@
       <rect x="132" y="100" width="9" height="9" />
       <rect x="150" y="100" width="9" height="9" />
     </g>
-    <g stroke="#f97316" stroke-width="7" fill="none" opacity="0.9">
+    <g stroke="#22c55e" stroke-width="7" fill="none" opacity="0.9">
       <rect x="31.5" y="34.5" width="36" height="36" />
       <rect x="128.5" y="34.5" width="36" height="36" />
       <rect x="31.5" y="189.5" width="36" height="36" />
