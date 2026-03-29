@@ -11,6 +11,8 @@ import type {
   CalendarNoteRecord,
   CallAnalytics,
   CallCampaignRecord,
+  CallcenterSettingsInput,
+  CallcenterSettingsRecord,
   CallEventRecord,
   CallRecord,
   ConnectionSettingsInput,
@@ -227,6 +229,9 @@ export interface RecoveryStorage {
     campaignId: string,
     input: Partial<{ name: string; description: string; status: string; totalContacts: number; completedContacts: number; successfulContacts: number; startedAt: string; completedAt: string }>,
   ): Promise<CallCampaignRecord>;
+  getCallcenterSettings(sellerKey: string): Promise<CallcenterSettingsRecord | undefined>;
+  listCallcenterSettings(): Promise<CallcenterSettingsRecord[]>;
+  upsertCallcenterSettings(input: CallcenterSettingsInput): Promise<CallcenterSettingsRecord>;
 }
 
 const DEFAULT_AGENTS: AgentRecord[] = [];
@@ -1561,6 +1566,18 @@ class LocalStorageService implements RecoveryStorage {
   }
   async updateCallCampaign(): Promise<CallCampaignRecord> {
     throw new Error("Local storage does not support campaign updates.");
+  }
+  async getCallcenterSettings(): Promise<CallcenterSettingsRecord | undefined> { return undefined; }
+  async listCallcenterSettings(): Promise<CallcenterSettingsRecord[]> { return []; }
+  async upsertCallcenterSettings(input: CallcenterSettingsInput): Promise<CallcenterSettingsRecord> {
+    return {
+      id: randomUUID(), sellerKey: input.sellerKey, voiceTone: input.voiceTone ?? "empathetic",
+      voiceGender: input.voiceGender ?? "female", discountPercent: input.discountPercent ?? 0,
+      defaultCopy: input.defaultCopy ?? "", defaultProduct: input.defaultProduct ?? "",
+      provider: input.provider ?? "vapi", maxCallsPerDay: input.maxCallsPerDay ?? 50,
+      autoCallEnabled: input.autoCallEnabled ?? false,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
   }
 }
 

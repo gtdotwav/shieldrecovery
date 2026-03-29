@@ -745,6 +745,12 @@ export type CallRecord = {
   providerCallId?: string;
   providerCost?: number;
   sentiment?: CallSentiment;
+  copy?: string;
+  product?: string;
+  discountPercent?: number;
+  voiceTone?: VoiceTone;
+  voiceGender?: VoiceGender;
+  sellerKey?: string;
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -797,7 +803,53 @@ export type CreateCallInput = {
   toNumber: string;
   provider?: CallProvider;
   providerCallId?: string;
+  copy?: string;
+  product?: string;
+  discountPercent?: number;
+  voiceTone?: VoiceTone;
+  voiceGender?: VoiceGender;
+  sellerKey?: string;
   metadata?: Record<string, unknown>;
+};
+
+export const VOICE_TONES = [
+  "empathetic",
+  "professional",
+  "urgent",
+  "friendly",
+  "direct",
+] as const;
+
+export const VOICE_GENDERS = ["female", "male"] as const;
+
+export type VoiceTone = (typeof VOICE_TONES)[number];
+export type VoiceGender = (typeof VOICE_GENDERS)[number];
+
+export type CallcenterSettingsRecord = {
+  id: string;
+  sellerKey: string;
+  voiceTone: VoiceTone;
+  voiceGender: VoiceGender;
+  discountPercent: number;
+  defaultCopy: string;
+  defaultProduct: string;
+  provider: CallProvider;
+  maxCallsPerDay: number;
+  autoCallEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CallcenterSettingsInput = {
+  sellerKey: string;
+  voiceTone?: VoiceTone;
+  voiceGender?: VoiceGender;
+  discountPercent?: number;
+  defaultCopy?: string;
+  defaultProduct?: string;
+  provider?: CallProvider;
+  maxCallsPerDay?: number;
+  autoCallEnabled?: boolean;
 };
 
 export type UpdateCallInput = {

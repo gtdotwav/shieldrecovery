@@ -12,6 +12,8 @@ import type {
   CalendarSnapshot,
   CallAnalytics,
   CallCampaignRecord,
+  CallcenterSettingsInput,
+  CallcenterSettingsRecord,
   CallEventRecord,
   CallRecord,
   ConnectionSettingsInput,
@@ -1823,6 +1825,12 @@ export class SupabaseStorageService implements RecoveryStorage {
       status: "queued",
       provider: input.provider ?? "vapi",
       provider_call_id: input.providerCallId ?? null,
+      copy: input.copy ?? null,
+      product: input.product ?? null,
+      discount_percent: input.discountPercent ?? null,
+      voice_tone: input.voiceTone ?? null,
+      voice_gender: input.voiceGender ?? null,
+      seller_key: input.sellerKey ?? null,
       metadata: input.metadata ?? {},
     };
 
@@ -2002,6 +2010,55 @@ export class SupabaseStorageService implements RecoveryStorage {
     }
 
     return mapCallCampaign(data);
+  }
+
+  /* ── CallCenter Settings ── */
+
+  async getCallcenterSettings(sellerKey: string): Promise<CallcenterSettingsRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("callcenter_settings")
+      .select("*")
+      .eq("seller_key", sellerKey)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapCallcenterSettings(data);
+  }
+
+  async listCallcenterSettings(): Promise<CallcenterSettingsRecord[]> {
+    const { data, error } = await this.supabase
+      .from("callcenter_settings")
+      .select("*")
+      .order("seller_key", { ascending: true });
+
+    if (error || !data) return [];
+    return data.map(mapCallcenterSettings);
+  }
+
+  async upsertCallcenterSettings(input: CallcenterSettingsInput): Promise<CallcenterSettingsRecord> {
+    const row: Record<string, unknown> = {
+      seller_key: input.sellerKey,
+    };
+    if (input.voiceTone !== undefined) row.voice_tone = input.voiceTone;
+    if (input.voiceGender !== undefined) row.voice_gender = input.voiceGender;
+    if (input.discountPercent !== undefined) row.discount_percent = input.discountPercent;
+    if (input.defaultCopy !== undefined) row.default_copy = input.defaultCopy;
+    if (input.defaultProduct !== undefined) row.default_product = input.defaultProduct;
+    if (input.provider !== undefined) row.provider = input.provider;
+    if (input.maxCallsPerDay !== undefined) row.max_calls_per_day = input.maxCallsPerDay;
+    if (input.autoCallEnabled !== undefined) row.auto_call_enabled = input.autoCallEnabled;
+
+    const { data, error } = await this.supabase
+      .from("callcenter_settings")
+      .upsert(row, { onConflict: "seller_key" })
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to upsert callcenter settings: ${error?.message ?? "unknown"}`);
+    }
+
+    return mapCallcenterSettings(data);
   }
 }
 
@@ -2701,7 +2758,31 @@ function mapCall(data: any): CallRecord {
     providerCallId: data.provider_call_id ?? undefined,
     providerCost: data.provider_cost != null ? Number(data.provider_cost) : undefined,
     sentiment: data.sentiment ?? undefined,
+    copy: data.copy ?? undefined,
+    product: data.product ?? undefined,
+    discountPercent: data.discount_percent != null ? Number(data.discount_percent) : undefined,
+    voiceTone: data.voice_tone ?? undefined,
+    voiceGender: data.voice_gender ?? undefined,
+    sellerKey: data.seller_key ?? undefined,
     metadata: data.metadata ?? {},
+    createdAt: toIsoStringOrNow(data.created_at),
+    updatedAt: toIsoStringOrNow(data.updated_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCallcenterSettings(data: any): CallcenterSettingsRecord {
+  return {
+    id: data.id,
+    sellerKey: data.seller_key,
+    voiceTone: data.voice_tone ?? "empathetic",
+    voiceGender: data.voice_gender ?? "female",
+    discountPercent: Number(data.discount_percent) || 0,
+    defaultCopy: data.default_copy ?? "",
+    defaultProduct: data.default_product ?? "",
+    provider: data.provider ?? "vapi",
+    maxCallsPerDay: Number(data.max_calls_per_day) || 50,
+    autoCallEnabled: data.auto_call_enabled ?? false,
     createdAt: toIsoStringOrNow(data.created_at),
     updatedAt: toIsoStringOrNow(data.updated_at),
   };

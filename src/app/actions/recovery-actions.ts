@@ -6,7 +6,8 @@ import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
-import type { ConversationStatus, RecoveryLeadStatus } from "@/server/recovery/types";
+import { getStorageService } from "@/server/recovery/services/storage";
+import type { CallcenterSettingsInput, ConversationStatus, RecoveryLeadStatus, VoiceGender, VoiceTone } from "@/server/recovery/types";
 
 /** Reusable result shape for future `useActionState` migration. */
 export type ActionResult = { error?: string } | void;
@@ -235,4 +236,84 @@ export async function changeConversationStatus(formData: FormData) {
   }
 
   revalidatePath("/inbox");
+}
+
+/* ── CallCenter Actions ── */
+
+export async function dispatchCall(formData: FormData) {
+  await requireAuthenticatedSession(["admin"]);
+  const storage = getStorageService();
+
+  const leadId = String(formData.get("leadId") ?? "");
+  const toNumber = String(formData.get("toNumber") ?? "");
+  const copy = String(formData.get("copy") ?? "");
+  const product = String(formData.get("product") ?? "");
+  const discountPercent = Number(formData.get("discountPercent") || 0);
+  const voiceTone = String(formData.get("voiceTone") || "empathetic");
+  const voiceGender = String(formData.get("voiceGender") || "female");
+  const provider = String(formData.get("provider") || "vapi");
+
+  if (!toNumber.trim()) {
+    console.warn("[dispatchCall] Numero de destino ausente");
+    return;
+  }
+
+  try {
+    await storage.createCall({
+      leadId: leadId || undefined,
+      toNumber: toNumber.trim(),
+      copy: copy || undefined,
+      product: product || undefined,
+      discountPercent: discountPercent > 0 ? discountPercent : undefined,
+      voiceTone: voiceTone as VoiceTone,
+      voiceGender: voiceGender as VoiceGender,
+      provider: provider as "vapi" | "bland" | "retell" | "twilio" | "manual",
+      direction: "outbound",
+    });
+  } catch (error) {
+    console.error("[dispatchCall] Erro ao disparar chamada", {
+      toNumber,
+      error: error instanceof Error ? error.message : error,
+    });
+    return;
+  }
+
+  revalidatePath("/calling");
+}
+
+export async function saveCallcenterSettings(formData: FormData) {
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const storage = getStorageService();
+
+  const sellerKey = String(formData.get("sellerKey") ?? session.email.split("@")[0]);
+  const voiceTone = String(formData.get("voiceTone") || "empathetic") as VoiceTone;
+  const voiceGender = String(formData.get("voiceGender") || "female") as VoiceGender;
+  const discountPercent = Math.min(100, Math.max(0, Number(formData.get("discountPercent") || 0)));
+  const defaultCopy = String(formData.get("defaultCopy") ?? "");
+  const defaultProduct = String(formData.get("defaultProduct") ?? "");
+  const provider = String(formData.get("provider") || "vapi");
+  const maxCallsPerDay = Math.max(1, Number(formData.get("maxCallsPerDay") || 50));
+  const autoCallEnabled = formData.get("autoCallEnabled") === "on";
+
+  try {
+    await storage.upsertCallcenterSettings({
+      sellerKey,
+      voiceTone,
+      voiceGender,
+      discountPercent,
+      defaultCopy,
+      defaultProduct,
+      provider: provider as CallcenterSettingsInput["provider"],
+      maxCallsPerDay,
+      autoCallEnabled,
+    });
+  } catch (error) {
+    console.error("[saveCallcenterSettings] Erro ao salvar configuracoes", {
+      sellerKey,
+      error: error instanceof Error ? error.message : error,
+    });
+    return;
+  }
+
+  revalidatePath("/calling");
 }
