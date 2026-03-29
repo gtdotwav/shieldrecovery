@@ -20,6 +20,7 @@ import {
   LineChart,
   Lock,
   MessageSquare,
+  Phone,
   QrCode,
   Server,
   Shield,
@@ -50,6 +51,7 @@ const LiveDemo = dynamic(() => import("@/components/landing/live-demo").then(m =
 const RecoveryCalculator = dynamic(() => import("@/components/landing/recovery-calculator").then(m => ({ default: m.RecoveryCalculator })));
 const FaqSection = dynamic(() => import("@/components/landing/faq-section").then(m => ({ default: m.FaqSection })));
 const TestimonialsColumn = dynamic(() => import("@/components/ui/testimonials-columns").then(m => ({ default: m.TestimonialsColumn })));
+const DemoCallForm = dynamic(() => import("@/components/landing/demo-call-form").then(m => ({ default: m.DemoCallForm })));
 
 export const revalidate = 60;
 
@@ -223,40 +225,10 @@ export default async function Home() {
           <div className="relative z-10 grid items-center gap-12 lg:grid-cols-[1fr_auto] lg:gap-16">
             {/* Hero text */}
             <div className="mx-auto max-w-[48rem] text-center lg:mx-0 lg:text-left">
-              <Reveal direction="up">
-                <div
-                  className="inline-flex items-center gap-2.5 rounded-full px-5 py-2 backdrop-blur-md"
-                  style={{
-                    border: `1px solid rgba(${rgb},0.15)`,
-                    background: `rgba(${rgb},0.04)`,
-                  }}
-                >
-                  <span className="relative flex h-2 w-2">
-                    <span
-                      className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-50"
-                      style={{ background: b.accent }}
-                    />
-                    <span
-                      className="relative inline-flex h-2 w-2 rounded-full"
-                      style={{
-                        background: b.accent,
-                        boxShadow: `0 0 8px rgba(${rgb},0.6)`,
-                      }}
-                    />
-                  </span>
-                  <span
-                    className="text-[0.6rem] font-semibold uppercase tracking-[0.15em] opacity-80 sm:text-[0.7rem] sm:tracking-[0.2em]"
-                    style={{ color: b.accent }}
-                  >
-                    Recuperação autônoma com IA
-                  </span>
-                </div>
-              </Reveal>
-
               <HeroHeading />
 
               <Reveal direction="up" delay={400}>
-                <p className="mt-5 max-w-[36rem] text-[0.92rem] leading-[1.7] text-gray-500 dark:text-gray-400 sm:mt-7 sm:text-[1.05rem] sm:leading-[1.8] lg:mx-0">
+                <p className="mt-5 max-w-[36rem] text-[0.92rem] leading-[1.7] text-gray-400 sm:mt-7 sm:text-[1.05rem] sm:leading-[1.8] lg:mx-0">
                   Pagamento falhou? Em 2 minutos, nossa IA contata o cliente
                   via WhatsApp com link de pagamento. Se não responder, o Call Center
                   de agentes IA liga com voz natural e negocia. Tudo 100% autônomo
@@ -281,7 +253,7 @@ export default async function Home() {
                   </MagneticButton>
                   <a
                     href="#como-funciona"
-                    className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.03] px-6 py-3 text-[0.85rem] font-medium text-gray-500 dark:text-gray-400 backdrop-blur-sm transition-all hover:border-gray-300 dark:hover:border-white/14 hover:text-gray-700 dark:hover:text-gray-200 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-6 py-3 text-[0.85rem] font-medium text-gray-400 backdrop-blur-sm transition-all hover:border-white/12hover:border-white/14 hover:text-gray-300hover:text-gray-200 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
                   >
                     Como funciona
                     <ArrowDown className="h-4 w-4" />
@@ -331,10 +303,10 @@ export default async function Home() {
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Impacto real</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Resultados reais, em produção
               </h2>
-              <p className="mx-auto mt-3 max-w-lg text-[0.88rem] leading-6 text-gray-400 dark:text-gray-500 sm:mt-4 sm:text-[0.95rem] sm:leading-7">
+              <p className="mx-auto mt-3 max-w-lg text-[0.88rem] leading-6 text-gray-400 sm:mt-4 sm:text-[0.95rem] sm:leading-7">
                 Dados da operação ativa. Sem simulações, sem projeções.
               </p>
             </div>
@@ -373,12 +345,229 @@ export default async function Home() {
 
         <GlowDivider />
 
+        {/* ═══════════════════════ A DOR INVISÍVEL ═══════════════════════ */}
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+          <Reveal direction="up">
+            <div className="mx-auto max-w-[48rem] text-center">
+              <SectionEyebrow>A dor que ninguem ve</SectionEyebrow>
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+                Cada pagamento falhado e um cliente que ja disse sim
+              </h2>
+              <p className="mx-auto mt-6 max-w-[38rem] text-[0.95rem] leading-[1.8] text-gray-400">
+                Ele escolheu o produto. Colocou os dados. Clicou em pagar.
+                Mas algo deu errado — e ninguem fez nada. O cliente sai.
+                A receita vai embora. E voce nem sabe que perdeu.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="mx-auto mt-12 grid max-w-[56rem] gap-6 sm:mt-16 lg:grid-cols-3">
+            <Reveal direction="up" delay={0}>
+              <div
+                className="rounded-xl px-6 py-7 text-center"
+                style={{
+                  border: "1px solid rgba(239,68,68,0.10)",
+                  background: "rgba(239,68,68,0.03)",
+                }}
+              >
+                <p className="text-[2.4rem] font-bold leading-none text-red-400">
+                  62%
+                </p>
+                <p className="mt-3 text-[0.82rem] font-medium text-gray-300">
+                  dos pagamentos que falham nunca sao recuperados
+                </p>
+                <p className="mt-2 text-[0.72rem] leading-[1.7] text-gray-500">
+                  Sem sistema ativo, a maioria dos clientes simplesmente desiste. A janela de recuperacao fecha em horas.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal direction="up" delay={150}>
+              <div
+                className="rounded-xl px-6 py-7 text-center"
+                style={{
+                  border: "1px solid rgba(239,68,68,0.10)",
+                  background: "rgba(239,68,68,0.03)",
+                }}
+              >
+                <p className="text-[2.4rem] font-bold leading-none text-red-400">
+                  4h
+                </p>
+                <p className="mt-3 text-[0.82rem] font-medium text-gray-300">
+                  e o tempo medio que empresas levam para perceber a falha
+                </p>
+                <p className="mt-2 text-[0.72rem] leading-[1.7] text-gray-500">
+                  A cada minuto sem contato, a chance de recuperacao cai. Depois de 24h, o cliente ja esqueceu.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal direction="up" delay={300}>
+              <div
+                className="rounded-xl px-6 py-7 text-center"
+                style={{
+                  border: `1px solid rgba(${rgb},0.12)`,
+                  background: `rgba(${rgb},0.03)`,
+                }}
+              >
+                <p className="text-[2.4rem] font-bold leading-none" style={{ color: b.accent }}>
+                  2min
+                </p>
+                <p className="mt-3 text-[0.82rem] font-medium text-gray-300">
+                  e o tempo da {b.name} para fazer o primeiro contato
+                </p>
+                <p className="mt-2 text-[0.72rem] leading-[1.7] text-gray-500">
+                  A falha acontece e em 120 segundos o cliente recebe o link de pagamento no WhatsApp. Sem intervencao humana.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+
+          <Reveal direction="up" delay={400}>
+            <p className="mx-auto mt-10 max-w-[40rem] text-center text-[0.88rem] leading-[1.8] text-gray-400">
+              A maior dor nao e a falha no pagamento — e o silencio depois dela. Enquanto voce nao
+              sabe o que aconteceu, a {b.name} ja resolveu, contactou e recuperou.
+            </p>
+          </Reveal>
+        </section>
+
+        <GlowDivider />
+
+        {/* ═══════════════════════ TIMELINE — RECUPERAÇÃO PREVISÍVEL ═══════════════════════ */}
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+          <Reveal direction="up">
+            <div className="mx-auto max-w-[52rem] text-center">
+              <SectionEyebrow>Da falha a escala previsivel</SectionEyebrow>
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+                Um funil que transforma caos em receita previsivel
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-[0.95rem] leading-7 text-gray-400">
+                A maioria das empresas nao sabe quantos pagamentos falham por dia, nem quanto
+                dinheiro deixa de entrar. Com a {b.name}, cada falha vira um dado,
+                cada tentativa vira uma metrica, e cada recuperacao vira previsibilidade.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="mx-auto mt-12 grid max-w-[64rem] gap-10 sm:mt-16 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
+            {/* Timeline */}
+            <div>
+              {[
+                { time: "0s", title: "Falha detectada", desc: "Webhook chega. A plataforma classifica: valor, metodo, historico do cliente e motivo exato da falha.", accent: false },
+                { time: "30s", title: "Estrategia definida pela IA", desc: "Algoritmo escolhe canal, tom, urgencia e abordagem ideal com base no perfil do cliente.", accent: false },
+                { time: "2min", title: "WhatsApp disparado", desc: "Mensagem personalizada com link de pagamento, PIX copia-e-cola ou cartao. O cliente paga em 1 toque.", accent: true },
+                { time: "4h", title: "Follow-up adaptativo", desc: "Leu mas nao respondeu? A IA ajusta a abordagem: muda o tom, oferece parcelamento, troca de metodo.", accent: false },
+                { time: "12h", title: "Call Center IA liga", desc: "Para leads de alto valor, agente IA liga com voz natural, negocia condicoes e envia o link na hora.", accent: true },
+                { time: "48h", title: "Escalonamento inteligente", desc: "Novas abordagens: urgencia, oferta exclusiva, troca de canal. O sistema nunca repete a mesma tática.", accent: false },
+                { time: "7d", title: "Soft close com porta aberta", desc: "Ultima mensagem respeitosa. Link ativo. Sem pressao. O cliente decide quando quer pagar.", accent: false },
+              ].map((step, i) => (
+                <Reveal key={step.time} direction="up" delay={i * 60}>
+                  <div className="flex gap-5 sm:gap-7">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[0.6rem] font-bold"
+                        style={{
+                          border: `1px solid rgba(${rgb},${step.accent ? "0.25" : "0.10"})`,
+                          background: `rgba(${rgb},${step.accent ? "0.08" : "0.03"})`,
+                          color: step.accent ? b.accent : "#9ca3af",
+                          boxShadow: step.accent ? `0 0 16px rgba(${rgb},0.15)` : "none",
+                        }}
+                      >
+                        {step.time}
+                      </div>
+                      {i < 6 && (
+                        <div
+                          className="w-px flex-1 min-h-[2rem]"
+                          style={{ background: `rgba(${rgb},0.08)` }}
+                        />
+                      )}
+                    </div>
+                    <div className="pb-8">
+                      <h3 className="text-[0.88rem] font-semibold text-gray-200">
+                        {step.title}
+                      </h3>
+                      <p className="mt-1.5 text-[0.78rem] leading-[1.7] text-gray-500">
+                        {step.desc}
+                      </p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+
+            {/* Right side — Why this matters */}
+            <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+              <Reveal direction="right" delay={100}>
+                <div
+                  className="rounded-xl px-6 py-6"
+                  style={{
+                    border: `1px solid rgba(${rgb},0.10)`,
+                    background: `rgba(${rgb},0.03)`,
+                  }}
+                >
+                  <h3 className="text-[0.95rem] font-bold text-white">
+                    Por que previsibilidade importa?
+                  </h3>
+                  <p className="mt-3 text-[0.82rem] leading-[1.7] text-gray-400">
+                    Um negocio que nao mede recuperacao nao tem controle sobre a propria receita.
+                    Voce sabe quantos pagamentos falharam essa semana? Quantos foram recuperados?
+                    Qual o tempo medio entre falha e pagamento? Sem essas respostas, voce opera no escuro.
+                  </p>
+                </div>
+              </Reveal>
+
+              <Reveal direction="right" delay={200}>
+                <div
+                  className="rounded-xl px-6 py-6"
+                  style={{
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    background: `${cardBg},0.4)`,
+                  }}
+                >
+                  <h3 className="text-[0.95rem] font-bold text-white">
+                    Dashboard com controle total
+                  </h3>
+                  <p className="mt-3 text-[0.82rem] leading-[1.7] text-gray-400">
+                    Taxa de recuperacao por canal, por metodo de pagamento, por faixa de valor.
+                    Tempo medio de recuperacao. Receita salva por dia, semana, mes. Performance de cada
+                    seller. Tudo em tempo real, com historico completo.
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <MiniStat label="Taxa media" value="19–40%" />
+                    <MiniStat label="Tempo medio" value="14 min" />
+                    <MiniStat label="Canais ativos" value="3" />
+                    <MiniStat label="Uptime" value="24/7" />
+                  </div>
+                </div>
+              </Reveal>
+
+              <Reveal direction="right" delay={300}>
+                <div
+                  className="rounded-xl px-6 py-6 text-center"
+                  style={{
+                    border: `1px solid rgba(${rgb},0.15)`,
+                    background: `rgba(${rgb},0.04)`,
+                  }}
+                >
+                  <p className="text-[1rem] font-bold text-white">
+                    Mesmo fluxo. Qualquer volume.
+                  </p>
+                  <p className="mt-2 text-[0.82rem] leading-[1.7] text-gray-400">
+                    10 transacoes ou 10.000 — o sistema escala automaticamente.
+                    Sem equipe, sem custo adicional, sem intervencao.
+                  </p>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        <GlowDivider />
+
         {/* ═══════════════════════ BEFORE / AFTER ═══════════════════════ */}
         <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Antes vs depois</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 O que muda quando a IA assume
               </h2>
             </div>
@@ -452,10 +641,10 @@ export default async function Home() {
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Como funciona</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Da falha à recuperação em minutos
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400">
                 Cinco etapas. Zero intervenção humana. Você só acompanha.
               </p>
             </div>
@@ -483,10 +672,10 @@ export default async function Home() {
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Resultados</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Casos reais de recuperação
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400">
                 Resultados de operações ativas na plataforma.
               </p>
             </div>
@@ -528,6 +717,103 @@ export default async function Home() {
 
         <GlowDivider />
 
+        {/* ═══════════════════════ AI CALL CENTER DEMO ═══════════════════════ */}
+        <section id="demo-call" className="relative mx-auto max-w-[82rem] scroll-mt-8 px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+          <Reveal direction="up">
+            <div
+              className="relative overflow-hidden rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+              style={{
+                border: `1px solid rgba(${rgb},0.12)`,
+                background: `${cardBg},0.5)`,
+              }}
+            >
+              <div
+                className="absolute inset-0"
+                style={{ background: `radial-gradient(ellipse at top right, rgba(${rgb},0.06), transparent 50%)` }}
+              />
+              <div
+                className="absolute inset-0"
+                style={{ background: `radial-gradient(ellipse at bottom left, rgba(${rgb},0.04), transparent 50%)` }}
+              />
+
+              <div className="relative grid gap-10 px-5 py-10 sm:px-12 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:px-14">
+                {/* Left — explanation */}
+                <div>
+                  <SectionEyebrow>Call Center de IA — ao vivo</SectionEyebrow>
+                  <h2 className="mt-4 max-w-[18ch] text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem] sm:leading-[1.15]">
+                    Receba uma ligação da nossa IA agora
+                  </h2>
+                  <p className="mt-5 max-w-md text-[0.95rem] leading-7 text-gray-400">
+                    Essa é a mesma tecnologia que liga para clientes com pagamento pendente.
+                    A IA se apresenta, explica como a plataforma funciona, responde suas
+                    dúvidas e tenta te convencer — tudo com voz natural, em tempo real.
+                  </p>
+
+                  <div className="mt-8 space-y-4">
+                    {[
+                      { icon: Phone, title: "Chamada real em segundos", desc: "Ao preencher, uma IA consultora liga para seu número instantaneamente." },
+                      { icon: Bot, title: "Voz natural + IA conversacional", desc: "ElevenLabs + GPT-4.1 — a IA conversa, negocia e responde dúvidas como uma vendedora real." },
+                      { icon: MessageSquare, title: "Mesmo fluxo dos seus clientes", desc: "É exatamente assim que a plataforma contacta clientes com pagamento falhado." },
+                    ].map((item) => (
+                      <div key={item.title} className="flex gap-4">
+                        <div
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                          style={{
+                            border: `1px solid rgba(${rgb},0.12)`,
+                            background: `rgba(${rgb},0.06)`,
+                          }}
+                        >
+                          <item.icon className="h-4 w-4" style={{ color: b.accent }} />
+                        </div>
+                        <div>
+                          <p className="text-[0.82rem] font-semibold text-gray-200">{item.title}</p>
+                          <p className="mt-1 text-[0.72rem] leading-[1.7] text-gray-500">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right — form */}
+                <div className="flex flex-col justify-center">
+                  <div
+                    className="rounded-xl px-6 py-8 sm:px-8 sm:py-10"
+                    style={{
+                      border: `1px solid rgba(${rgb},0.10)`,
+                      background: `rgba(${rgb},0.03)`,
+                    }}
+                  >
+                    <div className="mb-6 flex items-center gap-3">
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-xl"
+                        style={{
+                          border: `1px solid rgba(${rgb},0.14)`,
+                          background: `rgba(${rgb},0.06)`,
+                        }}
+                      >
+                        <Headphones className="h-5 w-5" style={{ color: b.accent }} />
+                      </div>
+                      <div>
+                        <p className="text-[0.88rem] font-bold text-white">Teste o Call Center IA</p>
+                        <p className="text-[0.72rem] text-gray-500">Receba uma chamada de demonstração gratuita</p>
+                      </div>
+                    </div>
+
+                    <DemoCallForm />
+                  </div>
+
+                  <p className="mt-4 text-center text-[0.68rem] leading-5 text-gray-600">
+                    Ao solicitar, você concorda em receber uma chamada de demonstração.
+                    Seus dados ficam seguros e protegidos conforme LGPD.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </section>
+
+        <GlowDivider />
+
         {/* ═══════════════════════ LIVE DEMO ═══════════════════════ */}
         <div className="content-auto">
           <LiveDemo />
@@ -546,10 +832,10 @@ export default async function Home() {
             <Reveal direction="left">
               <div className="lg:sticky lg:top-24">
                 <SectionEyebrow>Plataforma completa</SectionEyebrow>
-                <h2 className="mt-4 max-w-[16ch] text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem] sm:leading-[1.15]">
+                <h2 className="mt-4 max-w-[16ch] text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem] sm:leading-[1.15]">
                   Tudo que você precisa. Nada que não precisa.
                 </h2>
-                <p className="mt-5 max-w-md text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+                <p className="mt-5 max-w-md text-[0.95rem] leading-7 text-gray-400">
                   CRM de recuperação, automações, inbox e analytics — tudo integrado
                   numa plataforma que opera sozinha.
                 </p>
@@ -574,7 +860,7 @@ export default async function Home() {
                   }}
                 >
                   <div>
-                    <p className="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-gray-400 dark:text-gray-600">
+                    <p className="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-gray-400">
                       Taxa de recuperação
                     </p>
                     <p className="mt-1.5 text-[2.2rem] font-bold leading-none tracking-tight" style={{ color: b.accent }}>
@@ -615,10 +901,10 @@ export default async function Home() {
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Segurança & Compliance</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Segurança que sua operação exige
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400">
                 Seus dados e os dos seus clientes protegidos em cada camada.
               </p>
             </div>
@@ -665,10 +951,10 @@ export default async function Home() {
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Modelo de negócio</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Alinhamento total de incentivos
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400">
                 Modelo baseado em performance — você só paga quando recuperamos sua receita. Nosso sucesso depende do seu.
               </p>
             </div>
@@ -709,7 +995,7 @@ export default async function Home() {
           </div>
 
           <Reveal direction="up" delay={300}>
-            <p className="mx-auto mt-8 max-w-md text-center text-[0.78rem] leading-[1.7] text-gray-500 dark:text-gray-600">
+            <p className="mx-auto mt-8 max-w-md text-center text-[0.78rem] leading-[1.7] text-gray-500">
               Percentual definido durante o onboarding com base no volume da operação.
               Transparência total — sem surpresas, sem taxas ocultas.
             </p>
@@ -737,10 +1023,10 @@ export default async function Home() {
               >
                 <Gem className="h-7 w-7" style={{ color: b.accent }} />
               </div>
-              <h2 className="text-[1.5rem] font-bold tracking-[-0.02em] text-gray-900 dark:text-white sm:text-[1.8rem]">
+              <h2 className="text-[1.5rem] font-bold tracking-[-0.02em] text-white sm:text-[1.8rem]">
                 Vagas limitadas para onboarding
               </h2>
-              <p className="mx-auto mt-4 max-w-md text-[0.92rem] leading-7 text-gray-400 dark:text-gray-500">
+              <p className="mx-auto mt-4 max-w-md text-[0.92rem] leading-7 text-gray-400">
                 Estamos selecionando operações para o programa de acesso antecipado.
                 Responda o quiz e garanta sua vaga.
               </p>
@@ -777,7 +1063,7 @@ export default async function Home() {
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Perguntas frequentes</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Tudo que você precisa saber
               </h2>
             </div>
@@ -797,10 +1083,10 @@ export default async function Home() {
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Comparativo</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 Por que não fazer sozinho?
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400">
                 Veja o que muda quando a tecnologia certa entra na operação.
               </p>
             </div>
@@ -868,10 +1154,10 @@ export default async function Home() {
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Depoimentos</SectionEyebrow>
-              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
                 O que dizem sobre nós
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400">
                 Depoimentos de quem já recupera pagamentos com a plataforma.
               </p>
             </div>
@@ -908,10 +1194,10 @@ export default async function Home() {
               <div className="relative grid gap-8 px-5 py-10 sm:gap-10 sm:px-12 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:px-14">
                 <div>
                   <SectionEyebrow>Integração em minutos</SectionEyebrow>
-                  <h2 className="mt-4 max-w-[16ch] text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem] sm:leading-[1.15]">
+                  <h2 className="mt-4 max-w-[16ch] text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem] sm:leading-[1.15]">
                     Conecte seu gateway e comece a recuperar
                   </h2>
-                  <p className="mt-4 max-w-md text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+                  <p className="mt-4 max-w-md text-[0.95rem] leading-7 text-gray-400">
                     Configure o webhook, conecte o WhatsApp e pronto.
                     A plataforma faz o resto.
                   </p>
@@ -971,10 +1257,10 @@ export default async function Home() {
                 >
                   <TrendingUp className="h-6 w-6" style={{ color: b.accent }} />
                 </div>
-                <h2 className="text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2rem] lg:text-[2.8rem]">
+                <h2 className="text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[2rem] lg:text-[2.8rem]">
                   Sua receita está escapando agora
                 </h2>
-                <p className="mx-auto mt-5 max-w-lg text-[1rem] leading-7 text-gray-400 dark:text-gray-500">
+                <p className="mx-auto mt-5 max-w-lg text-[1rem] leading-7 text-gray-400">
                   Cada pagamento falhado que não é recuperado é receita que não volta.
                   Configure em minutos, veja resultados no primeiro dia.
                 </p>
@@ -1000,7 +1286,7 @@ export default async function Home() {
 
         {/* ═══════════════════════ FOOTER ═══════════════════════ */}
         <footer className="relative mx-auto max-w-[82rem] px-4 pb-10 pt-4 sm:px-8 lg:px-10">
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-12">
+          <div className="border-t border-white/[0.06] pt-12">
             <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
               {/* Brand */}
               <div className="sm:col-span-2 lg:col-span-1">
@@ -1008,18 +1294,18 @@ export default async function Home() {
                   <PlatformLogo mode="icon" size="sm" />
                   <p className="text-sm font-semibold text-gray-400">{b.name}</p>
                 </div>
-                <p className="mt-3 max-w-[18rem] text-[0.75rem] leading-[1.7] text-gray-500 dark:text-gray-600">
+                <p className="mt-3 max-w-[18rem] text-[0.75rem] leading-[1.7] text-gray-500">
                   Recuperação autônoma de pagamentos. IA, WhatsApp e Call Center de agentes IA trabalhando 24/7 para transformar falhas em receita.
                 </p>
                 <div className="mt-4 flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5" style={{ color: `rgba(${rgb},0.5)` }} />
-                  <span className="text-[0.6rem] text-gray-500 dark:text-gray-600">LGPD Compliant • Dados criptografados</span>
+                  <span className="text-[0.6rem] text-gray-500">LGPD Compliant • Dados criptografados</span>
                 </div>
               </div>
 
               {/* Produto */}
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">Produto</p>
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400">Produto</p>
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="#como-funciona">Como funciona</FooterLink>
                   <FooterLink href="#funcionalidades">Funcionalidades</FooterLink>
@@ -1031,7 +1317,7 @@ export default async function Home() {
 
               {/* Empresa */}
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">Empresa</p>
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400">Empresa</p>
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="/quiz">Acesso antecipado</FooterLink>
                   <FooterLink href="mailto:contato@pagrecovery.com">Contato</FooterLink>
@@ -1040,7 +1326,7 @@ export default async function Home() {
 
               {/* Legal */}
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">Legal</p>
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400">Legal</p>
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="/privacy">Política de Privacidade</FooterLink>
                   <FooterLink href="/terms">Termos de Uso</FooterLink>
@@ -1049,12 +1335,12 @@ export default async function Home() {
             </div>
 
             {/* Bottom bar */}
-            <div className="mt-12 flex flex-col items-center gap-3 border-t border-gray-100 dark:border-gray-800 pt-6 sm:flex-row sm:justify-between">
-              <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600">
+            <div className="mt-12 flex flex-col items-center gap-3 border-t border-white/[0.06] pt-6 sm:flex-row sm:justify-between">
+              <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-gray-400">
                 &copy; {new Date().getFullYear()} {b.name} Tecnologia. Todos os direitos reservados.
               </p>
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5 text-[0.52rem] text-gray-400 dark:text-gray-600">
+                <span className="flex items-center gap-1.5 text-[0.52rem] text-gray-400">
                   <Lock className="h-2.5 w-2.5" />
                   Dados protegidos conforme LGPD (Lei 13.709/2018)
                 </span>
@@ -1096,7 +1382,7 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
 
 function MarqueeItem({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
   return (
-    <div className="flex items-center gap-2 px-4 text-gray-400 dark:text-gray-500">
+    <div className="flex items-center gap-2 px-4 text-gray-400">
       <Icon className="h-3.5 w-3.5 opacity-40" style={{ color: b.accent }} />
       <span className="whitespace-nowrap text-[0.72rem] font-medium uppercase tracking-[0.12em]">
         {text}
@@ -1135,8 +1421,8 @@ function ImpactCard({
       <p className="text-[2.2rem] font-bold leading-none tracking-tight sm:text-[2.8rem]" style={{ color: b.accent }}>
         {value}
       </p>
-      <p className="mt-2 text-[0.82rem] font-semibold text-gray-700 dark:text-gray-200 sm:mt-3 sm:text-[0.88rem]">{label}</p>
-      <p className="mt-1.5 text-[0.72rem] text-gray-400 dark:text-gray-600">{sublabel}</p>
+      <p className="mt-2 text-[0.82rem] font-semibold text-gray-200 sm:mt-3 sm:text-[0.88rem]">{label}</p>
+      <p className="mt-1.5 text-[0.72rem] text-gray-400">{sublabel}</p>
     </div>
   );
 }
@@ -1198,7 +1484,7 @@ function ResultCard({
       <p className="mt-3 text-[1.8rem] font-bold leading-none tracking-tight sm:mt-4 sm:text-[2.2rem]" style={{ color: b.accent }}>
         {value}
       </p>
-      <p className="mt-1.5 text-[0.72rem] leading-[1.6] text-gray-400 dark:text-gray-500 sm:mt-2 sm:text-[0.78rem]">
+      <p className="mt-1.5 text-[0.72rem] leading-[1.6] text-gray-400 sm:mt-2 sm:text-[0.78rem]">
         {description}
       </p>
     </div>
@@ -1225,10 +1511,10 @@ function StepCard({ number, icon: Icon, title, description }: { number: string; 
         >
           <Icon className="h-[18px] w-[18px]" style={{ color: b.accent }} />
         </div>
-        <span className="font-mono text-[0.65rem] font-bold tracking-wider text-gray-300 dark:text-gray-600">{number}</span>
+        <span className="font-mono text-[0.65rem] font-bold tracking-wider text-gray-500">{number}</span>
       </div>
-      <h3 className="mt-4 text-[0.88rem] font-semibold text-gray-800 dark:text-gray-200">{title}</h3>
-      <p className="mt-2 text-[0.78rem] leading-[1.7] text-gray-400 dark:text-gray-500">{description}</p>
+      <h3 className="mt-4 text-[0.88rem] font-semibold text-gray-200">{title}</h3>
+      <p className="mt-2 text-[0.78rem] leading-[1.7] text-gray-400">{description}</p>
     </div>
   );
 }
@@ -1252,8 +1538,8 @@ function FeatureCard({ icon: Icon, title, description }: { icon: LucideIcon; tit
       >
         <Icon className="h-4 w-4 opacity-80" style={{ color: b.accent }} />
       </div>
-      <h3 className="mt-3.5 text-[0.82rem] font-semibold text-gray-700 dark:text-gray-200">{title}</h3>
-      <p className="mt-1.5 text-[0.75rem] leading-[1.7] text-gray-400 dark:text-gray-600">{description}</p>
+      <h3 className="mt-3.5 text-[0.82rem] font-semibold text-gray-200">{title}</h3>
+      <p className="mt-1.5 text-[0.75rem] leading-[1.7] text-gray-400">{description}</p>
     </div>
   );
 }
@@ -1264,7 +1550,7 @@ function WaitlistStat({ value, label }: { value: React.ReactNode; label: string 
       <p className="text-[1.3rem] font-bold tracking-tight sm:text-[1.6rem]" style={{ color: b.accent }}>
         {value}
       </p>
-      <p className="font-mono text-[0.45rem] uppercase tracking-[0.15em] text-gray-500 dark:text-gray-600 sm:text-[0.52rem] sm:tracking-[0.2em]">
+      <p className="font-mono text-[0.45rem] uppercase tracking-[0.15em] text-gray-500 sm:text-[0.52rem] sm:tracking-[0.2em]">
         {label}
       </p>
     </div>
@@ -1310,7 +1596,7 @@ function PricingCard({
       <p className="mt-2 text-[1.6rem] font-bold leading-none tracking-tight" style={{ color: highlighted ? b.accent : undefined }}>
         <span className={highlighted ? "" : "text-white"}>{price}</span>
       </p>
-      <p className="mt-3 text-[0.75rem] leading-[1.7] text-gray-400 dark:text-gray-600">{description}</p>
+      <p className="mt-3 text-[0.75rem] leading-[1.7] text-gray-400">{description}</p>
     </div>
   );
 }
@@ -1322,7 +1608,7 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
     <li>
       <Component
         href={href}
-        className="text-[0.75rem] text-gray-500 dark:text-gray-600 transition-colors hover:text-gray-400 dark:hover:text-gray-400"
+        className="text-[0.75rem] text-gray-500 transition-colors hover:text-gray-400 hover:text-gray-400"
       >
         {children}
       </Component>
@@ -1330,9 +1616,28 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="rounded-lg px-3 py-2.5 text-center"
+      style={{
+        border: `1px solid rgba(${rgb},0.08)`,
+        background: `rgba(${rgb},0.03)`,
+      }}
+    >
+      <p className="text-[0.95rem] font-bold tracking-tight" style={{ color: b.accent }}>
+        {value}
+      </p>
+      <p className="mt-0.5 text-[0.58rem] font-medium uppercase tracking-[0.12em] text-gray-500">
+        {label}
+      </p>
+    </div>
+  );
+}
+
 function IntegrationStep({ step, title, description }: { step: string; title: string; description: string }) {
   return (
-    <div className="flex items-start gap-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.02] px-5 py-4 backdrop-blur-sm transition-all">
+    <div className="flex items-start gap-4 rounded-xl border border-white/[0.06] bg-gray-50 dark:bg-white/[0.02] px-5 py-4 backdrop-blur-sm transition-all">
       <div
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[0.7rem] font-bold opacity-80"
         style={{
@@ -1344,8 +1649,8 @@ function IntegrationStep({ step, title, description }: { step: string; title: st
         {step}
       </div>
       <div>
-        <p className="text-[0.82rem] font-semibold text-gray-700 dark:text-gray-200">{title}</p>
-        <p className="mt-1 text-[0.72rem] leading-5 text-gray-400 dark:text-gray-600">{description}</p>
+        <p className="text-[0.82rem] font-semibold text-gray-200">{title}</p>
+        <p className="mt-1 text-[0.72rem] leading-5 text-gray-400">{description}</p>
       </div>
     </div>
   );

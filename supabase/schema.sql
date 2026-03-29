@@ -315,6 +315,20 @@ CREATE TABLE whitelabel_profiles (
 CREATE INDEX whitelabel_profiles_slug_idx ON whitelabel_profiles(slug);
 CREATE INDEX whitelabel_profiles_active_idx ON whitelabel_profiles(active);
 
+-- Table: demo_call_leads
+CREATE TABLE IF NOT EXISTS demo_call_leads (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  called_at TIMESTAMP WITH TIME ZONE,
+  vapi_call_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS demo_call_leads_phone_idx ON demo_call_leads(phone);
+CREATE INDEX IF NOT EXISTS demo_call_leads_status_idx ON demo_call_leads(status);
+
 -- Table: calls
 CREATE TABLE IF NOT EXISTS calls (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

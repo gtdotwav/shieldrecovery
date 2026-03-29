@@ -678,6 +678,8 @@ export type StorageState = {
   sellerAdminControls: SellerAdminControlRecord[];
   sellerUsers: SellerUserRecord[];
   sellerInvites: SellerInviteRecord[];
+  quizLeads: QuizLeadRecord[];
+  demoCallLeads: DemoCallLeadRecord[];
   connectionSettings: ConnectionSettingsRecord;
   meta: {
     lastAssignedAgentIndex: number;
@@ -917,6 +919,30 @@ export type CallcenterSettingsInput = {
   provider?: CallProvider;
   maxCallsPerDay?: number;
   autoCallEnabled?: boolean;
+};
+
+/* ── Quiz leads ── */
+
+export type QuizLeadRecord = {
+  id: string;
+  email: string;
+  answers: string[];
+  status: "new" | "contacted" | "converted";
+  whatsappSentAt?: string;
+  notes?: string;
+  createdAt: string;
+};
+
+/* ── Demo Call Leads ── */
+
+export type DemoCallLeadRecord = {
+  id: string;
+  name: string;
+  phone: string;
+  calledAt?: string;
+  vapiCallId?: string;
+  status: "pending" | "calling" | "completed" | "failed";
+  createdAt: string;
 };
 
 export type UpdateCallInput = {

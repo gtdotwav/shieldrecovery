@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { timingSafeEqual, randomBytes } from "node:crypto";
 
 import { setAuthenticatedSession } from "@/server/auth/session";
+import { getStorageService } from "@/server/recovery/services/storage";
 
 /* ── Quick-access password verification (server-only) ── */
 
@@ -55,12 +56,21 @@ export async function submitQuizEmail(
     return { error: "Informe um email valido." };
   }
 
+  const parsedAnswers: string[] = answers ? JSON.parse(answers) : [];
+
+  try {
+    const storage = getStorageService();
+    await storage.createQuizLead({ email, answers: parsedAnswers });
+  } catch {
+    // Log fallback — storage may not be configured
+  }
+
   // Log structured data (visible in Vercel runtime logs)
   console.info(
     JSON.stringify({
       event: "quiz.lead",
       email,
-      answers: answers ? JSON.parse(answers) : [],
+      answers: parsedAnswers,
       ts: new Date().toISOString(),
     }),
   );

@@ -23,6 +23,7 @@ import type {
   CreateCalendarNoteInput,
   CreateCallInput,
   CustomerRecord,
+  DemoCallLeadRecord,
   FollowUpContact,
   GatewayProvider,
   InboxConversation,
@@ -33,6 +34,7 @@ import type {
   NormalizedPaymentEvent,
   PaymentAttemptRecord,
   PaymentRecord,
+  QuizLeadRecord,
   QueueJobRecord,
   QueueOverviewSnapshot,
   RecoveryAnalytics,
@@ -300,6 +302,16 @@ type DatabaseWhitelabelProfileRow = {
   notes: string;
   created_at: string;
   updated_at: string;
+};
+
+type DatabaseDemoCallLeadRow = {
+  id: string;
+  name: string;
+  phone: string;
+  called_at?: string | null;
+  vapi_call_id?: string | null;
+  status: string;
+  created_at: string;
 };
 
 export class SupabaseStorageService implements RecoveryStorage {
@@ -2167,6 +2179,118 @@ export class SupabaseStorageService implements RecoveryStorage {
   async deleteWhitelabelProfile(id: string): Promise<void> {
     await this.supabase.from("whitelabel_profiles").delete().eq("id", id);
   }
+
+  /* ── Quiz leads ── */
+
+  async listQuizLeads(): Promise<QuizLeadRecord[]> {
+    const { data, error } = await this.supabase
+      .from("quiz_leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error || !data) return [];
+    return data.map(mapQuizLead);
+  }
+
+  async createQuizLead(input: { email: string; answers: string[] }): Promise<QuizLeadRecord> {
+    const email = input.email.trim().toLowerCase();
+
+    // Upsert: if email already exists, just return the existing record
+    const { data: existing } = await this.supabase
+      .from("quiz_leads")
+      .select("*")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existing) return mapQuizLead(existing);
+
+    const { data, error } = await this.supabase
+      .from("quiz_leads")
+      .insert({ email, answers: input.answers })
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create quiz lead: ${error?.message ?? "unknown"}`);
+    }
+
+    return mapQuizLead(data);
+  }
+
+  async updateQuizLead(
+    id: string,
+    input: { status?: string; whatsappSentAt?: string; notes?: string },
+  ): Promise<QuizLeadRecord | undefined> {
+    const updates: Record<string, unknown> = {};
+    if (input.status) updates.status = input.status;
+    if (input.whatsappSentAt) updates.whatsapp_sent_at = input.whatsappSentAt;
+    if (input.notes !== undefined) updates.notes = input.notes;
+
+    const { data, error } = await this.supabase
+      .from("quiz_leads")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error || !data) return undefined;
+    return mapQuizLead(data);
+  }
+
+  /* ── Demo Call Leads ── */
+
+  async findDemoCallLeadByPhone(phone: string): Promise<DemoCallLeadRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("demo_call_leads")
+      .select("*")
+      .eq("phone", phone.trim())
+      .maybeSingle();
+    if (error || !data) return undefined;
+    return mapDemoCallLead(data as DatabaseDemoCallLeadRow);
+  }
+
+  async createDemoCallLead(input: { name: string; phone: string }): Promise<DemoCallLeadRecord> {
+    const now = new Date().toISOString();
+    const payload = {
+      id: randomUUID(),
+      name: input.name.trim(),
+      phone: input.phone.trim(),
+      status: "pending",
+      created_at: now,
+    };
+    const { data, error } = await this.supabase
+      .from("demo_call_leads")
+      .insert(payload)
+      .select("*")
+      .single();
+    if (error || !data) return mapDemoCallLead(payload as DatabaseDemoCallLeadRow);
+    return mapDemoCallLead(data as DatabaseDemoCallLeadRow);
+  }
+
+  async updateDemoCallLead(id: string, input: { status?: string; calledAt?: string; vapiCallId?: string }): Promise<DemoCallLeadRecord | undefined> {
+    const updates: Record<string, unknown> = {};
+    if (input.status) updates.status = input.status;
+    if (input.calledAt) updates.called_at = input.calledAt;
+    if (input.vapiCallId) updates.vapi_call_id = input.vapiCallId;
+    const { data, error } = await this.supabase
+      .from("demo_call_leads")
+      .update(updates)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error || !data) return undefined;
+    return mapDemoCallLead(data as DatabaseDemoCallLeadRow);
+  }
+
+  async listDemoCallLeads(): Promise<DemoCallLeadRecord[]> {
+    const { data, error } = await this.supabase
+      .from("demo_call_leads")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error || !data) return [];
+    return (data as DatabaseDemoCallLeadRow[]).map(mapDemoCallLead);
+  }
 }
 
 // Mappers
@@ -2949,6 +3073,31 @@ function mapCallEvent(data: any): CallEventRecord {
     callId: data.call_id,
     eventType: data.event_type,
     data: data.data ?? {},
+    createdAt: toIsoStringOrNow(data.created_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
+function mapQuizLead(data: any): QuizLeadRecord {
+  return {
+    id: data.id,
+    email: data.email,
+    answers: Array.isArray(data.answers) ? data.answers : [],
+    status: data.status ?? "new",
+    whatsappSentAt: data.whatsapp_sent_at ?? undefined,
+    notes: data.notes ?? undefined,
+    createdAt: toIsoStringOrNow(data.created_at),
+  };
+}
+
+function mapDemoCallLead(data: DatabaseDemoCallLeadRow): DemoCallLeadRecord {
+  return {
+    id: data.id,
+    name: data.name,
+    phone: data.phone,
+    calledAt: data.called_at ?? undefined,
+    vapiCallId: data.vapi_call_id ?? undefined,
+    status: data.status as DemoCallLeadRecord["status"],
     createdAt: toIsoStringOrNow(data.created_at),
   };
 }

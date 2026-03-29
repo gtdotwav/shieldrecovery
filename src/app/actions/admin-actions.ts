@@ -240,6 +240,66 @@ export async function deleteWhitelabelProfileAction(formData: FormData) {
   redirect("/admin/whitelabel?status=ok&message=Perfil%20removido");
 }
 
+/* ── Quiz Lead Actions ── */
+
+export async function sendQuizLeadWhatsAppAction(formData: FormData) {
+  await requireAuthenticatedSession(["admin"]);
+
+  const leadId = String(formData.get("leadId") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const message = String(formData.get("message") ?? "").trim();
+
+  if (!leadId || !phone) {
+    redirect("/admin?status=error&message=Lead%20ou%20telefone%20invalido");
+  }
+
+  const content =
+    message ||
+    "Oi! Vi que voce se interessou pela PagRecovery. Posso te ajudar a entender como funciona a plataforma? Estamos aceitando os primeiros clientes!";
+
+  const storage = getStorageService();
+  const { MessagingService } = await import(
+    "@/server/recovery/services/messaging-service"
+  );
+  const messaging = new MessagingService();
+
+  const conversation = await storage.upsertConversation({
+    channel: "whatsapp",
+    contactValue: phone,
+    customerName: "Quiz Lead",
+  });
+
+  const result = await messaging.dispatchOutboundMessage({
+    conversation,
+    content,
+  });
+
+  if (result.status === "failed") {
+    redirect(
+      `/admin?status=error&message=${encodeURIComponent(result.error ?? "Falha ao enviar WhatsApp")}`,
+    );
+  }
+
+  await storage.createMessage({
+    conversationId: conversation.id,
+    channel: "whatsapp",
+    direction: "outbound",
+    senderAddress: "system",
+    content,
+    status: result.status === "sent" ? "sent" : "queued",
+    senderName: "PagRecovery",
+    providerMessageId: result.providerMessageId,
+  });
+
+  await storage.updateQuizLead(leadId, {
+    status: "contacted",
+    whatsappSentAt: new Date().toISOString(),
+  });
+
+  revalidateAdminRoutes();
+  redirect("/admin?status=ok&message=WhatsApp%20enviado%20com%20sucesso");
+}
+
 export async function saveSellerGatewayKeyAction(formData: FormData) {
   await requireAuthenticatedSession(["admin", "seller"]);
 

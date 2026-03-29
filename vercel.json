@@ -5,6 +5,10 @@
     {
       "path": "/api/worker/run",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/agent/orchestrate",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

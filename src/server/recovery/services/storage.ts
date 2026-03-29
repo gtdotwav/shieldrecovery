@@ -22,6 +22,7 @@ import type {
   CreateCalendarNoteInput,
   CreateCallInput,
   CustomerRecord,
+  DemoCallLeadRecord,
   FollowUpContact,
   InboxConversation,
   MessageMetadata,
@@ -31,6 +32,7 @@ import type {
   NormalizedPaymentEvent,
   PaymentAttemptRecord,
   PaymentRecord,
+  QuizLeadRecord,
   QueueJobRecord,
   QueueOverviewSnapshot,
   RecoveryAnalytics,
@@ -235,6 +237,17 @@ export interface RecoveryStorage {
   listCallcenterSettings(): Promise<CallcenterSettingsRecord[]>;
   upsertCallcenterSettings(input: CallcenterSettingsInput): Promise<CallcenterSettingsRecord>;
 
+  /* Quiz leads */
+  listQuizLeads(): Promise<QuizLeadRecord[]>;
+  createQuizLead(input: { email: string; answers: string[] }): Promise<QuizLeadRecord>;
+  updateQuizLead(id: string, input: { status?: string; whatsappSentAt?: string; notes?: string }): Promise<QuizLeadRecord | undefined>;
+
+  /* Demo Call Leads */
+  findDemoCallLeadByPhone(phone: string): Promise<DemoCallLeadRecord | undefined>;
+  createDemoCallLead(input: { name: string; phone: string }): Promise<DemoCallLeadRecord>;
+  updateDemoCallLead(id: string, input: { status?: string; calledAt?: string; vapiCallId?: string }): Promise<DemoCallLeadRecord | undefined>;
+  listDemoCallLeads(): Promise<DemoCallLeadRecord[]>;
+
   /* Whitelabel */
   listWhitelabelProfiles(): Promise<WhitelabelProfileRecord[]>;
   getWhitelabelProfile(id: string): Promise<WhitelabelProfileRecord | undefined>;
@@ -260,6 +273,8 @@ function createEmptyState(): StorageState {
     sellerAdminControls: [],
     sellerUsers: [],
     sellerInvites: [],
+    quizLeads: [],
+    demoCallLeads: [],
     connectionSettings: createDefaultConnectionSettings(),
     meta: {
       lastAssignedAgentIndex: -1,
@@ -1619,6 +1634,90 @@ class LocalStorageService implements RecoveryStorage {
     };
   }
   async deleteWhitelabelProfile(): Promise<void> {}
+
+  /* Quiz leads */
+
+  async listQuizLeads(): Promise<QuizLeadRecord[]> {
+    return this.readState().quizLeads
+      .map((lead) => ({ ...lead }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createQuizLead(input: { email: string; answers: string[] }): Promise<QuizLeadRecord> {
+    return this.mutate((state) => {
+      const email = input.email.trim().toLowerCase();
+      const existing = state.quizLeads.find((l) => l.email === email);
+      if (existing) return existing;
+
+      const record: QuizLeadRecord = {
+        id: randomUUID(),
+        email,
+        answers: input.answers,
+        status: "new",
+        createdAt: new Date().toISOString(),
+      };
+      state.quizLeads.push(record);
+      return record;
+    });
+  }
+
+  async updateQuizLead(
+    id: string,
+    input: { status?: string; whatsappSentAt?: string; notes?: string },
+  ): Promise<QuizLeadRecord | undefined> {
+    return this.mutate((state) => {
+      const lead = state.quizLeads.find((l) => l.id === id);
+      if (!lead) return undefined;
+      if (input.status) lead.status = input.status as QuizLeadRecord["status"];
+      if (input.whatsappSentAt) lead.whatsappSentAt = input.whatsappSentAt;
+      if (input.notes !== undefined) lead.notes = input.notes;
+      return { ...lead };
+    });
+  }
+
+  /* Demo Call Leads */
+
+  async findDemoCallLeadByPhone(phone: string): Promise<DemoCallLeadRecord | undefined> {
+    return this.readState().demoCallLeads.find((l) => l.phone === phone.trim());
+  }
+
+  async createDemoCallLead(input: { name: string; phone: string }): Promise<DemoCallLeadRecord> {
+    return this.mutate((state) => {
+      const phone = input.phone.trim();
+      const existing = state.demoCallLeads.find((l) => l.phone === phone);
+      if (existing) return existing;
+
+      const record: DemoCallLeadRecord = {
+        id: randomUUID(),
+        name: input.name.trim(),
+        phone,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      };
+      state.demoCallLeads.push(record);
+      return record;
+    });
+  }
+
+  async updateDemoCallLead(
+    id: string,
+    input: { status?: string; calledAt?: string; vapiCallId?: string },
+  ): Promise<DemoCallLeadRecord | undefined> {
+    return this.mutate((state) => {
+      const lead = state.demoCallLeads.find((l) => l.id === id);
+      if (!lead) return undefined;
+      if (input.status) lead.status = input.status as DemoCallLeadRecord["status"];
+      if (input.calledAt) lead.calledAt = input.calledAt;
+      if (input.vapiCallId) lead.vapiCallId = input.vapiCallId;
+      return { ...lead };
+    });
+  }
+
+  async listDemoCallLeads(): Promise<DemoCallLeadRecord[]> {
+    return this.readState().demoCallLeads
+      .map((lead) => ({ ...lead }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
 }
 
 function normalizePhone(value?: string) {

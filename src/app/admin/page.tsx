@@ -3,8 +3,10 @@ import {
   ArrowRight,
   KeyRound,
   Layers,
+  Mail,
   MessageCircle,
   Search,
+  Send,
   ShieldCheck,
   Target,
   UsersRound,
@@ -15,6 +17,7 @@ import {
   createSellerInviteAction,
   saveSellerControlAction,
   saveSellerUserAction,
+  sendQuizLeadWhatsAppAction,
 } from "@/app/actions/admin-actions";
 import {
   PlatformAppPage,
@@ -28,8 +31,10 @@ import { formatCurrency, formatRelativeTime } from "@/lib/format";
 import { platformBrand } from "@/lib/platform";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+import { getStorageService } from "@/server/recovery/services/storage";
 import type {
   AdminSellerSnapshot,
+  QuizLeadRecord,
   SellerInviteSnapshot,
   WhitelabelProfileRecord,
 } from "@/server/recovery/types";
@@ -54,9 +59,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   await requireAuthenticatedSession(["admin"]);
   const params = (await searchParams) ?? {};
   const service = getPaymentRecoveryService();
-  const [snapshot, whitelabelProfiles] = await Promise.all([
+  const storage = getStorageService();
+  const [snapshot, whitelabelProfiles, quizLeads] = await Promise.all([
     service.getAdminPanelSnapshot(),
     service.listWhitelabelProfiles(),
+    storage.listQuizLeads(),
   ]);
   const query = typeof params.query === "string" ? params.query.trim() : "";
   const filteredSellers = snapshot.sellers.filter((seller) =>
@@ -464,6 +471,38 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </PlatformSurface>
         </div>
       </section>
+
+      {/* ── Quiz Leads ── */}
+      <PlatformSurface className="mt-5 p-5 sm:p-6">
+        <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <SectionHeader
+            eyebrow="Leads do quiz"
+            title="Emails capturados pelo quiz da landing page."
+          />
+          <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+            {quizLeads.length} leads
+          </span>
+        </div>
+
+        {quizLeads.length === 0 ? (
+          <PlatformInset className="mt-4 p-6 text-center">
+            <Mail className="mx-auto h-6 w-6 text-[var(--muted)]" />
+            <p className="mt-3 text-sm font-medium text-[var(--foreground)]">
+              Nenhum lead do quiz ainda.
+            </p>
+            <p className="mt-1.5 text-sm leading-6 text-[var(--muted)]">
+              Quando visitantes completarem o quiz na landing page, os emails
+              aparecem aqui para acompanhamento.
+            </p>
+          </PlatformInset>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {quizLeads.map((lead) => (
+              <QuizLeadRow key={lead.id} lead={lead} />
+            ))}
+          </div>
+        )}
+      </PlatformSurface>
 
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
@@ -1160,5 +1199,81 @@ function ToggleField({
       />
       <span className="text-sm font-medium text-[var(--foreground)]">{label}</span>
     </label>
+  );
+}
+
+function QuizLeadRow({ lead }: { lead: QuizLeadRecord }) {
+  const statusLabel =
+    lead.status === "contacted"
+      ? "contatado"
+      : lead.status === "converted"
+        ? "convertido"
+        : "novo";
+
+  return (
+    <div className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Mail className="h-4 w-4 text-[var(--accent)]" />
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              {lead.email}
+            </p>
+            <PlatformPill>{statusLabel}</PlatformPill>
+          </div>
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            Cadastro {formatRelativeTime(lead.createdAt)}
+            {lead.whatsappSentAt
+              ? ` · WhatsApp enviado ${formatRelativeTime(lead.whatsappSentAt)}`
+              : ""}
+          </p>
+          {lead.answers.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {lead.answers.map((answer, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.65rem] text-[var(--muted)]"
+                >
+                  {answer}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {!lead.whatsappSentAt ? (
+          <form
+            action={sendQuizLeadWhatsAppAction}
+            className="flex shrink-0 items-end gap-2"
+          >
+            <input type="hidden" name="leadId" value={lead.id} />
+            <label className="space-y-1">
+              <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                WhatsApp
+              </span>
+              <input
+                name="phone"
+                type="tel"
+                placeholder="5511999999999"
+                required
+                className="w-36 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              />
+            </label>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
+            >
+              <Send className="h-3 w-3" />
+              Enviar
+            </button>
+          </form>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs text-[var(--muted)]">
+            <Send className="h-3 w-3" />
+            Enviado
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
