@@ -783,16 +783,9 @@ export class MessagingService {
       };
     }
 
-    // Send PIX code as separate message for easy copy on WhatsApp
+    // Send PIX code as separate message (code only, no label) for easy copy on WhatsApp
     const pixCode = extractPixCodeForSeparateMessage(input.metadata);
     if (pixCode && payload?.messages?.[0]?.id) {
-      const approach = input.metadata?.messagingApproach ?? "friendly";
-      const pixLabel =
-        approach === "urgent"
-          ? "Pix copia e cola (expira em breve) 👇"
-          : approach === "professional"
-            ? "Pix copia e cola 👇"
-            : "Pix copia e cola pra facilitar 👇";
       try {
         await fetch(
           `${input.apiBaseUrl.replace(/\/$/, "")}/${input.phoneNumberId}/messages`,
@@ -807,7 +800,7 @@ export class MessagingService {
               recipient_type: "individual",
               to: input.phone,
               type: "text",
-              text: { preview_url: false, body: `${pixLabel}\n\n${pixCode}` },
+              text: { preview_url: false, body: pixCode },
             }),
           },
         );
@@ -894,18 +887,10 @@ export class MessagingService {
       payload?.data?.messageId ??
       payload?.messages?.[0]?.id;
 
-    // Send PIX code as separate message for easy copy on WhatsApp
+    // Send PIX code as separate message (code only, no label) for easy copy on WhatsApp
     const pixCode = extractPixCodeForSeparateMessage(input.metadata);
     if (pixCode && providerMessageId) {
-      const approach = input.metadata?.messagingApproach ?? "friendly";
-      const pixLabel =
-        approach === "urgent"
-          ? "Pix copia e cola (expira em breve) 👇"
-          : approach === "professional"
-            ? "Pix copia e cola 👇"
-            : "Pix copia e cola pra facilitar 👇";
       try {
-        const pixBody = `${pixLabel}\n\n${pixCode}`;
         if (config.kind === "evolution") {
           await fetch(config.sendUrl, {
             method: "POST",
@@ -913,7 +898,7 @@ export class MessagingService {
               ...buildWhatsAppApiHeaders(input.accessToken),
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ number: input.phone, text: pixBody }),
+            body: JSON.stringify({ number: input.phone, text: pixCode }),
             signal: AbortSignal.timeout(30_000),
           });
         } else {
@@ -926,8 +911,8 @@ export class MessagingService {
             body: JSON.stringify({
               to: input.phone,
               type: "text",
-              message: pixBody,
-              text: pixBody,
+              message: pixCode,
+              text: pixCode,
               preview_url: false,
             }),
             signal: AbortSignal.timeout(30_000),
@@ -1531,8 +1516,18 @@ function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata) 
     sections.push(`${linkLabel} 👇\n${actionUrl}`);
   }
 
-  // PIX code is now sent as a separate message (see extractPixCodeForSeparateMessage)
-  // so do NOT include it here — it makes it easier to long-press and copy on WhatsApp
+  // When PIX code will be sent as a separate message, add the label here
+  // so the customer knows the code is coming right after
+  const pixCode = metadata.pixCode?.trim();
+  if (pixCode) {
+    const pixLabel =
+      approach === "urgent"
+        ? "Pix copia e cola (expira em breve) 👇"
+        : approach === "professional"
+          ? "Pix copia e cola 👇"
+          : "Pix copia e cola pra facilitar 👇";
+    sections.push(pixLabel);
+  }
 
   return sections.filter(Boolean).join("\n\n");
 }
