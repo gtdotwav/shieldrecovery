@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import type { ApiSession } from "@/server/auth/request";
 
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": process.env.NEXT_PUBLIC_APP_URL || "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age": "86400",

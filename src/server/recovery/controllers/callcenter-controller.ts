@@ -1,6 +1,8 @@
+import { z } from "zod";
 import { NextResponse } from "next/server";
 
 import { getStorageService } from "@/server/recovery/services/storage";
+import type { RecoveryStorage } from "@/server/recovery/services/storage";
 import { createStructuredLog } from "@/server/recovery/utils/structured-logger";
 import { HttpError } from "@/server/recovery/utils/http-error";
 import { requireAuthenticatedSession } from "@/server/auth/session";
@@ -10,6 +12,26 @@ import type {
   CreateCallInput,
   UpdateCallInput,
 } from "@/server/recovery/types";
+
+const createCallSchema = z.object({
+  leadId: z.string().optional(),
+  customerId: z.string().optional(),
+  agentId: z.string().optional(),
+  campaignId: z.string().optional(),
+  direction: z.enum(["inbound", "outbound"]).optional(),
+  fromNumber: z.string().optional(),
+  toNumber: z.string().min(1, "toNumber is required."),
+  provider: z.enum(["vapi", "bland", "retell", "twilio", "manual"]).optional(),
+  providerCallId: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+const createCampaignSchema = z.object({
+  name: z.string().min(1, "name is required."),
+  description: z.string().optional(),
+  filterCriteria: z.record(z.string(), z.unknown()).optional(),
+  createdBy: z.string().optional(),
+});
 
 /* ── Webhook — receives events from the callcenter frontend ── */
 
@@ -196,20 +218,36 @@ export async function handleGetCall(request: Request, callId: string) {
 
 export async function handleCreateCall(request: Request) {
   await requireAuthenticatedSession(["admin", "seller"]);
-  const body = await request.json();
+
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const parsed = createCallSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, error: "Invalid request body.", details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const body = parsed.data;
   const storage = getStorageService();
 
   const call = await storage.createCall({
-    leadId: asOptionalString(body.leadId),
-    customerId: asOptionalString(body.customerId),
-    agentId: asOptionalString(body.agentId),
-    campaignId: asOptionalString(body.campaignId),
+    leadId: body.leadId,
+    customerId: body.customerId,
+    agentId: body.agentId,
+    campaignId: body.campaignId,
     direction: body.direction === "inbound" ? "inbound" : "outbound",
-    fromNumber: asOptionalString(body.fromNumber),
-    toNumber: requireString(body.toNumber, "toNumber"),
+    fromNumber: body.fromNumber,
+    toNumber: body.toNumber,
     provider: asCallProvider(body.provider),
-    providerCallId: asOptionalString(body.providerCallId),
-    metadata: typeof body.metadata === "object" && body.metadata ? body.metadata : {},
+    providerCallId: body.providerCallId,
+    metadata: body.metadata ?? {},
   });
 
   return NextResponse.json({ ok: true, call }, { status: 201 });
@@ -235,14 +273,30 @@ export async function handleListCampaigns(_request: Request) {
 
 export async function handleCreateCampaign(request: Request) {
   await requireAuthenticatedSession(["admin"]);
-  const body = await request.json();
+
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const parsed = createCampaignSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, error: "Invalid request body.", details: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const body = parsed.data;
   const storage = getStorageService();
 
   const campaign = await storage.createCallCampaign({
-    name: requireString(body.name, "name"),
-    description: asOptionalString(body.description),
-    filterCriteria: typeof body.filterCriteria === "object" ? body.filterCriteria : {},
-    createdBy: asOptionalString(body.createdBy),
+    name: body.name,
+    description: body.description,
+    filterCriteria: body.filterCriteria ?? {},
+    createdBy: body.createdBy,
   });
 
   return NextResponse.json({ ok: true, campaign }, { status: 201 });
@@ -250,8 +304,7 @@ export async function handleCreateCampaign(request: Request) {
 
 /* ── Helpers ── */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function resolveCall(storage: any, body: Record<string, unknown>): Promise<CallRecord> {
+async function resolveCall(storage: RecoveryStorage, body: Record<string, unknown>): Promise<CallRecord> {
   const callId = asOptionalString(body.call_id) ?? asOptionalString(body.callId);
   const providerCallId = asOptionalString(body.provider_call_id) ?? asOptionalString(body.providerCallId);
 

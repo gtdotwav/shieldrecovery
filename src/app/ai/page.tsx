@@ -479,7 +479,7 @@ function SellerAutomationWorkspace({
                         {strategy.name}
                       </p>
                     </div>
-                    <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.62rem] font-semibold text-[var(--muted)]">
+                    <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.65rem] font-semibold text-[var(--muted)]">
                       ativo
                     </span>
                   </div>
@@ -489,7 +489,7 @@ function SellerAutomationWorkspace({
                   <div className="mt-4 space-y-2">
                     {strategy.steps.slice(0, 3).map((step) => (
                       <div key={step.order} className="flex items-center gap-2 text-xs text-[var(--foreground-secondary)]">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface-strong)] text-[0.62rem] font-semibold text-[var(--muted)]">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface-strong)] text-[0.65rem] font-semibold text-[var(--muted)]">
                           {step.order}
                         </span>
                         <span className="truncate">{step.action}</span>

@@ -25,7 +25,7 @@ import {
   Shield,
   ShieldCheck,
   Smartphone,
-  Sparkles,
+  Gem,
   TrendingUp,
   Users,
   XCircle,
@@ -380,7 +380,7 @@ export default async function Home() {
                       className="flex h-10 w-10 items-center justify-center rounded-xl"
                       style={{ background: `rgba(${rgb},0.10)` }}
                     >
-                      <Sparkles className="h-5 w-5" style={{ color: b.accent }} />
+                      <Gem className="h-5 w-5" style={{ color: b.accent }} />
                     </div>
                     <h3 className="text-[1rem] font-bold" style={{ color: b.accent }}>
                       Com {b.name}
@@ -690,7 +690,7 @@ export default async function Home() {
                   background: `rgba(${rgb},0.06)`,
                 }}
               >
-                <Sparkles className="h-7 w-7" style={{ color: b.accent }} />
+                <Gem className="h-7 w-7" style={{ color: b.accent }} />
               </div>
               <h2 className="text-[1.5rem] font-bold tracking-[-0.02em] text-gray-900 dark:text-white sm:text-[1.8rem]">
                 Acesso antecipado aberto

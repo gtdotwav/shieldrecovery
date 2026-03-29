@@ -93,6 +93,7 @@ function ToastItem({
           setVisible(false);
           setTimeout(() => onDismiss(toast.id), 300);
         }}
+        aria-label="Fechar notificacao"
         className="shrink-0 rounded p-0.5 transition-colors hover:bg-gray-100 dark:hover:bg-white/8"
       >
         <X className="h-3 w-3" />

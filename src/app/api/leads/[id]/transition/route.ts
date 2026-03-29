@@ -1,9 +1,16 @@
+import { z } from "zod";
 import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireApiAuth } from "@/server/auth/request";
 import { apiError, apiOk, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+import { RECOVERY_LEAD_PIPELINE } from "@/server/recovery/types";
 import type { RecoveryLeadStatus } from "@/server/recovery/types";
+
+const transitionSchema = z.object({
+  status: z.enum(RECOVERY_LEAD_PIPELINE),
+  intent: z.enum(["start_flow"]).optional(),
+});
 
 export function OPTIONS() {
   return corsOptions();
@@ -23,17 +30,19 @@ export async function POST(
 
   const { id: leadId } = await params;
 
-  let body: { status?: string; intent?: string };
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return apiError("Invalid JSON body.", 400);
   }
 
-  const status = body.status as RecoveryLeadStatus;
-  if (!status) {
-    return apiError("status is required.", 400);
+  const parsed = transitionSchema.safeParse(raw);
+  if (!parsed.success) {
+    return apiError("Invalid request body.", 400);
   }
+
+  const status: RecoveryLeadStatus = parsed.data.status;
 
   const service = getPaymentRecoveryService();
 
@@ -61,13 +70,13 @@ export async function POST(
         phone: "",
       });
 
-      if (body.intent === "start_flow") {
+      if (parsed.data.intent === "start_flow") {
         await service.startLeadFlow({ leadId, assignedAgent });
       } else {
         await service.moveLeadToStatus({ leadId, status, assignedAgent });
       }
     } else {
-      if (body.intent === "start_flow") {
+      if (parsed.data.intent === "start_flow") {
         await service.startLeadFlow({ leadId });
       } else {
         await service.moveLeadToStatus({ leadId, status });

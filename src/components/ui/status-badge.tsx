@@ -27,7 +27,7 @@ export function StatusBadge({
       role="status"
       aria-label={`${label}`}
       className={cn(
-        "inline-flex rounded-full border px-2.5 py-0.5 text-[0.65rem] uppercase tracking-[0.18em]",
+        "inline-flex rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] transition-colors",
         VARIANT_STYLES[variant],
         className,
       )}

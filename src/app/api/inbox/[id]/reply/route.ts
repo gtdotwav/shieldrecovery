@@ -1,8 +1,13 @@
+import { z } from "zod";
 import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireApiAuth } from "@/server/auth/request";
 import { apiError, apiOk, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+
+const replySchema = z.object({
+  content: z.string().min(1, "content is required."),
+});
 
 export function OPTIONS() {
   return corsOptions();
@@ -22,14 +27,19 @@ export async function POST(
 
   const { id: conversationId } = await params;
 
-  let body: { content?: string };
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return apiError("Invalid JSON body.", 400);
   }
 
-  const content = body.content?.trim() ?? "";
+  const parsed = replySchema.safeParse(raw);
+  if (!parsed.success) {
+    return apiError("Invalid request body.", 400);
+  }
+
+  const content = parsed.data.content.trim();
   if (!content) {
     return apiError("content is required.", 400);
   }

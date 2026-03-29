@@ -166,7 +166,7 @@ export default async function DashboardPage() {
           <PlatformSurface className="p-5 sm:p-6 lg:p-7">
             <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-mono text-[0.62rem] font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
+                <p className="eyebrow text-[var(--muted)]">
                   Evolucao mensal
                 </p>
                 <h3 className="mt-1.5 text-base font-semibold tracking-[-0.02em] text-[var(--foreground)]">
@@ -187,7 +187,7 @@ export default async function DashboardPage() {
           <PlatformSurface className="p-5 sm:p-6">
             <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
+                <p className="eyebrow text-gray-400 dark:text-gray-500">
                   Prioridades
                 </p>
                 <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-gray-900 dark:text-white">
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
         <div className="space-y-5 xl:sticky xl:top-20 xl:self-start">
           {/* Portfolio health */}
           <PlatformSurface className="p-5">
-            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
+            <p className="eyebrow text-gray-400 dark:text-gray-500">
               Saude da carteira
             </p>
             <div className="mt-4 space-y-2.5">
@@ -241,7 +241,7 @@ export default async function DashboardPage() {
 
           {/* Channel coverage */}
           <PlatformSurface className="p-5">
-            <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
+            <p className="eyebrow text-gray-400 dark:text-gray-500">
               Canais disponiveis
             </p>
             <div className="mt-4 space-y-3.5">
@@ -273,7 +273,7 @@ function LegendPill({
   children: React.ReactNode;
 }) {
   return (
-    <span className="muted-pill inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-mono text-[0.62rem] font-medium uppercase tracking-[0.06em]">
+    <span className="muted-pill inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-mono text-[0.65rem] font-medium uppercase tracking-[0.06em]">
       <span className={`h-2 w-2 rounded-full ${color}`} />
       {children}
     </span>
@@ -303,7 +303,7 @@ function ChannelBar({
       </div>
       <div className="mt-1.5 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800">
         <div
-          className={`h-1.5 rounded-full transition-all ${color}`}
+          className={`h-1.5 rounded-full transition-all duration-700 ease-out ${color}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -321,7 +321,7 @@ function MetricLine({
   highlight?: boolean;
 }) {
   return (
-    <div className="glass-inset rounded-xl px-3.5 py-2.5">
+    <div className="glass-inset glass-hover rounded-xl px-3.5 py-2.5">
       <div className="flex items-center justify-between gap-4">
       <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
       <span

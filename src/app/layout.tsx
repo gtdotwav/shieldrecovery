@@ -23,12 +23,25 @@ export const viewport: Viewport = {
   userScalable: true,
 };
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pagrecovery.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: {
     default: `${platformBrand.name} | ${platformBrand.shortDescription}`,
     template: `%s | ${platformBrand.name}`,
   },
   description: platformBrand.longDescription,
+  keywords: [
+    "recuperação de pagamentos",
+    "pagamentos falhos",
+    "cobrança automática",
+    "recuperação de receita",
+    "SaaS",
+    platformBrand.name,
+  ],
+  authors: [{ name: platformBrand.name }],
+  creator: platformBrand.name,
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
@@ -36,19 +49,39 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
+    url: baseUrl,
     siteName: platformBrand.name,
     title: `${platformBrand.name} | ${platformBrand.shortDescription}`,
     description: platformBrand.longDescription,
     locale: "pt_BR",
+    images: [
+      {
+        url: `${baseUrl}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: `${platformBrand.name} — ${platformBrand.shortDescription}`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${platformBrand.name} | ${platformBrand.shortDescription}`,
     description: platformBrand.longDescription,
+    images: [`${baseUrl}/og-image.png`],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: baseUrl,
   },
 };
 
@@ -60,6 +93,31 @@ try {
   }
 } catch(e) {}
 `;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: platformBrand.name,
+  description: platformBrand.longDescription,
+  url: baseUrl,
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "BRL",
+    description: "Teste grátis",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: platformBrand.name,
+    url: baseUrl,
+    logo: {
+      "@type": "ImageObject",
+      url: `${baseUrl}${platformBrand.logo}`,
+    },
+  },
+};
 
 export default function RootLayout({
   children,
@@ -79,15 +137,19 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body
         className={`${spaceGrotesk.variable} ${plexMono.variable} bg-background text-foreground antialiased`}
       >
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:rounded-lg focus:bg-[var(--accent)] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg dark:focus:bg-gray-900 dark:focus:text-white"
         >
-          Pular para conteúdo
+          Pular para o conteudo
         </a>
         <ToastProvider>
           {children}

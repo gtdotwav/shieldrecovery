@@ -2,6 +2,7 @@
 
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * A submit button that shows a loading spinner while the form action is pending.
@@ -22,7 +23,10 @@ export function ActionButton({
     <button
       type="submit"
       disabled={disabled || pending}
-      className={className}
+      className={cn(
+        "transition-all duration-150 active:scale-95 disabled:opacity-55 disabled:cursor-not-allowed",
+        className,
+      )}
     >
       {pending ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />

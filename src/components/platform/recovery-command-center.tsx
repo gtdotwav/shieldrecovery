@@ -4,7 +4,7 @@ import {
   ArrowUpRight,
   BarChart3,
   Link2,
-  Sparkles,
+  Brain,
   UsersRound,
   Workflow,
 } from "lucide-react";
@@ -198,7 +198,7 @@ export function RecoveryCommandCenter({
             showStars={false}
           >
             <div className="mb-4 flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.22em] text-[var(--accent)]">
-              <Sparkles className="h-4 w-4" />
+              <Brain className="h-4 w-4" />
               Leitura estratégica
             </div>
             <TextRevealCardTitle className="max-w-[14ch] text-[1.65rem] font-semibold tracking-[-0.06em] text-gray-900 dark:text-white">
@@ -212,7 +212,7 @@ export function RecoveryCommandCenter({
 
           <PlatformInset className="p-5">
             <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.28em] text-[var(--accent)]">
-              <Sparkles className="h-4 w-4" />
+              <Brain className="h-4 w-4" />
               O que a IA faz no dia a dia
             </div>
             <div className="mt-5 space-y-3">

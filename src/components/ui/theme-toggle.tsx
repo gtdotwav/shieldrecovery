@@ -25,6 +25,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         "w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
       }
       title={dark ? "Modo claro" : "Modo escuro"}
+      aria-label={dark ? "Ativar modo claro" : "Ativar modo escuro"}
     >
       {dark ? (
         <Sun className="w-5 h-5" />

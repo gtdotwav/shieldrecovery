@@ -1,7 +1,21 @@
+import { z } from "zod";
 import { requireApiAuth } from "@/server/auth/request";
 import { apiError, apiOk, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
-import type { SellerAutonomyMode } from "@/server/recovery/types";
+import { SELLER_AUTONOMY_MODES } from "@/server/recovery/types";
+
+const controlsSchema = z.object({
+  sellerName: z.string().optional(),
+  sellerEmail: z.string().email().optional(),
+  recoveryTargetPercent: z.number().min(0).max(100).optional(),
+  reportedRecoveryRatePercent: z.number().min(0).max(100).optional(),
+  maxAssignedLeads: z.number().int().min(0).optional(),
+  autonomyMode: z.enum(SELLER_AUTONOMY_MODES).optional(),
+  notes: z.string().optional(),
+  active: z.boolean().optional(),
+  inboxEnabled: z.boolean().optional(),
+  automationsEnabled: z.boolean().optional(),
+});
 
 export function OPTIONS() {
   return corsOptions();
@@ -21,23 +35,19 @@ export async function PUT(
 
   const { key: sellerKey } = await params;
 
-  let body: {
-    sellerName?: string;
-    sellerEmail?: string;
-    recoveryTargetPercent?: number;
-    reportedRecoveryRatePercent?: number;
-    maxAssignedLeads?: number;
-    autonomyMode?: SellerAutonomyMode;
-    notes?: string;
-    active?: boolean;
-    inboxEnabled?: boolean;
-    automationsEnabled?: boolean;
-  };
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return apiError("Invalid JSON body.", 400);
   }
+
+  const parsed = controlsSchema.safeParse(raw);
+  if (!parsed.success) {
+    return apiError("Invalid request body.", 400);
+  }
+
+  const body = parsed.data;
 
   const service = getPaymentRecoveryService();
 

@@ -32,10 +32,10 @@ export function CopyButton({
       onClick={handleCopy}
       className={
         className ??
-        "glass-button-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300"
+        "glass-button-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 transition-all duration-150 active:scale-95 dark:text-gray-300"
       }
     >
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
       {copied ? copiedLabel : label}
     </button>
   );

@@ -264,7 +264,7 @@ export async function PlatformAppPage({
     <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-300">
       {/* ─── Desktop sidebar (icon-only, w-16) ─── */}
       <aside className="hidden md:flex w-16 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex-col items-center py-4 justify-between shrink-0 h-screen sticky top-0 transition-colors duration-300">
-        <div className="flex flex-col items-center gap-1">
+        <nav aria-label="Navegacao principal" className="flex flex-col items-center gap-1">
           <ShieldMark />
 
           {appRoutes.map((route) => {
@@ -299,18 +299,20 @@ export async function PlatformAppPage({
                 key={route.href}
                 href={route.href}
                 className={linkClass}
+                {...(isActive ? { "aria-current": "page" as const } : {})}
               >
                 <route.icon className="w-5 h-5" />
                 {tooltip}
               </Link>
             );
           })}
-        </div>
+        </nav>
 
         <div className="flex flex-col items-center gap-1">
           <form action={logoutAction}>
             <button
               type="submit"
+              aria-label="Sair"
               className="relative group/tip w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
             >
               <LogOut className="w-5 h-5" />
@@ -325,7 +327,7 @@ export async function PlatformAppPage({
       </aside>
 
       {/* ─── Mobile bottom nav ─── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-1 py-2 safe-bottom transition-colors duration-300">
+      <nav aria-label="Navegacao mobile" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-1 py-2 safe-bottom transition-colors duration-300">
         {appRoutes.slice(0, 4).map((route) => {
           const isActive = !route.external && currentPath === route.href;
           const cls = cn(
@@ -341,7 +343,7 @@ export async function PlatformAppPage({
               <span className="text-[0.6rem] leading-tight truncate max-w-[4rem]">{route.label}</span>
             </a>
           ) : (
-            <Link key={route.href} href={route.href} className={cls}>
+            <Link key={route.href} href={route.href} className={cls} {...(isActive ? { "aria-current": "page" as const } : {})}>
               <route.icon className="w-5 h-5 shrink-0" />
               <span className="text-[0.6rem] leading-tight truncate max-w-[4rem]">{route.label}</span>
             </Link>

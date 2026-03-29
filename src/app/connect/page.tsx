@@ -12,7 +12,7 @@ import {
   QrCode,
   RefreshCw,
   Save,
-  Sparkles,
+  Brain,
   Unplug,
   UsersRound,
 } from "lucide-react";
@@ -164,7 +164,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
       detail: runtimeSettings.aiConfigured
         ? "Chave salva"
         : "OpenAI ainda não configurado",
-      icon: Sparkles,
+      icon: Brain,
     },
     {
       title: "Worker",

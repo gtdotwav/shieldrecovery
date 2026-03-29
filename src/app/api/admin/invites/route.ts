@@ -1,6 +1,15 @@
+import { z } from "zod";
 import { requireApiAuth } from "@/server/auth/request";
 import { apiError, apiOk, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+
+const inviteSchema = z.object({
+  email: z.string().email("email is required."),
+  suggestedDisplayName: z.string().optional(),
+  agentName: z.string().optional(),
+  note: z.string().optional(),
+  expiresInDays: z.number().int().min(1).optional(),
+});
 
 export function OPTIONS() {
   return corsOptions();
@@ -15,34 +24,30 @@ export async function POST(request: Request) {
   const auth = await requireApiAuth(request, ["admin"]);
   if (isErrorResponse(auth)) return auth;
 
-  let body: {
-    email?: string;
-    suggestedDisplayName?: string;
-    agentName?: string;
-    note?: string;
-    expiresInDays?: number;
-  };
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return apiError("Invalid JSON body.", 400);
   }
 
-  const email = body.email?.trim().toLowerCase() ?? "";
-  if (!email) {
-    return apiError("email is required.", 400);
+  const parsed = inviteSchema.safeParse(raw);
+  if (!parsed.success) {
+    return apiError("Invalid request body.", 400);
   }
+
+  const email = parsed.data.email.trim().toLowerCase();
 
   const service = getPaymentRecoveryService();
 
   try {
     const invite = await service.createSellerInvite({
       email,
-      suggestedDisplayName: body.suggestedDisplayName?.trim(),
-      agentName: body.agentName?.trim(),
-      note: body.note?.trim(),
+      suggestedDisplayName: parsed.data.suggestedDisplayName?.trim(),
+      agentName: parsed.data.agentName?.trim(),
+      note: parsed.data.note?.trim(),
       createdByEmail: auth.email,
-      expiresInDays: body.expiresInDays ?? 7,
+      expiresInDays: parsed.data.expiresInDays ?? 7,
     });
 
     return apiOk({ invite }, 201);

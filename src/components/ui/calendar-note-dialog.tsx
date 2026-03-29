@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Plus, NotebookPen } from "lucide-react";
 import {
   createCalendarNoteAction,
@@ -52,6 +52,26 @@ export function CalendarNoteDialog({
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
+  // Prevent body scroll when dialog is open
+  useEffect(() => {
+    if (open) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+    return () => document.body.classList.remove("overflow-hidden");
+  }, [open]);
+
   const groupedByLane = lanes
     .map((lane) => ({
       ...lane,
@@ -90,6 +110,8 @@ export function CalendarNoteDialog({
 
           {/* Card */}
           <div
+            role="dialog"
+            aria-modal="true"
             className={cn(
               "relative z-10 w-full max-w-lg rounded-2xl shadow-2xl",
               "border border-gray-200 dark:border-gray-800",
@@ -102,7 +124,7 @@ export function CalendarNoteDialog({
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
               <div>
-                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-amber-500">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-amber-500">
                   Notas
                 </p>
                 <h3 className="mt-0.5 text-base font-semibold text-gray-900 dark:text-white">
@@ -112,6 +134,7 @@ export function CalendarNoteDialog({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
+                aria-label="Fechar"
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
               >
                 <X className="h-4 w-4" />
@@ -178,7 +201,7 @@ export function CalendarNoteDialog({
                   <div key={group.key}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className={cn("h-1.5 w-1.5 rounded-full", group.dot)} />
-                      <h4 className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
+                      <h4 className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
                         {group.title}
                       </h4>
                       <span className="ml-auto rounded px-1.5 py-0.5 text-[0.58rem] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800">
@@ -214,7 +237,7 @@ export function CalendarNoteDialog({
                                   <input type="hidden" name="month" value={month} />
                                   <button
                                     type="submit"
-                                    className="shrink-0 rounded-md px-2 py-1 text-[0.62rem] font-medium text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                                    className="shrink-0 rounded-md px-2 py-1 text-[0.65rem] font-medium text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                                   >
                                     remover
                                   </button>

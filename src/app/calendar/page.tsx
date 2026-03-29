@@ -171,7 +171,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
             <Link
               href={`/calendar?month=${toMonthKey(new Date())}&date=${today}`}
-              className="muted-pill ml-1 hidden rounded-md px-2.5 py-1 text-[0.68rem] font-medium transition-all hover:border-[var(--accent-soft)] hover:text-[var(--accent)] sm:inline-flex"
+              className="muted-pill ml-1 hidden rounded-md px-2.5 py-1 text-[0.65rem] font-medium transition-all hover:border-[var(--accent-soft)] hover:text-[var(--accent)] sm:inline-flex"
             >
               Hoje
             </Link>
@@ -214,7 +214,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                 <div
                   key={label}
                   className={cn(
-                    "pb-2.5 text-center text-[0.62rem] font-semibold uppercase tracking-[0.2em]",
+                    "pb-2.5 text-center text-[0.65rem] font-semibold uppercase tracking-[0.2em]",
                     i >= 5
                       ? "text-gray-300 dark:text-gray-600"
                       : "text-gray-400 dark:text-gray-500",
@@ -249,7 +249,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
             {/* Legend */}
             <div className="mt-2.5 flex items-center gap-5 px-1">
-              <div className="flex items-center gap-3 text-[0.62rem] text-gray-400 dark:text-gray-500">
+              <div className="flex items-center gap-3 text-[0.65rem] text-gray-400 dark:text-gray-500">
                 <span className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> Recuperação
                 </span>
@@ -287,7 +287,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div>
-              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
                 Dia selecionado
               </p>
               <h3 className="mt-1 text-xl font-semibold tracking-tight text-gray-900 dark:text-white">
@@ -295,7 +295,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
               </h3>
             </div>
             {selectedDate === today ? (
-              <span className="success-pill rounded-md px-2 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em]">
+              <span className="success-pill rounded-md px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em]">
                 Hoje
               </span>
             ) : null}
@@ -348,7 +348,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             <h4 className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
               Timeline
             </h4>
-            <span className="muted-pill rounded-md px-2 py-0.5 text-[0.62rem] font-medium">
+            <span className="muted-pill rounded-md px-2 py-0.5 text-[0.65rem] font-medium">
               {selectedActivities.length}
             </span>
           </div>
@@ -512,11 +512,11 @@ function DayCell({
             </p>
           </>
         ) : hasMovement ? (
-          <p className="text-[0.62rem] text-gray-400 dark:text-gray-500">
+          <p className="text-[0.65rem] text-gray-400 dark:text-gray-500">
             {getCompactDescription(cell)}
           </p>
         ) : (
-          <p className="text-[0.62rem] text-gray-300 dark:text-gray-700">—</p>
+          <p className="text-[0.65rem] text-gray-300 dark:text-gray-700">—</p>
         )}
       </div>
 
@@ -550,7 +550,7 @@ function DayMetric({
             accent ? "text-[var(--accent)]" : "text-gray-400 dark:text-gray-500",
           )}
         />
-        <span className="text-[0.62rem] font-medium uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
+        <span className="text-[0.65rem] font-medium uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
           {label}
         </span>
       </div>
@@ -562,7 +562,7 @@ function DayMetric({
       >
         {value}
       </p>
-      <p className="mt-0.5 text-[0.68rem] text-gray-400 dark:text-gray-500">{detail}</p>
+      <p className="mt-0.5 text-[0.65rem] text-gray-400 dark:text-gray-500">{detail}</p>
     </div>
   );
 }
@@ -597,7 +597,7 @@ function TimelineRow({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="font-mono text-[0.62rem] tabular-nums text-gray-400 dark:text-gray-500">
+            <span className="font-mono text-[0.65rem] tabular-nums text-gray-400 dark:text-gray-500">
               {formatClock(activity.at)}
             </span>
             {activity.href ? (

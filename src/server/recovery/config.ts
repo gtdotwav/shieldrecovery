@@ -52,7 +52,7 @@ export function createDefaultConnectionSettings(): ConnectionSettingsRecord {
     id: "default",
     appBaseUrl: resolvedDefaultBaseUrl,
     webhookSecret:
-      process.env.SHIELD_GATEWAY_WEBHOOK_SECRET ?? "shield_preview_secret",
+      process.env.SHIELD_GATEWAY_WEBHOOK_SECRET ?? "",
     webhookToleranceSeconds: Number(
       process.env.WEBHOOK_TOLERANCE_SECONDS ?? 300,
     ),
@@ -115,7 +115,7 @@ export const appEnv = {
   pagouAiCardConfigured: Boolean(pagouAiSecretKey && pagouAiPublicKey),
   experimentalPagesEnabled,
   webhookSecret:
-    process.env.SHIELD_GATEWAY_WEBHOOK_SECRET ?? "shield_preview_secret",
+    process.env.SHIELD_GATEWAY_WEBHOOK_SECRET ?? "",
   webhookToleranceSeconds: Number(process.env.WEBHOOK_TOLERANCE_SECONDS ?? 300),
   appBaseUrl: resolvedDefaultBaseUrl,
   bootstrapStorePath: process.env.VERCEL

@@ -1,9 +1,15 @@
+import { z } from "zod";
 import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireApiAuth } from "@/server/auth/request";
 import { apiError, apiOk, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+import { CONVERSATION_STATUSES } from "@/server/recovery/types";
 import type { ConversationStatus } from "@/server/recovery/types";
+
+const statusSchema = z.object({
+  status: z.enum(CONVERSATION_STATUSES),
+});
 
 export function OPTIONS() {
   return corsOptions();
@@ -23,17 +29,19 @@ export async function PATCH(
 
   const { id: conversationId } = await params;
 
-  let body: { status?: string };
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
     return apiError("Invalid JSON body.", 400);
   }
 
-  const status = body.status as ConversationStatus;
-  if (!status) {
-    return apiError("status is required.", 400);
+  const parsed = statusSchema.safeParse(raw);
+  if (!parsed.success) {
+    return apiError("Invalid request body.", 400);
   }
+
+  const status: ConversationStatus = parsed.data.status;
 
   const service = getPaymentRecoveryService();
   const conversation = await service.getConversationById(conversationId);

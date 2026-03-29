@@ -483,7 +483,7 @@ export function LiveDemo() {
                             </span>
                           </div>
                           <div className="mt-0.5 flex items-center gap-1.5">
-                            <span className="text-[0.62rem] font-semibold text-gray-400">
+                            <span className="text-[0.65rem] font-semibold text-gray-400">
                               {lead.value}
                             </span>
                             <span className="text-[0.5rem] text-gray-600">•</span>

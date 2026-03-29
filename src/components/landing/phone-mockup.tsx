@@ -150,7 +150,7 @@ function ChatBubble({ msg, index }: { msg: Msg; index: number }) {
         }}
       >
         <CheckCheck className="h-3 w-3" style={{ color: b.accent }} />
-        <span className="text-[0.62rem] font-medium" style={{ color: b.accent }}>
+        <span className="text-[0.65rem] font-medium" style={{ color: b.accent }}>
           {msg.text}
         </span>
       </div>

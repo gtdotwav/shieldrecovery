@@ -2730,7 +2730,7 @@ function queueJobPriority(jobType: string) {
 
 /* ── Call mappers ── */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
 function mapCall(data: any): CallRecord {
   return {
     id: data.id,
@@ -2770,7 +2770,7 @@ function mapCall(data: any): CallRecord {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
 function mapCallcenterSettings(data: any): CallcenterSettingsRecord {
   return {
     id: data.id,
@@ -2788,7 +2788,7 @@ function mapCallcenterSettings(data: any): CallcenterSettingsRecord {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
 function mapCallCampaign(data: any): CallCampaignRecord {
   return {
     id: data.id,
@@ -2807,7 +2807,7 @@ function mapCallCampaign(data: any): CallCampaignRecord {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
 function mapCallEvent(data: any): CallEventRecord {
   return {
     id: data.id,

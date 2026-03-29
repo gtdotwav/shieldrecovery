@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 
 import type { InstallmentOption } from "../types";
 
@@ -95,7 +95,7 @@ export function InstallmentPicker({
                   <div className="flex items-center gap-2">
                     {isFirst ? (
                       <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[0.6rem] font-bold text-green-700">
-                        <Sparkles className="h-2.5 w-2.5" />
+                        <BadgeCheck className="h-2.5 w-2.5" />
                         Melhor preco
                       </span>
                     ) : opt.interestFree && opt.installments > 1 ? (
