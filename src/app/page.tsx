@@ -213,9 +213,9 @@ export default async function Home() {
               <Reveal direction="up" delay={400}>
                 <p className="mt-5 max-w-[36rem] text-[0.92rem] leading-[1.7] text-gray-500 dark:text-gray-400 sm:mt-7 sm:text-[1.05rem] sm:leading-[1.8] lg:mx-0">
                   Quando um pagamento falha, nossa IA contata o cliente em 2 minutos
-                  via WhatsApp com link direto. Quando necessário, nosso Call Center
-                  humano entra em ação. Resultado: taxa de recuperação de 19% a 40%
-                  dependendo do funil.
+                  via WhatsApp com link direto. Se necessário, nosso Call Center de agentes
+                  IA humanizados liga para o cliente. Resultado: taxa de recuperação
+                  de 19% a 40% dependendo do funil.
                 </p>
               </Reveal>
 
@@ -390,7 +390,7 @@ export default async function Home() {
                     <BeforeAfterItem text="Falha detectada → contato em 2 minutos" />
                     <BeforeAfterItem text="IA identifica melhor momento e canal" />
                     <BeforeAfterItem text="WhatsApp automatizado com link de pagamento" />
-                    <BeforeAfterItem text="Call Center humano para casos que a IA não resolve" />
+                    <BeforeAfterItem text="Call Center com agentes IA humanizados que ligam para o cliente" />
                     <BeforeAfterItem text="Dashboard com analytics em tempo real" />
                     <BeforeAfterItem text="19% a 40% da receita perdida é recuperada" />
                   </ul>
@@ -421,7 +421,7 @@ export default async function Home() {
               { n: "01", icon: Zap, title: "Webhook detecta", desc: "Falha de pagamento capturada via webhook do gateway em tempo real." },
               { n: "02", icon: Bot, title: "IA personaliza", desc: "Analisa valor, método, histórico e define tom e momento ideal." },
               { n: "03", icon: MessageSquare, title: "WhatsApp contata", desc: "Mensagem humanizada com link de pagamento direto ao cliente." },
-              { n: "04", icon: Headphones, title: "Call Center atua", desc: "Casos complexos são escalados para operadores humanos treinados." },
+              { n: "04", icon: Headphones, title: "Call Center IA liga", desc: "Agentes IA humanizados ligam para o cliente — voz natural, sem robô." },
               { n: "05", icon: TrendingUp, title: "Receita recuperada", desc: "Cliente paga, status atualiza. Dashboard reflete em tempo real." },
             ].map((s, i) => (
               <Reveal key={s.n} direction="up" delay={i * 100}>
@@ -544,7 +544,7 @@ export default async function Home() {
             <div className="grid gap-3 sm:grid-cols-2">
               {[
                 { icon: Bot, title: "IA conversacional", desc: "Mensagens com contexto: valor, método, histórico e tom personalizado." },
-                { icon: Headphones, title: "Call Center integrado", desc: "Operadores humanos acionados quando a IA identifica casos que precisam de toque pessoal." },
+                { icon: Headphones, title: "Call Center IA", desc: "Agentes IA humanizados ligam para o cliente com voz natural. Sem fila, sem espera." },
                 { icon: MessageSquare, title: "WhatsApp nativo", desc: "Envio, recebimento e respostas automáticas em tempo real." },
                 { icon: BarChart3, title: "Dashboard analítico", desc: "KPIs ao vivo: taxa, receita salva, tempo médio e performance." },
                 { icon: Clock, title: "Follow-up automático", desc: "Sequências inteligentes com delay configurável." },
@@ -791,7 +791,7 @@ export default async function Home() {
                   { label: "Tempo de resposta", manual: "Horas/dias", gateway: "~30 min", ours: "2 min" },
                   { label: "Canal de contato", manual: "E-mail", gateway: "E-mail", ours: "WhatsApp + IA" },
                   { label: "Personalização", manual: "Baixa", gateway: "Genérica", ours: "IA contextual" },
-                  { label: "Call Center", manual: "Terceirizado", gateway: "Não incluso", ours: "Integrado + IA" },
+                  { label: "Call Center", manual: "Terceirizado", gateway: "Não incluso", ours: "Agentes IA" },
                   { label: "Disponibilidade", manual: "Horário comercial", gateway: "24/7", ours: "24/7" },
                   { label: "Escala", manual: "Limitada", gateway: "Limitada", ours: "Infinita" },
                   { label: "Taxa de recuperação", manual: "5-10%", gateway: "10-15%", ours: "19-40%" },
@@ -908,7 +908,7 @@ export default async function Home() {
                 </h2>
                 <p className="mx-auto mt-5 max-w-lg text-[1rem] leading-7 text-gray-400 dark:text-gray-500">
                   Cada minuto sem recuperação ativa é dinheiro na mesa.
-                  IA + Call Center humano. Configure em minutos. Resultados no primeiro dia.
+                  IA + Call Center de agentes IA humanizados. Configure em minutos. Resultados no primeiro dia.
                 </p>
                 <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
                   <MagneticButton>
@@ -941,7 +941,7 @@ export default async function Home() {
                   <p className="text-sm font-semibold text-gray-400">{b.name}</p>
                 </div>
                 <p className="mt-3 max-w-[18rem] text-[0.75rem] leading-[1.7] text-gray-500 dark:text-gray-600">
-                  Recuperação autônoma de pagamentos com IA, WhatsApp e Call Center integrado. Transforme falhas em receita.
+                  Recuperação autônoma de pagamentos com IA, WhatsApp e Call Center de agentes IA. Transforme falhas em receita.
                 </p>
                 <div className="mt-4 flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5" style={{ color: `rgba(${rgb},0.5)` }} />
