@@ -67,13 +67,13 @@ export default async function AIPage() {
     return (
       <PlatformAppPage currentPath="/ai">
         <PlatformSurface className="p-6 sm:p-7">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
             Automações bloqueadas pelo admin
           </p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[#111827]">
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
             Esta área foi pausada para este seller.
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6b7280]">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
             O admin desativou o acesso a automações para esta carteira. O CRM
             continua disponível, mas regras, IA e automações ficam sob controle
             central até nova liberação.
@@ -121,7 +121,7 @@ export default async function AIPage() {
         session.role === "seller" ? (
           <Link
             href="/leads"
-            className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
           >
             Abrir CRM
             <ArrowRight className="h-3.5 w-3.5" />
@@ -171,7 +171,7 @@ export default async function AIPage() {
               <PlatformSurface className="p-4 sm:p-5">
                 <div className="flex items-center justify-between pb-3">
                   <SectionHeader eyebrow="Fluxo recente" title="Atividade recente" compact />
-                  <span className="text-xs text-[#9ca3af]">
+                  <span className="text-xs text-[var(--muted)]">
                     Últimas {visibleActivity.length} ações
                   </span>
                 </div>
@@ -182,8 +182,8 @@ export default async function AIPage() {
                   ))}
                   {visibleActivity.length === 0 && (
                     <PlatformInset className="p-5 text-center">
-                      <Bot className="mx-auto h-5 w-5 text-[#d1d5db]" />
-                      <p className="mt-2 text-sm text-[#9ca3af]">
+                      <Bot className="mx-auto h-5 w-5 text-[var(--muted)]" />
+                      <p className="mt-2 text-sm text-[var(--muted)]">
                         Nenhuma atividade da IA ainda.
                       </p>
                     </PlatformInset>
@@ -210,11 +210,11 @@ export default async function AIPage() {
                 <div className="space-y-2">
                   {visibleClassifications.length === 0 ? (
                     <PlatformInset className="p-5 text-center">
-                      <Brain className="mx-auto h-5 w-5 text-[#d1d5db]" />
-                      <p className="mt-2 text-sm text-[#9ca3af]">
+                      <Brain className="mx-auto h-5 w-5 text-[var(--muted)]" />
+                      <p className="mt-2 text-sm text-[var(--muted)]">
                         Nenhum lead classificado ainda.
                       </p>
-                      <p className="mt-1 text-xs text-[#9ca3af]">
+                      <p className="mt-1 text-xs text-[var(--muted)]">
                         A classificação aparece assim que os casos entram.
                       </p>
                     </PlatformInset>
@@ -234,7 +234,7 @@ export default async function AIPage() {
               <PlatformSurface className="p-4 sm:p-5">
                 <div className="flex items-center justify-between pb-3">
                   <SectionHeader eyebrow="Estratégias ativas" title="Sequências em uso agora" compact />
-                  <span className="text-xs text-[#9ca3af]">
+                  <span className="text-xs text-[var(--muted)]">
                     {data.strategies.filter((s) => s.enabled).length} estratégias ativas
                   </span>
                 </div>
@@ -259,8 +259,8 @@ export default async function AIPage() {
                 <div className="space-y-2.5">
                   {data.strategyPerformance.length === 0 ? (
                     <PlatformInset className="p-5 text-center">
-                      <TrendingUp className="mx-auto h-5 w-5 text-[#d1d5db]" />
-                      <p className="mt-2 text-sm text-[#9ca3af]">
+                      <TrendingUp className="mx-auto h-5 w-5 text-[var(--muted)]" />
+                      <p className="mt-2 text-sm text-[var(--muted)]">
                         Dados de performance aparecem após primeiros ciclos de recuperação.
                       </p>
                     </PlatformInset>
@@ -278,7 +278,7 @@ export default async function AIPage() {
               {/* ─── AI Engine Status ─── */}
               <PlatformSurface className="p-4">
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-sky-500" />
+                  <Shield className="h-4 w-4 text-[var(--accent)]" />
                   <SectionHeader eyebrow="Estado da IA" title="Motor da automação" compact />
                 </div>
 
@@ -292,7 +292,7 @@ export default async function AIPage() {
                 {visibleClassifications[0] ? (
                   <MessagePreview contact={visibleClassifications[0]} />
                 ) : (
-                  <p className="mt-3 text-xs text-[#9ca3af]">
+                  <p className="mt-3 text-xs text-[var(--muted)]">
                     Ainda não há lead para gerar prévia.
                   </p>
                 )}
@@ -301,7 +301,7 @@ export default async function AIPage() {
               {/* ─── Human Override Panel ─── */}
               <PlatformSurface className="p-4">
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-sky-500" />
+                  <User className="h-4 w-4 text-[var(--accent)]" />
                   <SectionHeader eyebrow="Leitura operacional" title="Quando o humano entra" compact />
                 </div>
 
@@ -326,12 +326,12 @@ export default async function AIPage() {
 
                 <Link
                   href="/leads"
-                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-black/10 bg-[#f5f5f7] px-3 py-2 text-xs font-medium text-[#374151] transition-colors hover:bg-[#eeeef0]"
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-xs font-medium text-[var(--foreground-secondary)] transition-colors hover:bg-[#eeeef0]"
                 >
                   Abrir CRM
                   <ArrowRight className="h-3 w-3" />
                 </Link>
-                <div className="mt-4 space-y-2.5 border-t border-black/[0.06] pt-4 text-xs text-[#717182]">
+                <div className="mt-4 space-y-2.5 border-t border-[var(--border)] pt-4 text-xs text-[var(--muted)]">
                   <CRMRule trigger="Webhook recebido" action='Criar lead em "Entrada"' />
                   <CRMRule trigger="Cliente respondeu" action='Mover para "Em contato"' />
                   <CRMRule trigger="Aguardando pagamento" action='Mover para "Esperando retorno"' />
@@ -398,26 +398,26 @@ function SellerAutomationWorkspace({
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_19rem]">
         <div className="space-y-5">
           <PlatformSurface className="p-5 sm:p-6">
-            <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)] lg:items-end">
+            <div className="grid gap-5 border-b border-[var(--border)] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)] lg:items-end">
               <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
                   Automações de seller
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[1.95rem]">
                   O que a IA já está fazendo e onde você entra.
                 </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
                   Esta visão existe para acompanhar os follow-ups ativos, entender
                   o que a IA está conduzindo e identificar onde vale revisão humana.
                 </p>
-                <p className="mt-3 text-sm leading-6 text-[#6b7280]">
+                <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
                   {sellerQueue.length} casos priorizados,{" "}
                   {activity.filter((entry) => entry.actionType === "response_detected").length} respostas recentes e{" "}
                   {classifications.filter((item) => item.payment_status === "succeeded").length} recuperados.
                 </p>
               </div>
 
-              <div className="rounded-[1.1rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+              <div className="rounded-[1.1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
                 Use esta área para acompanhar prioridade, respostas e ritmo da IA.
                 Quando precisar intervir, abra o CRM.
               </div>
@@ -425,11 +425,11 @@ function SellerAutomationWorkspace({
           </PlatformSurface>
 
           <PlatformSurface className="p-5 sm:p-6">
-            <div className="flex items-center justify-between border-b border-black/[0.06] pb-4">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
               <SectionHeader eyebrow="Fila sugerida" title="Casos priorizados pela automação." />
               <Link
                 href="/leads"
-                className="text-sm font-medium text-sky-600 transition-colors hover:text-sky-700"
+                className="text-sm font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]"
               >
                 Ver CRM
               </Link>
@@ -462,7 +462,7 @@ function SellerAutomationWorkspace({
           </PlatformSurface>
 
           <PlatformSurface className="p-5 sm:p-6">
-            <div className="flex items-center justify-between border-b border-black/[0.06] pb-4">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
               <SectionHeader eyebrow="Fluxos ativos" title="Sequências em uso agora." />
             </div>
 
@@ -470,26 +470,26 @@ function SellerAutomationWorkspace({
               {activeStrategies.slice(0, 4).map((strategy) => (
                 <div
                   key={strategy.id}
-                  className="rounded-[1.1rem] border border-black/[0.06] bg-[#fbfbfc] p-4"
+                  className="rounded-[1.1rem] border border-[var(--border)] bg-[var(--surface-strong)] p-4"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-sky-500" />
-                      <p className="text-sm font-semibold text-[#111827]">
+                      <Zap className="h-4 w-4 text-[var(--accent)]" />
+                      <p className="text-sm font-semibold text-[var(--foreground)]">
                         {strategy.name}
                       </p>
                     </div>
-                    <span className="rounded-full border border-black/[0.08] bg-white px-2 py-0.5 text-[0.62rem] font-semibold text-[#6b7280]">
+                    <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.62rem] font-semibold text-[var(--muted)]">
                       ativo
                     </span>
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-[#6b7280]">
+                  <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
                     {strategy.triggerCondition}
                   </p>
                   <div className="mt-4 space-y-2">
                     {strategy.steps.slice(0, 3).map((step) => (
-                      <div key={step.order} className="flex items-center gap-2 text-xs text-[#4b5563]">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f1f3f6] text-[0.62rem] font-semibold text-[#6b7280]">
+                      <div key={step.order} className="flex items-center gap-2 text-xs text-[var(--foreground-secondary)]">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--surface-strong)] text-[0.62rem] font-semibold text-[var(--muted)]">
                           {step.order}
                         </span>
                         <span className="truncate">{step.action}</span>
@@ -505,7 +505,7 @@ function SellerAutomationWorkspace({
         <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <PlatformSurface className="p-4">
             <SectionHeader eyebrow="O que a IA faz sozinha" title="Escopo da automação." compact />
-            <div className="mt-4 space-y-2.5 text-sm leading-6 text-[#4b5563]">
+            <div className="mt-4 space-y-2.5 text-sm leading-6 text-[var(--foreground-secondary)]">
               <PlatformInset className="px-3 py-3">
                 Classifica o caso por chance de recuperação e prioridade.
               </PlatformInset>
@@ -538,21 +538,21 @@ function SellerAutomationWorkspace({
 
 function ActivityRow({ entry }: { entry: AIActivityEntry }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#f7f8fa]">
+    <div className="flex items-start gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[var(--surface-strong)]">
       <ActivityIcon type={entry.actionType} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-xs text-[#1a1a2e] truncate">{entry.outcome}</p>
+          <p className="text-xs text-[var(--foreground)] truncate">{entry.outcome}</p>
           {entry.channel && (
-            <span className="text-[0.6rem] uppercase tracking-wider text-[#9ca3af]">
+            <span className="text-[0.6rem] uppercase tracking-wider text-[var(--muted)]">
               {entry.channel}
             </span>
           )}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[0.6rem] text-[#9ca3af]">
+        <div className="mt-0.5 flex items-center gap-2 text-[0.6rem] text-[var(--muted)]">
           <Link
             href={`/leads/${entry.leadId}`}
-            className="text-sky-500 hover:underline"
+            className="text-[var(--accent)] hover:underline"
           >
             {entry.customerName}
           </Link>
@@ -572,15 +572,15 @@ function ActivityIcon({ type }: { type: AIActivityType }) {
     recovery_closed: { icon: CheckCircle2, color: "text-[var(--accent)]" },
     strategy_selected: { icon: Zap, color: "text-purple-500" },
     lead_classified: { icon: Brain, color: "text-cyan-500" },
-    follow_up_scheduled: { icon: Clock, color: "text-sky-500" },
+    follow_up_scheduled: { icon: Clock, color: "text-[var(--accent)]" },
     response_detected: { icon: MessageCircle, color: "text-[var(--accent)]" },
   };
 
-  const config = iconMap[type] ?? { icon: Bot, color: "text-[#9ca3af]" };
+  const config = iconMap[type] ?? { icon: Bot, color: "text-[var(--muted)]" };
   const Icon = config.icon;
 
   return (
-    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#f5f5f7]">
+    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--background)]">
       <Icon className={`h-3 w-3 ${config.color}`} />
     </div>
   );
@@ -594,10 +594,10 @@ function ProbabilityPill({
   count: number;
 }) {
   const styles: Record<RecoveryProbability, string> = {
-    high: "border-black/[0.08] bg-white text-[#6b7280]",
-    medium: "border-black/[0.08] bg-white text-[#6b7280]",
-    low: "border-black/[0.08] bg-white text-[#6b7280]",
-    manual: "border-black/[0.08] bg-white text-[#6b7280]",
+    high: "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]",
+    medium: "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]",
+    low: "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]",
+    manual: "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]",
   };
 
   const labels: Record<RecoveryProbability, string> = {
@@ -627,7 +627,7 @@ function ClassifiedLeadRow({
   const probColors: Record<RecoveryProbability, string> = {
     high: "bg-[var(--accent)]",
     medium: "bg-amber-500",
-    low: "bg-sky-500",
+    low: "bg-[var(--accent)]",
     manual: "bg-red-500",
   };
 
@@ -640,26 +640,26 @@ function ClassifiedLeadRow({
           />
           <Link
             href={`/leads/${contact.lead_id}`}
-            className="text-sm font-medium text-[#1a1a2e] truncate hover:text-sky-500 transition-colors"
+            className="text-sm font-medium text-[var(--foreground)] truncate hover:text-[var(--accent)] transition-colors"
           >
             {contact.customer_name}
           </Link>
           <StageBadge stage={contact.lead_status} />
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
-          <span className="text-xs font-semibold text-[#1a1a2e]">
+          <span className="text-xs font-semibold text-[var(--foreground)]">
             {classification.score}
           </span>
-          <span className="text-sm font-semibold text-[#1a1a2e]">
+          <span className="text-sm font-semibold text-[var(--foreground)]">
             {formatCurrency(contact.payment_value)}
           </span>
         </div>
       </div>
 
-      <p className="mt-1.5 text-[0.65rem] text-[#9ca3af] line-clamp-1">
+      <p className="mt-1.5 text-[0.65rem] text-[var(--muted)] line-clamp-1">
         {classification.reasoning}
       </p>
-      <p className="mt-0.5 text-[0.6rem] text-[#9ca3af]">
+      <p className="mt-0.5 text-[0.6rem] text-[var(--muted)]">
         {classification.suggestedStrategy}
       </p>
     </PlatformInset>
@@ -674,26 +674,26 @@ function SellerLeadRow({
   return (
     <Link
       href={`/leads/${item.lead_id}`}
-      className="block rounded-[1.1rem] border border-black/[0.06] bg-[#fbfbfc] p-4 transition-colors hover:bg-white"
+      className="block rounded-[1.1rem] border border-[var(--border)] bg-[var(--surface-strong)] p-4 transition-colors hover:bg-[var(--surface)]"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate text-sm font-semibold text-[#111827]">
+            <p className="truncate text-sm font-semibold text-[var(--foreground)]">
               {item.customer_name}
             </p>
             <StageBadge stage={item.lead_status} />
           </div>
-          <p className="mt-1 text-xs text-[#6b7280]">
+          <p className="mt-1 text-xs text-[var(--muted)]">
             {item.classification.reasoning}
           </p>
         </div>
 
         <div className="text-left sm:text-right">
-          <p className="text-sm font-semibold text-[#111827]">
+          <p className="text-sm font-semibold text-[var(--foreground)]">
             {formatCurrency(item.payment_value)}
           </p>
-          <p className="mt-1 text-[0.68rem] uppercase tracking-[0.14em] text-[#9ca3af]">
+          <p className="mt-1 text-[0.68rem] uppercase tracking-[0.14em] text-[var(--muted)]">
             score {item.classification.score}
           </p>
         </div>
@@ -701,18 +701,18 @@ function SellerLeadRow({
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <PlatformInset className="px-3 py-2.5">
-          <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#9ca3af]">
+          <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
             Estratégia
           </p>
-          <p className="mt-1 text-sm text-[#374151]">
+          <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
             {item.classification.suggestedStrategy}
           </p>
         </PlatformInset>
         <PlatformInset className="px-3 py-2.5">
-          <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[#9ca3af]">
+          <p className="text-[0.68rem] font-medium uppercase tracking-[0.14em] text-[var(--muted)]">
             Último sinal
           </p>
-          <p className="mt-1 text-sm text-[#374151]">
+          <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
             {formatRelativeTime(item.updated_at)}
           </p>
         </PlatformInset>
@@ -723,17 +723,17 @@ function SellerLeadRow({
 
 function StrategyCard({ strategy }: { strategy: RecoveryStrategy }) {
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] p-3.5">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-3.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Zap className="h-3.5 w-3.5 text-sky-500" />
-          <h4 className="text-xs font-medium text-[#1a1a2e]">{strategy.name}</h4>
+          <Zap className="h-3.5 w-3.5 text-[var(--accent)]" />
+          <h4 className="text-xs font-medium text-[var(--foreground)]">{strategy.name}</h4>
         </div>
         <span
           className={`rounded-full px-2 py-0.5 text-[0.6rem] font-medium ${
             strategy.enabled
-              ? "border border-black/[0.08] bg-white text-[#6b7280]"
-              : "border border-black/[0.08] bg-white text-[#9ca3af]"
+              ? "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+              : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
           }`}
         >
           {strategy.enabled ? "Ativo" : "Inativo"}
@@ -770,21 +770,21 @@ function StrategyStepRow({ step }: { step: StrategyStep }) {
 
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#f0f0f4] text-[0.55rem] font-semibold text-[#717182]">
+      <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--surface-strong)] text-[0.55rem] font-semibold text-[var(--muted)]">
         {step.order}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[0.65rem] text-[#374151] line-clamp-1">
+        <p className="text-[0.65rem] text-[var(--foreground-secondary)] line-clamp-1">
           {step.action}
         </p>
-        <div className="flex items-center gap-1.5 text-[0.55rem] text-[#9ca3af]">
+        <div className="flex items-center gap-1.5 text-[0.55rem] text-[var(--muted)]">
           <span>{channelLabel}</span>
           <span>·</span>
           <span>{delay}</span>
           {step.condition && (
             <>
               <span>·</span>
-              <span className="text-[#9ca3af]">se: {step.condition}</span>
+              <span className="text-[var(--muted)]">se: {step.condition}</span>
             </>
           )}
         </div>
@@ -797,31 +797,31 @@ function PerformanceRow({ perf }: { perf: StrategyPerformance }) {
   return (
     <PlatformInset className="p-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-medium text-[#1a1a2e]">{perf.strategyName}</h4>
-        <span className="text-xs font-semibold text-sky-500">
+        <h4 className="text-xs font-medium text-[var(--foreground)]">{perf.strategyName}</h4>
+        <span className="text-xs font-semibold text-[var(--accent)]">
           {perf.successRate.toFixed(0)}% sucesso
         </span>
       </div>
 
       <div className="mt-2 grid grid-cols-3 gap-2">
         <div>
-          <p className="text-[0.55rem] uppercase text-[#9ca3af]">Usos</p>
-          <p className="text-xs font-medium text-[#374151]">{perf.timesUsed}</p>
+          <p className="text-[0.55rem] uppercase text-[var(--muted)]">Usos</p>
+          <p className="text-xs font-medium text-[var(--foreground-secondary)]">{perf.timesUsed}</p>
         </div>
         <div>
-          <p className="text-[0.55rem] uppercase text-[#9ca3af]">Tempo médio</p>
-          <p className="text-xs font-medium text-[#374151]">{perf.averageRecoveryTimeHours}h</p>
+          <p className="text-[0.55rem] uppercase text-[var(--muted)]">Tempo médio</p>
+          <p className="text-xs font-medium text-[var(--foreground-secondary)]">{perf.averageRecoveryTimeHours}h</p>
         </div>
         <div>
-          <p className="text-[0.55rem] uppercase text-[#9ca3af]">Resposta</p>
-          <p className="text-xs font-medium text-[#374151]">{perf.responseRate}%</p>
+          <p className="text-[0.55rem] uppercase text-[var(--muted)]">Resposta</p>
+          <p className="text-xs font-medium text-[var(--foreground-secondary)]">{perf.responseRate}%</p>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="mt-2 h-1 w-full rounded-full bg-[#f0f0f4]">
+      <div className="mt-2 h-1 w-full rounded-full bg-[var(--surface-strong)]">
         <div
-          className="h-1 rounded-full bg-sky-500"
+          className="h-1 rounded-full bg-[var(--accent)]"
           style={{ width: `${Math.min(perf.successRate, 100)}%` }}
         />
       </div>
@@ -842,17 +842,17 @@ function MessagePreview({
 
   return (
     <div className="mt-3">
-      <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] p-3">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-3">
         <div className="flex items-center gap-1.5 mb-2">
-          <MessageCircle className="h-3 w-3 text-[#9ca3af]" />
-          <span className="text-[0.6rem] uppercase tracking-wider text-[#9ca3af]">
+          <MessageCircle className="h-3 w-3 text-[var(--muted)]" />
+          <span className="text-[0.6rem] uppercase tracking-wider text-[var(--muted)]">
             Prévia da mensagem
           </span>
         </div>
-        <p className="text-xs leading-relaxed text-[#374151]">{preview}</p>
+        <p className="text-xs leading-relaxed text-[var(--foreground-secondary)]">{preview}</p>
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-[0.6rem] text-[#9ca3af]">
+      <div className="mt-2 flex items-center justify-between text-[0.6rem] text-[var(--muted)]">
         <span>Para: {contact.customer_name}</span>
         <span>Score: {contact.classification.score}</span>
       </div>
@@ -880,7 +880,7 @@ function StatusLine({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-[#717182]">{label}</span>
+        <span className="text-xs text-[var(--muted)]">{label}</span>
         <div className="flex items-center gap-1.5">
           <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
           <span className={`text-[0.6rem] font-medium ${s.text}`}>
@@ -889,7 +889,7 @@ function StatusLine({
         </div>
       </div>
       {detail && (
-        <p className="mt-0.5 text-[0.55rem] text-[#9ca3af]">{detail}</p>
+        <p className="mt-0.5 text-[0.55rem] text-[var(--muted)]">{detail}</p>
       )}
     </div>
   );
@@ -903,12 +903,12 @@ function OverrideOption({
   description: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-black/[0.06] bg-[#fbfbfc] px-3 py-2">
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2">
       <div>
-        <p className="text-xs font-medium text-[#374151]">{label}</p>
-        <p className="text-[0.6rem] text-[#9ca3af]">{description}</p>
+        <p className="text-xs font-medium text-[var(--foreground-secondary)]">{label}</p>
+        <p className="text-[0.6rem] text-[var(--muted)]">{description}</p>
       </div>
-      <Eye className="h-3.5 w-3.5 shrink-0 text-[#9ca3af]" />
+      <Eye className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
     </div>
   );
 }
@@ -916,10 +916,10 @@ function OverrideOption({
 function CRMRule({ trigger, action }: { trigger: string; action: string }) {
   return (
     <div className="flex items-start gap-2">
-      <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-sky-500" />
+      <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-[var(--accent)]" />
       <div>
-        <p className="text-[#374151]">{trigger}</p>
-        <p className="text-[#9ca3af]">{action}</p>
+        <p className="text-[var(--foreground-secondary)]">{trigger}</p>
+        <p className="text-[var(--muted)]">{action}</p>
       </div>
     </div>
   );
@@ -936,14 +936,14 @@ function SectionHeader({
 }) {
   return (
     <div>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
         {eyebrow}
       </p>
       <h3
         className={
           compact
-            ? "mt-1.5 text-sm font-semibold text-[#111827]"
-            : "mt-2 text-lg font-semibold text-[#111827]"
+            ? "mt-1.5 text-sm font-semibold text-[var(--foreground)]"
+            : "mt-2 text-lg font-semibold text-[var(--foreground)]"
         }
       >
         {title}

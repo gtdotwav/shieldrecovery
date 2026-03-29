@@ -270,31 +270,38 @@ export async function PlatformAppPage({
           {appRoutes.map((route) => {
             const isActive = !route.external && currentPath === route.href;
             const linkClass = cn(
-              "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+              "relative group/tip w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
               isActive
                 ? "bg-[var(--accent)]/10 text-[var(--accent)]"
                 : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+            );
+
+            const tooltip = (
+              <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 w-max max-w-[12rem] rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 opacity-0 scale-95 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50 shadow-lg">
+                <span className="block text-xs font-semibold text-white dark:text-gray-900">{route.label}</span>
+                <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">{route.description}</span>
+              </span>
             );
 
             return route.external ? (
               <a
                 key={route.href}
                 href={route.href}
-                title={route.label}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={linkClass}
               >
                 <route.icon className="w-5 h-5" />
+                {tooltip}
               </a>
             ) : (
               <Link
                 key={route.href}
                 href={route.href}
-                title={route.label}
                 className={linkClass}
               >
                 <route.icon className="w-5 h-5" />
+                {tooltip}
               </Link>
             );
           })}
@@ -304,10 +311,13 @@ export async function PlatformAppPage({
           <form action={logoutAction}>
             <button
               type="submit"
-              title="Sair"
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+              className="relative group/tip w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
             >
               <LogOut className="w-5 h-5" />
+              <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 w-max max-w-[12rem] rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 opacity-0 scale-95 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50 shadow-lg">
+                <span className="block text-xs font-semibold text-white dark:text-gray-900">Sair</span>
+                <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">Encerrar sessao e voltar ao login.</span>
+              </span>
             </button>
           </form>
           <ThemeToggle />

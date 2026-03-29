@@ -76,7 +76,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       action={
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
         >
           Abrir recuperação
           <ArrowRight className="h-3.5 w-3.5" />
@@ -129,21 +129,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </section>
 
       <PlatformSurface className="mt-5 p-5 sm:p-6">
-        <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:items-end">
+        <div className="grid gap-5 border-b border-[var(--border)] pb-5 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
               Governança da operação
             </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[1.95rem]">
               Um painel para ver sellers, carteira e autonomia sem perder controle.
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
               O admin acompanha carteira, recuperação, fila e autonomia dos sellers
               em um só lugar.
             </p>
           </div>
 
-          <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
             {snapshot.totalSellers} sellers mapeados, {snapshot.pendingInvites} convites
             pendentes, {snapshot.unassignedLeads} leads sem dono e{" "}
             {sellersWithWebhookTraffic.length} sellers com tráfego no webhook.
@@ -153,16 +153,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
       {params.status ? (
         <PlatformSurface className="mt-5 p-4">
-          <p className="text-sm font-medium text-[#1a1a2e]">
+          <p className="text-sm font-medium text-[var(--foreground)]">
             {params.status === "ok"
               ? "Controle do seller atualizado com sucesso."
               : "Nao foi possivel salvar o controle do seller."}
           </p>
           {params.saved ? (
-            <p className="mt-1 text-sm text-[#717182]">Registro: {params.saved}</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">Registro: {params.saved}</p>
           ) : null}
           {params.message ? (
-            <p className="mt-1 text-sm text-[#717182]">{params.message}</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">{params.message}</p>
           ) : null}
         </PlatformSurface>
       ) : null}
@@ -170,7 +170,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_22rem]">
         <div className="space-y-5">
           <PlatformSurface className="p-4 sm:p-5">
-            <div className="flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
               <SectionHeader
                 eyebrow="Sellers da operação"
                 title="Localize um seller pela lista ou pela busca."
@@ -178,13 +178,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
               <form className="w-full sm:max-w-xs">
                 <label className="relative block">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
                   <input
                     type="search"
                     name="query"
                     defaultValue={query}
                     placeholder="Buscar por nome, email ou agente"
-                    className="w-full rounded-full border border-black/[0.08] bg-white px-10 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
+                    className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-10 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
                   />
                 </label>
               </form>
@@ -212,10 +212,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <div className="mt-4 space-y-2">
                 {filteredSellers.length === 0 ? (
                   <PlatformInset className="p-4">
-                    <p className="text-sm font-medium text-[#111827]">
+                    <p className="text-sm font-medium text-[var(--foreground)]">
                       Nenhum seller encontrado para essa busca.
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-[#6b7280]">
+                    <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
                       Ajuste o nome, email ou agente vinculado para localizar a carteira.
                     </p>
                   </PlatformInset>
@@ -237,10 +237,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <SellerControlCard seller={selectedSeller} query={query} />
           ) : filteredSellers.length > 0 ? (
             <PlatformSurface className="p-6">
-              <p className="text-lg font-semibold text-[#111827]">
+              <p className="text-lg font-semibold text-[var(--foreground)]">
                 Abra um seller para ver detalhes, percentuais e controles.
               </p>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
                 A lista funciona como índice. Os dados densos ficam escondidos até
                 você abrir um seller, o que deixa a navegação mais leve.
               </p>
@@ -307,20 +307,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               {snapshot.worker.recentJobs.slice(0, 6).map((job) => (
                 <div
                   key={job.id}
-                  className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-3 py-3"
+                  className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3"
                 >
-                  <p className="text-sm font-medium text-[#111827]">{job.jobType}</p>
-                  <p className="mt-1 text-xs text-[#6b7280]">
+                  <p className="text-sm font-medium text-[var(--foreground)]">{job.jobType}</p>
+                  <p className="mt-1 text-xs text-[var(--muted)]">
                     {job.status} · {formatRelativeTime(job.runAt)}
                   </p>
                 </div>
               ))}
             </div>
             {snapshot.worker.recentEvents.length > 0 ? (
-              <div className="mt-4 space-y-2 border-t border-black/[0.06] pt-4">
+              <div className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
                 {snapshot.worker.recentEvents.slice(0, 4).map((event) => (
-                  <div key={event.id} className="text-xs leading-5 text-[#6b7280]">
-                    <span className="font-medium text-[#111827]">{event.eventType}</span>{" "}
+                  <div key={event.id} className="text-xs leading-5 text-[var(--muted)]">
+                    <span className="font-medium text-[var(--foreground)]">{event.eventType}</span>{" "}
                     · {formatRelativeTime(event.createdAt)}
                   </div>
                 ))}
@@ -371,7 +371,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <ToggleField label="Seller ativo" name="active" defaultChecked />
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
               >
                 <KeyRound className="h-4 w-4" />
                 Salvar acesso
@@ -406,19 +406,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 defaultValue="7"
               />
               <label className="space-y-1">
-                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
                   Contexto do convite
                 </span>
                 <textarea
                   name="note"
                   rows={3}
                   placeholder="Observação interna ou orientação para esse seller."
-                  className="w-full rounded-[1rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
+                  className="w-full rounded-[1rem] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
                 />
               </label>
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
               >
                 <KeyRound className="h-4 w-4" />
                 Gerar convite
@@ -451,12 +451,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </section>
 
       <PlatformSurface className="mt-5 p-5 sm:p-6">
-        <div className="flex flex-col gap-3 border-b border-black/[0.06] pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeader
             eyebrow="Área de sellers"
             title="Lista de todos os sellers cadastrados."
           />
-          <span className="inline-flex items-center rounded-full border border-black/[0.06] bg-[#f7f8fa] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#6b7280]">
+          <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
             {snapshot.sellerUsers.length} contas
           </span>
         </div>
@@ -508,19 +508,19 @@ function SellerControlCard({
 
   return (
     <PlatformSurface className="p-5 sm:p-6">
-      <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
+      <div className="grid gap-5 border-b border-[var(--border)] pb-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xl font-semibold tracking-tight text-[#111827]">
+            <p className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
               {seller.sellerName}
             </p>
             <PlatformPill>{seller.control.active ? "ativo" : "pausado"}</PlatformPill>
           </div>
-          <p className="mt-2 text-sm leading-6 text-[#6b7280]">
+          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
             {seller.sellerEmail || "sem email operacional"} · última movimentação{" "}
             {seller.lastActivityAt ? formatRelativeTime(seller.lastActivityAt) : "sem histórico"}
           </p>
-          <p className="mt-3 text-sm leading-6 text-[#6b7280]">
+          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
             Taxa real {seller.realRecoveryRate.toFixed(1)}% · meta {seller.control.recoveryTargetPercent.toFixed(1)}% · autonomia {seller.control.autonomyMode}
             {aboveLimit ? " · acima do limite" : ""}
           </p>
@@ -540,7 +540,7 @@ function SellerControlCard({
           <div className="flex justify-end">
             <Link
               href={closeHref}
-              className="inline-flex items-center rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#6b7280] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+              className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--muted)] transition-colors hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)]"
             >
               Fechar detalhes
             </Link>
@@ -571,11 +571,11 @@ function SellerControlCard({
               }
             />
           </div>
-          <div className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] p-3">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+          <div className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] p-3">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
               webhook do seller
             </p>
-            <p className="mt-2 break-all text-sm leading-6 text-[#111827]">
+            <p className="mt-2 break-all text-sm leading-6 text-[var(--foreground)]">
               {seller.webhook.url}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -584,7 +584,7 @@ function SellerControlCard({
                 href={seller.webhook.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--foreground-secondary)] transition-colors hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)]"
               >
                 Ver endpoint
               </Link>
@@ -625,30 +625,30 @@ function SellerControlCard({
             defaultValue={String(seller.control.maxAssignedLeads)}
           />
           <PlatformInset className="p-4">
-            <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[#9ca3af]">
+            <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[var(--muted)]">
               saúde do webhook
             </p>
-            <p className="mt-1 text-lg font-semibold text-[#111827]">
+            <p className="mt-1 text-lg font-semibold text-[var(--foreground)]">
               {seller.webhook.status === "healthy"
                 ? "recebendo"
                 : seller.webhook.status === "attention"
                   ? "atenção"
                   : "aguardando"}
             </p>
-            <p className="mt-1 text-sm leading-6 text-[#6b7280]">
+            <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
               {seller.webhook.lastReceivedAt
                 ? `último ${seller.webhook.lastEventType ?? "evento"} ${formatRelativeTime(seller.webhook.lastReceivedAt)}`
                 : "nenhum evento recebido ainda"}
             </p>
           </PlatformInset>
           <label className="space-y-1">
-            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
               Autonomia da IA
             </span>
             <select
               name="autonomyMode"
               defaultValue={seller.control.autonomyMode}
-              className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
+              className="w-full rounded-[0.95rem] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
             >
               <option value="assisted">Assistida</option>
               <option value="supervised">Supervisionada</option>
@@ -656,7 +656,7 @@ function SellerControlCard({
             </select>
           </label>
           <label className="space-y-1 lg:col-span-2">
-            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
               Abordagem da mensagem
             </span>
             <div className="grid grid-cols-3 gap-2">
@@ -682,8 +682,8 @@ function SellerControlCard({
                   className={[
                     "relative flex cursor-pointer flex-col rounded-[0.95rem] border px-3 py-2.5 text-sm transition",
                     seller.control.messagingApproach === opt.value
-                      ? "border-sky-400 bg-sky-50 ring-1 ring-sky-400"
-                      : "border-black/[0.08] bg-white hover:border-sky-300",
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] ring-1 ring-[var(--accent)]"
+                      : "border-[var(--border)] bg-[var(--surface)] hover:border-sky-300",
                   ].join(" ")}
                 >
                   <input
@@ -693,10 +693,10 @@ function SellerControlCard({
                     defaultChecked={seller.control.messagingApproach === opt.value}
                     className="peer sr-only"
                   />
-                  <span className="font-semibold text-[#111827] peer-checked:text-sky-600">
+                  <span className="font-semibold text-[var(--foreground)] peer-checked:text-[var(--accent)]">
                     {opt.label}
                   </span>
-                  <span className="mt-0.5 text-xs leading-snug text-[#6b7280]">
+                  <span className="mt-0.5 text-xs leading-snug text-[var(--muted)]">
                     {opt.desc}
                   </span>
                 </label>
@@ -741,7 +741,7 @@ function SellerControlCard({
         </div>
 
         <label className="space-y-1">
-          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
             Observação do admin
           </span>
           <textarea
@@ -749,17 +749,17 @@ function SellerControlCard({
             defaultValue={seller.control.notes || ""}
             placeholder="Diretriz, trava operacional ou contexto administrativo."
             rows={3}
-            className="w-full rounded-[1rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
+            className="w-full rounded-[1rem] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
           />
         </label>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/[0.06] pt-4">
-          <p className="text-sm text-[#6b7280]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
+          <p className="text-sm text-[var(--muted)]">
             Atualizado {formatRelativeTime(seller.control.updatedAt)}
           </p>
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+            className="inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
           >
             Salvar controle
           </button>
@@ -783,14 +783,14 @@ function SellerListRow({
       href={buildSellerHref(seller.sellerKey, query)}
       className={
         active
-          ? "block rounded-xl border border-sky-200 bg-sky-50/60 px-4 py-4 transition-colors"
-          : "block rounded-xl border border-black/[0.06] bg-[#fafafa] px-4 py-4 transition-colors hover:bg-white"
+          ? "block rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)]/60 px-4 py-4 transition-colors"
+          : "block rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4 transition-colors hover:bg-[var(--surface)]"
       }
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-base font-semibold text-[#111827]">
+            <p className="text-base font-semibold text-[var(--foreground)]">
               {seller.sellerName}
             </p>
             <PlatformPill>{seller.control.active ? "ativo" : "pausado"}</PlatformPill>
@@ -798,7 +798,7 @@ function SellerListRow({
               <PlatformPill>{seller.unreadConversations} não lidas</PlatformPill>
             ) : null}
           </div>
-          <p className="mt-1 text-sm leading-6 text-[#6b7280]">
+          <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
             {seller.sellerEmail || "sem email operacional"} ·{" "}
             {seller.lastActivityAt
               ? `última movimentação ${formatRelativeTime(seller.lastActivityAt)}`
@@ -819,10 +819,10 @@ function SellerListRow({
           />
         </div>
       </div>
-      <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#9ca3af]">
+      <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
         {active ? "detalhe aberto" : "abrir detalhes"}
       </p>
-      <p className="mt-1 text-xs text-[#6b7280]">
+      <p className="mt-1 text-xs text-[var(--muted)]">
         webhook:{" "}
         {seller.webhook.status === "healthy"
           ? "recebendo"
@@ -873,9 +873,9 @@ function CompactMetric({
 }) {
   return (
     <PlatformInset className="p-4">
-      <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[#9ca3af]">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-[#111827]">{value}</p>
-      <p className="mt-1 text-sm leading-6 text-[#6b7280]">{detail}</p>
+      <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[var(--muted)]">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-[var(--foreground)]">{value}</p>
+      <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{detail}</p>
     </PlatformInset>
   );
 }
@@ -890,13 +890,13 @@ function AdminLine({
   tone: "ok" | "warn";
 }) {
   return (
-    <div className="flex items-center justify-between rounded-[1rem] border border-black/[0.06] bg-[#fafafa] px-3.5 py-3">
-      <span className="text-sm text-[#4b5563]">{label}</span>
+    <div className="flex items-center justify-between rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3.5 py-3">
+      <span className="text-sm text-[var(--foreground-secondary)]">{label}</span>
       <span
         className={
           tone === "warn"
-            ? "text-sm font-semibold text-sky-600"
-            : "text-sm font-semibold text-[#111827]"
+            ? "text-sm font-semibold text-[var(--accent)]"
+            : "text-sm font-semibold text-[var(--foreground)]"
         }
       >
         {value}
@@ -917,19 +917,19 @@ function AdminAccessRow({
   };
 }) {
   return (
-    <div className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-3.5 py-3">
+    <div className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3.5 py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-[#111827]">
+          <p className="truncate text-sm font-semibold text-[var(--foreground)]">
             {seller.displayName}
           </p>
-          <p className="mt-1 truncate text-xs text-[#6b7280]">{seller.email}</p>
+          <p className="mt-1 truncate text-xs text-[var(--muted)]">{seller.email}</p>
         </div>
-        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[#9ca3af]">
+        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
           {seller.active ? "ativo" : "pausado"}
         </span>
       </div>
-      <p className="mt-2 text-xs text-[#6b7280]">Agente vinculado: {seller.agentName}</p>
+      <p className="mt-2 text-xs text-[var(--muted)]">Agente vinculado: {seller.agentName}</p>
     </div>
   );
 }
@@ -949,22 +949,22 @@ function SellerInviteRow({
           : "pendente";
 
   return (
-    <div className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-3.5 py-3">
+    <div className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3.5 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-[#111827]">
+          <p className="truncate text-sm font-semibold text-[var(--foreground)]">
             {invite.suggestedDisplayName || invite.email}
           </p>
-          <p className="mt-1 truncate text-xs text-[#6b7280]">{invite.email}</p>
+          <p className="mt-1 truncate text-xs text-[var(--muted)]">{invite.email}</p>
         </div>
         <PlatformPill>{statusLabel}</PlatformPill>
       </div>
-      <p className="mt-2 text-xs leading-5 text-[#6b7280]">
+      <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
         {invite.agentName ? `Agente sugerido: ${invite.agentName}. ` : ""}
         Expira {formatRelativeTime(invite.expiresAt)}.
       </p>
       {invite.note ? (
-        <p className="mt-2 text-xs leading-5 text-[#6b7280]">{invite.note}</p>
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">{invite.note}</p>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
         <CopyButton value={invite.inviteUrl} label="Copiar convite" />
@@ -972,7 +972,7 @@ function SellerInviteRow({
           href={invite.inviteUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--foreground-secondary)] transition-colors hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)]"
         >
           Abrir convite
         </Link>
@@ -999,14 +999,14 @@ function SellerAccountCard({
     <PlatformInset className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-base font-semibold text-[#111827]">
+          <p className="truncate text-base font-semibold text-[var(--foreground)]">
             {seller.displayName}
           </p>
-          <p className="mt-1 truncate text-sm text-[#6b7280]">{seller.email}</p>
-          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-[#9ca3af]">
+          <p className="mt-1 truncate text-sm text-[var(--muted)]">{seller.email}</p>
+          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-[var(--muted)]">
             agente vinculado
           </p>
-          <p className="mt-1 text-sm text-[#374151]">{seller.agentName}</p>
+          <p className="mt-1 text-sm text-[var(--foreground-secondary)]">{seller.agentName}</p>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -1051,12 +1051,12 @@ function SectionHeader({
 }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.18em] text-sky-500">{eyebrow}</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-[var(--accent)]">{eyebrow}</p>
       <h3
         className={
           compact
-            ? "mt-2 text-base font-semibold tracking-tight text-[#111827]"
-            : "mt-2 text-xl font-semibold tracking-tight text-[#111827]"
+            ? "mt-2 text-base font-semibold tracking-tight text-[var(--foreground)]"
+            : "mt-2 text-xl font-semibold tracking-tight text-[var(--foreground)]"
         }
       >
         {title}
@@ -1082,7 +1082,7 @@ function Field({
 }) {
   return (
     <label className="space-y-1">
-      <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+      <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
         {label}
       </span>
       <input
@@ -1091,7 +1091,7 @@ function Field({
         defaultValue={defaultValue}
         step={step}
         placeholder={placeholder}
-        className="w-full rounded-[0.95rem] border border-black/[0.08] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-sky-400"
+        className="w-full rounded-[0.95rem] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
       />
     </label>
   );
@@ -1107,14 +1107,14 @@ function ToggleField({
   defaultChecked: boolean;
 }) {
   return (
-    <label className="flex items-center gap-3 rounded-[1rem] border border-black/[0.06] bg-[#fafafa] px-3.5 py-3">
+    <label className="flex items-center gap-3 rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3.5 py-3">
       <input
         type="checkbox"
         name={name}
         defaultChecked={defaultChecked}
-        className="h-4 w-4 rounded border-black/15 text-sky-500 focus:ring-sky-400"
+        className="h-4 w-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
       />
-      <span className="text-sm font-medium text-[#111827]">{label}</span>
+      <span className="text-sm font-medium text-[var(--foreground)]">{label}</span>
     </label>
   );
 }

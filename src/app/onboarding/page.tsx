@@ -118,7 +118,7 @@ export default async function OnboardingPage() {
       action={
         <Link
           href={roleHomeHref}
-          className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
         >
           Ir para {session.role === "admin" ? "Recuperação" : "CRM"}
           <ArrowRight className="h-3.5 w-3.5" />
@@ -153,15 +153,15 @@ export default async function OnboardingPage() {
       </section>
 
       <PlatformSurface className="mt-5 p-5 sm:p-6">
-        <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_20rem] lg:items-end">
+        <div className="grid gap-5 border-b border-[var(--border)] pb-5 lg:grid-cols-[minmax(0,1.2fr)_20rem] lg:items-end">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-sky-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
               Onboarding da plataforma
             </p>
-            <h2 className="mt-2 max-w-[18ch] text-3xl font-semibold tracking-tight text-[#111827] sm:text-[2.2rem]">
+            <h2 className="mt-2 max-w-[18ch] text-3xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[2.2rem]">
               Entre sabendo por onde começar e o que cada área faz.
             </h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-[#6b7280]">
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
               O objetivo deste guia é tirar ambiguidade. Ele mostra o papel de
               cada tela, a ordem recomendada de uso e o estado real da operação
               neste ambiente.
@@ -171,7 +171,7 @@ export default async function OnboardingPage() {
             </div>
           </div>
 
-          <div className="rounded-[1.2rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
+          <div className="rounded-[1.2rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
             A estrutura já está coerente para operar. O foco agora é orientar o
             primeiro acesso, deixar a ordem de uso óbvia e mostrar o que já está
             pronto sem sobrecarregar quem entra.
@@ -181,12 +181,12 @@ export default async function OnboardingPage() {
 
       <section className="mt-5 grid gap-5 2xl:grid-cols-[minmax(0,1.25fr)_22rem]">
         <PlatformSurface className="p-5 sm:p-6">
-          <div className="flex items-center justify-between border-b border-black/[0.06] pb-4">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
             <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
                 Ordem recomendada
               </p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
                 O fluxo ideal de uso
               </h3>
             </div>
@@ -200,18 +200,18 @@ export default async function OnboardingPage() {
               <Link
                 key={step.href}
                 href={step.href}
-                className="rounded-[1.4rem] border border-black/[0.06] bg-white px-4 py-4 transition-colors hover:bg-[#fbfbfc]"
+                className="rounded-[1.4rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-4 transition-colors hover:bg-[var(--surface-strong)]"
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(2,132,199,0.1)] text-sm font-semibold text-sky-600">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-sm font-semibold text-[var(--accent)]">
                     {index + 1}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#111827]">{step.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-[#6b7280]">
+                    <p className="text-sm font-semibold text-[var(--foreground)]">{step.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
                       {step.description}
                     </p>
-                    <p className="mt-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-sky-500">
+                    <p className="mt-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
                       {step.outcome}
                     </p>
                   </div>
@@ -222,20 +222,20 @@ export default async function OnboardingPage() {
         </PlatformSurface>
 
         <PlatformSurface className="p-4 sm:p-5">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
             Checklist do ambiente
           </p>
-          <h3 className="mt-2 text-xl font-semibold tracking-tight text-[#111827]">
+          <h3 className="mt-2 text-xl font-semibold tracking-tight text-[var(--foreground)]">
             O que já está pronto agora
           </h3>
           <div className="mt-4 space-y-2.5">
             {readiness.map((item) => (
               <div
                 key={item.label}
-                className="rounded-[1.15rem] border border-black/[0.06] bg-[#fafafa] px-3.5 py-3"
+                className="rounded-[1.15rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3.5 py-3"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-[#111827]">{item.label}</p>
+                  <p className="text-sm font-medium text-[var(--foreground)]">{item.label}</p>
                   <span
                     className={
                       item.ready
@@ -247,7 +247,7 @@ export default async function OnboardingPage() {
                     {item.ready ? "pronto" : "pendente"}
                   </span>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-[#6b7280]">{item.detail}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{item.detail}</p>
               </div>
             ))}
           </div>
@@ -256,11 +256,11 @@ export default async function OnboardingPage() {
 
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_20rem]">
         <PlatformSurface className="p-5 sm:p-6">
-          <div className="border-b border-black/[0.06] pb-4">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+          <div className="border-b border-[var(--border)] pb-4">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
               O que cada área faz
             </p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827]">
+            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
               Use cada aba com um papel claro
             </h3>
           </div>
@@ -270,29 +270,29 @@ export default async function OnboardingPage() {
               <Link
                 key={module.href}
                 href={module.href}
-                className="rounded-[1.35rem] border border-black/[0.06] bg-white px-4 py-4 transition-colors hover:bg-[#fbfbfc]"
+                className="rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-4 transition-colors hover:bg-[var(--surface-strong)]"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-base font-semibold text-[#111827]">{module.title}</p>
-                  <ArrowRight className="h-4 w-4 text-[#9ca3af]" />
+                  <p className="text-base font-semibold text-[var(--foreground)]">{module.title}</p>
+                  <ArrowRight className="h-4 w-4 text-[var(--muted)]" />
                 </div>
-                <p className="mt-2 text-sm leading-6 text-[#6b7280]">
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
                   {module.description}
                 </p>
                 <div className="mt-3 space-y-2">
                   <div>
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
                       Quando usar
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-[#4b5563]">
+                    <p className="mt-1 text-sm leading-6 text-[var(--foreground-secondary)]">
                       {module.whenToUse}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
                       Leitura de papel
                     </p>
-                    <p className="mt-1 text-sm leading-6 text-[#4b5563]">
+                    <p className="mt-1 text-sm leading-6 text-[var(--foreground-secondary)]">
                       {module.roleNote}
                     </p>
                   </div>
@@ -304,18 +304,18 @@ export default async function OnboardingPage() {
 
         <div className="space-y-5">
           <PlatformSurface className="p-4 sm:p-5">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
               Próxima ação
             </p>
-            <h3 className="mt-2 text-xl font-semibold tracking-tight text-[#111827]">
+            <h3 className="mt-2 text-xl font-semibold tracking-tight text-[var(--foreground)]">
               {nextAction.title}
             </h3>
-            <p className="mt-2 text-sm leading-6 text-[#6b7280]">
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
               {nextAction.description}
             </p>
             <Link
               href={nextAction.href}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
             >
               {nextAction.ctaLabel}
               <ArrowRight className="h-4 w-4" />
@@ -323,7 +323,7 @@ export default async function OnboardingPage() {
           </PlatformSurface>
 
           <PlatformSurface className="p-4 sm:p-5">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
               URLs importantes
             </p>
             <div className="mt-4 space-y-3">
@@ -334,7 +334,7 @@ export default async function OnboardingPage() {
           </PlatformSurface>
 
           <PlatformSurface className="p-4 sm:p-5">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-sky-500">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
               Estado do motor
             </p>
             <div className="mt-4 space-y-3">
@@ -682,11 +682,11 @@ function getNextActionForRole(input: {
 
 function GuideLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.15rem] border border-black/[0.06] bg-[#fafafa] px-3.5 py-3">
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+    <div className="rounded-[1.15rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3.5 py-3">
+      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
         {label}
       </p>
-      <p className="mt-1 break-all text-sm leading-6 text-[#4b5563]">{value}</p>
+      <p className="mt-1 break-all text-sm leading-6 text-[var(--foreground-secondary)]">{value}</p>
     </div>
   );
 }
@@ -701,9 +701,9 @@ function GuideState({
   detail: string;
 }) {
   return (
-    <div className="rounded-[1.15rem] border border-black/[0.06] bg-[#fafafa] px-3.5 py-3">
+    <div className="rounded-[1.15rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3.5 py-3">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-[#111827]">{label}</p>
+        <p className="text-sm font-medium text-[var(--foreground)]">{label}</p>
         <span
           className={
             ready
@@ -714,7 +714,7 @@ function GuideState({
           {ready ? "ok" : "pendente"}
         </span>
       </div>
-      <p className="mt-2 text-sm leading-6 text-[#6b7280]">{detail}</p>
+      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{detail}</p>
     </div>
   );
 }
