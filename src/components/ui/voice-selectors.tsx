@@ -69,8 +69,8 @@ export function VoiceToneSelector({
 /* ── Voice Gender Selector ── */
 
 const GENDERS = [
-  { value: "female", label: "Feminino", provider: "ElevenLabs · Natural" },
-  { value: "male", label: "Masculino", provider: "ElevenLabs · Natural" },
+  { value: "female", label: "Feminino", provider: "Voz natural humanizada" },
+  { value: "male", label: "Masculino", provider: "Voz natural humanizada" },
 ] as const;
 
 export function VoiceGenderSelector({

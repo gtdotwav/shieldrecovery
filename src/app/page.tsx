@@ -280,7 +280,7 @@ export default async function Home() {
               <MarqueeDot />
               <MarqueeItem icon={CreditCard} text="Cartão de Crédito" />
               <MarqueeDot />
-              <MarqueeItem icon={Bot} text="GPT-4.1 IA" />
+              <MarqueeItem icon={Bot} text="IA Avançada" />
               <MarqueeDot />
               <MarqueeItem icon={Smartphone} text="WhatsApp Business" />
               <MarqueeDot />
@@ -752,7 +752,7 @@ export default async function Home() {
                   <div className="mt-8 space-y-4">
                     {[
                       { icon: Phone, title: "Chamada real em segundos", desc: "Ao preencher, uma IA consultora liga para seu número instantaneamente." },
-                      { icon: Bot, title: "Voz natural + IA conversacional", desc: "ElevenLabs + GPT-4.1 — a IA conversa, negocia e responde dúvidas como uma vendedora real." },
+                      { icon: Bot, title: "Voz natural + IA conversacional", desc: "A IA conversa, negocia e responde dúvidas como uma vendedora real — aumentando consideravelmente a conversão." },
                       { icon: MessageSquare, title: "Mesmo fluxo dos seus clientes", desc: "É exatamente assim que a plataforma contacta clientes com pagamento falhado." },
                     ].map((item) => (
                       <div key={item.title} className="flex gap-4">
