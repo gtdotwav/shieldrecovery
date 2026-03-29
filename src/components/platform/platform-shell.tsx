@@ -331,7 +331,7 @@ export async function PlatformAppPage({
         {appRoutes.slice(0, 4).map((route) => {
           const isActive = !route.external && currentPath === route.href;
           const cls = cn(
-            "flex flex-col items-center gap-0.5 min-w-[3rem] min-h-[2.75rem] justify-center px-1.5 rounded-lg transition-colors",
+            "flex flex-col items-center gap-0.5 min-w-[3.25rem] min-h-[2.75rem] justify-center px-1 rounded-lg transition-colors",
             isActive
               ? "text-[var(--accent)]"
               : "text-gray-400 dark:text-gray-500",
@@ -340,12 +340,12 @@ export async function PlatformAppPage({
           return route.external ? (
             <a key={route.href} href={route.href} className={cls}>
               <route.icon className="w-5 h-5 shrink-0" />
-              <span className="text-[0.6rem] leading-tight truncate max-w-[4rem]">{route.label}</span>
+              <span className="text-[0.55rem] leading-tight truncate max-w-[4.5rem] sm:text-[0.6rem]">{route.label}</span>
             </a>
           ) : (
             <Link key={route.href} href={route.href} className={cls} {...(isActive ? { "aria-current": "page" as const } : {})}>
               <route.icon className="w-5 h-5 shrink-0" />
-              <span className="text-[0.6rem] leading-tight truncate max-w-[4rem]">{route.label}</span>
+              <span className="text-[0.55rem] leading-tight truncate max-w-[4.5rem] sm:text-[0.6rem]">{route.label}</span>
             </Link>
           );
         })}

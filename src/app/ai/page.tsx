@@ -164,7 +164,7 @@ export default async function AIPage() {
           </section>
 
           {/* ─── Main grid ─── */}
-          <section className="mt-5 grid gap-5 2xl:grid-cols-[minmax(0,1.4fr)_20rem]">
+          <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_20rem]">
             {/* Left column */}
             <div className="space-y-5">
               {/* ─── AI Activity Feed ─── */}

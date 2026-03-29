@@ -195,7 +195,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       </PlatformSurface>
 
       {/* ── Grid principal: Fila | Thread | Contexto ── */}
-      <section className="mt-5 grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)_17rem]">
+      <section className="mt-5 grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)_17rem] pb-20 lg:pb-0">
 
         {/* ── Fila de conversas ── */}
         <PlatformSurface className="p-3 lg:sticky lg:top-20 lg:self-start">
@@ -208,7 +208,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
             </span>
           </div>
 
-          <div className="space-y-1.5 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
+          <div className="space-y-1.5 max-h-[40vh] overflow-y-auto pr-1 lg:max-h-[calc(100vh-12rem)]">
             {conversations.length === 0 ? (
                 <PlatformInset className="p-5 text-center">
                 <MessageCircle className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
@@ -269,7 +269,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
               </div>
 
               {/* Mensagens */}
-              <div className="min-h-[12rem] max-h-[calc(100vh-22rem)] flex-1 space-y-3 overflow-y-auto py-4 sm:min-h-[20rem] lg:max-h-[calc(100vh-18rem)] lg:pr-1">
+              <div className="min-h-[12rem] max-h-[50vh] flex-1 space-y-3 overflow-y-auto py-4 sm:min-h-[20rem] sm:max-h-[calc(100vh-20rem)] lg:max-h-[calc(100vh-18rem)] lg:pr-1">
                 {selectedMessages.length === 0 ? (
                   <div className="flex h-full items-center justify-center">
                     <p className="text-sm text-gray-400 dark:text-gray-500">

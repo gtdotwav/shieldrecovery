@@ -207,7 +207,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
       {/* ── Calendar grid ── */}
       <PlatformSurface className="mt-3 p-3 sm:p-4">
         <div className="overflow-x-auto">
-          <div className="min-w-[54rem]">
+          <div className="min-w-[42rem] sm:min-w-[54rem]">
             {/* Weekday headers */}
             <div className="grid grid-cols-7">
               {weekdayLabels.map((label, i) => (
@@ -314,7 +314,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
         </div>
 
         {/* KPI row */}
-        <div className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <div className="mt-5 grid grid-cols-2 gap-2.5 md:grid-cols-4">
           <DayMetric
             icon={Wallet}
             label="Recuperado"

@@ -131,7 +131,7 @@ export default async function CallingPage() {
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-4">
+                <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                       Produto
@@ -386,7 +386,7 @@ export default async function CallingPage() {
                 leads ativos com telefone
               </p>
 
-              <div className="mt-4 max-h-[20rem] space-y-2 overflow-y-auto">
+              <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto sm:max-h-[20rem]">
                 {callableContacts.slice(0, 10).map((contact) => (
                   <ContactRow key={contact.lead_id} contact={contact} />
                 ))}
