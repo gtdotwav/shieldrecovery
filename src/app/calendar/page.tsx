@@ -7,21 +7,16 @@ import {
   ChevronRight,
   MessageCircleMore,
   NotebookPen,
-  Plus,
   Wallet,
 } from "lucide-react";
 
-import {
-  createCalendarNoteAction,
-  deleteCalendarNoteAction,
-} from "@/app/actions/calendar-actions";
 import {
   PlatformAppPage,
   PlatformInset,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
+import { CalendarNoteDialog } from "@/components/ui/calendar-note-dialog";
 import { formatCurrency } from "@/lib/format";
-import { platformBrand } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
@@ -31,7 +26,6 @@ import type {
   CalendarActivityItem,
   CalendarDaySummary,
   CalendarNoteLane,
-  CalendarNoteRecord,
 } from "@/server/recovery/types";
 
 export const dynamic = "force-dynamic";
@@ -288,11 +282,10 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
       </PlatformSurface>
 
       {/* ── Selected day detail ── */}
-      <div className="mt-3 grid gap-3 xl:grid-cols-[1fr_1fr]">
-        {/* Left — Summary + Timeline */}
-        <PlatformSurface className="flex flex-col p-5 sm:p-6">
-          {/* Date header */}
-          <div className="flex items-start justify-between gap-3">
+      <PlatformSurface className="mt-3 p-5 sm:p-6">
+        {/* Date header row */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
             <div>
               <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
                 Dia selecionado
@@ -308,162 +301,84 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
             ) : null}
           </div>
 
-          {/* KPI grid */}
-          <div className="mt-5 grid grid-cols-2 gap-2.5">
-            <DayMetric
-              icon={Wallet}
-              label="Recuperado"
-              value={formatCurrency(selectedDay.recoveredRevenue)}
-              detail={`${selectedDay.recoveredCount} operações`}
-              accent
-            />
-            <DayMetric
-              icon={MessageCircleMore}
-              label="Mensagens"
-              value={String(selectedMessages)}
-              detail={`${selectedDay.outboundMessages} env · ${selectedDay.inboundMessages} rec`}
-            />
-            <DayMetric
-              icon={Bot}
-              label="Automações"
-              value={String(selectedDay.automationJobs)}
-              detail="jobs executados"
-            />
-            <DayMetric
-              icon={NotebookPen}
-              label="Notas"
-              value={String(selectedNotes.length)}
-              detail="registros salvos"
-            />
-          </div>
+          {/* Notes dialog trigger */}
+          <CalendarNoteDialog
+            dateLabel={formatFullDate(selectedDate)}
+            date={selectedDate}
+            month={snapshot.month}
+            notes={selectedNotes}
+            lanes={laneConfig.map(({ key, title, dot }) => ({ key, title, dot }))}
+            currentUserEmail={session.email}
+            currentUserRole={session.role}
+          />
+        </div>
 
-          {/* Timeline */}
-          <div className="mt-5 flex-1 border-t border-gray-100 dark:border-gray-800 pt-5">
-            <div className="flex items-center justify-between">
-              <h4 className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
-                Timeline
-              </h4>
-              <span className="muted-pill rounded-md px-2 py-0.5 text-[0.62rem] font-medium">
-                {selectedActivities.length}
-              </span>
-            </div>
+        {/* KPI row */}
+        <div className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          <DayMetric
+            icon={Wallet}
+            label="Recuperado"
+            value={formatCurrency(selectedDay.recoveredRevenue)}
+            detail={`${selectedDay.recoveredCount} operações`}
+            accent
+          />
+          <DayMetric
+            icon={MessageCircleMore}
+            label="Mensagens"
+            value={String(selectedMessages)}
+            detail={`${selectedDay.outboundMessages} env · ${selectedDay.inboundMessages} rec`}
+          />
+          <DayMetric
+            icon={Bot}
+            label="Automações"
+            value={String(selectedDay.automationJobs)}
+            detail="jobs executados"
+          />
+          <DayMetric
+            icon={NotebookPen}
+            label="Notas"
+            value={String(selectedNotes.length)}
+            detail="registros salvos"
+          />
+        </div>
 
-            {selectedActivities.length === 0 ? (
-              <PlatformInset className="mt-3 px-4 py-6 text-center">
-                <CalendarDays className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
-                <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-                  Nenhuma atividade neste dia.
-                </p>
-              </PlatformInset>
-            ) : (
-              <div className="relative mt-3">
-                {/* Vertical connector */}
-                <div className="absolute left-[1.05rem] top-3 bottom-3 w-px bg-gray-100 dark:bg-gray-800" />
-
-                <div className="space-y-0.5">
-                  {selectedActivities.map((activity, i) => (
-                    <TimelineRow
-                      key={activity.id}
-                      activity={activity}
-                      isFirst={i === 0}
-                      isLast={i === selectedActivities.length - 1}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </PlatformSurface>
-
-        {/* Right — Notes */}
-        <PlatformSurface className="flex flex-col p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-gray-400 dark:text-gray-500">
-                Notas do dia
-              </p>
-              <h3 className="mt-1 text-lg font-semibold tracking-tight text-gray-900 dark:text-white">
-                Registro operacional
-              </h3>
-            </div>
+        {/* Timeline */}
+        <div className="mt-5 border-t border-gray-100 dark:border-gray-800 pt-5">
+          <div className="flex items-center justify-between">
+            <h4 className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+              Timeline
+            </h4>
             <span className="muted-pill rounded-md px-2 py-0.5 text-[0.62rem] font-medium">
-              {selectedNotes.length}
+              {selectedActivities.length}
             </span>
           </div>
 
-          {/* Note form */}
-          <form action={createCalendarNoteAction} className="mt-5">
-            <input type="hidden" name="date" value={selectedDate} />
-
-            <PlatformInset className="p-3.5">
-              <div className="grid gap-2.5 sm:grid-cols-[1fr_2fr]">
-                <select
-                  name="lane"
-                  defaultValue="operations"
-                  className="h-9 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-2.5 text-[0.78rem] text-gray-700 dark:text-gray-300 outline-none transition focus:border-[var(--accent)]/40"
-                >
-                  {laneConfig.map((lane) => (
-                    <option key={lane.key} value={lane.key}>
-                      {lane.title}
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  name="title"
-                  type="text"
-                  placeholder="Título da nota..."
-                  required
-                  className="h-9 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-3 text-[0.78rem] text-gray-900 dark:text-gray-100 placeholder:text-gray-300 dark:placeholder:text-gray-600 outline-none transition focus:border-[var(--accent)]/40"
-                />
-              </div>
-
-              <textarea
-                name="content"
-                rows={2}
-                placeholder="Contexto adicional — decisão, bloqueio, hipótese..."
-                className="mt-2.5 w-full resize-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-3 py-2 text-[0.78rem] leading-relaxed text-gray-900 dark:text-gray-100 placeholder:text-gray-300 dark:placeholder:text-gray-600 outline-none transition focus:border-[var(--accent)]/40"
-              />
-
-              <div className="mt-2.5 flex justify-end">
-                <button
-                  type="submit"
-                  className="glass-button-primary inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[0.72rem] font-semibold"
-                >
-                  <Plus className="h-3 w-3" />
-                  Salvar
-                </button>
-              </div>
+          {selectedActivities.length === 0 ? (
+            <PlatformInset className="mt-3 px-4 py-6 text-center">
+              <CalendarDays className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
+              <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
+                Nenhuma atividade neste dia.
+              </p>
             </PlatformInset>
-          </form>
+          ) : (
+            <div className="relative mt-3">
+              {/* Vertical connector */}
+              <div className="absolute left-[1.05rem] top-3 bottom-3 w-px bg-gray-100 dark:bg-gray-800" />
 
-          {/* Notes by lane */}
-          <div className="mt-5 flex-1 space-y-4 border-t border-gray-100 dark:border-gray-800 pt-5">
-            {laneConfig.map((lane) => {
-              const laneNotes = selectedNotes.filter((note) => note.lane === lane.key);
-              return (
-                <NoteLane
-                  key={lane.key}
-                  lane={lane}
-                  notes={laneNotes}
-                  month={snapshot.month}
-                  currentUserEmail={session.email}
-                  currentUserRole={session.role}
-                />
-              );
-            })}
-
-            {selectedNotes.length === 0 ? (
-              <PlatformInset className="px-4 py-6 text-center">
-                <NotebookPen className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
-                <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-                  Nenhuma nota registrada neste dia.
-                </p>
-              </PlatformInset>
-            ) : null}
-          </div>
-        </PlatformSurface>
-      </div>
+              <div className="space-y-0.5">
+                {selectedActivities.map((activity, i) => (
+                  <TimelineRow
+                    key={activity.id}
+                    activity={activity}
+                    isFirst={i === 0}
+                    isLast={i === selectedActivities.length - 1}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </PlatformSurface>
     </PlatformAppPage>
   );
 }
@@ -700,79 +615,6 @@ function TimelineRow({
   );
 }
 
-/* ── Note lane section ── */
-
-function NoteLane({
-  lane,
-  notes,
-  month,
-  currentUserEmail,
-  currentUserRole,
-}: {
-  lane: { key: CalendarNoteLane; title: string; dot: string; color: string };
-  notes: CalendarNoteRecord[];
-  month: string;
-  currentUserEmail: string;
-  currentUserRole: "admin" | "seller";
-}) {
-  if (notes.length === 0) return null;
-
-  return (
-    <div>
-      <div className="flex items-center gap-2">
-        <span className={cn("h-1.5 w-1.5 rounded-full", lane.dot)} />
-        <h4 className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
-          {lane.title}
-        </h4>
-        <span className="muted-pill ml-auto rounded px-1.5 py-0.5 text-[0.58rem]">
-          {notes.length}
-        </span>
-      </div>
-
-      <div className="mt-2 space-y-1.5">
-        {notes.map((note) => {
-          const canDelete =
-            currentUserRole === "admin" || note.createdByEmail === currentUserEmail;
-
-          return (
-            <div
-              key={note.id}
-              className="glass-inset rounded-lg px-3.5 py-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[0.82rem] font-semibold text-gray-800 dark:text-gray-200">
-                    {note.title}
-                  </p>
-                  {note.content ? (
-                    <p className="mt-1 text-[0.78rem] leading-relaxed text-gray-500 dark:text-gray-400">
-                      {note.content}
-                    </p>
-                  ) : null}
-                </div>
-                {canDelete ? (
-                  <form action={deleteCalendarNoteAction}>
-                    <input type="hidden" name="noteId" value={note.id} />
-                    <input type="hidden" name="month" value={month} />
-                    <button
-                      type="submit"
-                      className="shrink-0 rounded-md px-2 py-1 text-[0.62rem] font-medium text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-gray-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-                    >
-                      remover
-                    </button>
-                  </form>
-                ) : null}
-              </div>
-              <p className="mt-2 font-mono text-[0.58rem] text-gray-300 dark:text-gray-600">
-                {note.createdByRole} · {note.createdByEmail} · {formatClock(note.updatedAt)}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 /* ══════════════════════════════════════════════════════
    Helpers
