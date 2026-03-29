@@ -275,10 +275,10 @@ export default async function Home() {
 
               <Reveal direction="up" delay={400}>
                 <p className="mt-5 max-w-[36rem] text-[0.92rem] leading-[1.7] text-gray-500 dark:text-gray-400 sm:mt-7 sm:text-[1.05rem] sm:leading-[1.8] lg:mx-0">
-                  Quando um pagamento falha, nossa IA contata o cliente em 2 minutos
-                  via WhatsApp com link direto. Se necessário, nosso Call Center de agentes
-                  IA humanizados liga para o cliente. Resultado: taxa de recuperação
-                  de 19% a 40% dependendo do funil.
+                  Pagamento falhou? Em 2 minutos, nossa IA contata o cliente
+                  via WhatsApp com link de pagamento. Se não responder, o Call Center
+                  de agentes IA liga com voz natural e negocia. Tudo 100% autônomo
+                  — você só acompanha os resultados.
                 </p>
               </Reveal>
 
@@ -350,10 +350,10 @@ export default async function Home() {
             <div className="text-center">
               <SectionEyebrow>Impacto real</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Números que falam por si
+                Resultados reais, em produção
               </h2>
               <p className="mx-auto mt-3 max-w-lg text-[0.88rem] leading-6 text-gray-400 dark:text-gray-500 sm:mt-4 sm:text-[0.95rem] sm:leading-7">
-                Métricas da operação ativa — dados reais, não projeções.
+                Dados da operação ativa. Sem simulações, sem projeções.
               </p>
             </div>
           </Reveal>
@@ -373,7 +373,7 @@ export default async function Home() {
                 <ImpactCard
                   value={<><CountUp end={2} duration={1500} />min</>}
                   label="Tempo de resposta"
-                  sublabel="da falha ao contato via WhatsApp"
+                  sublabel="da falha ao primeiro contato"
                 />
               </TiltCard>
             </Reveal>
@@ -382,7 +382,7 @@ export default async function Home() {
                 <ImpactCard
                   value={<CountUp end={24} suffix="/7" duration={1800} />}
                   label="Operação contínua"
-                  sublabel="IA trabalhando sem parar"
+                  sublabel="sem pausas, sem folgas, sem custo fixo"
                 />
               </TiltCard>
             </Reveal>
@@ -397,7 +397,7 @@ export default async function Home() {
             <div className="text-center">
               <SectionEyebrow>Antes vs depois</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                O que muda com recuperação ativa
+                O que muda quando a IA assume
               </h2>
             </div>
           </Reveal>
@@ -419,11 +419,11 @@ export default async function Home() {
                     <h3 className="text-[1rem] font-bold text-red-400">Sem recuperação</h3>
                   </div>
                   <ul className="mt-6 space-y-4">
-                    <BeforeAfterItem negative text="Pagamento falha → cliente some" />
-                    <BeforeAfterItem negative text="Equipe descobre dias depois" />
-                    <BeforeAfterItem negative text="Contato manual, sem escala" />
-                    <BeforeAfterItem negative text="Sem dados sobre o motivo da falha" />
-                    <BeforeAfterItem negative text="Receita perdida permanentemente" />
+                    <BeforeAfterItem negative text="Pagamento falha e o cliente desaparece" />
+                    <BeforeAfterItem negative text="Sua equipe descobre tarde demais" />
+                    <BeforeAfterItem negative text="Cobranças manuais que não escalam" />
+                    <BeforeAfterItem negative text="Nenhuma visibilidade sobre o que falhou" />
+                    <BeforeAfterItem negative text="Receita que não volta mais" />
                   </ul>
                 </div>
               </TiltCard>
@@ -450,12 +450,12 @@ export default async function Home() {
                     </h3>
                   </div>
                   <ul className="mt-6 space-y-4">
-                    <BeforeAfterItem text="Falha detectada → contato em 2 minutos" />
-                    <BeforeAfterItem text="IA identifica melhor momento e canal" />
-                    <BeforeAfterItem text="WhatsApp automatizado com link de pagamento" />
-                    <BeforeAfterItem text="Call Center com agentes IA humanizados que ligam para o cliente" />
-                    <BeforeAfterItem text="Dashboard com analytics em tempo real" />
-                    <BeforeAfterItem text="19% a 40% da receita perdida é recuperada" />
+                    <BeforeAfterItem text="Falha detectada, contato em 2 minutos" />
+                    <BeforeAfterItem text="IA escolhe o canal e o momento certo" />
+                    <BeforeAfterItem text="WhatsApp com link de pagamento direto" />
+                    <BeforeAfterItem text="Call Center IA liga se o cliente não responder" />
+                    <BeforeAfterItem text="Analytics em tempo real no dashboard" />
+                    <BeforeAfterItem text="19% a 40% da receita perdida volta pro seu caixa" />
                   </ul>
                 </div>
               </TiltCard>
@@ -474,18 +474,18 @@ export default async function Home() {
                 Da falha à recuperação em minutos
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
-                Cinco etapas — IA e humanos trabalhando juntos.
+                Cinco etapas. Zero intervenção humana. Você só acompanha.
               </p>
             </div>
           </Reveal>
 
           <div className="mx-auto mt-10 grid max-w-[64rem] gap-3 sm:mt-14 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {[
-              { n: "01", icon: Zap, title: "Webhook detecta", desc: "Falha capturada via webhook do gateway em tempo real." },
-              { n: "02", icon: Bot, title: "IA personaliza", desc: "Analisa valor, histórico e define tom ideal." },
-              { n: "03", icon: MessageSquare, title: "WhatsApp contata", desc: "Mensagem humanizada com link de pagamento." },
-              { n: "04", icon: Headphones, title: "Call Center IA liga", desc: "Agentes IA ligam com voz natural." },
-              { n: "05", icon: TrendingUp, title: "Receita recuperada", desc: "Cliente paga, dashboard atualiza em tempo real." },
+              { n: "01", icon: Zap, title: "Gateway notifica", desc: "Pagamento falha e o webhook notifica a plataforma instantaneamente." },
+              { n: "02", icon: Bot, title: "IA analisa", desc: "Valor, histórico e método de pagamento definem a abordagem ideal." },
+              { n: "03", icon: MessageSquare, title: "WhatsApp envia", desc: "Mensagem personalizada com link de pagamento direto pro cliente." },
+              { n: "04", icon: Headphones, title: "Call Center IA", desc: "Se não houve resposta, agente IA liga com voz natural e negocia." },
+              { n: "05", icon: TrendingUp, title: "Pagamento confirmado", desc: "Cliente paga, receita entra e o dashboard atualiza em tempo real." },
             ].map((s, i) => (
               <Reveal key={s.n} direction="up" delay={i * 100}>
                 <TiltCard>
@@ -502,10 +502,10 @@ export default async function Home() {
             <div className="text-center">
               <SectionEyebrow>Resultados</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Recuperação que funciona
+                Casos reais de recuperação
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
-                Cenários reais de operações usando a plataforma.
+                Resultados de operações ativas na plataforma.
               </p>
             </div>
           </Reveal>
@@ -516,7 +516,7 @@ export default async function Home() {
                 <ResultCard
                   category="E-commerce de moda"
                   value="R$23.400"
-                  description="recuperados em 30 dias • 187 transações • tempo médio de recuperação: 14 min"
+                  description="recuperados em 30 dias · 187 transações · tempo médio: 14 minutos"
                   icon={CreditCard}
                 />
               </TiltCard>
@@ -526,7 +526,7 @@ export default async function Home() {
                 <ResultCard
                   category="SaaS B2B — Recorrência"
                   value="3.2x ROI"
-                  description="no primeiro mês • churn involuntário reduzido de 8.4% para 2.1%"
+                  description="no primeiro mês · churn involuntário caiu de 8.4% para 2.1%"
                   icon={TrendingUp}
                 />
               </TiltCard>
@@ -536,7 +536,7 @@ export default async function Home() {
                 <ResultCard
                   category="Infoproduto digital"
                   value="41%"
-                  description="taxa de recuperação • 68% via Pix, 32% cartão • R$890 ticket médio salvo"
+                  description="de recuperação · 68% via Pix, 32% cartão · ticket médio de R$890"
                   icon={BarChart3}
                 />
               </TiltCard>
@@ -565,11 +565,11 @@ export default async function Home() {
               <div className="lg:sticky lg:top-24">
                 <SectionEyebrow>Plataforma completa</SectionEyebrow>
                 <h2 className="mt-4 max-w-[16ch] text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem] sm:leading-[1.15]">
-                  Tudo que sua operação precisa em um lugar
+                  Tudo que você precisa. Nada que não precisa.
                 </h2>
                 <p className="mt-5 max-w-md text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
-                  CRM, inbox, automações e analytics — integrados em um ecossistema
-                  focado em recuperação de pagamentos.
+                  CRM de recuperação, automações, inbox e analytics — tudo integrado
+                  numa plataforma que opera sozinha.
                 </p>
                 <div className="mt-8">
                   <MagneticButton>
@@ -606,14 +606,14 @@ export default async function Home() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                { icon: Bot, title: "IA conversacional", desc: "Mensagens com contexto: valor, método, histórico e tom personalizado." },
-                { icon: Headphones, title: "Call Center IA", desc: "Agentes IA humanizados ligam para o cliente com voz natural. Sem fila, sem espera." },
-                { icon: MessageSquare, title: "WhatsApp nativo", desc: "Envio, recebimento e respostas automáticas em tempo real." },
-                { icon: BarChart3, title: "Dashboard analítico", desc: "KPIs ao vivo: taxa, receita salva, tempo médio e performance." },
-                { icon: Clock, title: "Follow-up automático", desc: "Sequências inteligentes com delay configurável." },
+                { icon: Bot, title: "IA conversacional", desc: "Cada mensagem considera valor, método, histórico e tom ideal pro cliente." },
+                { icon: Headphones, title: "Call Center IA", desc: "Agentes IA ligam com voz natural. Sem fila, sem espera, sem equipe humana." },
+                { icon: MessageSquare, title: "WhatsApp nativo", desc: "Envio, recebimento e respostas inteligentes — tudo em tempo real." },
+                { icon: BarChart3, title: "Dashboard analítico", desc: "Taxa de recuperação, receita salva, tempo médio e performance por canal." },
+                { icon: Clock, title: "Follow-up inteligente", desc: "Sequências automáticas com timing otimizado por IA." },
                 { icon: Shield, title: "Segurança enterprise", desc: "HMAC-SHA256, RLS por tenant, rate limiting." },
-                { icon: CreditCard, title: "Checkout integrado", desc: "PIX, cartão de crédito e boleto. Link automático." },
-                { icon: Users, title: "CRM de recovery", desc: "Lead com timeline: tentativas, mensagens e status." },
+                { icon: CreditCard, title: "Checkout integrado", desc: "Pix, cartão e boleto num único link. Gerado e enviado automaticamente." },
+                { icon: Users, title: "CRM de recovery", desc: "Cada lead com timeline completa: tentativas, mensagens, pagamentos." },
                 { icon: Layers, title: "Multi-seller", desc: "Permissões isoladas. Admin governa. Escala segura." },
               ].map((f, i) => (
                 <Reveal key={f.title} direction="up" delay={i * 80}>
@@ -634,10 +634,10 @@ export default async function Home() {
             <div className="text-center">
               <SectionEyebrow>Segurança & Compliance</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Infraestrutura de nível enterprise
+                Segurança que sua operação exige
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
-                Seus dados e os dados dos seus clientes protegidos por múltiplas camadas de segurança.
+                Seus dados e os dos seus clientes protegidos em cada camada.
               </p>
             </div>
           </Reveal>
@@ -698,7 +698,7 @@ export default async function Home() {
                 <PricingCard
                   title="Integração"
                   price="R$0"
-                  description="Setup, configuração e onboarding completo sem custo."
+                  description="Setup, configuração e onboarding. Tudo por nossa conta."
                   icon={Zap}
                 />
               </TiltCard>
@@ -708,7 +708,7 @@ export default async function Home() {
                 <PricingCard
                   title="Mensalidade"
                   price="R$0"
-                  description="Sem taxa fixa mensal. Cancele quando quiser, sem lock-in."
+                  description="Sem taxa fixa. Sem contrato. Cancele quando quiser."
                   icon={Clock}
                 />
               </TiltCard>
@@ -718,7 +718,7 @@ export default async function Home() {
                 <PricingCard
                   title="Recovery fee"
                   price="% sobre recuperação"
-                  description="Comissão apenas sobre pagamentos efetivamente recuperados."
+                  description="Só cobramos quando recuperamos. Sem resultado, sem custo."
                   icon={DollarSign}
                   highlighted
                 />
@@ -756,10 +756,10 @@ export default async function Home() {
                 <Gem className="h-7 w-7" style={{ color: b.accent }} />
               </div>
               <h2 className="text-[1.5rem] font-bold tracking-[-0.02em] text-gray-900 dark:text-white sm:text-[1.8rem]">
-                Acesso antecipado aberto
+                Vagas limitadas para onboarding
               </h2>
               <p className="mx-auto mt-4 max-w-md text-[0.92rem] leading-7 text-gray-400 dark:text-gray-500">
-                Estamos selecionando as primeiras operações para onboarding.
+                Estamos selecionando operações para o programa de acesso antecipado.
                 Responda o quiz e garanta sua vaga.
               </p>
 
@@ -816,10 +816,10 @@ export default async function Home() {
             <div className="text-center">
               <SectionEyebrow>Comparativo</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Por que não fazer internamente?
+                Por que não fazer sozinho?
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
-                Compare o custo e resultado de cada abordagem.
+                Veja o que muda quando a tecnologia certa entra na operação.
               </p>
             </div>
           </Reveal>
@@ -887,10 +887,10 @@ export default async function Home() {
             <div className="text-center">
               <SectionEyebrow>Depoimentos</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Quem usa, recomenda
+                O que dizem sobre nós
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
-                Veja o que nossos clientes dizem sobre a recuperacao autonoma de pagamentos.
+                Depoimentos de quem já recupera pagamentos com a plataforma.
               </p>
             </div>
           </Reveal>
@@ -930,7 +930,7 @@ export default async function Home() {
                     Conecte seu gateway e comece a recuperar
                   </h2>
                   <p className="mt-4 max-w-md text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
-                    Basta apontar o webhook do seu gateway para a {b.name}.
+                    Configure o webhook, conecte o WhatsApp e pronto.
                     A plataforma faz o resto.
                   </p>
                   <MagneticButton className="mt-8">
@@ -948,7 +948,7 @@ export default async function Home() {
                 <div className="space-y-3">
                   <IntegrationStep step="1" title="Configure o webhook" description={`Adicione a URL da ${b.name} no seu gateway de pagamento.`} />
                   <IntegrationStep step="2" title="Conecte o WhatsApp" description="Escaneie o QR code para conectar seu número via Evolution API." />
-                  <IntegrationStep step="3" title="Ative a IA" description="Defina o tom, limites de tentativa e política de automação." />
+                  <IntegrationStep step="3" title="Personalize a IA" description="Defina o tom das mensagens, limites de tentativa e regras de automação." />
                   <IntegrationStep step="4" title="Recupere automaticamente" description="A plataforma opera 24/7. Acompanhe tudo no dashboard." />
                 </div>
               </div>
@@ -990,11 +990,11 @@ export default async function Home() {
                   <TrendingUp className="h-6 w-6" style={{ color: b.accent }} />
                 </div>
                 <h2 className="text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[2rem] lg:text-[2.8rem]">
-                  Pare de perder receita
+                  Sua receita está escapando agora
                 </h2>
                 <p className="mx-auto mt-5 max-w-lg text-[1rem] leading-7 text-gray-400 dark:text-gray-500">
-                  Cada minuto sem recuperação ativa é dinheiro na mesa.
-                  IA + Call Center de agentes IA humanizados. Configure em minutos. Resultados no primeiro dia.
+                  Cada pagamento falhado que não é recuperado é receita que não volta.
+                  Configure em minutos, veja resultados no primeiro dia.
                 </p>
                 <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
                   <MagneticButton>
@@ -1006,7 +1006,7 @@ export default async function Home() {
                         boxShadow: `0 12px 32px ${b.accentGlow}`,
                       }}
                     >
-                      Começar gratuitamente
+                      Começar agora — sem custo
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   </MagneticButton>
@@ -1027,7 +1027,7 @@ export default async function Home() {
                   <p className="text-sm font-semibold text-gray-400">{b.name}</p>
                 </div>
                 <p className="mt-3 max-w-[18rem] text-[0.75rem] leading-[1.7] text-gray-500 dark:text-gray-600">
-                  Recuperação autônoma de pagamentos com IA, WhatsApp e Call Center de agentes IA. Transforme falhas em receita.
+                  Recuperação autônoma de pagamentos. IA, WhatsApp e Call Center de agentes IA trabalhando 24/7 para transformar falhas em receita.
                 </p>
                 <div className="mt-4 flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5" style={{ color: `rgba(${rgb},0.5)` }} />
