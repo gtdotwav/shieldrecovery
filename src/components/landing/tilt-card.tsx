@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 export function TiltCard({
   children,
@@ -12,36 +12,48 @@ export function TiltCard({
   style?: CSSProperties;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+  const rafId = useRef(0);
   const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
   const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
   const isTouch = useRef(false);
 
-  const handlePointerEnter = (e: React.PointerEvent) => {
+  const handlePointerEnter = useCallback((e: React.PointerEvent) => {
     if (e.pointerType === "touch") {
       isTouch.current = true;
       return;
     }
     isTouch.current = false;
-  };
+    // Cache rect on enter instead of every move
+    rectRef.current = ref.current?.getBoundingClientRect() ?? null;
+  }, []);
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (isTouch.current) return;
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    setTilt({
-      rotateX: (y - 0.5) * -6,
-      rotateY: (x - 0.5) * 6,
-    });
-    setGlare({ x: x * 100, y: y * 100, opacity: 1 });
-  };
+    const rect = rectRef.current;
+    if (!rect) return;
 
-  const handlePointerLeave = () => {
+    // Throttle to next animation frame
+    cancelAnimationFrame(rafId.current);
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    rafId.current = requestAnimationFrame(() => {
+      const x = (clientX - rect.left) / rect.width;
+      const y = (clientY - rect.top) / rect.height;
+      setTilt({
+        rotateX: (y - 0.5) * -6,
+        rotateY: (x - 0.5) * 6,
+      });
+      setGlare({ x: x * 100, y: y * 100, opacity: 1 });
+    });
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    cancelAnimationFrame(rafId.current);
+    rectRef.current = null;
     setTilt({ rotateX: 0, rotateY: 0 });
     setGlare({ x: 50, y: 50, opacity: 0 });
-  };
+  }, []);
 
   return (
     <div

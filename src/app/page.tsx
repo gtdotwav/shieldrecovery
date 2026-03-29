@@ -144,14 +144,14 @@ export default async function Home() {
       {/* ═══ Scroll progress ═══ */}
       <ScrollProgress />
 
-      {/* ═══ Background layers ═══ */}
+      {/* ═══ Background — 2 layers instead of 4 ═══ */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background: `
             radial-gradient(ellipse 80% 50% at 50% -10%, rgba(${rgb},0.12), transparent 60%),
-            radial-gradient(ellipse 60% 40% at 80% 60%, rgba(${rgb},0.06), transparent 50%),
-            radial-gradient(ellipse 50% 50% at 10% 90%, rgba(${rgb},0.04), transparent 50%),
+            radial-gradient(circle 600px at -10% -8%, rgba(${rgb},0.07), transparent 60%),
+            radial-gradient(circle 500px at 108% 30%, rgba(${rgb},0.05), transparent 60%),
             linear-gradient(180deg, ${b.bgDark} 0%, ${b.bgDarkSecondary} 40%, ${b.bgDark} 100%)
           `,
         }}
@@ -163,24 +163,6 @@ export default async function Home() {
           backgroundSize: "64px 64px",
           maskImage:
             "radial-gradient(ellipse 70% 60% at 50% 30%, black, transparent 80%)",
-        }}
-      />
-      <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.03] mix-blend-overlay"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-        }}
-      />
-      {/* Consolidated glow orbs — single compositing layer instead of 3 blurred ones */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background: `
-            radial-gradient(circle 600px at -10% -8%, rgba(${rgb},0.07), transparent 60%),
-            radial-gradient(circle 500px at 108% 30%, rgba(${rgb},0.05), transparent 60%),
-            radial-gradient(circle 400px at 30% 110%, rgba(${rgb},0.04), transparent 60%)
-          `,
         }}
       />
 

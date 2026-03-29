@@ -33,8 +33,8 @@ export function HeroParticles({ className = "" }: { className?: string }) {
 
     const isMobile = rect.width < 768;
     const count = isMobile
-      ? Math.min(20, Math.floor((rect.width * rect.height) / 25000))
-      : Math.min(45, Math.floor((rect.width * rect.height) / 14000));
+      ? Math.min(14, Math.floor((rect.width * rect.height) / 30000))
+      : Math.min(30, Math.floor((rect.width * rect.height) / 18000));
 
     particlesRef.current = Array.from({ length: count }, () => ({
       x: Math.random() * rect.width,
@@ -136,8 +136,8 @@ export function HeroParticles({ className = "" }: { className?: string }) {
         ctx!.fill();
       }
 
-      // Draw connections (desktop only, every other frame for perf)
-      if (connectionDist > 0 && (t & 1) === 0) {
+      // Draw connections (desktop only, every 3rd frame for perf)
+      if (connectionDist > 0 && t % 3 === 0) {
         ctx!.lineWidth = 0.5;
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {

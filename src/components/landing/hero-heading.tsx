@@ -12,16 +12,15 @@ export function HeroHeading() {
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
   const plainWords = ["Transforme", "pagamentos"];
-  const gradientWords = ["falhados", "em", "receita"];
+  const gradientWords = ["perdidos", "em", "receita"];
 
   const wordAnim = (i: number) => ({
-    hidden: { opacity: 0, y: 28, filter: "blur(10px)" },
+    hidden: { opacity: 0, y: 24 },
     visible: {
       opacity: 1,
       y: 0,
-      filter: "blur(0px)",
       transition: {
-        duration: 0.7,
+        duration: 0.65,
         delay: 0.1 + i * 0.1,
         ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
       },
