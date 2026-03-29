@@ -5,6 +5,8 @@ const publicRoutePrefixes = [
   "/",
   "/login",
   "/quiz",
+  "/privacy",
+  "/terms",
   "/invite/",
   "/retry/",
   "/checkout/",

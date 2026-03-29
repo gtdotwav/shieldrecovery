@@ -552,14 +552,14 @@ export default async function Home() {
         </div>
 
         {/* ═══════════════════════ CALCULATOR ═══════════════════════ */}
-        <div className="content-auto">
+        <div id="calculadora" className="content-auto scroll-mt-8">
           <RecoveryCalculator />
         </div>
 
         <GlowDivider />
 
         {/* ═══════════════════════ FEATURES ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+        <section id="funcionalidades" className="relative mx-auto max-w-[82rem] scroll-mt-8 px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <div className="grid items-start gap-10 sm:gap-16 lg:grid-cols-[1fr_1.25fr]">
             <Reveal direction="left">
               <div className="lg:sticky lg:top-24">
@@ -679,7 +679,7 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ PRICING ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+        <section id="precos" className="relative mx-auto max-w-[82rem] scroll-mt-8 px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Modelo de negócio</SectionEyebrow>
@@ -905,7 +905,7 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ INTEGRATION ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+        <section id="integracao" className="relative mx-auto max-w-[82rem] scroll-mt-8 px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div
               className="overflow-hidden rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl"
@@ -1040,9 +1040,10 @@ export default async function Home() {
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400 dark:text-gray-500">Produto</p>
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="#como-funciona">Como funciona</FooterLink>
-                  <FooterLink href="/quiz">Funcionalidades</FooterLink>
-                  <FooterLink href="/quiz">Integração</FooterLink>
-                  <FooterLink href="/quiz">Calculadora</FooterLink>
+                  <FooterLink href="#funcionalidades">Funcionalidades</FooterLink>
+                  <FooterLink href="#integracao">Integração</FooterLink>
+                  <FooterLink href="#calculadora">Calculadora</FooterLink>
+                  <FooterLink href="#precos">Preços</FooterLink>
                 </ul>
               </div>
 
@@ -1052,7 +1053,6 @@ export default async function Home() {
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="/quiz">Acesso antecipado</FooterLink>
                   <FooterLink href="mailto:contato@pagrecovery.com">Contato</FooterLink>
-                  <FooterLink href="/quiz">Blog</FooterLink>
                 </ul>
               </div>
 
@@ -1062,8 +1062,6 @@ export default async function Home() {
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="/privacy">Política de Privacidade</FooterLink>
                   <FooterLink href="/terms">Termos de Uso</FooterLink>
-                  <FooterLink href="/privacy">LGPD</FooterLink>
-                  <FooterLink href="/privacy">Segurança dos Dados</FooterLink>
                 </ul>
               </div>
             </div>
