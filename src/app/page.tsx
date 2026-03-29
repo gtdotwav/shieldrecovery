@@ -49,6 +49,7 @@ import { getPaymentRecoveryService } from "@/server/recovery/services/payment-re
 const LiveDemo = dynamic(() => import("@/components/landing/live-demo").then(m => ({ default: m.LiveDemo })));
 const RecoveryCalculator = dynamic(() => import("@/components/landing/recovery-calculator").then(m => ({ default: m.RecoveryCalculator })));
 const FaqSection = dynamic(() => import("@/components/landing/faq-section").then(m => ({ default: m.FaqSection })));
+const TestimonialsColumn = dynamic(() => import("@/components/ui/testimonials-columns").then(m => ({ default: m.TestimonialsColumn })));
 
 export const revalidate = 60;
 
@@ -56,6 +57,68 @@ export const revalidate = 60;
 const b = platformBrand;
 const rgb = b.accentRgb;
 const cardBg = `rgba(${b.slug === "pagrecovery" ? "6,20,15" : "13,13,13"}`;
+
+// ── Testimonials ──
+const testimonials = [
+  {
+    text: "Em 48h recuperamos R$ 12 mil que estavam parados. A IA identificou o melhor canal e horario pra cada cliente automaticamente.",
+    name: "Ricardo Mendes",
+    role: "CEO",
+    company: "DigitalPay",
+  },
+  {
+    text: "O call center de agentes IA e surreal. Ligam com voz humanizada, negociam e enviam o link de pagamento na hora. Nosso time nem precisa intervir.",
+    name: "Camila Rocha",
+    role: "Head de Operacoes",
+    company: "ShopFlex",
+  },
+  {
+    text: "Integramos em menos de 5 minutos. Conectamos o webhook e ja comecamos a recuperar no mesmo dia.",
+    name: "Fernando Lima",
+    role: "CTO",
+    company: "TechPay",
+  },
+  {
+    text: "A taxa de recuperacao subiu de 4% para 32% em duas semanas. O ROI se pagou no primeiro dia.",
+    name: "Juliana Alves",
+    role: "Diretora Financeira",
+    company: "VendasOnline",
+  },
+  {
+    text: "O dashboard e muito claro. Vejo em tempo real cada tentativa, cada contato, cada pagamento recuperado. Controle total.",
+    name: "Bruno Nascimento",
+    role: "Gerente de Produto",
+    company: "PayHub",
+  },
+  {
+    text: "Antes eu perdia 40% dos pagamentos com falha. Hoje perco menos de 15%. A plataforma faz tudo sozinha.",
+    name: "Patricia Duarte",
+    role: "Proprietaria",
+    company: "EssencialStore",
+  },
+  {
+    text: "O suporte e incrivel. Nos ajudaram a configurar os funis, personalizar as mensagens e otimizar o timing de cada contato.",
+    name: "Marcos Costa",
+    role: "Analista de Dados",
+    company: "DataDriven",
+  },
+  {
+    text: "Usamos com 3 sellers diferentes. Cada um tem seu proprio painel, seus proprios leads. Perfeito pra nossa operacao white-label.",
+    name: "Ana Beatriz",
+    role: "COO",
+    company: "MultiGateway",
+  },
+  {
+    text: "A IA conversa pelo WhatsApp de forma tao natural que os clientes pensam que e um humano. A taxa de resposta triplicou.",
+    name: "Diego Oliveira",
+    role: "Head de Growth",
+    company: "RapidCommerce",
+  },
+];
+
+const testimonialsCol1 = testimonials.slice(0, 3);
+const testimonialsCol2 = testimonials.slice(3, 6);
+const testimonialsCol3 = testimonials.slice(6, 9);
 
 export default async function Home() {
   const service = getPaymentRecoveryService();
@@ -814,6 +877,29 @@ export default async function Home() {
               </div>
             </div>
           </Reveal>
+        </section>
+
+        <GlowDivider />
+
+        {/* ═══════════════════════ TESTIMONIALS ═══════════════════════ */}
+        <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+          <Reveal direction="up">
+            <div className="text-center">
+              <SectionEyebrow>Depoimentos</SectionEyebrow>
+              <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:text-[1.75rem] lg:text-[2.2rem]">
+                Quem usa, recomenda
+              </h2>
+              <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
+                Veja o que nossos clientes dizem sobre a recuperacao autonoma de pagamentos.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="mt-12 flex justify-center gap-5 [mask-image:linear-gradient(to_bottom,transparent,black_20%,black_80%,transparent)] max-h-[700px] overflow-hidden">
+            <TestimonialsColumn testimonials={testimonialsCol1} duration={16} />
+            <TestimonialsColumn testimonials={testimonialsCol2} className="hidden md:block" duration={20} />
+            <TestimonialsColumn testimonials={testimonialsCol3} className="hidden lg:block" duration={18} />
+          </div>
         </section>
 
         <GlowDivider />
