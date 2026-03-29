@@ -10,11 +10,16 @@ import type {
   CalendarDaySummary,
   CalendarNoteRecord,
   CalendarSnapshot,
+  CallAnalytics,
+  CallCampaignRecord,
+  CallEventRecord,
+  CallRecord,
   ConnectionSettingsInput,
   ConnectionSettingsRecord,
   ConversationRecord,
   ConversationStatus,
   CreateCalendarNoteInput,
+  CreateCallInput,
   CustomerRecord,
   FollowUpContact,
   InboxConversation,
@@ -37,6 +42,7 @@ import type {
   SellerUserInput,
   SellerUserRecord,
   SystemLogRecord,
+  UpdateCallInput,
   WebhookEventRecord,
 } from "@/server/recovery/types";
 import { RecoveryStorage } from "@/server/recovery/services/storage";
@@ -1755,6 +1761,248 @@ export class SupabaseStorageService implements RecoveryStorage {
   getWebhookUrl(): string {
     return `${appEnv.appBaseUrl}${buildGatewayWebhookPath()}`;
   }
+
+  /* ── CallCenter ── */
+
+  async listCalls(options?: {
+    leadId?: string;
+    customerId?: string;
+    campaignId?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<CallRecord[]> {
+    let query = this.supabase
+      .from("calls")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (options?.leadId) query = query.eq("lead_id", options.leadId);
+    if (options?.customerId) query = query.eq("customer_id", options.customerId);
+    if (options?.campaignId) query = query.eq("campaign_id", options.campaignId);
+    if (options?.status) query = query.eq("status", options.status);
+    if (options?.limit) query = query.limit(options.limit);
+    if (options?.offset) query = query.range(options.offset, options.offset + (options.limit ?? 50) - 1);
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(mapCall);
+  }
+
+  async getCall(callId: string): Promise<CallRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("calls")
+      .select("*")
+      .eq("id", callId)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapCall(data);
+  }
+
+  async getCallByProviderCallId(providerCallId: string): Promise<CallRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("calls")
+      .select("*")
+      .eq("provider_call_id", providerCallId)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapCall(data);
+  }
+
+  async createCall(input: CreateCallInput): Promise<CallRecord> {
+    const row = {
+      campaign_id: input.campaignId ?? null,
+      lead_id: input.leadId ?? null,
+      customer_id: input.customerId ?? null,
+      agent_id: input.agentId ?? null,
+      direction: input.direction ?? "outbound",
+      from_number: input.fromNumber ?? null,
+      to_number: input.toNumber,
+      status: "queued",
+      provider: input.provider ?? "vapi",
+      provider_call_id: input.providerCallId ?? null,
+      metadata: input.metadata ?? {},
+    };
+
+    const { data, error } = await this.supabase
+      .from("calls")
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create call: ${error?.message ?? "unknown"}`);
+    }
+
+    return mapCall(data);
+  }
+
+  async updateCall(callId: string, input: UpdateCallInput): Promise<CallRecord> {
+    const row: Record<string, unknown> = {};
+
+    if (input.status !== undefined) row.status = input.status;
+    if (input.startedAt !== undefined) row.started_at = input.startedAt;
+    if (input.answeredAt !== undefined) row.answered_at = input.answeredAt;
+    if (input.endedAt !== undefined) row.ended_at = input.endedAt;
+    if (input.durationSeconds !== undefined) row.duration_seconds = input.durationSeconds;
+    if (input.ringDurationSeconds !== undefined) row.ring_duration_seconds = input.ringDurationSeconds;
+    if (input.recordingUrl !== undefined) row.recording_url = input.recordingUrl;
+    if (input.recordingDurationSeconds !== undefined) row.recording_duration_seconds = input.recordingDurationSeconds;
+    if (input.transcript !== undefined) row.transcript = input.transcript;
+    if (input.transcriptSummary !== undefined) row.transcript_summary = input.transcriptSummary;
+    if (input.outcome !== undefined) row.outcome = input.outcome;
+    if (input.outcomeNotes !== undefined) row.outcome_notes = input.outcomeNotes;
+    if (input.callbackScheduledAt !== undefined) row.callback_scheduled_at = input.callbackScheduledAt;
+    if (input.providerCallId !== undefined) row.provider_call_id = input.providerCallId;
+    if (input.providerCost !== undefined) row.provider_cost = input.providerCost;
+    if (input.sentiment !== undefined) row.sentiment = input.sentiment;
+    if (input.metadata !== undefined) row.metadata = input.metadata;
+
+    const { data, error } = await this.supabase
+      .from("calls")
+      .update(row)
+      .eq("id", callId)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to update call: ${error?.message ?? "unknown"}`);
+    }
+
+    return mapCall(data);
+  }
+
+  async createCallEvent(callId: string, eventType: string, eventData?: Record<string, unknown>): Promise<void> {
+    await this.supabase.from("call_events").insert({
+      call_id: callId,
+      event_type: eventType,
+      data: eventData ?? {},
+    });
+  }
+
+  async getCallEvents(callId: string): Promise<CallEventRecord[]> {
+    const { data, error } = await this.supabase
+      .from("call_events")
+      .select("*")
+      .eq("call_id", callId)
+      .order("created_at", { ascending: true });
+
+    if (error || !data) return [];
+    return data.map(mapCallEvent);
+  }
+
+  async getCallAnalytics(): Promise<CallAnalytics> {
+    const { data, error } = await this.supabase
+      .from("calls")
+      .select("status, outcome, duration_seconds, answered_at");
+
+    if (error || !data) {
+      return {
+        totalCalls: 0,
+        completedCalls: 0,
+        answeredCalls: 0,
+        totalDurationSeconds: 0,
+        averageDurationSeconds: 0,
+        answerRate: 0,
+        recoveredFromCalls: 0,
+        callbacksScheduled: 0,
+        byOutcome: {},
+        byStatus: {},
+      };
+    }
+
+    const totalCalls = data.length;
+    const completedCalls = data.filter((c: { status: string }) => c.status === "completed").length;
+    const answeredCalls = data.filter((c: { answered_at: string | null }) => c.answered_at != null).length;
+    const totalDuration = data.reduce((sum: number, c: { duration_seconds: number | null }) => sum + (Number(c.duration_seconds) || 0), 0);
+
+    const byOutcome: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+
+    for (const call of data as Array<{ status: string; outcome?: string }>) {
+      byStatus[call.status] = (byStatus[call.status] || 0) + 1;
+      if (call.outcome) {
+        byOutcome[call.outcome] = (byOutcome[call.outcome] || 0) + 1;
+      }
+    }
+
+    return {
+      totalCalls,
+      completedCalls,
+      answeredCalls,
+      totalDurationSeconds: totalDuration,
+      averageDurationSeconds: completedCalls > 0 ? Math.round(totalDuration / completedCalls) : 0,
+      answerRate: totalCalls > 0 ? answeredCalls / totalCalls : 0,
+      recoveredFromCalls: byOutcome["recovered"] ?? 0,
+      callbacksScheduled: byOutcome["callback_scheduled"] ?? 0,
+      byOutcome,
+      byStatus,
+    };
+  }
+
+  async listCallCampaigns(): Promise<CallCampaignRecord[]> {
+    const { data, error } = await this.supabase
+      .from("call_campaigns")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error || !data) return [];
+    return data.map(mapCallCampaign);
+  }
+
+  async createCallCampaign(input: {
+    name: string;
+    description?: string;
+    filterCriteria?: Record<string, unknown>;
+    createdBy?: string;
+  }): Promise<CallCampaignRecord> {
+    const { data, error } = await this.supabase
+      .from("call_campaigns")
+      .insert({
+        name: input.name,
+        description: input.description ?? "",
+        filter_criteria: input.filterCriteria ?? {},
+        created_by: input.createdBy ?? null,
+      })
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create campaign: ${error?.message ?? "unknown"}`);
+    }
+
+    return mapCallCampaign(data);
+  }
+
+  async updateCallCampaign(
+    campaignId: string,
+    input: Partial<{ name: string; description: string; status: string; totalContacts: number; completedContacts: number; successfulContacts: number; startedAt: string; completedAt: string }>,
+  ): Promise<CallCampaignRecord> {
+    const row: Record<string, unknown> = {};
+    if (input.name !== undefined) row.name = input.name;
+    if (input.description !== undefined) row.description = input.description;
+    if (input.status !== undefined) row.status = input.status;
+    if (input.totalContacts !== undefined) row.total_contacts = input.totalContacts;
+    if (input.completedContacts !== undefined) row.completed_contacts = input.completedContacts;
+    if (input.successfulContacts !== undefined) row.successful_contacts = input.successfulContacts;
+    if (input.startedAt !== undefined) row.started_at = input.startedAt;
+    if (input.completedAt !== undefined) row.completed_at = input.completedAt;
+
+    const { data, error } = await this.supabase
+      .from("call_campaigns")
+      .update(row)
+      .eq("id", campaignId)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to update campaign: ${error?.message ?? "unknown"}`);
+    }
+
+    return mapCallCampaign(data);
+  }
 }
 
 // Mappers
@@ -2421,6 +2669,72 @@ function queueJobPriority(jobType: string) {
     default:
       return 20;
   }
+}
+
+/* ── Call mappers ── */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCall(data: any): CallRecord {
+  return {
+    id: data.id,
+    campaignId: data.campaign_id ?? undefined,
+    leadId: data.lead_id ?? undefined,
+    customerId: data.customer_id ?? undefined,
+    agentId: data.agent_id ?? undefined,
+    direction: data.direction ?? "outbound",
+    fromNumber: data.from_number ?? undefined,
+    toNumber: data.to_number ?? "",
+    status: data.status ?? "queued",
+    startedAt: data.started_at ? new Date(data.started_at).toISOString() : undefined,
+    answeredAt: data.answered_at ? new Date(data.answered_at).toISOString() : undefined,
+    endedAt: data.ended_at ? new Date(data.ended_at).toISOString() : undefined,
+    durationSeconds: Number(data.duration_seconds) || 0,
+    ringDurationSeconds: Number(data.ring_duration_seconds) || 0,
+    recordingUrl: data.recording_url ?? undefined,
+    recordingDurationSeconds: data.recording_duration_seconds != null ? Number(data.recording_duration_seconds) : undefined,
+    transcript: data.transcript ?? undefined,
+    transcriptSummary: data.transcript_summary ?? undefined,
+    outcome: data.outcome ?? undefined,
+    outcomeNotes: data.outcome_notes ?? undefined,
+    callbackScheduledAt: data.callback_scheduled_at ? new Date(data.callback_scheduled_at).toISOString() : undefined,
+    provider: data.provider ?? "vapi",
+    providerCallId: data.provider_call_id ?? undefined,
+    providerCost: data.provider_cost != null ? Number(data.provider_cost) : undefined,
+    sentiment: data.sentiment ?? undefined,
+    metadata: data.metadata ?? {},
+    createdAt: toIsoStringOrNow(data.created_at),
+    updatedAt: toIsoStringOrNow(data.updated_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCallCampaign(data: any): CallCampaignRecord {
+  return {
+    id: data.id,
+    name: data.name ?? "",
+    description: data.description ?? "",
+    status: data.status ?? "draft",
+    filterCriteria: data.filter_criteria ?? {},
+    totalContacts: Number(data.total_contacts) || 0,
+    completedContacts: Number(data.completed_contacts) || 0,
+    successfulContacts: Number(data.successful_contacts) || 0,
+    createdBy: data.created_by ?? undefined,
+    startedAt: data.started_at ? new Date(data.started_at).toISOString() : undefined,
+    completedAt: data.completed_at ? new Date(data.completed_at).toISOString() : undefined,
+    createdAt: toIsoStringOrNow(data.created_at),
+    updatedAt: toIsoStringOrNow(data.updated_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCallEvent(data: any): CallEventRecord {
+  return {
+    id: data.id,
+    callId: data.call_id,
+    eventType: data.event_type,
+    data: data.data ?? {},
+    createdAt: toIsoStringOrNow(data.created_at),
+  };
 }
 
 function mapCalendarJobTitle(jobType: string) {

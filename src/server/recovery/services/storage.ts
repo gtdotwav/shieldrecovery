@@ -9,10 +9,16 @@ import type {
   AgentRecord,
   CalendarSnapshot,
   CalendarNoteRecord,
+  CallAnalytics,
+  CallCampaignRecord,
+  CallEventRecord,
+  CallRecord,
   ConnectionSettingsInput,
   ConnectionSettingsRecord,
   ConversationRecord,
   ConversationStatus,
+  CreateCalendarNoteInput,
+  CreateCallInput,
   CustomerRecord,
   FollowUpContact,
   InboxConversation,
@@ -34,9 +40,9 @@ import type {
   SellerInviteRecord,
   SellerUserInput,
   SellerUserRecord,
-  CreateCalendarNoteInput,
   StorageState,
   SystemLogRecord,
+  UpdateCallInput,
   WebhookEventRecord,
 } from "@/server/recovery/types";
 
@@ -193,6 +199,34 @@ export interface RecoveryStorage {
     input: ConnectionSettingsInput,
   ): Promise<ConnectionSettingsRecord>;
   getWebhookUrl(): string;
+
+  /* CallCenter */
+  listCalls(options?: {
+    leadId?: string;
+    customerId?: string;
+    campaignId?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<CallRecord[]>;
+  getCall(callId: string): Promise<CallRecord | undefined>;
+  getCallByProviderCallId(providerCallId: string): Promise<CallRecord | undefined>;
+  createCall(input: CreateCallInput): Promise<CallRecord>;
+  updateCall(callId: string, input: UpdateCallInput): Promise<CallRecord>;
+  createCallEvent(callId: string, eventType: string, eventData?: Record<string, unknown>): Promise<void>;
+  getCallEvents(callId: string): Promise<CallEventRecord[]>;
+  getCallAnalytics(): Promise<CallAnalytics>;
+  listCallCampaigns(): Promise<CallCampaignRecord[]>;
+  createCallCampaign(input: {
+    name: string;
+    description?: string;
+    filterCriteria?: Record<string, unknown>;
+    createdBy?: string;
+  }): Promise<CallCampaignRecord>;
+  updateCallCampaign(
+    campaignId: string,
+    input: Partial<{ name: string; description: string; status: string; totalContacts: number; completedContacts: number; successfulContacts: number; startedAt: string; completedAt: string }>,
+  ): Promise<CallCampaignRecord>;
 }
 
 const DEFAULT_AGENTS: AgentRecord[] = [];
@@ -1491,6 +1525,42 @@ class LocalStorageService implements RecoveryStorage {
 
   getWebhookUrl(): string {
     return `${appEnv.appBaseUrl}${buildGatewayWebhookPath()}`;
+  }
+
+  /* CallCenter — stubs for local mode */
+
+  async listCalls(): Promise<CallRecord[]> { return []; }
+  async getCall(): Promise<CallRecord | undefined> { return undefined; }
+  async getCallByProviderCallId(): Promise<CallRecord | undefined> { return undefined; }
+  async createCall(input: CreateCallInput): Promise<CallRecord> {
+    return {
+      id: randomUUID(), campaignId: undefined, leadId: input.leadId, customerId: input.customerId,
+      agentId: input.agentId, direction: input.direction ?? "outbound", fromNumber: input.fromNumber,
+      toNumber: input.toNumber, status: "queued", durationSeconds: 0, ringDurationSeconds: 0,
+      provider: input.provider ?? "vapi", providerCallId: input.providerCallId,
+      metadata: input.metadata ?? {}, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+  }
+  async updateCall(_callId: string, _input: UpdateCallInput): Promise<CallRecord> {
+    throw new Error("Local storage does not support call updates.");
+  }
+  async createCallEvent(): Promise<void> {}
+  async getCallEvents(): Promise<CallEventRecord[]> { return []; }
+  async getCallAnalytics(): Promise<CallAnalytics> {
+    return { totalCalls: 0, completedCalls: 0, answeredCalls: 0, totalDurationSeconds: 0,
+      averageDurationSeconds: 0, answerRate: 0, recoveredFromCalls: 0, callbacksScheduled: 0,
+      byOutcome: {}, byStatus: {} };
+  }
+  async listCallCampaigns(): Promise<CallCampaignRecord[]> { return []; }
+  async createCallCampaign(input: { name: string }): Promise<CallCampaignRecord> {
+    return {
+      id: randomUUID(), name: input.name, description: "", status: "draft",
+      filterCriteria: {}, totalContacts: 0, completedContacts: 0, successfulContacts: 0,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    };
+  }
+  async updateCallCampaign(): Promise<CallCampaignRecord> {
+    throw new Error("Local storage does not support campaign updates.");
   }
 }
 

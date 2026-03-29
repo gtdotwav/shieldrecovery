@@ -8,6 +8,8 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  PhoneCall,
+  PhoneMissed,
   Send,
   User,
 } from "lucide-react";
@@ -43,6 +45,8 @@ import {
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+import { getStorageService } from "@/server/recovery/services/storage";
+import type { CallRecord } from "@/server/recovery/types";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +78,8 @@ export default async function LeadDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const callStorage = getStorageService();
+  const leadCalls = await callStorage.listCalls({ leadId: leadId, limit: 10 });
   const inbox = await messaging.getInboxSnapshot();
   const relatedConversation = inbox.conversations.find(
     (conversation) => conversation.lead_id === leadId,
@@ -328,6 +334,45 @@ export default async function LeadDetailPage({ params }: PageProps) {
               </div>
             ) : null}
           </PlatformSurface>
+
+          {/* Call history */}
+          <PlatformSurface className="p-5 sm:p-6">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-sky-500">
+                  Chamadas
+                </p>
+                <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#1a1a2e]">
+                  Historico de ligacoes
+                </h2>
+              </div>
+              {leadCalls.length > 0 ? (
+                <PlatformPill icon={PhoneCall}>
+                  {leadCalls.length} chamada{leadCalls.length !== 1 ? "s" : ""}
+                </PlatformPill>
+              ) : null}
+            </div>
+
+            <div className="mt-5 space-y-2.5">
+              {leadCalls.length === 0 ? (
+                <PlatformInset className="flex min-h-[8rem] flex-col items-center justify-center p-6 text-center">
+                  <PhoneCall className="h-5 w-5 text-[#9ca3af]" />
+                  <p className="mt-3 text-sm font-medium text-[#1a1a2e]">
+                    Nenhuma chamada registrada para este lead.
+                  </p>
+                  <p className="mt-2 max-w-md text-sm leading-6 text-[#717182]">
+                    As chamadas feitas pelo agente de voz aparecerao aqui automaticamente.
+                  </p>
+                </PlatformInset>
+              ) : (
+                <div className="max-h-[20rem] space-y-2.5 overflow-y-auto pr-1">
+                  {leadCalls.map((call) => (
+                    <LeadCallRow key={call.id} call={call} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </PlatformSurface>
         </div>
 
         <div className="space-y-4 2xl:sticky 2xl:top-20 2xl:self-start">
@@ -469,6 +514,75 @@ function SidebarLine({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="text-sm leading-6 text-[#374151] break-words">{value}</p>
+    </div>
+  );
+}
+
+function LeadCallRow({ call }: { call: CallRecord }) {
+  const StatusIcon =
+    call.status === "completed" ? PhoneCall :
+    call.status === "no_answer" || call.status === "busy" ? PhoneMissed :
+    PhoneCall;
+
+  const statusLabel: Record<string, string> = {
+    queued: "Na fila",
+    ringing: "Tocando",
+    in_progress: "Em andamento",
+    completed: "Completada",
+    failed: "Falhou",
+    no_answer: "Sem resposta",
+    busy: "Ocupado",
+    voicemail: "Caixa postal",
+    cancelled: "Cancelada",
+  };
+
+  const outcomeLabel: Record<string, string> = {
+    recovered: "Recuperado",
+    callback_scheduled: "Callback agendado",
+    interested: "Interessado",
+    no_interest: "Sem interesse",
+    wrong_number: "Numero errado",
+    voicemail_left: "Recado deixado",
+    no_voicemail: "Sem recado",
+    technical_issue: "Problema tecnico",
+    other: "Outro",
+  };
+
+  const durationStr = call.durationSeconds > 0
+    ? call.durationSeconds < 60
+      ? `${call.durationSeconds}s`
+      : `${Math.floor(call.durationSeconds / 60)}m ${call.durationSeconds % 60}s`
+    : "";
+
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-black/[0.06] bg-[#f9fafb] p-3">
+      <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-white">
+        <StatusIcon className={`h-3.5 w-3.5 ${
+          call.status === "completed" ? "text-green-500" :
+          call.status === "failed" ? "text-red-500" : "text-[#717182]"
+        }`} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-[#374151]">
+            {statusLabel[call.status] ?? call.status}
+          </span>
+          {call.outcome ? (
+            <span className="inline-flex items-center rounded-md bg-[var(--accent)]/10 px-2 py-0.5 text-[0.65rem] font-medium text-[var(--accent)]">
+              {outcomeLabel[call.outcome] ?? call.outcome}
+            </span>
+          ) : null}
+          {durationStr ? (
+            <span className="text-xs text-[#9ca3af]">{durationStr}</span>
+          ) : null}
+        </div>
+        {call.transcriptSummary ? (
+          <p className="mt-1 text-xs text-[#717182] line-clamp-2">{call.transcriptSummary}</p>
+        ) : null}
+        <p className="mt-1 text-xs text-[#9ca3af]">
+          {formatRelativeTime(call.createdAt)} · {call.provider}
+        </p>
+      </div>
     </div>
   );
 }

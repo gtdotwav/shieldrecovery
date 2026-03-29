@@ -126,7 +126,6 @@ export const platformRoutes: PlatformRoute[] = [
     icon: PhoneCall,
     kind: "app",
     allowedRoles: ["admin", "seller"],
-    external: true,
   },
 ];
 
@@ -247,13 +246,7 @@ export async function PlatformAppPage({
   children: React.ReactNode;
 }) {
   const session = await requireAuthenticatedSession();
-  const callcenterKey = process.env.CALLCENTER_AUTO_KEY ?? "";
-  const allRoutes = platformRoutes.map((r) =>
-    r.external
-      ? { ...r, href: `https://frontend-mtttt.vercel.app/auto-login?key=${encodeURIComponent(callcenterKey)}` }
-      : r,
-  );
-  const visibleRoutes = allRoutes.filter((route) => {
+  const visibleRoutes = platformRoutes.filter((route) => {
     if ("devOnly" in route && route.devOnly) return false;
     if ("experimental" in route && route.experimental && !appEnv.experimentalPagesEnabled) return false;
     if (route.allowedRoles && !route.allowedRoles.includes(session.role)) return false;

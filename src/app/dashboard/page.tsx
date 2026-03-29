@@ -5,6 +5,7 @@ import {
   CreditCard,
   Clock,
   Download,
+  PhoneCall,
   TrendingUp,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ import { platformBrand } from "@/lib/platform";
 import { recommendedNextAction, scorePriority } from "@/lib/stage";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+import { getStorageService } from "@/server/recovery/services/storage";
 import type { FollowUpContact } from "@/server/recovery/types";
 
 export const dynamic = "force-dynamic";
@@ -35,9 +37,11 @@ export const metadata = {
 export default async function DashboardPage() {
   await requireAuthenticatedSession(["admin"]);
   const service = getPaymentRecoveryService();
-  const [analytics, contacts] = await Promise.all([
+  const callStorage = getStorageService();
+  const [analytics, contacts, callAnalytics] = await Promise.all([
     service.getRecoveryAnalytics(),
     service.getFollowUpContacts(),
+    callStorage.getCallAnalytics(),
   ]);
 
   const activeContacts = contacts.filter(
@@ -208,6 +212,9 @@ export default async function DashboardPage() {
             <div className="mt-4 space-y-3.5">
               <ChannelBar label="WhatsApp" count={whatsappCount} total={contacts.length} color="bg-[var(--accent)]" />
               <ChannelBar label="Email" count={emailCount} total={contacts.length} color="bg-[var(--accent-strong)]" />
+              {callAnalytics.totalCalls > 0 ? (
+                <ChannelBar label="Voz (CallCenter)" count={callAnalytics.completedCalls} total={callAnalytics.totalCalls} color="bg-blue-500" />
+              ) : null}
             </div>
             {contacts.length > 0 ? (
               <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">

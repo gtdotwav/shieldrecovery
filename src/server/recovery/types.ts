@@ -32,7 +32,7 @@ export const JOB_QUEUES = [
   "notification-jobs",
 ] as const;
 
-export const MESSAGING_CHANNELS = ["whatsapp", "email", "sms"] as const;
+export const MESSAGING_CHANNELS = ["whatsapp", "email", "sms", "voice"] as const;
 
 export const CONVERSATION_STATUSES = ["open", "pending", "closed"] as const;
 
@@ -664,4 +664,158 @@ export type RetryPaymentInput = {
   gateway_payment_id?: string;
   order_id?: string;
   reason?: string;
+};
+
+/* ── CallCenter ── */
+
+export const CALL_STATUSES = [
+  "queued",
+  "ringing",
+  "in_progress",
+  "completed",
+  "failed",
+  "no_answer",
+  "busy",
+  "voicemail",
+  "cancelled",
+] as const;
+
+export const CALL_DIRECTIONS = ["inbound", "outbound"] as const;
+
+export const CALL_OUTCOMES = [
+  "recovered",
+  "callback_scheduled",
+  "interested",
+  "no_interest",
+  "wrong_number",
+  "voicemail_left",
+  "no_voicemail",
+  "technical_issue",
+  "other",
+] as const;
+
+export const CALL_PROVIDERS = [
+  "vapi",
+  "bland",
+  "retell",
+  "twilio",
+  "manual",
+] as const;
+
+export const CALL_SENTIMENTS = ["positive", "neutral", "negative"] as const;
+
+export const CALL_CAMPAIGN_STATUSES = [
+  "draft",
+  "active",
+  "paused",
+  "completed",
+  "cancelled",
+] as const;
+
+export type CallStatus = (typeof CALL_STATUSES)[number];
+export type CallDirection = (typeof CALL_DIRECTIONS)[number];
+export type CallOutcome = (typeof CALL_OUTCOMES)[number];
+export type CallProvider = (typeof CALL_PROVIDERS)[number];
+export type CallSentiment = (typeof CALL_SENTIMENTS)[number];
+export type CallCampaignStatus = (typeof CALL_CAMPAIGN_STATUSES)[number];
+
+export type CallRecord = {
+  id: string;
+  campaignId?: string;
+  leadId?: string;
+  customerId?: string;
+  agentId?: string;
+  direction: CallDirection;
+  fromNumber?: string;
+  toNumber: string;
+  status: CallStatus;
+  startedAt?: string;
+  answeredAt?: string;
+  endedAt?: string;
+  durationSeconds: number;
+  ringDurationSeconds: number;
+  recordingUrl?: string;
+  recordingDurationSeconds?: number;
+  transcript?: string;
+  transcriptSummary?: string;
+  outcome?: CallOutcome;
+  outcomeNotes?: string;
+  callbackScheduledAt?: string;
+  provider: CallProvider;
+  providerCallId?: string;
+  providerCost?: number;
+  sentiment?: CallSentiment;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CallCampaignRecord = {
+  id: string;
+  name: string;
+  description: string;
+  status: CallCampaignStatus;
+  filterCriteria: Record<string, unknown>;
+  totalContacts: number;
+  completedContacts: number;
+  successfulContacts: number;
+  createdBy?: string;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CallEventRecord = {
+  id: string;
+  callId: string;
+  eventType: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type CallAnalytics = {
+  totalCalls: number;
+  completedCalls: number;
+  answeredCalls: number;
+  totalDurationSeconds: number;
+  averageDurationSeconds: number;
+  answerRate: number;
+  recoveredFromCalls: number;
+  callbacksScheduled: number;
+  byOutcome: Record<string, number>;
+  byStatus: Record<string, number>;
+};
+
+export type CreateCallInput = {
+  campaignId?: string;
+  leadId?: string;
+  customerId?: string;
+  agentId?: string;
+  direction?: CallDirection;
+  fromNumber?: string;
+  toNumber: string;
+  provider?: CallProvider;
+  providerCallId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type UpdateCallInput = {
+  status?: CallStatus;
+  startedAt?: string;
+  answeredAt?: string;
+  endedAt?: string;
+  durationSeconds?: number;
+  ringDurationSeconds?: number;
+  recordingUrl?: string;
+  recordingDurationSeconds?: number;
+  transcript?: string;
+  transcriptSummary?: string;
+  outcome?: CallOutcome;
+  outcomeNotes?: string;
+  callbackScheduledAt?: string;
+  providerCallId?: string;
+  providerCost?: number;
+  sentiment?: CallSentiment;
+  metadata?: Record<string, unknown>;
 };
