@@ -47,6 +47,8 @@ import type {
   SellerUserSnapshot,
   SellerWebhookSnapshot,
   WebhookEventRecord,
+  WhitelabelProfileInput,
+  WhitelabelProfileRecord,
 } from "@/server/recovery/types";
 import {
   RECOVERABLE_PAYMENT_EVENTS,
@@ -556,6 +558,35 @@ export class PaymentRecoveryService {
     }
 
     return this.storage.saveSellerAdminControl(input);
+  }
+
+  /* ── Whitelabel Profiles ── */
+
+  async listWhitelabelProfiles(): Promise<WhitelabelProfileRecord[]> {
+    return this.storage.listWhitelabelProfiles();
+  }
+
+  async getWhitelabelProfile(
+    id: string,
+  ): Promise<WhitelabelProfileRecord | undefined> {
+    return this.storage.getWhitelabelProfile(id);
+  }
+
+  async saveWhitelabelProfile(
+    input: WhitelabelProfileInput,
+    id?: string,
+  ): Promise<WhitelabelProfileRecord> {
+    if (!input.name?.trim()) {
+      throw new HttpError(400, "Profile name is required.");
+    }
+    return this.storage.saveWhitelabelProfile(input, id);
+  }
+
+  async deleteWhitelabelProfile(id: string): Promise<void> {
+    if (!id?.trim()) {
+      throw new HttpError(400, "Profile id is required.");
+    }
+    return this.storage.deleteWhitelabelProfile(id);
   }
 
   async saveSellerUser(input: SellerUserInput): Promise<SellerUserSnapshot> {

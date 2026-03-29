@@ -24,6 +24,7 @@ import type {
   CreateCallInput,
   CustomerRecord,
   FollowUpContact,
+  GatewayProvider,
   InboxConversation,
   MessageMetadata,
   MessageRecord,
@@ -46,6 +47,8 @@ import type {
   SystemLogRecord,
   UpdateCallInput,
   WebhookEventRecord,
+  WhitelabelProfileInput,
+  WhitelabelProfileRecord,
 } from "@/server/recovery/types";
 import { RecoveryStorage } from "@/server/recovery/services/storage";
 
@@ -245,6 +248,8 @@ type DatabaseSellerAdminControlRow = {
   autonomy_mode: SellerAdminControlRecord["autonomyMode"];
   messaging_approach?: SellerAdminControlRecord["messagingApproach"] | null;
   gateway_slug?: string | null;
+  gateway_api_key?: string | null;
+  whitelabel_id?: string | null;
   checkout_url?: string | null;
   checkout_api_key?: string | null;
   notes?: string | null;
@@ -277,6 +282,24 @@ type DatabaseSellerInviteRow = {
   expires_at: string;
   accepted_at?: string | null;
   revoked_at?: string | null;
+};
+
+type DatabaseWhitelabelProfileRow = {
+  id: string;
+  name: string;
+  slug: string;
+  gateway_provider: string;
+  gateway_base_url: string;
+  gateway_docs_url: string;
+  gateway_webhook_path: string;
+  checkout_url: string;
+  checkout_api_key: string;
+  brand_accent: string;
+  brand_logo: string;
+  active: boolean;
+  notes: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export class SupabaseStorageService implements RecoveryStorage {
@@ -1663,6 +1686,8 @@ export class SupabaseStorageService implements RecoveryStorage {
       autonomy_mode: input.autonomyMode ?? existing?.autonomyMode ?? "autonomous",
       messaging_approach: input.messagingApproach ?? existing?.messagingApproach ?? "friendly",
       gateway_slug: input.gatewaySlug?.trim() || existing?.gatewaySlug || null,
+      gateway_api_key: input.gatewayApiKey?.trim() || existing?.gatewayApiKey || null,
+      whitelabel_id: input.whitelabelId?.trim() || existing?.whitelabelId || null,
       checkout_url: input.checkoutUrl?.trim() || existing?.checkoutUrl || null,
       checkout_api_key: input.checkoutApiKey?.trim() || existing?.checkoutApiKey || null,
       notes: input.notes?.trim() || existing?.notes || null,
@@ -2065,6 +2090,83 @@ export class SupabaseStorageService implements RecoveryStorage {
 
     return mapCallcenterSettings(data);
   }
+
+  async listWhitelabelProfiles(): Promise<WhitelabelProfileRecord[]> {
+    const { data, error } = await this.supabase
+      .from("whitelabel_profiles")
+      .select("*")
+      .order("name", { ascending: true });
+    if (error || !data) return [];
+
+    // Count sellers per profile
+    const controls = await this.getSellerAdminControls();
+    const countMap = new Map<string, number>();
+    for (const c of controls) {
+      if (c.whitelabelId) {
+        countMap.set(c.whitelabelId, (countMap.get(c.whitelabelId) ?? 0) + 1);
+      }
+    }
+
+    return (data as DatabaseWhitelabelProfileRow[]).map(row =>
+      mapWhitelabelProfile(row, countMap.get(row.id) ?? 0)
+    );
+  }
+
+  async getWhitelabelProfile(id: string): Promise<WhitelabelProfileRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("whitelabel_profiles")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error || !data) return undefined;
+
+    const controls = await this.getSellerAdminControls();
+    const count = controls.filter(c => c.whitelabelId === id).length;
+    return mapWhitelabelProfile(data as DatabaseWhitelabelProfileRow, count);
+  }
+
+  async saveWhitelabelProfile(input: WhitelabelProfileInput, id?: string): Promise<WhitelabelProfileRecord> {
+    const now = new Date().toISOString();
+    const slug = input.slug?.trim() || input.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+    let existing: WhitelabelProfileRecord | undefined;
+    if (id) {
+      existing = await this.getWhitelabelProfile(id);
+    }
+
+    const payload = {
+      id: existing?.id ?? id ?? randomUUID(),
+      name: input.name.trim(),
+      slug,
+      gateway_provider: input.gatewayProvider,
+      gateway_base_url: input.gatewayBaseUrl?.trim() ?? existing?.gatewayBaseUrl ?? "",
+      gateway_docs_url: input.gatewayDocsUrl?.trim() ?? existing?.gatewayDocsUrl ?? "",
+      gateway_webhook_path: input.gatewayWebhookPath?.trim() ?? existing?.gatewayWebhookPath ?? "",
+      checkout_url: input.checkoutUrl?.trim() ?? existing?.checkoutUrl ?? "",
+      checkout_api_key: input.checkoutApiKey?.trim() ?? existing?.checkoutApiKey ?? "",
+      brand_accent: input.brandAccent?.trim() ?? existing?.brandAccent ?? "",
+      brand_logo: input.brandLogo?.trim() ?? existing?.brandLogo ?? "",
+      active: input.active ?? existing?.active ?? true,
+      notes: input.notes?.trim() ?? existing?.notes ?? "",
+      created_at: existing?.createdAt ?? now,
+      updated_at: now,
+    };
+
+    const { data, error } = await this.supabase
+      .from("whitelabel_profiles")
+      .upsert(payload, { onConflict: "id" })
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      return mapWhitelabelProfile(payload as DatabaseWhitelabelProfileRow, 0);
+    }
+    return mapWhitelabelProfile(data as DatabaseWhitelabelProfileRow, 0);
+  }
+
+  async deleteWhitelabelProfile(id: string): Promise<void> {
+    await this.supabase.from("whitelabel_profiles").delete().eq("id", id);
+  }
 }
 
 // Mappers
@@ -2160,9 +2262,32 @@ function mapSellerAdminControl(
     autonomyMode: data.autonomy_mode,
     messagingApproach: data.messaging_approach ?? "friendly",
     gatewaySlug: data.gateway_slug ?? undefined,
+    gatewayApiKey: data.gateway_api_key ?? undefined,
+    whitelabelId: data.whitelabel_id ?? undefined,
     checkoutUrl: data.checkout_url ?? undefined,
     checkoutApiKey: data.checkout_api_key ?? undefined,
     notes: data.notes ?? undefined,
+    updatedAt: toIsoStringOrNow(data.updated_at),
+  };
+}
+
+function mapWhitelabelProfile(data: DatabaseWhitelabelProfileRow, sellersCount: number = 0): WhitelabelProfileRecord {
+  return {
+    id: data.id,
+    name: data.name,
+    slug: data.slug,
+    gatewayProvider: data.gateway_provider as GatewayProvider,
+    gatewayBaseUrl: data.gateway_base_url ?? "",
+    gatewayDocsUrl: data.gateway_docs_url ?? "",
+    gatewayWebhookPath: data.gateway_webhook_path ?? "",
+    checkoutUrl: data.checkout_url ?? "",
+    checkoutApiKey: data.checkout_api_key ?? "",
+    brandAccent: data.brand_accent ?? "",
+    brandLogo: data.brand_logo ?? "",
+    active: data.active,
+    sellersCount,
+    notes: data.notes ?? "",
+    createdAt: toIsoStringOrNow(data.created_at),
     updatedAt: toIsoStringOrNow(data.updated_at),
   };
 }

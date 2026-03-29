@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   KeyRound,
+  Layers,
   MessageCircle,
   Search,
   ShieldCheck,
@@ -30,6 +31,7 @@ import { getPaymentRecoveryService } from "@/server/recovery/services/payment-re
 import type {
   AdminSellerSnapshot,
   SellerInviteSnapshot,
+  WhitelabelProfileRecord,
 } from "@/server/recovery/types";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +53,11 @@ type AdminPageProps = {
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   await requireAuthenticatedSession(["admin"]);
   const params = (await searchParams) ?? {};
-  const snapshot = await getPaymentRecoveryService().getAdminPanelSnapshot();
+  const service = getPaymentRecoveryService();
+  const [snapshot, whitelabelProfiles] = await Promise.all([
+    service.getAdminPanelSnapshot(),
+    service.listWhitelabelProfiles(),
+  ]);
   const query = typeof params.query === "string" ? params.query.trim() : "";
   const filteredSellers = snapshot.sellers.filter((seller) =>
     matchesSellerQuery(seller, query),
@@ -74,13 +80,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     <PlatformAppPage
       currentPath="/admin"
       action={
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
-        >
-          Abrir recuperação
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/whitelabel"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 py-1.5 text-xs font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface-strong)]"
+          >
+            <Layers className="h-3.5 w-3.5" />
+            Whitelabel
+          </Link>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
+          >
+            Abrir recuperação
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       }
     >
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
@@ -234,7 +249,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </PlatformSurface>
 
           {selectedSeller ? (
-            <SellerControlCard seller={selectedSeller} query={query} />
+            <SellerControlCard seller={selectedSeller} query={query} whitelabelProfiles={whitelabelProfiles} />
           ) : filteredSellers.length > 0 ? (
             <PlatformSurface className="p-6">
               <p className="text-lg font-semibold text-[var(--foreground)]">
@@ -499,9 +514,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 function SellerControlCard({
   seller,
   query,
+  whitelabelProfiles,
 }: {
   seller: AdminSellerSnapshot;
   query: string;
+  whitelabelProfiles: WhitelabelProfileRecord[];
 }) {
   const aboveLimit = seller.activeLeads > seller.control.maxAssignedLeads;
   const closeHref = query ? `/admin?query=${encodeURIComponent(query)}` : "/admin";
@@ -737,6 +754,33 @@ function SellerControlCard({
             type="text"
             defaultValue={seller.control.checkoutApiKey || ""}
             placeholder="sk_live_..."
+          />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+              Perfil whitelabel
+            </span>
+            <select
+              name="whitelabelId"
+              defaultValue={seller.control.whitelabelId || ""}
+              className="w-full rounded-[0.95rem] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+            >
+              <option value="">Nenhum (herda padrão)</option>
+              {whitelabelProfiles.map((wp) => (
+                <option key={wp.id} value={wp.id}>
+                  {wp.name} ({wp.gatewayProvider})
+                </option>
+              ))}
+            </select>
+          </label>
+          <Field
+            label="Gateway API Key do seller"
+            name="gatewayApiKey"
+            type="text"
+            defaultValue={seller.control.gatewayApiKey || ""}
+            placeholder="key do gateway do seller"
           />
         </div>
 

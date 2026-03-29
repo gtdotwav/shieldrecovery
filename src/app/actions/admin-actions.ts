@@ -7,7 +7,8 @@ import { z } from "zod";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import { getStorageService } from "@/server/recovery/services/storage";
-import type { SellerAutonomyMode, SellerMessagingApproach } from "@/server/recovery/types";
+import type { GatewayProvider, SellerAutonomyMode, SellerMessagingApproach } from "@/server/recovery/types";
+import { GATEWAY_PROVIDERS } from "@/server/recovery/types";
 import { hashPlatformPassword } from "@/server/auth/passwords";
 
 const saveSellerUserSchema = z.object({
@@ -129,6 +130,8 @@ export async function saveSellerControlAction(formData: FormData) {
   const notes = String(formData.get("notes") ?? "").trim();
   const checkoutUrl = String(formData.get("checkoutUrl") ?? "").trim();
   const checkoutApiKey = String(formData.get("checkoutApiKey") ?? "").trim();
+  const gatewayApiKey = String(formData.get("gatewayApiKey") ?? "").trim();
+  const whitelabelId = String(formData.get("whitelabelId") ?? "").trim();
 
   if (!sellerKey) {
     redirect("/admin?status=error&message=Seller%20invalido");
@@ -160,9 +163,100 @@ export async function saveSellerControlAction(formData: FormData) {
         : "friendly",
     checkoutUrl: checkoutUrl || undefined,
     checkoutApiKey: checkoutApiKey || undefined,
+    gatewayApiKey: gatewayApiKey || undefined,
+    whitelabelId: whitelabelId || undefined,
     notes: notes || undefined,
   });
 
   revalidateAdminRoutes();
   redirect(`/admin?status=ok&saved=${encodeURIComponent(sellerKey)}`);
+}
+
+/* ── Whitelabel Profile Actions ── */
+
+export async function saveWhitelabelProfileAction(formData: FormData) {
+  await requireAuthenticatedSession(["admin"]);
+
+  const id = String(formData.get("id") ?? "").trim() || undefined;
+  const name = String(formData.get("name") ?? "").trim();
+  const slug = String(formData.get("slug") ?? "").trim();
+  const gatewayProvider = String(formData.get("gatewayProvider") ?? "custom").trim();
+  const gatewayBaseUrl = String(formData.get("gatewayBaseUrl") ?? "").trim();
+  const gatewayDocsUrl = String(formData.get("gatewayDocsUrl") ?? "").trim();
+  const gatewayWebhookPath = String(formData.get("gatewayWebhookPath") ?? "").trim();
+  const checkoutUrl = String(formData.get("checkoutUrl") ?? "").trim();
+  const checkoutApiKey = String(formData.get("checkoutApiKey") ?? "").trim();
+  const brandAccent = String(formData.get("brandAccent") ?? "").trim();
+  const brandLogo = String(formData.get("brandLogo") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  const active = formData.get("active") === "on";
+
+  if (!name) {
+    redirect("/admin/whitelabel?status=error&message=Nome%20obrigatorio");
+  }
+
+  const validProvider = (GATEWAY_PROVIDERS as readonly string[]).includes(gatewayProvider)
+    ? (gatewayProvider as GatewayProvider)
+    : ("custom" as GatewayProvider);
+
+  await getPaymentRecoveryService().saveWhitelabelProfile(
+    {
+      name,
+      slug: slug || undefined,
+      gatewayProvider: validProvider,
+      gatewayBaseUrl: gatewayBaseUrl || undefined,
+      gatewayDocsUrl: gatewayDocsUrl || undefined,
+      gatewayWebhookPath: gatewayWebhookPath || undefined,
+      checkoutUrl: checkoutUrl || undefined,
+      checkoutApiKey: checkoutApiKey || undefined,
+      brandAccent: brandAccent || undefined,
+      brandLogo: brandLogo || undefined,
+      active,
+      notes: notes || undefined,
+    },
+    id,
+  );
+
+  revalidatePath("/admin/whitelabel");
+  revalidatePath("/admin");
+  revalidatePath("/connect");
+  redirect(
+    `/admin/whitelabel?status=ok&saved=${encodeURIComponent(name)}`,
+  );
+}
+
+export async function deleteWhitelabelProfileAction(formData: FormData) {
+  await requireAuthenticatedSession(["admin"]);
+
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) {
+    redirect("/admin/whitelabel?status=error&message=ID%20obrigatorio");
+  }
+
+  await getPaymentRecoveryService().deleteWhitelabelProfile(id);
+
+  revalidatePath("/admin/whitelabel");
+  revalidatePath("/admin");
+  redirect("/admin/whitelabel?status=ok&message=Perfil%20removido");
+}
+
+export async function saveSellerGatewayKeyAction(formData: FormData) {
+  await requireAuthenticatedSession(["admin", "seller"]);
+
+  const sellerKey = String(formData.get("sellerKey") ?? "").trim();
+  const gatewayApiKey = String(formData.get("gatewayApiKey") ?? "").trim();
+  const whitelabelId = String(formData.get("whitelabelId") ?? "").trim();
+
+  if (!sellerKey) {
+    redirect("/connect?status=error&message=Seller%20invalido");
+  }
+
+  await getPaymentRecoveryService().saveSellerAdminControl({
+    sellerKey,
+    gatewayApiKey: gatewayApiKey || undefined,
+    whitelabelId: whitelabelId || undefined,
+  });
+
+  revalidatePath("/connect");
+  redirect("/connect?status=ok&saved=gateway");
 }

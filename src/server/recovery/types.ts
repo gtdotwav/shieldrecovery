@@ -436,8 +436,10 @@ export type SellerAdminControlRecord = {
   autonomyMode: SellerAutonomyMode;
   messagingApproach: SellerMessagingApproach;
   gatewaySlug?: string;
+  gatewayApiKey?: string;
   checkoutUrl?: string;
   checkoutApiKey?: string;
+  whitelabelId?: string;
   notes?: string;
   updatedAt: string;
 };
@@ -455,8 +457,65 @@ export type SellerAdminControlInput = {
   autonomyMode?: SellerAutonomyMode;
   messagingApproach?: SellerMessagingApproach;
   gatewaySlug?: string;
+  gatewayApiKey?: string;
   checkoutUrl?: string;
   checkoutApiKey?: string;
+  whitelabelId?: string;
+  notes?: string;
+};
+
+/* ── Whitelabel Profiles ── */
+
+export const GATEWAY_PROVIDERS = [
+  "pagouai",
+  "superpay",
+  "stripe",
+  "mercadopago",
+  "pagarme",
+  "asaas",
+  "iugu",
+  "pagar_me",
+  "hotmart",
+  "kiwify",
+  "eduzz",
+  "monetizze",
+  "braip",
+  "custom",
+] as const;
+
+export type GatewayProvider = (typeof GATEWAY_PROVIDERS)[number];
+
+export type WhitelabelProfileRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  gatewayProvider: GatewayProvider;
+  gatewayBaseUrl: string;
+  gatewayDocsUrl: string;
+  gatewayWebhookPath: string;
+  checkoutUrl: string;
+  checkoutApiKey: string;
+  brandAccent: string;
+  brandLogo: string;
+  active: boolean;
+  sellersCount: number;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WhitelabelProfileInput = {
+  name: string;
+  slug?: string;
+  gatewayProvider: GatewayProvider;
+  gatewayBaseUrl?: string;
+  gatewayDocsUrl?: string;
+  gatewayWebhookPath?: string;
+  checkoutUrl?: string;
+  checkoutApiKey?: string;
+  brandAccent?: string;
+  brandLogo?: string;
+  active?: boolean;
   notes?: string;
 };
 

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   CreditCard,
   Database,
+  KeyRound,
   Mail,
   MessageCircle,
   PlayCircle,
@@ -17,6 +18,7 @@ import {
   UsersRound,
 } from "lucide-react";
 
+import { saveSellerGatewayKeyAction } from "@/app/actions/admin-actions";
 import {
   disconnectWhatsAppQrSessionAction,
   refreshWhatsAppQrSessionAction,
@@ -184,6 +186,9 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
     /graph\.facebook\.com/i.test(runtimeSettings.whatsappApiBaseUrl);
 
   if (session.role === "seller") {
+    const sellerWhitelabel = sellerControl?.whitelabelId
+      ? await service.getWhitelabelProfile(sellerControl.whitelabelId)
+      : undefined;
     return (
       <SellerConnectView
         activeCount={activeCount}
@@ -200,6 +205,11 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
         sellerWebhookSnapshot={sellerWebhookSnapshot}
         sellerAiGuidance={sellerControl?.notes ?? ""}
         sellerGatewayName={resolveGateway(sellerControl?.gatewaySlug).name}
+        sellerKey={sellerControl?.sellerKey ?? ""}
+        sellerGatewayApiKey={sellerControl?.gatewayApiKey ?? ""}
+        sellerWhitelabelId={sellerControl?.whitelabelId ?? ""}
+        sellerWhitelabelName={sellerWhitelabel?.name}
+        sellerWhitelabelProvider={sellerWhitelabel?.gatewayProvider}
       />
     );
   }
@@ -731,6 +741,11 @@ function SellerConnectView({
   sellerWebhookSnapshot,
   sellerAiGuidance,
   sellerGatewayName,
+  sellerKey,
+  sellerGatewayApiKey,
+  sellerWhitelabelId,
+  sellerWhitelabelName,
+  sellerWhitelabelProvider,
 }: {
   activeCount: number;
   analyticsTotal: number;
@@ -778,6 +793,11 @@ function SellerConnectView({
   } | null;
   sellerAiGuidance: string;
   sellerGatewayName: string;
+  sellerKey: string;
+  sellerGatewayApiKey: string;
+  sellerWhitelabelId: string;
+  sellerWhitelabelName?: string;
+  sellerWhitelabelProvider?: string;
 }) {
   return (
     <PlatformAppPage
@@ -885,6 +905,44 @@ function SellerConnectView({
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
+          </PlatformSurface>
+
+          <PlatformSurface className="p-5">
+            <SectionHeader
+              eyebrow="Gateway de pagamento"
+              title="Cole a API key do seu provedor para sincronizar."
+            />
+            {sellerWhitelabelName ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <PlatformPill icon={KeyRound}>
+                  Perfil: {sellerWhitelabelName}
+                </PlatformPill>
+                {sellerWhitelabelProvider ? (
+                  <PlatformPill>{sellerWhitelabelProvider}</PlatformPill>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-[#717182]">
+                Nenhum perfil whitelabel vinculado. Peça ao admin para vincular
+                um perfil no painel admin.
+              </p>
+            )}
+            <form action={saveSellerGatewayKeyAction} className="mt-4 space-y-4">
+              <input type="hidden" name="sellerKey" value={sellerKey} />
+              <input type="hidden" name="whitelabelId" value={sellerWhitelabelId} />
+              <Field
+                label="API Key do gateway"
+                name="gatewayApiKey"
+                defaultValue={sellerGatewayApiKey}
+                placeholder="Cole aqui a chave de API do seu provedor de pagamento"
+              />
+              <p className="text-sm leading-6 text-[#717182]">
+                Ao salvar, a plataforma sincroniza automaticamente com o
+                provedor vinculado ao seu perfil whitelabel. Nenhuma
+                configuracao adicional necessaria.
+              </p>
+              <SaveButton label="Salvar API key" />
+            </form>
           </PlatformSurface>
 
           <PlatformSurface className="p-5">

@@ -46,6 +46,8 @@ import type {
   SystemLogRecord,
   UpdateCallInput,
   WebhookEventRecord,
+  WhitelabelProfileInput,
+  WhitelabelProfileRecord,
 } from "@/server/recovery/types";
 
 export type StorageMode = "local_json" | "supabase";
@@ -232,6 +234,12 @@ export interface RecoveryStorage {
   getCallcenterSettings(sellerKey: string): Promise<CallcenterSettingsRecord | undefined>;
   listCallcenterSettings(): Promise<CallcenterSettingsRecord[]>;
   upsertCallcenterSettings(input: CallcenterSettingsInput): Promise<CallcenterSettingsRecord>;
+
+  /* Whitelabel */
+  listWhitelabelProfiles(): Promise<WhitelabelProfileRecord[]>;
+  getWhitelabelProfile(id: string): Promise<WhitelabelProfileRecord | undefined>;
+  saveWhitelabelProfile(input: WhitelabelProfileInput, id?: string): Promise<WhitelabelProfileRecord>;
+  deleteWhitelabelProfile(id: string): Promise<void>;
 }
 
 const DEFAULT_AGENTS: AgentRecord[] = [];
@@ -1483,6 +1491,10 @@ class LocalStorageService implements RecoveryStorage {
           input.automationsEnabled ?? existing?.automationsEnabled ?? true,
         autonomyMode: input.autonomyMode ?? existing?.autonomyMode ?? "autonomous",
         messagingApproach: input.messagingApproach ?? existing?.messagingApproach ?? "friendly",
+        gatewayApiKey:
+          input.gatewayApiKey?.trim() || existing?.gatewayApiKey || undefined,
+        whitelabelId:
+          input.whitelabelId?.trim() || existing?.whitelabelId || undefined,
         notes: input.notes?.trim() || existing?.notes || undefined,
         updatedAt: timestamp,
       };
@@ -1580,6 +1592,33 @@ class LocalStorageService implements RecoveryStorage {
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
     };
   }
+
+  /* Whitelabel — stubs for local mode */
+
+  async listWhitelabelProfiles(): Promise<WhitelabelProfileRecord[]> { return []; }
+  async getWhitelabelProfile(): Promise<WhitelabelProfileRecord | undefined> { return undefined; }
+  async saveWhitelabelProfile(input: WhitelabelProfileInput): Promise<WhitelabelProfileRecord> {
+    const now = new Date().toISOString();
+    return {
+      id: randomUUID(),
+      name: input.name,
+      slug: input.slug ?? input.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      gatewayProvider: input.gatewayProvider,
+      gatewayBaseUrl: input.gatewayBaseUrl ?? "",
+      gatewayDocsUrl: input.gatewayDocsUrl ?? "",
+      gatewayWebhookPath: input.gatewayWebhookPath ?? "",
+      checkoutUrl: input.checkoutUrl ?? "",
+      checkoutApiKey: input.checkoutApiKey ?? "",
+      brandAccent: input.brandAccent ?? "",
+      brandLogo: input.brandLogo ?? "",
+      active: input.active ?? true,
+      sellersCount: 0,
+      notes: input.notes ?? "",
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+  async deleteWhitelabelProfile(): Promise<void> {}
 }
 
 function normalizePhone(value?: string) {
