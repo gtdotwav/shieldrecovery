@@ -416,13 +416,13 @@ export default async function Home() {
             </div>
           </Reveal>
 
-          <div className="mx-auto mt-10 grid max-w-[60rem] gap-3 sm:mt-14 sm:gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mx-auto mt-10 grid max-w-[64rem] gap-3 sm:mt-14 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {[
-              { n: "01", icon: Zap, title: "Webhook detecta", desc: "Falha de pagamento capturada via webhook do gateway em tempo real." },
-              { n: "02", icon: Bot, title: "IA personaliza", desc: "Analisa valor, método, histórico e define tom e momento ideal." },
-              { n: "03", icon: MessageSquare, title: "WhatsApp contata", desc: "Mensagem humanizada com link de pagamento direto ao cliente." },
-              { n: "04", icon: Headphones, title: "Call Center IA liga", desc: "Agentes IA humanizados ligam para o cliente — voz natural, sem robô." },
-              { n: "05", icon: TrendingUp, title: "Receita recuperada", desc: "Cliente paga, status atualiza. Dashboard reflete em tempo real." },
+              { n: "01", icon: Zap, title: "Webhook detecta", desc: "Falha capturada via webhook do gateway em tempo real." },
+              { n: "02", icon: Bot, title: "IA personaliza", desc: "Analisa valor, histórico e define tom ideal." },
+              { n: "03", icon: MessageSquare, title: "WhatsApp contata", desc: "Mensagem humanizada com link de pagamento." },
+              { n: "04", icon: Headphones, title: "Call Center IA liga", desc: "Agentes IA ligam com voz natural." },
+              { n: "05", icon: TrendingUp, title: "Receita recuperada", desc: "Cliente paga, dashboard atualiza em tempo real." },
             ].map((s, i) => (
               <Reveal key={s.n} direction="up" delay={i * 100}>
                 <TiltCard>
@@ -700,7 +700,7 @@ export default async function Home() {
                 Responda o quiz e garanta sua vaga.
               </p>
 
-              <div className="mt-8 grid grid-cols-3 gap-4 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-6">
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6">
                 <WaitlistStat value={<CountUp end={50} duration={2000} />} label="vagas disponíveis" />
                 <div className="hidden h-8 w-px sm:block" style={{ background: `rgba(${rgb},0.12)` }} />
                 <WaitlistStat value={<CountUp end={0} duration={1000} prefix="R$" />} label="setup gratuito" />
@@ -764,7 +764,7 @@ export default async function Home() {
           <Reveal direction="up" delay={100}>
             <div className="mx-auto mt-14 max-w-[56rem] overflow-x-auto rounded-2xl [-webkit-overflow-scrolling:touch]">
               <div
-                className="min-w-[32rem] overflow-hidden rounded-2xl"
+                className="min-w-[26rem] overflow-hidden rounded-2xl"
                 style={{
                   border: "1px solid rgba(255,255,255,0.06)",
                   background: `${cardBg},0.4)`,
@@ -772,17 +772,17 @@ export default async function Home() {
               >
                 {/* Table header */}
                 <div className="grid grid-cols-4 border-b border-white/[0.04]">
-                  <div className="px-4 py-4 sm:px-5">
-                    <span className="text-[0.68rem] font-semibold text-gray-500">Critério</span>
+                  <div className="px-2.5 py-3 sm:px-5 sm:py-4">
+                    <span className="text-[0.6rem] font-semibold text-gray-500 sm:text-[0.68rem]">Critério</span>
                   </div>
-                  <div className="border-l border-white/[0.04] px-4 py-4 text-center sm:px-5">
-                    <span className="text-[0.68rem] font-semibold text-gray-500">Manual</span>
+                  <div className="border-l border-white/[0.04] px-2.5 py-3 text-center sm:px-5 sm:py-4">
+                    <span className="text-[0.6rem] font-semibold text-gray-500 sm:text-[0.68rem]">Manual</span>
                   </div>
-                  <div className="border-l border-white/[0.04] px-4 py-4 text-center sm:px-5">
-                    <span className="text-[0.68rem] font-semibold text-gray-500">Gateway</span>
+                  <div className="border-l border-white/[0.04] px-2.5 py-3 text-center sm:px-5 sm:py-4">
+                    <span className="text-[0.6rem] font-semibold text-gray-500 sm:text-[0.68rem]">Gateway</span>
                   </div>
-                  <div className="border-l px-4 py-4 text-center sm:px-5" style={{ borderColor: `rgba(${rgb},0.12)`, background: `rgba(${rgb},0.04)` }}>
-                    <span className="text-[0.68rem] font-bold" style={{ color: b.accent }}>{b.name}</span>
+                  <div className="border-l px-2.5 py-3 text-center sm:px-5 sm:py-4" style={{ borderColor: `rgba(${rgb},0.12)`, background: `rgba(${rgb},0.04)` }}>
+                    <span className="text-[0.6rem] font-bold sm:text-[0.68rem]" style={{ color: b.accent }}>{b.name}</span>
                   </div>
                 </div>
 
@@ -797,17 +797,17 @@ export default async function Home() {
                   { label: "Taxa de recuperação", manual: "5-10%", gateway: "10-15%", ours: "19-40%" },
                 ].map((row) => (
                   <div key={row.label} className="grid grid-cols-4 border-b border-white/[0.03] last:border-b-0">
-                    <div className="px-4 py-3 sm:px-5 sm:py-3.5">
-                      <span className="text-[0.68rem] font-medium text-gray-300 sm:text-[0.72rem]">{row.label}</span>
+                    <div className="px-2.5 py-2.5 sm:px-5 sm:py-3.5">
+                      <span className="text-[0.58rem] font-medium text-gray-300 sm:text-[0.72rem]">{row.label}</span>
                     </div>
-                    <div className="border-l border-white/[0.04] px-4 py-3 text-center sm:px-5 sm:py-3.5">
-                      <span className="text-[0.68rem] text-gray-500 sm:text-[0.72rem]">{row.manual}</span>
+                    <div className="border-l border-white/[0.04] px-2.5 py-2.5 text-center sm:px-5 sm:py-3.5">
+                      <span className="text-[0.58rem] text-gray-500 sm:text-[0.72rem]">{row.manual}</span>
                     </div>
-                    <div className="border-l border-white/[0.04] px-4 py-3 text-center sm:px-5 sm:py-3.5">
-                      <span className="text-[0.68rem] text-gray-500 sm:text-[0.72rem]">{row.gateway}</span>
+                    <div className="border-l border-white/[0.04] px-2.5 py-2.5 text-center sm:px-5 sm:py-3.5">
+                      <span className="text-[0.58rem] text-gray-500 sm:text-[0.72rem]">{row.gateway}</span>
                     </div>
-                    <div className="border-l px-4 py-3 text-center sm:px-5 sm:py-3.5" style={{ borderColor: `rgba(${rgb},0.12)`, background: `rgba(${rgb},0.03)` }}>
-                      <span className="text-[0.68rem] font-semibold sm:text-[0.72rem]" style={{ color: b.accent }}>{row.ours}</span>
+                    <div className="border-l px-2.5 py-2.5 text-center sm:px-5 sm:py-3.5" style={{ borderColor: `rgba(${rgb},0.12)`, background: `rgba(${rgb},0.03)` }}>
+                      <span className="text-[0.58rem] font-semibold sm:text-[0.72rem]" style={{ color: b.accent }}>{row.ours}</span>
                     </div>
                   </div>
                 ))}
