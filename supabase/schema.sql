@@ -219,6 +219,10 @@ CREATE TABLE seller_admin_controls (
   inbox_enabled BOOLEAN NOT NULL DEFAULT true,
   automations_enabled BOOLEAN NOT NULL DEFAULT true,
   autonomy_mode TEXT NOT NULL DEFAULT 'supervised',
+  messaging_approach TEXT NOT NULL DEFAULT 'friendly',
+  gateway_slug TEXT,
+  checkout_url TEXT,
+  checkout_api_key TEXT,
   notes TEXT,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );

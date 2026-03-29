@@ -799,22 +799,6 @@ export class MessagingService {
   }): Promise<DispatchOutboundMessageResult> {
     const config = resolveWebApiConfig(input.apiBaseUrl, input.sessionId);
 
-    // Send QR code image first (if PIX available and Evolution API)
-    const pixQrCode = input.metadata?.pixQrCode;
-    if (pixQrCode && config.kind === "evolution") {
-      try {
-        await this.sendEvolutionMedia({
-          config,
-          accessToken: input.accessToken,
-          phone: input.phone,
-          base64Image: pixQrCode,
-          caption: "QR Code Pix - escaneie para pagar",
-        });
-      } catch {
-        // QR image send failed — continue with text message
-      }
-    }
-
     const body = buildOutboundWhatsAppText(input.content, input.metadata);
 
     const response =
@@ -1453,17 +1437,31 @@ function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata) 
     return content;
   }
 
+  const approach = metadata.messagingApproach ?? "friendly";
   const sections = [content.trim()];
 
-  // Add PIX copy-paste code when available
-  const pixCode = metadata.pixCode?.trim();
-  if (pixCode && !content.includes(pixCode)) {
-    sections.push(`Chave Pix copia e cola:\n${pixCode}`);
-  }
-
+  // Payment link on its own line so WhatsApp renders it as clickable
   const actionUrl = metadata.paymentUrl ?? metadata.retryLink;
   if (actionUrl && !content.includes(actionUrl)) {
-    sections.push(`Link de pagamento:\n${actionUrl}`);
+    const linkLabel =
+      approach === "urgent"
+        ? "Finalize agora pelo link abaixo"
+        : approach === "professional"
+          ? "Acesse o link para concluir seu pagamento"
+          : "Segue o link pra voce finalizar";
+    sections.push(`${linkLabel} 👇\n${actionUrl}`);
+  }
+
+  // PIX copy-paste code at the bottom, easy to long-press and copy
+  const pixCode = metadata.pixCode?.trim();
+  if (pixCode && !content.includes(pixCode)) {
+    const pixLabel =
+      approach === "urgent"
+        ? "Pix copia e cola (expira em breve)"
+        : approach === "professional"
+          ? "Codigo Pix copia e cola"
+          : "Pix copia e cola pra facilitar";
+    sections.push(`${pixLabel} 👇\n${pixCode}`);
   }
 
   return sections.filter(Boolean).join("\n\n");

@@ -63,8 +63,8 @@ const TEMPLATES: MessageTemplate[] = [
     tone: "empathetic",
     template:
       "Oi {name}, tudo bem? Identificamos que o pagamento do seu pedido{product} no valor de {value} ficou pendente. " +
-      "Enviei o QR Code do Pix logo acima e a chave copia e cola vem aqui embaixo para facilitar. " +
-      "Se precisar de ajuda, estou por aqui.",
+      "Segue o link de pagamento e o codigo Pix copia e cola aqui embaixo para facilitar. " +
+      "Se precisar de ajuda, estou por aqui!",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" && ctx.paymentMethod === "pix",
   },
@@ -74,7 +74,7 @@ const TEMPLATES: MessageTemplate[] = [
     tone: "urgent",
     template:
       "{name}, o pagamento do seu pedido{product} no valor de {value} ainda nao foi concluido. " +
-      "O QR Code do Pix esta logo acima e a chave copia e cola vem aqui embaixo para voce finalizar agora.",
+      "Segue o link e o Pix copia e cola aqui embaixo para voce finalizar agora.",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" &&
       ctx.paymentMethod === "pix" &&
@@ -86,12 +86,43 @@ const TEMPLATES: MessageTemplate[] = [
     tone: "empathetic",
     template:
       "Oi {name}, tudo bem? Vi que sua compra{product} ficou em aberto. " +
-      "Enviei o QR Code do Pix logo acima e a chave copia e cola vem aqui embaixo para facilitar sua retomada. " +
-      "Se precisar, estou por aqui.",
+      "Segue o link de pagamento e o Pix copia e cola aqui embaixo para facilitar sua retomada. " +
+      "Se precisar, estou por aqui!",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" &&
       ctx.paymentMethod === "pix" &&
       ctx.failureReason.toLowerCase().includes("abandoned"),
+  },
+  // ── Checkout link templates (customer picks payment method) ──
+  {
+    id: "wa_checkout_empathetic",
+    channel: "whatsapp",
+    tone: "empathetic",
+    template:
+      "Oi {name}, tudo bem? Identificamos que o pagamento do seu pedido{product} no valor de {value} ficou pendente. " +
+      "Segue o link abaixo para voce escolher a melhor forma de pagamento e finalizar sua compra. " +
+      "Se precisar de ajuda, estou por aqui!",
+    condition: (ctx) => ctx.nextAction === "send_checkout_link",
+  },
+  {
+    id: "wa_checkout_casual",
+    channel: "whatsapp",
+    tone: "casual",
+    template:
+      "E ai {name}! Vi que o pagamento{product} de {value} ficou pendente. " +
+      "Sem stress, segue o link pra voce escolher como quer pagar e finalizar.",
+    condition: (ctx) =>
+      ctx.nextAction === "send_checkout_link" && ctx.cartValue < 20_000,
+  },
+  {
+    id: "wa_checkout_urgent",
+    channel: "whatsapp",
+    tone: "urgent",
+    template:
+      "{name}, seu pagamento de {value}{product} nao foi processado. " +
+      "Para garantir sua compra, acesse o link abaixo e escolha a forma de pagamento.",
+    condition: (ctx) =>
+      ctx.nextAction === "send_checkout_link" && ctx.cartValue >= 50_000,
   },
   // ── Legacy initial templates (with link) ──
   {
@@ -297,6 +328,7 @@ function buildRecoveryPrompt(ctx: MessageContext) {
   const value = formatMinorUnitCurrency(ctx.cartValue);
 
   const isAskMethod = ctx.nextAction === "ask_payment_method";
+  const isCheckoutLink = ctx.nextAction === "send_checkout_link";
   const isPixFirstInitial =
     ctx.nextAction === "send_initial_message" && ctx.paymentMethod === "pix";
 
@@ -306,30 +338,60 @@ function buildRecoveryPrompt(ctx: MessageContext) {
         "- Pergunte qual forma de pagamento o cliente prefere: PIX, cartao de credito ou boleto.",
         "- Liste as opcoes numeradas (1, 2, 3) para facilitar a resposta.",
       ]
+    : isCheckoutLink
+      ? [
+          "- Informe que o link de pagamento esta logo abaixo.",
+          "- Diga que o cliente pode escolher a forma de pagamento que preferir (Pix, cartao ou boleto) diretamente no link.",
+          "- NAO inclua o link no corpo do texto (ele e adicionado automaticamente abaixo).",
+          "- NAO mencione codigo Pix copia e cola.",
+        ]
     : isPixFirstInitial
       ? [
           "- Informe que o pagamento via Pix ja esta pronto.",
-          "- Diga que a imagem do QR Code e a chave Pix copia e cola foram enviados logo acima.",
-          "- Convide o cliente a escanear o QR ou copiar a chave para pagar.",
-          ctx.paymentLink
-            ? "- Inclua o link exatamente uma vez, no final, como alternativa."
-            : "- Nao mencione link pois ainda nao esta disponivel.",
+          "- Diga que o link de pagamento e a chave Pix copia e cola estao logo abaixo na mensagem.",
+          "- NAO inclua o link nem o codigo Pix no corpo do texto (eles sao adicionados automaticamente abaixo).",
         ]
     : [
         ctx.paymentLink
-          ? "- Inclua o link exatamente uma vez, no final."
+          ? "- NAO inclua o link no corpo do texto (ele e adicionado automaticamente abaixo da mensagem)."
           : "- Nao mencione link pois ainda nao esta disponivel.",
       ];
+
+  const approachDirective =
+    ctx.messagingApproach === "urgent"
+      ? [
+          "Estilo de abordagem: URGENTE.",
+          "- Use frases curtas e assertivas que transmitem urgencia.",
+          "- Enfatize que o tempo e limitado ou que a oferta pode expirar.",
+          "- Seja direto, sem rodeios, mas sem ser agressivo.",
+          "- Exemplo de tom: 'Seu pedido esta reservado, mas o prazo esta acabando.'",
+        ]
+      : ctx.messagingApproach === "professional"
+        ? [
+            "Estilo de abordagem: PROFISSIONAL.",
+            "- Use linguagem comercial, cordial e objetiva.",
+            "- Mantenha formalidade leve, como um atendimento de excelencia.",
+            "- Transmita confianca e credibilidade.",
+            "- Exemplo de tom: 'Identificamos uma pendencia no seu pagamento e gostaríamos de ajuda-lo a resolver.'",
+          ]
+        : [
+            "Estilo de abordagem: AMIGAVEL.",
+            "- Use linguagem leve, acolhedora e proxima.",
+            "- Escreva como um amigo que quer ajudar, sem ser invasivo.",
+            "- Use primeira pessoa e tom conversacional.",
+            "- Exemplo de tom: 'Oi! Vi que seu pagamento ficou pendente, posso te ajudar a finalizar?'",
+          ];
 
   return [
     "Voce escreve mensagens curtas de recovery de pagamento para WhatsApp ou email, em portugues do Brasil.",
     "Objetivo: recuperar a compra com linguagem humana, direta, confiavel e comercial.",
+    ...approachDirective,
     "Regras:",
     "- Seja curto e natural.",
     "- Mencione o primeiro nome do cliente.",
     "- Explique o motivo do contato com clareza.",
     "- Convide para concluir o pagamento agora.",
-    "- NAO inclua o codigo Pix nem QR no corpo da mensagem (eles sao enviados automaticamente em separado).",
+    "- NAO inclua o codigo Pix nem o link de pagamento no corpo da mensagem (eles sao adicionados automaticamente abaixo do texto).",
     `- Use apenas o link seguro da ${platformBrand.name} quando houver link disponivel.`,
     ...linkRule,
     "- Nao use markdown, aspas, emojis nem texto tecnico.",
@@ -350,6 +412,7 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     ...(ctx.paymentLink ? [`Link de pagamento: ${ctx.paymentLink}`] : []),
     `Metodo de pagamento: ${ctx.paymentMethod || "Nao informado"}`,
     `Tom desejado: ${ctx.tonePreference || "Nao informado"}`,
+    `Abordagem do seller: ${ctx.messagingApproach || "friendly"}`,
     `Proxima acao esperada: ${ctx.nextAction || "Nao informado"}`,
     `Urgencia: ${ctx.recoveryUrgency || "Nao informado"}`,
     `Motivo estrategico: ${ctx.decisionReason || "Nao informado"}`,
@@ -370,15 +433,22 @@ function buildReplyPrompt(input: ConversationReplyContext) {
       ]
     : [];
 
+  const replyApproachDirective =
+    input.messagingApproach === "urgent"
+      ? ["Estilo: urgente e assertivo, enfatize prazo e escassez."]
+      : input.messagingApproach === "professional"
+        ? ["Estilo: profissional e cordial, linguagem comercial objetiva."]
+        : ["Estilo: amigavel e acolhedor, como um amigo ajudando."];
+
   return [
     "Voce responde um cliente em uma conversa de recovery de pagamento.",
     "Escreva em portugues do Brasil, de forma curta, clara e comercial.",
+    ...replyApproachDirective,
     "Regras:",
     "- Responda a ultima mensagem do cliente.",
     "- Mostre ajuda e conduza para a conclusao do pagamento.",
-    "- Se houver link, inclua-o uma vez no final.",
-    "- NAO inclua o codigo Pix nem QR no corpo da resposta (eles sao enviados automaticamente em separado).",
-    `- Se houver cobranca ativa, direcione sempre para o link seguro da ${platformBrand.name}.`,
+    "- NAO inclua o link nem o codigo Pix no corpo do texto (eles sao adicionados automaticamente abaixo da mensagem).",
+    `- Se houver cobranca ativa, mencione que o link e o Pix estao logo abaixo.`,
     "- Nao use markdown, aspas, listas, emojis ou linguagem robotica.",
     ...(input.sellerGuidance
       ? [
@@ -451,16 +521,14 @@ function buildFallbackReply(input: ConversationReplyContext) {
   const name = firstName(input.customerName || "Cliente");
   const product = input.productName ? ` do pedido ${input.productName}` : "";
   const latestInbound = (input.latestInboundContent ?? "").toLowerCase();
-  const retrySentence = input.retryLink
-    ? `\n\nLink para concluir com seguranca:\n${input.retryLink}`
-    : "";
+  const retrySentence = "";
 
   if (input.requiresHumanHandoff) {
     return `Oi, ${name}. Vou encaminhar seu caso${product} para um acompanhamento mais proximo e manter o pagamento pronto por aqui.${retrySentence}`;
   }
 
   if (input.latestInboundIntent === "payment_method_pix") {
-    return `Perfeito, ${name}. Enviei o QR Code do Pix${product} logo acima e a chave copia e cola vem aqui embaixo.${retrySentence}`;
+    return `Perfeito, ${name}. O link de pagamento e a chave Pix copia e cola${product} estao logo abaixo.${retrySentence}`;
   }
 
   if (input.latestInboundIntent === "payment_method_card") {

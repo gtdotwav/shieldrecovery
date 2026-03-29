@@ -16,11 +16,14 @@ export function normalizeShieldGatewayEvent(
   rawPayload: unknown,
   fallback: NormalizationFallback,
 ): NormalizedPaymentEvent {
-  const payload = asRecord(rawPayload);
+  const rawRecord = asRecord(rawPayload);
 
-  if (!payload) {
+  if (!rawRecord) {
     throw new HttpError(422, "Webhook payload must be a JSON object.");
   }
+
+  // Pre-process LPQV / cart-platform payloads (checkout.abandoned etc.)
+  const payload = normalizeLpqvPayload(rawRecord) ?? rawRecord;
 
   const gatewayTransaction = asRecord(payload.data);
   const payment = asRecord(payload.payment) ?? gatewayTransaction ?? payload;
@@ -450,4 +453,59 @@ function findNestedString(
   }
 
   return undefined;
+}
+
+/**
+ * Detects LPQV / cart-platform payloads (e.g. checkout.abandoned) and
+ * reshapes them into the flat format the generic normalizer expects.
+ *
+ * LPQV payloads wrap everything under `response`:
+ *   { response: { event, customer_name, customer_cell, customer_email, produtos, cart_url, ... }, signature, slug-landingpage }
+ */
+function normalizeLpqvPayload(
+  payload: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const response = asRecord(payload.response);
+  if (!response || typeof response.event !== "string") {
+    return null;
+  }
+
+  const produtos = asRecord(response.produtos);
+  const salePriceMajor =
+    typeof produtos?.sale_price === "number" ? produtos.sale_price : 0;
+  const amountCents = Math.round(salePriceMajor * 100);
+  const qty =
+    typeof produtos?.product_qtdy === "number" ? produtos.product_qtdy : 1;
+
+  return {
+    event_type: response.event,
+    id: pickString(response.token, response.id),
+    status: "abandoned",
+    amount: amountCents,
+    currency: "BRL",
+    method: "pix",
+    customer: {
+      name: response.customer_name,
+      email: response.customer_email,
+      phone: response.customer_cell,
+    },
+    items: produtos
+      ? [
+          {
+            title: produtos.title_prod,
+            name: produtos.title_prod,
+            amount: amountCents,
+            quantity: qty,
+          },
+        ]
+      : [],
+    metadata: {
+      product: produtos?.title_prod,
+      campaign: response.token,
+      paymentUrl: response.cart_url,
+    },
+    payment_url: response.cart_url,
+    checkout_url: response.cart_url,
+    created_at: response.created_at,
+  };
 }

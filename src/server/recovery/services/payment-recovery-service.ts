@@ -817,6 +817,7 @@ export class PaymentRecoveryService {
         inboxEnabled: automationPolicy.control?.inboxEnabled ?? true,
         automationsEnabled: automationPolicy.enabled,
         autonomyMode: automationPolicy.autonomous ? "autonomous" : "supervised",
+        messagingApproach: automationPolicy.control?.messagingApproach,
       },
     });
 
@@ -1098,6 +1099,7 @@ export class PaymentRecoveryService {
               inboxEnabled: automationPolicy.control?.inboxEnabled ?? true,
               automationsEnabled: automationPolicy.enabled,
               autonomyMode: automationPolicy.autonomous ? "autonomous" : "supervised",
+              messagingApproach: automationPolicy.control?.messagingApproach,
             },
           },
           latestInboundContent: latestInbound?.content,
@@ -1116,6 +1118,10 @@ export class PaymentRecoveryService {
     let resolvedPixQrCode = latestPaymentMetadata?.pixQrCode;
     let resolvedPixExpiresAt = latestPaymentMetadata?.pixExpiresAt;
     let selectedMethodType: "pix" | "card" | "boleto" | undefined;
+
+    const replyCheckoutOverrides = automationPolicy.control?.checkoutUrl
+      ? { baseUrl: automationPolicy.control.checkoutUrl, apiKey: automationPolicy.control.checkoutApiKey }
+      : undefined;
 
     if (isMethodSelection && payment && contact) {
       // User just selected a payment method — generate a fresh checkout link
@@ -1141,6 +1147,7 @@ export class PaymentRecoveryService {
           updatedAt: "",
         },
         selectedMethodType,
+        replyCheckoutOverrides,
       );
       retryLink = paymentResolution.paymentLink;
       resolvedPixCode = paymentResolution.pixCode ?? resolvedPixCode;
@@ -1173,6 +1180,8 @@ export class PaymentRecoveryService {
                 createdAt: "",
                 updatedAt: "",
               },
+              undefined,
+              replyCheckoutOverrides,
             )
             ).paymentLink
           : undefined);
@@ -1190,6 +1199,7 @@ export class PaymentRecoveryService {
       paymentStatus: contact?.payment_status,
       failureReason: payment?.failureCode ?? contact?.payment_status,
       tonePreference: decision?.tone,
+      messagingApproach: automationPolicy.control?.messagingApproach,
       nextAction: decision?.nextAction,
       decisionReason: decision?.reason,
       requiresHumanHandoff: decision?.requiresHuman,
@@ -1274,6 +1284,9 @@ export class PaymentRecoveryService {
     const automationPolicy = await this.getAutomationPolicyForSeller(
       conversation.assignedAgentName ?? contact.assigned_agent,
     );
+    const followUpCheckoutOverrides = automationPolicy.control?.checkoutUrl
+      ? { baseUrl: automationPolicy.control.checkoutUrl, apiKey: automationPolicy.control.checkoutApiKey }
+      : undefined;
     const refreshedPayment = await this.createImmediatePaymentLink(
       payment,
       contact.payment_status,
@@ -1288,7 +1301,8 @@ export class PaymentRecoveryService {
         createdAt: "",
         updatedAt: "",
       },
-      "pix",
+      followUpCheckoutOverrides ? undefined : "pix",
+      followUpCheckoutOverrides,
     );
     const latestPromptMetadata =
       [...messages]
@@ -1305,6 +1319,7 @@ export class PaymentRecoveryService {
       paymentStatus: contact.payment_status,
       failureReason: payment.failureCode ?? contact.payment_status,
       tonePreference: "reassuring",
+      messagingApproach: automationPolicy.control?.messagingApproach,
       nextAction: "send_follow_up",
       decisionReason:
         "O Pix anterior ficou sem resposta. Um novo pagamento foi gerado para facilitar a retomada.",
@@ -1766,15 +1781,41 @@ export class PaymentRecoveryService {
     const automationPolicy = await this.getAutomationPolicyForSeller(
       input.lead.assignedAgentName,
     );
-    const initialPaymentAsset = await this.resolveInitialPixAsset({
-      payment: input.payment,
-      customer: input.customer,
-      failureReason: input.failureReason,
-      paymentUrl: input.paymentUrl,
-      pixCode: input.pixCode,
-      pixQrCode: input.pixQrCode,
-      pixExpiresAt: input.pixExpiresAt,
-    });
+
+    // Seller with own checkout URL → checkout-first (customer picks method)
+    // Otherwise → pix-first (legacy flow)
+    const sellerCheckoutUrl = automationPolicy.control?.checkoutUrl;
+    const sellerCheckoutApiKey = automationPolicy.control?.checkoutApiKey;
+    const useSellerCheckout = Boolean(sellerCheckoutUrl);
+
+    let initialPaymentAsset: {
+      paymentLink?: string;
+      pixCode?: string;
+      pixQrCode?: string;
+      pixExpiresAt?: string;
+    };
+
+    if (useSellerCheckout) {
+      initialPaymentAsset = await this.createImmediatePaymentLink(
+        input.payment,
+        input.failureReason,
+        input.payment.paymentMethod || "pix",
+        await this.resolveAppBaseUrl(),
+        input.customer,
+        undefined,
+        { baseUrl: sellerCheckoutUrl, apiKey: sellerCheckoutApiKey },
+      );
+    } else {
+      initialPaymentAsset = await this.resolveInitialPixAsset({
+        payment: input.payment,
+        customer: input.customer,
+        failureReason: input.failureReason,
+        paymentUrl: input.paymentUrl,
+        pixCode: input.pixCode,
+        pixQrCode: input.pixQrCode,
+        pixExpiresAt: input.pixExpiresAt,
+      });
+    }
 
     const decision = getAIOrchestrator().decideRecoveryPlan({
       contact: {
@@ -1801,17 +1842,22 @@ export class PaymentRecoveryService {
       },
       payment: {
         paymentLink: initialPaymentAsset.paymentLink,
-        pixCode: initialPaymentAsset.pixCode,
-        pixQrCode: initialPaymentAsset.pixQrCode,
-        expiresAt: initialPaymentAsset.pixExpiresAt,
+        pixCode: useSellerCheckout ? undefined : initialPaymentAsset.pixCode,
+        pixQrCode: useSellerCheckout ? undefined : initialPaymentAsset.pixQrCode,
+        expiresAt: useSellerCheckout ? undefined : initialPaymentAsset.pixExpiresAt,
       },
       automation: {
         sellerActive: automationPolicy.control?.active ?? true,
         inboxEnabled: automationPolicy.control?.inboxEnabled ?? true,
         automationsEnabled: automationPolicy.enabled,
         autonomyMode: automationPolicy.autonomous ? "autonomous" : "supervised",
+        messagingApproach: automationPolicy.control?.messagingApproach,
       },
     });
+
+    const initialNextAction = useSellerCheckout
+      ? ("send_checkout_link" as const)
+      : ("send_initial_message" as const);
 
     const generated = await generateRecoveryMessage({
       apiKey: runtimeSettings.openAiApiKey,
@@ -1825,11 +1871,12 @@ export class PaymentRecoveryService {
           input.payment.status,
         channel: target.channel,
         attemptNumber: 1,
-        paymentMethod: "pix",
+        paymentMethod: useSellerCheckout ? undefined : "pix",
         paymentLink: initialPaymentAsset.paymentLink,
-        pixCode: initialPaymentAsset.pixCode,
+        pixCode: useSellerCheckout ? undefined : initialPaymentAsset.pixCode,
         tonePreference: decision.tone,
-        nextAction: "send_initial_message",
+        messagingApproach: automationPolicy.control?.messagingApproach,
+        nextAction: initialNextAction,
         recoveryUrgency: decision.urgency,
         decisionReason: decision.reason,
         sellerGuidance: automationPolicy.control?.notes,
@@ -1845,11 +1892,11 @@ export class PaymentRecoveryService {
       recoveryProbability: decision.classification.probability,
       recoveryScore: decision.classification.score,
       recoveryUrgency: decision.urgency,
-      nextAction: "send_initial_message",
+      nextAction: initialNextAction,
       followUpMode: decision.followUpMode,
       decisionReason: decision.reason,
       product: input.lead.product,
-      paymentMethod: "pix",
+      paymentMethod: useSellerCheckout ? undefined : "pix",
       paymentStatus: input.currentPaymentStatus,
       failureReason: input.failureReason,
       paymentValue: input.payment.amount,
@@ -1857,10 +1904,11 @@ export class PaymentRecoveryService {
       gatewayPaymentId: input.payment.gatewayPaymentId,
       retryLink: initialPaymentAsset.paymentLink,
       paymentUrl: initialPaymentAsset.paymentLink,
-      pixCode: initialPaymentAsset.pixCode,
-      pixQrCode: initialPaymentAsset.pixQrCode,
-      pixExpiresAt: initialPaymentAsset.pixExpiresAt,
+      pixCode: useSellerCheckout ? undefined : initialPaymentAsset.pixCode,
+      pixQrCode: useSellerCheckout ? undefined : initialPaymentAsset.pixQrCode,
+      pixExpiresAt: useSellerCheckout ? undefined : initialPaymentAsset.pixExpiresAt,
       actionLabel: "Abrir pagamento",
+      messagingApproach: automationPolicy.control?.messagingApproach,
     };
 
     const resolvedLead =
@@ -2039,13 +2087,14 @@ export class PaymentRecoveryService {
     baseUrl: string,
     customer?: CustomerRecord,
     selectedMethodType?: "pix" | "card" | "boleto",
+    checkoutOverrides?: { baseUrl?: string; apiKey?: string },
   ): Promise<{
     paymentLink?: string;
     pixCode?: string;
     pixQrCode?: string;
     pixExpiresAt?: string;
   }> {
-    if (appEnv.pagouAiConfigured && selectedMethodType === "pix") {
+    if (appEnv.pagouAiConfigured && selectedMethodType === "pix" && !checkoutOverrides?.baseUrl) {
       try {
         return await this.createPagouPixRecovery({
           payment,
@@ -2087,7 +2136,7 @@ export class PaymentRecoveryService {
           failureReason,
           paymentMethod,
         },
-      });
+      }, checkoutOverrides);
 
       // Append ?method= to pre-select the payment method the user chose
       let checkoutUrl = result.checkoutUrl;
@@ -2455,6 +2504,7 @@ function buildAdminSellerSnapshot(input: {
       inboxEnabled: true,
       automationsEnabled: true,
       autonomyMode: "autonomous",
+      messagingApproach: "friendly",
       updatedAt: new Date().toISOString(),
     };
   const platformRecoveryRate = sellerContacts.length
@@ -2572,7 +2622,8 @@ function extractRawEventType(payload: unknown): string | undefined {
   const value =
     record.event_type ??
     asRecord(record.data)?.event_type ??
-    record.type;
+    record.type ??
+    asRecord(record.response)?.event;
 
   return typeof value === "string" ? value : undefined;
 }

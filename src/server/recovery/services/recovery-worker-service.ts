@@ -589,6 +589,12 @@ export class RecoveryWorkerService {
       return "Customer already replied after the latest outbound message.";
     }
 
+    // Skip if there is a recent outbound but no customer response yet.
+    // The first message should stand alone until the customer interacts.
+    if (latestOutbound && !latestInbound) {
+      return "Customer has not responded to the initial message yet.";
+    }
+
     return null;
   }
 

@@ -9,7 +9,6 @@ import type {
 } from "@/server/recovery/types";
 
 const INITIAL_WHATSAPP_DELAY_MINUTES = 6;
-const REFRESHED_PIX_FOLLOW_UP_DELAY_MINUTES = 12;
 
 export function buildRecoveryWorkflowJobs(input: {
   lead: RecoveryLeadRecord;
@@ -39,16 +38,10 @@ export function buildRecoveryWorkflowJobs(input: {
       channel: "email",
       template: "payment_recovery_email",
     }),
-    createJob(
-      "notification-jobs",
-      "whatsapp-follow-up",
-      now + REFRESHED_PIX_FOLLOW_UP_DELAY_MINUTES * 60_000,
-      {
-      leadId: input.lead.leadId,
-      channel: "whatsapp",
-      template: "payment_recovery_follow_up",
-      },
-    ),
+    // WhatsApp follow-up is no longer scheduled upfront.
+    // The first message already contains link + pix copia e cola.
+    // Follow-ups happen only after the customer responds (via AI reply)
+    // or via the 24h agent-task checkpoint.
     createJob("recovery-jobs", "agent-task", now + 24 * 60 * 60_000, {
       leadId: input.lead.leadId,
       taskType: "ai_follow_up",

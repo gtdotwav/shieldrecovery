@@ -783,6 +783,12 @@ function pickTone(
   context: RecoveryDecisionContext,
   probability: "high" | "medium" | "low" | "manual",
 ): RecoveryMessageTone {
+  // Seller-configured messaging approach takes priority
+  const approach = context.automation?.messagingApproach;
+  if (approach === "friendly") return "empathetic";
+  if (approach === "urgent") return "urgent";
+  if (approach === "professional") return "direct";
+
   const status = (context.contact.payment_status ?? "").toLowerCase();
 
   if (status.includes("timeout") || status.includes("gateway")) {

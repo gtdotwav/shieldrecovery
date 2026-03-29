@@ -1,14 +1,20 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 
 import { platformBrand } from "@/lib/platform";
 import { retrievePagouTransaction } from "@/server/pagouai/client";
+import { createCheckoutSession } from "@/server/checkout";
+import { getStorageService } from "@/server/recovery/services/storage";
+
+export const dynamic = "force-dynamic";
 
 type RetryPaymentPageProps = {
   params: Promise<{
     gatewayPaymentId: string;
   }>;
   searchParams: Promise<{
+    token?: string;
     provider?: string;
     transactionId?: string;
     method?: string;
@@ -33,50 +39,73 @@ export default async function RetryPaymentPage({
     });
   }
 
+  // Try to redirect to Substratum checkout
+  const storage = getStorageService();
+  const payment = await storage.findPayment({ gatewayPaymentId });
+
+  if (payment) {
+    const customer = payment.customerId
+      ? await storage.findCustomer(payment.customerId)
+      : undefined;
+
+    try {
+      const session = await createCheckoutSession({
+        amount: payment.amount / 100,
+        currency: payment.currency,
+        description: `Pagamento #${payment.orderId || payment.gatewayPaymentId}`,
+        customerName: customer?.name ?? "",
+        customerEmail: customer?.email ?? "",
+        customerPhone: customer?.phone ?? "",
+        customerDocument: customer?.document,
+        source: "recovery",
+        sourceReferenceId: payment.id,
+        metadata: {
+          gatewayPaymentId: payment.gatewayPaymentId,
+          orderId: payment.orderId,
+          retryRedirect: true,
+        },
+      });
+
+      redirect(session.checkoutUrl);
+    } catch {
+      // Checkout platform unavailable — fall through to fallback
+    }
+  }
+
+  return renderFallback(gatewayPaymentId);
+}
+
+function renderFallback(gatewayPaymentId: string) {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-16">
       <div className="w-full rounded-[2rem] border border-black/[0.08] bg-white p-8 shadow-[0_26px_120px_rgba(15,23,42,0.08)]">
         <p className="text-[0.72rem] uppercase tracking-[0.28em] text-sky-600">
-          Reemissao de pagamento
+          Pagamento
         </p>
-        <h1 className="mt-4 max-w-[14ch] text-4xl font-semibold tracking-tight text-[#082f49]">
-          O novo pagamento ja foi preparado.
+        <h1 className="mt-4 max-w-[18ch] text-4xl font-semibold tracking-tight text-[#082f49]">
+          Estamos preparando seu pagamento.
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-8 text-[#64748b]">
-          Esta URL funciona como ponto de handoff do retry gerado pela{" "}
-          {platformBrand.name}. Quando a integracao do meio escolhido exigir uma
-          experiencia dedicada, esta rota e o lugar certo para conduzir o cliente.
+          O checkout nao esta disponivel neste momento. Por favor, tente
+          novamente em alguns instantes ou entre em contato com o suporte.
         </p>
 
         <div className="mt-6 rounded-[1.25rem] border border-sky-100 bg-sky-50 px-5 py-4">
           <p className="text-[0.68rem] uppercase tracking-[0.18em] text-sky-500">
-            gateway payment id
+            Referencia
           </p>
           <p className="mt-2 break-all font-mono text-sm text-[#082f49]">
             {gatewayPaymentId}
           </p>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-black/[0.06] bg-gray-50 dark:bg-[#111111] p-4">
-            <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">
-              Estado atual
-            </p>
-            <p className="mt-2 text-sm leading-6 text-[#334155]">
-              O link foi emitido e esta pronto para ser entregue ao cliente pelo
-              canal de recovery.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-black/[0.06] bg-gray-50 dark:bg-[#111111] p-4">
-            <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">
-              Proximo passo
-            </p>
-            <p className="mt-2 text-sm leading-6 text-[#334155]">
-              Para Pix, esta tela centraliza QR e copia-e-cola dentro da{" "}
-              {platformBrand.name}. O cliente recebe apenas o link seguro do
-              nosso fluxo, sem QR direto no chat.
-            </p>
-          </div>
+        <div className="mt-6">
+          <Link
+            href={`/retry/${gatewayPaymentId}`}
+            className="inline-flex items-center rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+          >
+            Tentar novamente
+          </Link>
         </div>
       </div>
     </main>

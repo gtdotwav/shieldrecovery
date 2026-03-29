@@ -235,7 +235,10 @@ type DatabaseSellerAdminControlRow = {
   inbox_enabled: boolean;
   automations_enabled: boolean;
   autonomy_mode: SellerAdminControlRecord["autonomyMode"];
+  messaging_approach?: SellerAdminControlRecord["messagingApproach"] | null;
   gateway_slug?: string | null;
+  checkout_url?: string | null;
+  checkout_api_key?: string | null;
   notes?: string | null;
   updated_at: string;
 };
@@ -1637,7 +1640,10 @@ export class SupabaseStorageService implements RecoveryStorage {
       automations_enabled:
         input.automationsEnabled ?? existing?.automationsEnabled ?? true,
       autonomy_mode: input.autonomyMode ?? existing?.autonomyMode ?? "autonomous",
+      messaging_approach: input.messagingApproach ?? existing?.messagingApproach ?? "friendly",
       gateway_slug: input.gatewaySlug?.trim() || existing?.gatewaySlug || null,
+      checkout_url: input.checkoutUrl?.trim() || existing?.checkoutUrl || null,
+      checkout_api_key: input.checkoutApiKey?.trim() || existing?.checkoutApiKey || null,
       notes: input.notes?.trim() || existing?.notes || null,
       updated_at: now,
     };
@@ -1829,7 +1835,10 @@ function mapSellerAdminControl(
     inboxEnabled: data.inbox_enabled,
     automationsEnabled: data.automations_enabled,
     autonomyMode: data.autonomy_mode,
+    messagingApproach: data.messaging_approach ?? "friendly",
     gatewaySlug: data.gateway_slug ?? undefined,
+    checkoutUrl: data.checkout_url ?? undefined,
+    checkoutApiKey: data.checkout_api_key ?? undefined,
     notes: data.notes ?? undefined,
     updatedAt: toIsoStringOrNow(data.updated_at),
   };

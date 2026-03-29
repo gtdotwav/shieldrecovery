@@ -61,6 +61,11 @@ export const WHATSAPP_WEB_SESSION_STATUSES = [
   "expired",
   "error",
 ] as const;
+export const SELLER_MESSAGING_APPROACHES = [
+  "friendly",
+  "professional",
+  "urgent",
+] as const;
 export const SELLER_AUTONOMY_MODES = [
   "assisted",
   "supervised",
@@ -86,6 +91,8 @@ export type CalendarNoteLane = (typeof CALENDAR_NOTE_LANES)[number];
 export type WhatsAppWebSessionStatus =
   (typeof WHATSAPP_WEB_SESSION_STATUSES)[number];
 export type SellerAutonomyMode = (typeof SELLER_AUTONOMY_MODES)[number];
+export type SellerMessagingApproach =
+  (typeof SELLER_MESSAGING_APPROACHES)[number];
 export type SellerInviteStatus = (typeof SELLER_INVITE_STATUSES)[number];
 
 export type MessageMetadata = {
@@ -98,6 +105,7 @@ export type MessageMetadata = {
   recoveryUrgency?: "immediate" | "today" | "scheduled" | "manual";
   nextAction?:
     | "send_initial_message"
+    | "send_checkout_link"
     | "ask_payment_method"
     | "send_follow_up"
     | "wait_for_customer"
@@ -135,6 +143,7 @@ export type MessageMetadata = {
   pixQrCode?: string;
   pixExpiresAt?: string;
   actionLabel?: string;
+  messagingApproach?: SellerMessagingApproach;
 };
 
 export type NormalizedPaymentEvent = {
@@ -420,7 +429,10 @@ export type SellerAdminControlRecord = {
   inboxEnabled: boolean;
   automationsEnabled: boolean;
   autonomyMode: SellerAutonomyMode;
+  messagingApproach: SellerMessagingApproach;
   gatewaySlug?: string;
+  checkoutUrl?: string;
+  checkoutApiKey?: string;
   notes?: string;
   updatedAt: string;
 };
@@ -436,7 +448,10 @@ export type SellerAdminControlInput = {
   inboxEnabled?: boolean;
   automationsEnabled?: boolean;
   autonomyMode?: SellerAutonomyMode;
+  messagingApproach?: SellerMessagingApproach;
   gatewaySlug?: string;
+  checkoutUrl?: string;
+  checkoutApiKey?: string;
   notes?: string;
 };
 

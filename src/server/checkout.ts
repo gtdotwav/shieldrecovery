@@ -33,9 +33,10 @@ export type CreateCheckoutSessionResult = {
  */
 export async function createCheckoutSession(
   input: CreateCheckoutSessionInput,
+  overrides?: { baseUrl?: string; apiKey?: string },
 ): Promise<CreateCheckoutSessionResult> {
-  const baseUrl = appEnv.checkoutPlatformUrl;
-  const apiKey = appEnv.checkoutPlatformApiKey;
+  const baseUrl = overrides?.baseUrl?.trim() || appEnv.checkoutPlatformUrl;
+  const apiKey = overrides?.apiKey?.trim() || appEnv.checkoutPlatformApiKey;
 
   if (!baseUrl || !apiKey) {
     throw new Error(

@@ -12,6 +12,6 @@ export default async function Page({
   params: Promise<{ shortId: string }>;
 }) {
   const { shortId } = await params;
-  const checkoutUrl = process.env.CHECKOUT_PLATFORM_URL ?? "https://checkout-mu-dun.vercel.app";
+  const checkoutUrl = process.env.CHECKOUT_PLATFORM_URL ?? "https://substratum.com.br";
   redirect(`${checkoutUrl}/c/${shortId}`);
 }

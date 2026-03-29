@@ -24,6 +24,7 @@ export type RecoveryNextActionType =
   | "generate_method_payment_link"
   | "escalate_to_seller"
   | "pause_automation"
+  | "send_checkout_link"
   | "review_manually"
   | "close_as_recovered"
   | "close_as_lost";
@@ -100,6 +101,7 @@ export type RecoveryDecisionContext = {
   };
   automation?: {
     autonomyMode?: RecoveryFollowUpMode;
+    messagingApproach?: "friendly" | "professional" | "urgent";
     sellerActive?: boolean;
     inboxEnabled?: boolean;
     automationsEnabled?: boolean;
@@ -171,6 +173,7 @@ export type MessageContext = {
   pixCode?: string;
   paymentMethod?: string;
   tonePreference?: RecoveryMessageTone;
+  messagingApproach?: "friendly" | "professional" | "urgent";
   nextAction?: RecoveryNextActionType;
   recoveryUrgency?: RecoveryUrgency;
   decisionReason?: string;
@@ -195,6 +198,7 @@ export type ConversationReplyContext = {
   paymentStatus?: string;
   failureReason?: string;
   tonePreference?: RecoveryMessageTone;
+  messagingApproach?: "friendly" | "professional" | "urgent";
   nextAction?: RecoveryNextActionType;
   decisionReason?: string;
   requiresHumanHandoff?: boolean;

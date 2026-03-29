@@ -7,7 +7,7 @@ import { z } from "zod";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import { getStorageService } from "@/server/recovery/services/storage";
-import type { SellerAutonomyMode } from "@/server/recovery/types";
+import type { SellerAutonomyMode, SellerMessagingApproach } from "@/server/recovery/types";
 import { hashPlatformPassword } from "@/server/auth/passwords";
 
 const saveSellerUserSchema = z.object({
@@ -125,7 +125,10 @@ export async function saveSellerControlAction(formData: FormData) {
   ).trim();
   const maxAssignedLeads = Number(String(formData.get("maxAssignedLeads") ?? "30"));
   const autonomyMode = String(formData.get("autonomyMode") ?? "autonomous") as SellerAutonomyMode;
+  const messagingApproach = String(formData.get("messagingApproach") ?? "friendly") as SellerMessagingApproach;
   const notes = String(formData.get("notes") ?? "").trim();
+  const checkoutUrl = String(formData.get("checkoutUrl") ?? "").trim();
+  const checkoutApiKey = String(formData.get("checkoutApiKey") ?? "").trim();
 
   if (!sellerKey) {
     redirect("/admin?status=error&message=Seller%20invalido");
@@ -149,6 +152,14 @@ export async function saveSellerControlAction(formData: FormData) {
       autonomyMode === "autonomous"
         ? autonomyMode
         : "autonomous",
+    messagingApproach:
+      messagingApproach === "friendly" ||
+      messagingApproach === "professional" ||
+      messagingApproach === "urgent"
+        ? messagingApproach
+        : "friendly",
+    checkoutUrl: checkoutUrl || undefined,
+    checkoutApiKey: checkoutApiKey || undefined,
     notes: notes || undefined,
   });
 

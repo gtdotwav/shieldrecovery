@@ -641,7 +641,7 @@ function SellerControlCard({
                 : "nenhum evento recebido ainda"}
             </p>
           </PlatformInset>
-          <label className="space-y-1 lg:col-span-3">
+          <label className="space-y-1">
             <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
               Autonomia da IA
             </span>
@@ -654,6 +654,54 @@ function SellerControlCard({
               <option value="supervised">Supervisionada</option>
               <option value="autonomous">Autônoma</option>
             </select>
+          </label>
+          <label className="space-y-1 lg:col-span-2">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[#9ca3af]">
+              Abordagem da mensagem
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                {
+                  value: "friendly",
+                  label: "Amigavel",
+                  desc: "Tom leve e acolhedor, como um amigo ajudando",
+                },
+                {
+                  value: "professional",
+                  label: "Profissional",
+                  desc: "Direto e cordial, linguagem comercial",
+                },
+                {
+                  value: "urgent",
+                  label: "Urgente",
+                  desc: "Assertivo, enfatiza prazo e escassez",
+                },
+              ] as const).map((opt) => (
+                <label
+                  key={opt.value}
+                  className={[
+                    "relative flex cursor-pointer flex-col rounded-[0.95rem] border px-3 py-2.5 text-sm transition",
+                    seller.control.messagingApproach === opt.value
+                      ? "border-sky-400 bg-sky-50 ring-1 ring-sky-400"
+                      : "border-black/[0.08] bg-white hover:border-sky-300",
+                  ].join(" ")}
+                >
+                  <input
+                    type="radio"
+                    name="messagingApproach"
+                    value={opt.value}
+                    defaultChecked={seller.control.messagingApproach === opt.value}
+                    className="peer sr-only"
+                  />
+                  <span className="font-semibold text-[#111827] peer-checked:text-sky-600">
+                    {opt.label}
+                  </span>
+                  <span className="mt-0.5 text-xs leading-snug text-[#6b7280]">
+                    {opt.desc}
+                  </span>
+                </label>
+              ))}
+            </div>
           </label>
         </div>
 
@@ -672,6 +720,23 @@ function SellerControlCard({
             label="Liberar automações"
             name="automationsEnabled"
             defaultChecked={seller.control.automationsEnabled}
+          />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Field
+            label="Checkout URL do seller"
+            name="checkoutUrl"
+            type="url"
+            defaultValue={seller.control.checkoutUrl || ""}
+            placeholder="https://checkout.exemplo.com"
+          />
+          <Field
+            label="Checkout API Key"
+            name="checkoutApiKey"
+            type="text"
+            defaultValue={seller.control.checkoutApiKey || ""}
+            placeholder="sk_live_..."
           />
         </div>
 
@@ -1011,7 +1076,7 @@ function Field({
   label: string;
   name: string;
   defaultValue: string;
-  type?: "text" | "number" | "email" | "password";
+  type?: "text" | "number" | "email" | "password" | "url";
   step?: string;
   placeholder?: string;
 }) {

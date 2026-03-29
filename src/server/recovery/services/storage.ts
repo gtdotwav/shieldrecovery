@@ -1429,6 +1429,7 @@ class LocalStorageService implements RecoveryStorage {
         automationsEnabled:
           input.automationsEnabled ?? existing?.automationsEnabled ?? true,
         autonomyMode: input.autonomyMode ?? existing?.autonomyMode ?? "autonomous",
+        messagingApproach: input.messagingApproach ?? existing?.messagingApproach ?? "friendly",
         notes: input.notes?.trim() || existing?.notes || undefined,
         updatedAt: timestamp,
       };
