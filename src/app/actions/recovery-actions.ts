@@ -249,6 +249,7 @@ export async function dispatchCall(formData: FormData) {
   const copy = String(formData.get("copy") ?? "");
   const product = String(formData.get("product") ?? "");
   const discountPercent = Number(formData.get("discountPercent") || 0);
+  const couponCode = String(formData.get("couponCode") ?? "").trim();
   const voiceTone = String(formData.get("voiceTone") || "empathetic");
   const voiceGender = String(formData.get("voiceGender") || "female");
   const provider = String(formData.get("provider") || "vapi");
@@ -265,6 +266,7 @@ export async function dispatchCall(formData: FormData) {
       copy: copy || undefined,
       product: product || undefined,
       discountPercent: discountPercent > 0 ? discountPercent : undefined,
+      couponCode: couponCode || undefined,
       voiceTone: voiceTone as VoiceTone,
       voiceGender: voiceGender as VoiceGender,
       provider: provider as "vapi" | "bland" | "retell" | "twilio" | "manual",
@@ -289,6 +291,7 @@ export async function saveCallcenterSettings(formData: FormData) {
   const voiceTone = String(formData.get("voiceTone") || "empathetic") as VoiceTone;
   const voiceGender = String(formData.get("voiceGender") || "female") as VoiceGender;
   const discountPercent = Math.min(100, Math.max(0, Number(formData.get("discountPercent") || 0)));
+  const couponCode = String(formData.get("couponCode") ?? "").trim();
   const defaultCopy = String(formData.get("defaultCopy") ?? "");
   const defaultProduct = String(formData.get("defaultProduct") ?? "");
   const provider = String(formData.get("provider") || "vapi");
@@ -301,6 +304,7 @@ export async function saveCallcenterSettings(formData: FormData) {
       voiceTone,
       voiceGender,
       discountPercent,
+      couponCode,
       defaultCopy,
       defaultProduct,
       provider: provider as CallcenterSettingsInput["provider"],

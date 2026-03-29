@@ -12,8 +12,10 @@ export type CreateCheckoutSessionInput = {
   customerEmail: string;
   customerPhone: string;
   customerDocument?: string;
-  source?: "recovery" | "direct" | "api";
+  source?: "recovery" | "direct" | "api" | "callcenter";
   sourceReferenceId?: string;
+  couponCode?: string;
+  discountPercent?: number;
   metadata?: Record<string, unknown>;
 };
 
@@ -60,6 +62,8 @@ export async function createCheckoutSession(
       customerDocument: input.customerDocument,
       source: input.source ?? "recovery",
       sourceReferenceId: input.sourceReferenceId,
+      couponCode: input.couponCode,
+      discountPercent: input.discountPercent,
       metadata: input.metadata,
     }),
     signal: AbortSignal.timeout(20_000),

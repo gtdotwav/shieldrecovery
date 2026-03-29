@@ -12,6 +12,9 @@ import type {
   CreateCallInput,
   UpdateCallInput,
 } from "@/server/recovery/types";
+import { createCheckoutSession } from "@/server/checkout";
+import { MessagingService } from "@/server/recovery/services/messaging-service";
+import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
 const createCallSchema = z.object({
   leadId: z.string().optional(),
@@ -86,6 +89,7 @@ export async function handleCallcenterWebhook(request: Request) {
       case "call.ended":
       case "call.completed": {
         const call = await resolveCall(storage, body);
+        const chosenMethod = asChosenPaymentMethod(body.payment_method ?? body.chosen_payment_method ?? body.paymentMethod);
         const update: UpdateCallInput = {
           status: "completed",
           endedAt: asOptionalString(body.ended_at) ?? new Date().toISOString(),
@@ -101,6 +105,7 @@ export async function handleCallcenterWebhook(request: Request) {
           providerCallId: asOptionalString(body.provider_call_id),
           providerCost: asOptionalNumber(body.cost) ?? asOptionalNumber(body.provider_cost),
           sentiment: asCallSentiment(body.sentiment),
+          chosenPaymentMethod: chosenMethod,
         };
 
         if (body.status === "no_answer") update.status = "no_answer";
@@ -119,6 +124,17 @@ export async function handleCallcenterWebhook(request: Request) {
           } catch {
             // Lead may not exist or already recovered
           }
+        }
+
+        // Dispatch checkout link when the call ends with a positive outcome
+        const positiveOutcomes = ["recovered", "interested", "callback_scheduled"];
+        if (positiveOutcomes.includes(update.outcome ?? "") && call.leadId) {
+          dispatchPostCallCheckout(storage, call, update).catch((err) => {
+            console.error("[callcenter] Post-call checkout dispatch failed", {
+              callId: call.id,
+              error: err instanceof Error ? err.message : err,
+            });
+          });
         }
 
         return NextResponse.json({ ok: true, callId: call.id });
@@ -352,4 +368,206 @@ function asCallOutcome(value: unknown) {
 function asCallSentiment(value: unknown) {
   const valid = ["positive", "neutral", "negative"];
   return typeof value === "string" && valid.includes(value) ? (value as CallRecord["sentiment"]) : undefined;
+}
+
+function asChosenPaymentMethod(value: unknown): "pix" | "card" | "boleto" | undefined {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.toLowerCase().trim();
+  if (normalized === "pix") return "pix";
+  if (normalized === "card" || normalized === "cartao" || normalized === "credit_card" || normalized === "credit" || normalized === "debit") return "card";
+  if (normalized === "boleto" || normalized === "bank_slip") return "boleto";
+  return undefined;
+}
+
+/* ── Post-call checkout dispatch ── */
+
+/**
+ * After a call ends with a positive outcome, generates a checkout session
+ * with the seller's coupon/discount and the customer's chosen payment method,
+ * then dispatches the payment link via WhatsApp/SMS.
+ */
+async function dispatchPostCallCheckout(
+  storage: RecoveryStorage,
+  call: CallRecord,
+  update: UpdateCallInput,
+) {
+  if (!call.leadId) return;
+
+  const service = getPaymentRecoveryService();
+  const contacts = await service.getFollowUpContacts();
+  const contact = contacts.find((c) => c.lead_id === call.leadId);
+
+  if (!contact) {
+    await storage.addLog(
+      createStructuredLog({
+        eventType: "callcenter_checkout",
+        level: "warn",
+        message: `[callcenter] No contact found for lead ${call.leadId} — skipping checkout dispatch.`,
+        context: { callId: call.id, leadId: call.leadId },
+      }),
+    ).catch(() => {});
+    return;
+  }
+
+  // Resolve seller settings for coupon & discount
+  const sellerKey = call.sellerKey ?? contact.assigned_agent ?? "";
+  const settings = sellerKey ? await storage.getCallcenterSettings(sellerKey) : undefined;
+
+  const discountPercent = call.discountPercent ?? settings?.discountPercent ?? 0;
+  const couponCode = settings?.couponCode || undefined;
+  const chosenMethod = update.chosenPaymentMethod ?? call.chosenPaymentMethod;
+
+  // Resolve seller checkout overrides (custom checkout URL per seller)
+  let checkoutOverrides: { baseUrl?: string; apiKey?: string } | undefined;
+  if (sellerKey) {
+    const allControls = await storage.getSellerAdminControls();
+    const sellerControl = allControls.find((c) => c.sellerKey === sellerKey);
+    if (sellerControl?.checkoutUrl) {
+      checkoutOverrides = {
+        baseUrl: sellerControl.checkoutUrl,
+        apiKey: sellerControl.checkoutApiKey,
+      };
+    }
+  }
+
+  // Create checkout session with coupon and chosen payment method
+  let checkoutUrl: string | undefined;
+  let sessionId: string | undefined;
+
+  try {
+    const result = await createCheckoutSession(
+      {
+        amount: contact.payment_value / 100,
+        description: contact.product
+          ? `${contact.product} — recuperacao via chamada`
+          : `Pagamento #${contact.gateway_payment_id}`,
+        customerName: contact.customer_name,
+        customerEmail: contact.email,
+        customerPhone: contact.phone,
+        source: "callcenter",
+        sourceReferenceId: call.id,
+        couponCode,
+        discountPercent: discountPercent > 0 ? discountPercent : undefined,
+        metadata: {
+          callId: call.id,
+          leadId: call.leadId,
+          outcome: update.outcome,
+          chosenPaymentMethod: chosenMethod,
+          gatewayPaymentId: contact.gateway_payment_id,
+          orderId: contact.order_id,
+        },
+      },
+      checkoutOverrides,
+    );
+
+    checkoutUrl = result.checkoutUrl;
+    sessionId = result.sessionId;
+
+    // Append ?method= to pre-select the chosen payment method
+    if (chosenMethod && checkoutUrl) {
+      const sep = checkoutUrl.includes("?") ? "&" : "?";
+      checkoutUrl = `${checkoutUrl}${sep}method=${chosenMethod}`;
+    }
+
+    // Store checkout info on the call record
+    await storage.updateCall(call.id, {
+      checkoutSessionId: sessionId,
+      checkoutUrl,
+    });
+  } catch (err) {
+    await storage.addLog(
+      createStructuredLog({
+        eventType: "callcenter_checkout",
+        level: "error",
+        message: `[callcenter] Failed to create checkout session for call ${call.id}.`,
+        context: {
+          callId: call.id,
+          leadId: call.leadId,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      }),
+    ).catch(() => {});
+    return;
+  }
+
+  // Dispatch the payment link to the customer via WhatsApp
+  if (!checkoutUrl) return;
+
+  const phone = contact.phone?.replace(/\D/g, "");
+  if (!phone) return;
+
+  // Upsert conversation for the customer (finds existing or creates new)
+  const conversation = await storage.upsertConversation({
+    channel: "whatsapp",
+    contactValue: contact.phone,
+    customerName: contact.customer_name,
+  });
+
+  const messaging = new MessagingService();
+  const methodLabel =
+    chosenMethod === "pix" ? "PIX" : chosenMethod === "card" ? "cartao" : chosenMethod === "boleto" ? "boleto" : "pagamento";
+  const discountLabel = discountPercent > 0 ? ` com ${discountPercent}% de desconto` : "";
+  const couponLabel = couponCode ? ` (cupom: ${couponCode})` : "";
+
+  const content = [
+    `Oi, ${contact.customer_name}! Conforme conversamos por telefone, segue seu link de pagamento via ${methodLabel}${discountLabel}${couponLabel}:`,
+    "",
+    checkoutUrl,
+    "",
+    "Se precisar de algo, estamos por aqui!",
+  ].join("\n");
+
+  const messageMetadata = {
+    kind: "recovery_prompt" as const,
+    generatedBy: "workflow" as const,
+    nextAction: "send_checkout_link" as const,
+    paymentMethod: chosenMethod,
+    paymentUrl: checkoutUrl,
+    retryLink: checkoutUrl,
+    paymentValue: contact.payment_value,
+    product: contact.product,
+    gatewayPaymentId: contact.gateway_payment_id,
+    orderId: contact.order_id,
+  };
+
+  const dispatch = await messaging.dispatchOutboundMessage({
+    conversation,
+    content,
+    metadata: messageMetadata,
+  });
+
+  // Persist the outbound message in the conversation
+  await storage.createMessage({
+    conversationId: conversation.id,
+    channel: conversation.channel,
+    direction: "outbound",
+    senderAddress: "callcenter",
+    senderName: "CallCenter",
+    content,
+    status: dispatch.status === "failed" ? "failed" : "sent",
+    lead: undefined,
+    customerId: call.customerId,
+    metadata: messageMetadata,
+  });
+
+  await storage.addLog(
+    createStructuredLog({
+      eventType: "callcenter_checkout",
+      level: dispatch.status === "failed" ? "warn" : "info",
+      message: dispatch.status === "failed"
+        ? `[callcenter] Checkout link created but WhatsApp dispatch failed for ${contact.customer_name}. Link: ${checkoutUrl}`
+        : `[callcenter] Checkout link dispatched to ${contact.customer_name} after call (${update.outcome}).`,
+      context: {
+        callId: call.id,
+        leadId: call.leadId,
+        checkoutUrl,
+        chosenMethod,
+        couponCode,
+        discountPercent,
+        conversationId: conversation.id,
+        dispatchStatus: dispatch.status,
+        dispatchError: dispatch.error,
+      },
+    }),
+  ).catch(() => {});
 }

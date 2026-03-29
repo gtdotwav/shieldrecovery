@@ -342,7 +342,8 @@ export type SystemLogRecord = {
     | "worker_job_processed"
     | "worker_job_rescheduled"
     | "worker_job_failed"
-    | "duplicate_webhook";
+    | "duplicate_webhook"
+    | "callcenter_checkout";
   level: "info" | "warn" | "error";
   message: string;
   context: Record<string, unknown>;
@@ -748,6 +749,10 @@ export type CallRecord = {
   copy?: string;
   product?: string;
   discountPercent?: number;
+  couponCode?: string;
+  chosenPaymentMethod?: "pix" | "card" | "boleto";
+  checkoutSessionId?: string;
+  checkoutUrl?: string;
   voiceTone?: VoiceTone;
   voiceGender?: VoiceGender;
   sellerKey?: string;
@@ -806,6 +811,7 @@ export type CreateCallInput = {
   copy?: string;
   product?: string;
   discountPercent?: number;
+  couponCode?: string;
   voiceTone?: VoiceTone;
   voiceGender?: VoiceGender;
   sellerKey?: string;
@@ -831,6 +837,7 @@ export type CallcenterSettingsRecord = {
   voiceTone: VoiceTone;
   voiceGender: VoiceGender;
   discountPercent: number;
+  couponCode: string;
   defaultCopy: string;
   defaultProduct: string;
   provider: CallProvider;
@@ -845,6 +852,7 @@ export type CallcenterSettingsInput = {
   voiceTone?: VoiceTone;
   voiceGender?: VoiceGender;
   discountPercent?: number;
+  couponCode?: string;
   defaultCopy?: string;
   defaultProduct?: string;
   provider?: CallProvider;
@@ -869,5 +877,8 @@ export type UpdateCallInput = {
   providerCallId?: string;
   providerCost?: number;
   sentiment?: CallSentiment;
+  chosenPaymentMethod?: "pix" | "card" | "boleto";
+  checkoutSessionId?: string;
+  checkoutUrl?: string;
   metadata?: Record<string, unknown>;
 };

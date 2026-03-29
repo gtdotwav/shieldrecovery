@@ -1828,6 +1828,7 @@ export class SupabaseStorageService implements RecoveryStorage {
       copy: input.copy ?? null,
       product: input.product ?? null,
       discount_percent: input.discountPercent ?? null,
+      coupon_code: input.couponCode ?? null,
       voice_tone: input.voiceTone ?? null,
       voice_gender: input.voiceGender ?? null,
       seller_key: input.sellerKey ?? null,
@@ -1866,6 +1867,9 @@ export class SupabaseStorageService implements RecoveryStorage {
     if (input.providerCallId !== undefined) row.provider_call_id = input.providerCallId;
     if (input.providerCost !== undefined) row.provider_cost = input.providerCost;
     if (input.sentiment !== undefined) row.sentiment = input.sentiment;
+    if (input.chosenPaymentMethod !== undefined) row.chosen_payment_method = input.chosenPaymentMethod;
+    if (input.checkoutSessionId !== undefined) row.checkout_session_id = input.checkoutSessionId;
+    if (input.checkoutUrl !== undefined) row.checkout_url = input.checkoutUrl;
     if (input.metadata !== undefined) row.metadata = input.metadata;
 
     const { data, error } = await this.supabase
@@ -2042,6 +2046,7 @@ export class SupabaseStorageService implements RecoveryStorage {
     if (input.voiceTone !== undefined) row.voice_tone = input.voiceTone;
     if (input.voiceGender !== undefined) row.voice_gender = input.voiceGender;
     if (input.discountPercent !== undefined) row.discount_percent = input.discountPercent;
+    if (input.couponCode !== undefined) row.coupon_code = input.couponCode;
     if (input.defaultCopy !== undefined) row.default_copy = input.defaultCopy;
     if (input.defaultProduct !== undefined) row.default_product = input.defaultProduct;
     if (input.provider !== undefined) row.provider = input.provider;
@@ -2761,6 +2766,10 @@ function mapCall(data: any): CallRecord {
     copy: data.copy ?? undefined,
     product: data.product ?? undefined,
     discountPercent: data.discount_percent != null ? Number(data.discount_percent) : undefined,
+    couponCode: data.coupon_code ?? undefined,
+    chosenPaymentMethod: data.chosen_payment_method ?? undefined,
+    checkoutSessionId: data.checkout_session_id ?? undefined,
+    checkoutUrl: data.checkout_url ?? undefined,
     voiceTone: data.voice_tone ?? undefined,
     voiceGender: data.voice_gender ?? undefined,
     sellerKey: data.seller_key ?? undefined,
@@ -2778,6 +2787,7 @@ function mapCallcenterSettings(data: any): CallcenterSettingsRecord {
     voiceTone: data.voice_tone ?? "empathetic",
     voiceGender: data.voice_gender ?? "female",
     discountPercent: Number(data.discount_percent) || 0,
+    couponCode: data.coupon_code ?? "",
     defaultCopy: data.default_copy ?? "",
     defaultProduct: data.default_product ?? "",
     provider: data.provider ?? "vapi",

@@ -1573,6 +1573,7 @@ class LocalStorageService implements RecoveryStorage {
     return {
       id: randomUUID(), sellerKey: input.sellerKey, voiceTone: input.voiceTone ?? "empathetic",
       voiceGender: input.voiceGender ?? "female", discountPercent: input.discountPercent ?? 0,
+      couponCode: input.couponCode ?? "",
       defaultCopy: input.defaultCopy ?? "", defaultProduct: input.defaultProduct ?? "",
       provider: input.provider ?? "vapi", maxCallsPerDay: input.maxCallsPerDay ?? 50,
       autoCallEnabled: input.autoCallEnabled ?? false,

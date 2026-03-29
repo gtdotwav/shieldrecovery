@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Clock,
+  ExternalLink,
   Megaphone,
   Mic,
   Percent,
@@ -189,6 +190,18 @@ export default async function CallingPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Cupom de desconto
+                  </label>
+                  <input
+                    name="couponCode"
+                    type="text"
+                    placeholder="Ex: RECUPERA20"
+                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+                  />
+                </div>
+
                 <input type="hidden" name="provider" value="vapi" />
 
                 <div className="flex justify-end">
@@ -268,6 +281,21 @@ export default async function CallingPage() {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Cupom de desconto
+                    </label>
+                    <input
+                      name="couponCode"
+                      type="text"
+                      placeholder="Ex: RECUPERA20"
+                      defaultValue={settings?.couponCode ?? ""}
+                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                       Produto padrao
@@ -423,6 +451,7 @@ export default async function CallingPage() {
                 <SettingLine label="Tom" value={mapToneLabel(settings.voiceTone)} />
                 <SettingLine label="Genero" value={settings.voiceGender === "female" ? "Feminina" : "Masculina"} />
                 <SettingLine label="Desconto" value={`${settings.discountPercent}%`} />
+                <SettingLine label="Cupom" value={settings.couponCode || "—"} />
                 <SettingLine label="Produto" value={settings.defaultProduct || "—"} />
                 <SettingLine label="Provider" value={settings.provider} />
               </div>
@@ -501,6 +530,11 @@ function CallRow({ call }: { call: CallRecord }) {
                   -{call.discountPercent}%
                 </span>
               ) : null}
+              {call.chosenPaymentMethod ? (
+                <span className="font-medium text-[var(--accent)]">
+                  {call.chosenPaymentMethod === "pix" ? "PIX" : call.chosenPaymentMethod === "card" ? "Cartao" : "Boleto"}
+                </span>
+              ) : null}
               <span>{call.provider}</span>
               {call.sentiment ? (
                 <span
@@ -524,6 +558,17 @@ function CallRow({ call }: { call: CallRecord }) {
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
                 {call.transcriptSummary}
               </p>
+            ) : null}
+            {call.checkoutUrl ? (
+              <a
+                href={call.checkoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 rounded-md bg-[var(--accent)]/10 px-2 py-1 text-[0.65rem] font-medium text-[var(--accent)] hover:bg-[var(--accent)]/20 transition-colors"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Link de pagamento enviado
+              </a>
             ) : null}
             {call.copy ? (
               <p className="mt-1 text-[0.65rem] text-gray-400 dark:text-gray-500 line-clamp-1 italic">

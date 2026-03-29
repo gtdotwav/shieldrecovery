@@ -290,3 +290,96 @@ VALUES (
   NOW()
 )
 ON CONFLICT (id) DO NOTHING;
+
+-- Table: calls
+CREATE TABLE IF NOT EXISTS calls (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  campaign_id UUID,
+  lead_id TEXT,
+  customer_id UUID,
+  agent_id UUID,
+  direction TEXT NOT NULL DEFAULT 'outbound',
+  from_number TEXT,
+  to_number TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'queued',
+  started_at TIMESTAMP WITH TIME ZONE,
+  answered_at TIMESTAMP WITH TIME ZONE,
+  ended_at TIMESTAMP WITH TIME ZONE,
+  duration_seconds INTEGER DEFAULT 0,
+  ring_duration_seconds INTEGER DEFAULT 0,
+  recording_url TEXT,
+  recording_duration_seconds INTEGER,
+  transcript TEXT,
+  transcript_summary TEXT,
+  outcome TEXT,
+  outcome_notes TEXT,
+  callback_scheduled_at TIMESTAMP WITH TIME ZONE,
+  provider TEXT NOT NULL DEFAULT 'vapi',
+  provider_call_id TEXT,
+  provider_cost DECIMAL(10, 4),
+  sentiment TEXT,
+  copy TEXT,
+  product TEXT,
+  discount_percent DECIMAL(5, 2),
+  coupon_code TEXT,
+  chosen_payment_method TEXT,
+  checkout_session_id TEXT,
+  checkout_url TEXT,
+  voice_tone TEXT,
+  voice_gender TEXT,
+  seller_key TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX calls_lead_id_idx ON calls(lead_id);
+CREATE INDEX calls_status_idx ON calls(status);
+CREATE INDEX calls_created_at_idx ON calls(created_at DESC);
+
+-- Table: call_events
+CREATE TABLE IF NOT EXISTS call_events (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  call_id UUID NOT NULL REFERENCES calls(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL,
+  data JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX call_events_call_id_idx ON call_events(call_id);
+
+-- Table: call_campaigns
+CREATE TABLE IF NOT EXISTS call_campaigns (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'draft',
+  filter_criteria JSONB DEFAULT '{}'::jsonb,
+  total_contacts INTEGER DEFAULT 0,
+  completed_contacts INTEGER DEFAULT 0,
+  successful_contacts INTEGER DEFAULT 0,
+  created_by TEXT,
+  started_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+-- Table: callcenter_settings
+CREATE TABLE IF NOT EXISTS callcenter_settings (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  seller_key TEXT UNIQUE NOT NULL,
+  voice_tone TEXT DEFAULT 'empathetic',
+  voice_gender TEXT DEFAULT 'female',
+  discount_percent DECIMAL(5, 2) DEFAULT 0,
+  coupon_code TEXT DEFAULT '',
+  default_copy TEXT DEFAULT '',
+  default_product TEXT DEFAULT '',
+  provider TEXT DEFAULT 'vapi',
+  max_calls_per_day INTEGER DEFAULT 50,
+  auto_call_enabled BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX callcenter_settings_seller_key_idx ON callcenter_settings(seller_key);
