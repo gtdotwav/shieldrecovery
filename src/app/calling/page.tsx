@@ -1,14 +1,9 @@
 import Link from "next/link";
 import {
+  CheckCircle2,
   Clock,
-  ExternalLink,
-  Megaphone,
-  Mic,
-  Percent,
-  Phone,
   PhoneCall,
   PhoneIncoming,
-  PhoneMissed,
   PhoneOff,
   Play,
   Settings2,
@@ -17,16 +12,23 @@ import {
 
 import {
   dispatchCall,
+  markCallConverted,
+  redialCall,
   saveCallcenterSettings,
 } from "@/app/actions/recovery-actions";
 import { ActionButton } from "@/components/ui/action-button";
 import {
+  QuickDispatchInputs,
+  VoiceGenderSelector,
+  VoiceToneSelector,
+} from "@/components/ui/voice-selectors";
+import {
   PlatformAppPage,
   PlatformInset,
   PlatformMetricCard,
+  PlatformPill,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
-import { LeadPhoneSelector } from "@/components/ui/lead-phone-selector";
 import { StageBadge } from "@/components/ui/stage-badge";
 import { formatCurrency, formatRelativeTime } from "@/lib/format";
 import { formatPhone, hasPhone } from "@/lib/contact";
@@ -35,7 +37,6 @@ import { getStorageService } from "@/server/recovery/services/storage";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import type {
   CallRecord,
-  CallcenterSettingsRecord,
   FollowUpContact,
 } from "@/server/recovery/types";
 
@@ -52,7 +53,7 @@ export default async function CallingPage() {
   const sellerKey = session.email.split("@")[0];
 
   const [calls, analytics, contacts, settings] = await Promise.all([
-    storage.listCalls({ limit: 30 }),
+    storage.listCalls({ limit: 50 }),
     storage.getCallAnalytics(),
     service.getFollowUpContacts(),
     storage.getCallcenterSettings(sellerKey),
@@ -65,9 +66,11 @@ export default async function CallingPage() {
       c.lead_status !== "LOST",
   );
 
+  const vapiConfigured = Boolean(process.env.VAPI_API_KEY);
+
   return (
     <PlatformAppPage currentPath="/calling">
-      {/* KPI cards */}
+      {/* ── KPI row ── */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <PlatformMetricCard
           icon={PhoneCall}
@@ -89,28 +92,46 @@ export default async function CallingPage() {
         />
         <PlatformMetricCard
           icon={Clock}
-          label="duracao media"
+          label="duração média"
           value={formatDuration(analytics.averageDurationSeconds)}
           subtitle={`${formatDuration(analytics.totalDurationSeconds)} total`}
         />
       </section>
 
-      <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(17rem,0.85fr)]">
+      {/* ── Main area ── */}
+      <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(17rem,0.75fr)]">
         <div className="space-y-5">
-          {/* Admin: Dispatch call form */}
+
+          {/* ── Disparar Chamada ── */}
           {isAdmin ? (
             <PlatformSurface className="p-5 sm:p-6">
-              <div className="border-b border-[var(--border)] pb-4">
-                <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[var(--accent)]">
-                  Disparar chamada
-                </p>
-                <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-gray-900 dark:text-white">
-                  Ligar para um contato
-                </h3>
+              <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+                    Disparar chamada
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold tracking-tight text-[var(--foreground)]">
+                    Ligue para qualquer contato em segundos.
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  {vapiConfigured ? (
+                    <PlatformPill>
+                      <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+                      VAPI ATIVO
+                    </PlatformPill>
+                  ) : (
+                    <PlatformPill>
+                      <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-yellow-500" />
+                      VAPI NÃO CONFIG
+                    </PlatformPill>
+                  )}
+                </div>
               </div>
 
-              <form action={dispatchCall} className="mt-4 space-y-4">
-                <LeadPhoneSelector
+              <form action={dispatchCall} className="mt-5 space-y-5">
+                {/* Lead / Phone inputs */}
+                <QuickDispatchInputs
                   contacts={callableContacts.map((c) => ({
                     lead_id: c.lead_id,
                     customer_name: c.customer_name,
@@ -119,64 +140,37 @@ export default async function CallingPage() {
                   }))}
                 />
 
+                {/* Voice config */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Copy / Script da chamada
-                  </label>
-                  <textarea
-                    name="copy"
-                    rows={3}
-                    placeholder="Ola, estou ligando em nome da empresa sobre o pagamento pendente..."
-                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30 resize-none"
-                  />
+                  <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                    Tom de voz
+                  </p>
+                  <VoiceToneSelector defaultValue={settings?.voiceTone ?? "empathetic"} />
                 </div>
 
-                <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                <div>
+                  <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                    Voz do agente
+                  </p>
+                  <VoiceGenderSelector defaultValue={settings?.voiceGender ?? "female"} />
+                </div>
+
+                {/* Script + extras */}
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    <label className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
                       Produto
                     </label>
                     <input
                       name="product"
                       type="text"
                       placeholder="Mentoria Premium"
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+                      defaultValue={settings?.defaultProduct ?? ""}
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Tom de voz
-                    </label>
-                    <select
-                      name="voiceTone"
-                      defaultValue="empathetic"
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
-                    >
-                      <option value="empathetic">Empatico</option>
-                      <option value="professional">Profissional</option>
-                      <option value="urgent">Urgente</option>
-                      <option value="friendly">Amigavel</option>
-                      <option value="direct">Direto</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Genero da voz
-                    </label>
-                    <select
-                      name="voiceGender"
-                      defaultValue="female"
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
-                    >
-                      <option value="female">Feminina</option>
-                      <option value="male">Masculina</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    <label className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
                       Desconto (%)
                     </label>
                     <input
@@ -184,91 +178,83 @@ export default async function CallingPage() {
                       type="number"
                       min="0"
                       max="100"
-                      defaultValue="0"
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+                      defaultValue={settings?.discountPercent ?? 0}
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
+                      Cupom
+                    </label>
+                    <input
+                      name="couponCode"
+                      type="text"
+                      placeholder="RECUPERA20"
+                      defaultValue={settings?.couponCode ?? ""}
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Cupom de desconto
+                  <label className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
+                    Script (System Prompt)
                   </label>
-                  <input
-                    name="couponCode"
-                    type="text"
-                    placeholder="Ex: RECUPERA20"
-                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+                  <textarea
+                    name="copy"
+                    rows={3}
+                    placeholder="Olá, estou ligando em nome da empresa sobre o pagamento pendente..."
+                    defaultValue={settings?.defaultCopy ?? ""}
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)] resize-none"
                   />
                 </div>
 
-                <input type="hidden" name="provider" value="vapi" />
-
                 <div className="flex justify-end">
-                  <ActionButton className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]">
+                  <ActionButton className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[var(--accent-strong)]">
                     <Play className="h-4 w-4" />
-                    Disparar chamada
+                    Ligar agora
                   </ActionButton>
                 </div>
               </form>
             </PlatformSurface>
           ) : null}
 
-          {/* Seller: Settings panel */}
+          {/* ── Seller: Settings panel ── */}
           {!isAdmin ? (
             <PlatformSurface className="p-5 sm:p-6">
               <div className="border-b border-[var(--border)] pb-4">
                 <div className="flex items-center gap-2">
                   <Settings2 className="h-4 w-4 text-[var(--accent)]" />
-                  <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[var(--accent)]">
-                    Configuracoes do agente de voz
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+                    Configurações do agente de voz
                   </p>
                 </div>
-                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                  Chamadas sao disparadas automaticamente via webhook. Configure o tom e desconto aqui.
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Chamadas são disparadas automaticamente via webhook. Configure o tom e desconto.
                 </p>
               </div>
 
-              <form action={saveCallcenterSettings} className="mt-4 space-y-4">
+              <form action={saveCallcenterSettings} className="mt-5 space-y-5">
                 <input type="hidden" name="sellerKey" value={sellerKey} />
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      <Mic className="h-3 w-3" /> Tom de voz
-                    </label>
-                    <select
-                      name="voiceTone"
-                      defaultValue={settings?.voiceTone ?? "empathetic"}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
-                    >
-                      <option value="empathetic">Empatico</option>
-                      <option value="professional">Profissional</option>
-                      <option value="urgent">Urgente</option>
-                      <option value="friendly">Amigavel</option>
-                      <option value="direct">Direto</option>
-                    </select>
-                  </div>
+                <div>
+                  <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                    Tom de voz
+                  </p>
+                  <VoiceToneSelector defaultValue={settings?.voiceTone ?? "empathetic"} />
+                </div>
 
-                  <div>
-                    <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      <Megaphone className="h-3 w-3" /> Genero da voz
-                    </label>
-                    <select
-                      name="voiceGender"
-                      defaultValue={settings?.voiceGender ?? "female"}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
-                    >
-                      <option value="female">Feminina</option>
-                      <option value="male">Masculina</option>
-                    </select>
-                  </div>
+                <div>
+                  <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                    Voz do agente
+                  </p>
+                  <VoiceGenderSelector defaultValue={settings?.voiceGender ?? "female"} />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      <Percent className="h-3 w-3" /> Desconto oferecido (%)
+                    <label className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
+                      Desconto (%)
                     </label>
                     <input
                       name="discountPercent"
@@ -277,112 +263,145 @@ export default async function CallingPage() {
                       max="100"
                       step="0.5"
                       defaultValue={settings?.discountPercent ?? 0}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Cupom de desconto
+                    <label className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
+                      Cupom
                     </label>
                     <input
                       name="couponCode"
                       type="text"
-                      placeholder="Ex: RECUPERA20"
+                      placeholder="RECUPERA20"
                       defaultValue={settings?.couponCode ?? ""}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
                     />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Produto padrao
+                    <label className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
+                      Produto padrão
                     </label>
                     <input
                       name="defaultProduct"
                       type="text"
                       placeholder="Nome do produto"
                       defaultValue={settings?.defaultProduct ?? ""}
-                      className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30"
+                      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Script padrao da chamada
+                  <label className="block text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
+                    Script padrão
                   </label>
                   <textarea
                     name="defaultCopy"
                     rows={3}
-                    placeholder="Ola, tudo bem? Aqui é da [empresa], estou entrando em contato sobre..."
+                    placeholder="Olá, tudo bem? Aqui é da [empresa]..."
                     defaultValue={settings?.defaultCopy ?? ""}
-                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111] px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/30 resize-none"
+                    className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)] resize-none"
                   />
                 </div>
 
                 <div className="flex justify-end">
-                  <ActionButton className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]">
+                  <ActionButton className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[var(--accent-strong)]">
                     <Settings2 className="h-4 w-4" />
-                    Salvar configuracoes
+                    Salvar configurações
                   </ActionButton>
                 </div>
               </form>
             </PlatformSurface>
           ) : null}
 
-          {/* Recent calls */}
+          {/* ── Histórico de Chamadas (Table) ── */}
           <PlatformSurface className="p-5 sm:p-6">
             <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
-                  Chamadas recentes
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+                  Histórico de chamadas
                 </p>
-                <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-gray-900 dark:text-white">
-                  Historico de ligacoes
+                <h3 className="mt-1 text-lg font-semibold tracking-tight text-[var(--foreground)]">
+                  Todas as ligações registradas.
                 </h3>
               </div>
               {analytics.totalCalls > 0 ? (
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  {analytics.totalCalls} total
+                <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+                  {analytics.totalCalls} chamadas
                 </span>
               ) : null}
             </div>
 
-            <div className="mt-4 space-y-2.5">
-              {calls.length === 0 ? (
-                <PlatformInset className="p-6 text-center">
-                  <PhoneOff className="mx-auto h-5 w-5 text-gray-400" />
-                  <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                    Nenhuma chamada registrada ainda.
-                  </p>
-                  <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                    {isAdmin
-                      ? "Use o formulario acima para disparar a primeira chamada."
-                      : "As chamadas aparecerao aqui conforme forem disparadas via webhook."}
-                  </p>
-                </PlatformInset>
-              ) : (
-                calls.map((call) => <CallRow key={call.id} call={call} />)
-              )}
-            </div>
+            {calls.length === 0 ? (
+              <PlatformInset className="mt-4 p-6 text-center">
+                <PhoneOff className="mx-auto h-5 w-5 text-[var(--muted)]" />
+                <p className="mt-3 text-sm font-medium text-[var(--foreground)]">
+                  Nenhuma chamada registrada ainda.
+                </p>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  {isAdmin
+                    ? "Use o formulário acima para disparar a primeira chamada."
+                    : "As chamadas aparecerão aqui conforme forem disparadas via webhook."}
+                </p>
+              </PlatformInset>
+            ) : (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--border)]">
+                      <th className="pb-3 pr-4 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                        Data
+                      </th>
+                      <th className="pb-3 pr-4 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                        Lead
+                      </th>
+                      <th className="pb-3 pr-4 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                        Telefone
+                      </th>
+                      <th className="pb-3 pr-4 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                        Status
+                      </th>
+                      <th className="pb-3 pr-4 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                        Duração
+                      </th>
+                      <th className="pb-3 pr-4 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                        Custo
+                      </th>
+                      <th className="pb-3 pr-4 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                        Transcrição
+                      </th>
+                      <th className="pb-3 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calls.map((call) => (
+                      <CallTableRow key={call.id} call={call} isAdmin={isAdmin} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </PlatformSurface>
         </div>
 
-        {/* Sidebar */}
+        {/* ── Sidebar ── */}
         <div className="space-y-5 xl:sticky xl:top-20 xl:self-start">
-          {/* Admin: Callable contacts */}
+          {/* Callable contacts */}
           {isAdmin ? (
             <PlatformSurface className="p-5">
-              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
                 Contatos para ligar
               </p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
+              <p className="mt-1 text-2xl font-semibold text-[var(--foreground)]">
                 {callableContacts.length}
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
+              <p className="text-xs text-[var(--muted)]">
                 leads ativos com telefone
               </p>
 
@@ -391,7 +410,7 @@ export default async function CallingPage() {
                   <ContactRow key={contact.lead_id} contact={contact} />
                 ))}
                 {callableContacts.length > 10 ? (
-                  <p className="text-center text-xs text-gray-400 dark:text-gray-500 pt-2">
+                  <p className="pt-2 text-center text-xs text-[var(--muted)]">
                     +{callableContacts.length - 10} contatos
                   </p>
                 ) : null}
@@ -402,8 +421,8 @@ export default async function CallingPage() {
           {/* Outcome breakdown */}
           {analytics.totalCalls > 0 ? (
             <PlatformSurface className="p-5">
-              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
-                Resultados das chamadas
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+                Resultados
               </p>
               <div className="mt-4 space-y-2">
                 {Object.entries(analytics.byOutcome)
@@ -423,8 +442,8 @@ export default async function CallingPage() {
           {/* Status breakdown */}
           {analytics.totalCalls > 0 ? (
             <PlatformSurface className="p-5">
-              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
-                Status das chamadas
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+                Status
               </p>
               <div className="mt-4 space-y-2">
                 {Object.entries(analytics.byStatus)
@@ -441,19 +460,18 @@ export default async function CallingPage() {
             </PlatformSurface>
           ) : null}
 
-          {/* Seller: current settings summary */}
+          {/* Seller: current config */}
           {!isAdmin && settings ? (
             <PlatformSurface className="p-5">
-              <p className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
                 Config ativa
               </p>
               <div className="mt-3 space-y-2">
                 <SettingLine label="Tom" value={mapToneLabel(settings.voiceTone)} />
-                <SettingLine label="Genero" value={settings.voiceGender === "female" ? "Feminina" : "Masculina"} />
+                <SettingLine label="Gênero" value={settings.voiceGender === "female" ? "Feminina" : "Masculina"} />
                 <SettingLine label="Desconto" value={`${settings.discountPercent}%`} />
                 <SettingLine label="Cupom" value={settings.couponCode || "—"} />
                 <SettingLine label="Produto" value={settings.defaultProduct || "—"} />
-                <SettingLine label="Provider" value={settings.provider} />
               </div>
             </PlatformSurface>
           ) : null}
@@ -463,154 +481,140 @@ export default async function CallingPage() {
   );
 }
 
-/* ── Components ── */
+/* ── Call Table Row ── */
 
-function CallRow({ call }: { call: CallRecord }) {
-  const StatusIcon =
-    call.status === "completed"
-      ? Phone
-      : call.status === "no_answer" || call.status === "busy"
-        ? PhoneMissed
-        : call.status === "in_progress" || call.status === "ringing"
-          ? PhoneIncoming
-          : PhoneOff;
-
+function CallTableRow({ call, isAdmin }: { call: CallRecord; isAdmin: boolean }) {
   const statusColor =
     call.status === "completed"
-      ? "text-green-500"
+      ? "bg-green-500/10 text-green-500"
       : call.status === "in_progress" || call.status === "ringing"
-        ? "text-blue-500"
+        ? "bg-blue-500/10 text-blue-400"
         : call.status === "failed"
-          ? "text-red-500"
-          : "text-gray-400";
+          ? "bg-red-500/10 text-red-400"
+          : "bg-[var(--surface-strong)] text-[var(--muted)]";
+
+  const dateStr = new Date(call.createdAt).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const isRecoverable =
+    call.outcome !== "recovered" &&
+    call.status !== "in_progress" &&
+    call.status !== "ringing" &&
+    call.status !== "queued";
 
   return (
-    <div className="glass-inset rounded-xl p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          <div
-            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-gray-800 ${statusColor}`}
+    <tr className="border-b border-[var(--border)] last:border-0">
+      <td className="py-3 pr-4 text-xs text-[var(--muted)] whitespace-nowrap">
+        {dateStr}
+      </td>
+      <td className="py-3 pr-4">
+        {call.leadId ? (
+          <Link
+            href={`/leads/${call.leadId}`}
+            className="text-sm font-medium text-[var(--foreground)] hover:text-[var(--accent)] transition-colors"
           >
-            <StatusIcon className="h-4 w-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                {formatPhone(call.toNumber)}
-              </p>
-              <span
-                className={`inline-flex items-center rounded-md px-2 py-0.5 text-[0.65rem] font-medium ${
-                  call.status === "completed"
-                    ? "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400"
-                    : call.status === "in_progress"
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                      : call.status === "failed"
-                        ? "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-                        : "bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-                }`}
-              >
-                {mapStatusLabel(call.status)}
+            {call.product || call.leadId.slice(0, 8)}
+          </Link>
+        ) : (
+          <span className="text-sm text-[var(--muted)]">—</span>
+        )}
+      </td>
+      <td className="py-3 pr-4 text-sm text-[var(--foreground)] whitespace-nowrap">
+        {formatPhone(call.toNumber)}
+      </td>
+      <td className="py-3 pr-4">
+        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[0.65rem] font-semibold ${statusColor}`}>
+          {mapStatusLabel(call.status).toUpperCase()}
+        </span>
+        {call.outcome === "recovered" ? (
+          <span className="ml-1 inline-flex items-center rounded-md bg-green-500/10 px-2 py-0.5 text-[0.65rem] font-semibold text-green-500">
+            CONVERTIDO
+          </span>
+        ) : null}
+      </td>
+      <td className="py-3 pr-4 text-sm tabular-nums text-[var(--foreground)]">
+        {call.durationSeconds > 0 ? formatDuration(call.durationSeconds) : "—"}
+      </td>
+      <td className="py-3 pr-4 text-sm tabular-nums text-[var(--muted)]">
+        {call.providerCost != null && Number(call.providerCost) > 0
+          ? `$${Number(call.providerCost).toFixed(4)}`
+          : "—"}
+      </td>
+      <td className="py-3 pr-4">
+        {call.transcript ? (
+          <Link
+            href={`/leads/${call.leadId ?? ""}`}
+            className="text-xs font-medium text-[var(--accent)] hover:underline"
+          >
+            Ver
+          </Link>
+        ) : (
+          <span className="text-xs text-[var(--muted)]">—</span>
+        )}
+      </td>
+      <td className="py-3">
+        {isAdmin ? (
+          <div className="flex flex-col gap-1">
+            {isRecoverable ? (
+              <>
+                <form action={redialCall} className="inline">
+                  <input type="hidden" name="callId" value={call.id} />
+                  <button
+                    type="submit"
+                    className="text-xs font-medium text-[var(--accent)] hover:underline whitespace-nowrap"
+                  >
+                    Religar
+                  </button>
+                </form>
+                {call.leadId ? (
+                  <form action={markCallConverted} className="inline">
+                    <input type="hidden" name="callId" value={call.id} />
+                    <input type="hidden" name="leadId" value={call.leadId} />
+                    <button
+                      type="submit"
+                      className="text-xs font-medium text-green-500 hover:underline whitespace-nowrap"
+                    >
+                      Marcar convertido
+                    </button>
+                  </form>
+                ) : null}
+              </>
+            ) : call.outcome === "recovered" ? (
+              <span className="text-xs text-green-500">
+                <CheckCircle2 className="inline h-3 w-3 mr-0.5" />
+                Convertido
               </span>
-              {call.outcome ? (
-                <span className="inline-flex items-center rounded-md bg-[var(--accent)]/5 px-2 py-0.5 text-[0.65rem] font-medium text-[var(--accent)]">
-                  {mapOutcomeLabel(call.outcome)}
-                </span>
-              ) : null}
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
-              {call.durationSeconds > 0 ? (
-                <span>{formatDuration(call.durationSeconds)}</span>
-              ) : null}
-              {call.product ? <span>{call.product}</span> : null}
-              {call.voiceTone ? (
-                <span>{mapToneLabel(call.voiceTone)}</span>
-              ) : null}
-              {call.discountPercent && call.discountPercent > 0 ? (
-                <span className="text-[var(--accent)]">
-                  -{call.discountPercent}%
-                </span>
-              ) : null}
-              {call.chosenPaymentMethod ? (
-                <span className="font-medium text-[var(--accent)]">
-                  {call.chosenPaymentMethod === "pix" ? "PIX" : call.chosenPaymentMethod === "card" ? "Cartao" : "Boleto"}
-                </span>
-              ) : null}
-              <span>{call.provider}</span>
-              {call.sentiment ? (
-                <span
-                  className={
-                    call.sentiment === "positive"
-                      ? "text-green-500"
-                      : call.sentiment === "negative"
-                        ? "text-red-500"
-                        : ""
-                  }
-                >
-                  {call.sentiment === "positive"
-                    ? "Positivo"
-                    : call.sentiment === "negative"
-                      ? "Negativo"
-                      : "Neutro"}
-                </span>
-              ) : null}
-            </div>
-            {call.transcriptSummary ? (
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                {call.transcriptSummary}
-              </p>
-            ) : null}
-            {call.checkoutUrl ? (
-              <a
-                href={call.checkoutUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1 rounded-md bg-[var(--accent)]/10 px-2 py-1 text-[0.65rem] font-medium text-[var(--accent)] hover:bg-[var(--accent)]/20 transition-colors"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Link de pagamento enviado
-              </a>
-            ) : null}
-            {call.copy ? (
-              <p className="mt-1 text-[0.65rem] text-gray-400 dark:text-gray-500 line-clamp-1 italic">
-                Copy: {call.copy}
-              </p>
             ) : null}
           </div>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            {formatRelativeTime(call.createdAt)}
-          </p>
-          {call.leadId ? (
-            <Link
-              href={`/leads/${call.leadId}`}
-              className="mt-1 text-[0.65rem] font-medium text-[var(--accent)] hover:underline"
-            >
-              Ver lead
-            </Link>
-          ) : null}
-        </div>
-      </div>
-    </div>
+        ) : null}
+      </td>
+    </tr>
   );
 }
+
+/* ── Components ── */
 
 function ContactRow({ contact }: { contact: FollowUpContact }) {
   return (
     <Link
       href={`/leads/${contact.lead_id}`}
-      className="glass-inset glass-hover block rounded-lg p-3"
+      className="block rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] p-3 transition-colors hover:bg-[var(--surface)]"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+          <p className="truncate text-sm font-medium text-[var(--foreground)]">
             {contact.customer_name}
           </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-[var(--muted)]">
             {formatPhone(contact.phone)}
           </p>
         </div>
-        <div className="text-right shrink-0">
+        <div className="shrink-0 text-right">
           <p className="text-xs font-semibold tabular-nums text-[var(--accent)]">
             {formatCurrency(contact.payment_value)}
           </p>
@@ -633,17 +637,17 @@ function OutcomeBar({
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
 
   return (
-    <div className="glass-inset rounded-lg px-3 py-2">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-gray-600 dark:text-gray-300">
+        <span className="text-xs text-[var(--foreground-secondary)]">
           {label}
         </span>
-        <span className="text-xs font-semibold tabular-nums text-gray-900 dark:text-white">
+        <span className="text-xs font-semibold tabular-nums text-[var(--foreground)]">
           {count}{" "}
-          <span className="text-gray-400 dark:text-gray-500">({pct}%)</span>
+          <span className="text-[var(--muted)]">({pct}%)</span>
         </span>
       </div>
-      <div className="mt-1 h-1 rounded-full bg-gray-100 dark:bg-gray-800">
+      <div className="mt-1 h-1 rounded-full bg-[var(--surface)]">
         <div
           className="h-1 rounded-full bg-[var(--accent)] transition-all"
           style={{ width: `${pct}%` }}
@@ -655,12 +659,10 @@ function OutcomeBar({
 
 function SettingLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="glass-inset rounded-lg px-3 py-2">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-2">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {label}
-        </span>
-        <span className="text-xs font-semibold text-gray-900 dark:text-white">
+        <span className="text-xs text-[var(--muted)]">{label}</span>
+        <span className="text-xs font-semibold text-[var(--foreground)]">
           {value}
         </span>
       </div>
@@ -687,10 +689,10 @@ function mapOutcomeLabel(outcome: string) {
     callback_scheduled: "Callback agendado",
     interested: "Interessado",
     no_interest: "Sem interesse",
-    wrong_number: "Numero errado",
+    wrong_number: "Número errado",
     voicemail_left: "Recado deixado",
     no_voicemail: "Sem recado",
-    technical_issue: "Problema tecnico",
+    technical_issue: "Problema técnico",
     other: "Outro",
   };
   return labels[outcome] ?? outcome;
@@ -701,7 +703,7 @@ function mapStatusLabel(status: string) {
     queued: "Na fila",
     ringing: "Tocando",
     in_progress: "Em andamento",
-    completed: "Completada",
+    completed: "Finalizada",
     failed: "Falhou",
     no_answer: "Sem resposta",
     busy: "Ocupado",
@@ -713,10 +715,10 @@ function mapStatusLabel(status: string) {
 
 function mapToneLabel(tone: string) {
   const labels: Record<string, string> = {
-    empathetic: "Empatico",
+    empathetic: "Empático",
     professional: "Profissional",
     urgent: "Urgente",
-    friendly: "Amigavel",
+    friendly: "Amigável",
     direct: "Direto",
   };
   return labels[tone] ?? tone;

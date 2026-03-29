@@ -246,32 +246,62 @@ export async function dispatchCall(formData: FormData) {
 
   const leadId = String(formData.get("leadId") ?? "");
   const toNumber = String(formData.get("toNumber") ?? "");
+  const customerName = String(formData.get("customerName") ?? "").trim();
   const copy = String(formData.get("copy") ?? "");
   const product = String(formData.get("product") ?? "");
   const discountPercent = Number(formData.get("discountPercent") || 0);
   const couponCode = String(formData.get("couponCode") ?? "").trim();
-  const voiceTone = String(formData.get("voiceTone") || "empathetic");
-  const voiceGender = String(formData.get("voiceGender") || "female");
-  const provider = String(formData.get("provider") || "vapi");
+  const voiceTone = (String(formData.get("voiceTone") || "empathetic")) as VoiceTone;
+  const voiceGender = (String(formData.get("voiceGender") || "female")) as VoiceGender;
 
   if (!toNumber.trim()) {
     console.warn("[dispatchCall] Numero de destino ausente");
     return;
   }
 
+  // Resolve customer name from lead if not provided
+  let resolvedName = customerName || "Cliente";
+  let paymentValue: number | undefined;
+  if (leadId) {
+    const lead = await storage.findLeadByLeadId(leadId);
+    if (lead) {
+      resolvedName = lead.customerName || resolvedName;
+      paymentValue = lead.paymentValue ? Number(lead.paymentValue) * 100 : undefined;
+    }
+  }
+
   try {
-    await storage.createCall({
+    const callRecord = await storage.createCall({
       leadId: leadId || undefined,
       toNumber: toNumber.trim(),
       copy: copy || undefined,
       product: product || undefined,
       discountPercent: discountPercent > 0 ? discountPercent : undefined,
       couponCode: couponCode || undefined,
-      voiceTone: voiceTone as VoiceTone,
-      voiceGender: voiceGender as VoiceGender,
-      provider: provider as "vapi" | "bland" | "retell" | "twilio" | "manual",
+      voiceTone,
+      voiceGender,
+      provider: "vapi",
       direction: "outbound",
     });
+
+    // Actually dispatch via Vapi
+    const { getVapiService } = await import(
+      "@/server/recovery/services/vapi-service"
+    );
+    const vapi = getVapiService();
+
+    if (vapi.configured) {
+      const script = copy || `Ligar para ${resolvedName} sobre pagamento pendente.`;
+      await vapi.initiateCall({
+        callRecord,
+        customerName: resolvedName,
+        script,
+        product: product || undefined,
+        paymentValue,
+        voiceTone,
+        voiceGender,
+      });
+    }
   } catch (error) {
     console.error("[dispatchCall] Erro ao disparar chamada", {
       toNumber,
@@ -281,6 +311,86 @@ export async function dispatchCall(formData: FormData) {
   }
 
   revalidatePath("/calling");
+}
+
+export async function redialCall(formData: FormData) {
+  await requireAuthenticatedSession(["admin"]);
+  const storage = getStorageService();
+  const callId = String(formData.get("callId") ?? "").trim();
+
+  if (!callId) return;
+
+  const original = await storage.getCall(callId);
+  if (!original) return;
+
+  // Resolve name
+  let customerName = "Cliente";
+  let paymentValue: number | undefined;
+  if (original.leadId) {
+    const lead = await storage.findLeadByLeadId(original.leadId);
+    if (lead) {
+      customerName = lead.customerName || customerName;
+      paymentValue = lead.paymentValue ? Number(lead.paymentValue) * 100 : undefined;
+    }
+  }
+
+  try {
+    const callRecord = await storage.createCall({
+      leadId: original.leadId ?? undefined,
+      toNumber: original.toNumber,
+      copy: original.copy ?? undefined,
+      product: original.product ?? undefined,
+      discountPercent: original.discountPercent ?? undefined,
+      couponCode: original.couponCode ?? undefined,
+      voiceTone: (original.voiceTone as VoiceTone) ?? "empathetic",
+      voiceGender: (original.voiceGender as VoiceGender) ?? "female",
+      provider: "vapi",
+      direction: "outbound",
+    });
+
+    const { getVapiService } = await import(
+      "@/server/recovery/services/vapi-service"
+    );
+    const vapi = getVapiService();
+
+    if (vapi.configured) {
+      await vapi.initiateCall({
+        callRecord,
+        customerName,
+        script: original.copy || `Ligar para ${customerName} sobre pagamento pendente.`,
+        product: original.product ?? undefined,
+        paymentValue,
+        voiceTone: (original.voiceTone as VoiceTone) ?? "empathetic",
+        voiceGender: (original.voiceGender as VoiceGender) ?? "female",
+      });
+    }
+  } catch (error) {
+    console.error("[redialCall]", error);
+  }
+
+  revalidatePath("/calling");
+}
+
+export async function markCallConverted(formData: FormData) {
+  await requireAuthenticatedSession(["admin"]);
+  const storage = getStorageService();
+  const callId = String(formData.get("callId") ?? "").trim();
+  const leadId = String(formData.get("leadId") ?? "").trim();
+
+  if (!callId) return;
+
+  await storage.updateCall(callId, {
+    outcome: "recovered",
+    outcomeNotes: "Marcado como convertido manualmente pelo admin.",
+  });
+
+  if (leadId) {
+    await storage.updateLeadStatus({ leadId, status: "RECOVERED" });
+  }
+
+  revalidatePath("/calling");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
 }
 
 export async function saveCallcenterSettings(formData: FormData) {
