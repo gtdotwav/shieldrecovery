@@ -23,10 +23,10 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "empathetic",
     template:
-      "Oi {name}! Notamos que houve um problema no pagamento do seu pedido{product} no valor de {value}. " +
-      "Queremos te ajudar a finalizar sua compra rapidamente.\n\n" +
-      "Como deseja pagar?\n" +
-      "1 - PIX\n" +
+      "Oi {name}, tudo bem? Vi que o pagamento{product} de {value} nao foi concluido. " +
+      "Posso te ajudar a finalizar agora mesmo.\n\n" +
+      "Qual forma de pagamento voce prefere?\n" +
+      "1 - PIX (aprovacao instantanea)\n" +
       "2 - Cartao de credito\n" +
       "3 - Boleto",
     condition: (ctx) => ctx.nextAction === "ask_payment_method",
@@ -36,10 +36,10 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "casual",
     template:
-      "E ai {name}! Vi que o pagamento{product} de {value} nao passou dessa vez. " +
-      "Sem stress, acontece bastante.\n\n" +
-      "Escolhe ai como prefere pagar:\n" +
-      "1 - PIX\n" +
+      "Oi {name}! Vi que o pagamento{product} de {value} ficou pendente. " +
+      "Acontece, sem problema nenhum.\n\n" +
+      "Como prefere pagar?\n" +
+      "1 - PIX (na hora)\n" +
       "2 - Cartao de credito\n" +
       "3 - Boleto",
     condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue < 20_000,
@@ -49,9 +49,9 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "urgent",
     template:
-      "{name}, seu pagamento de {value}{product} nao foi processado. " +
-      "Para garantir sua compra, me diga a forma de pagamento:\n\n" +
-      "1 - PIX\n" +
+      "{name}, o pagamento de {value}{product} nao foi processado. " +
+      "Para garantir sua compra, escolha a forma de pagamento:\n\n" +
+      "1 - PIX (aprovacao imediata)\n" +
       "2 - Cartao de credito\n" +
       "3 - Boleto",
     condition: (ctx) => ctx.nextAction === "ask_payment_method" && ctx.cartValue >= 50_000,
@@ -62,9 +62,9 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "empathetic",
     template:
-      "Oi {name}, tudo bem? Identificamos que o pagamento do seu pedido{product} no valor de {value} ficou pendente. " +
-      "Segue o link de pagamento e o codigo Pix copia e cola aqui embaixo para facilitar. " +
-      "Se precisar de ajuda, estou por aqui!",
+      "Oi {name}, tudo bem? O pagamento{product} de {value} ficou pendente. " +
+      "Ja deixei o link e o Pix prontos aqui embaixo pra facilitar. " +
+      "Qualquer duvida, estou a disposicao.",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" && ctx.paymentMethod === "pix",
   },
@@ -73,8 +73,8 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "urgent",
     template:
-      "{name}, o pagamento do seu pedido{product} no valor de {value} ainda nao foi concluido. " +
-      "Segue o link e o Pix copia e cola aqui embaixo para voce finalizar agora.",
+      "{name}, o pagamento{product} de {value} ainda esta pendente. " +
+      "O link e o Pix estao aqui embaixo para voce finalizar agora.",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" &&
       ctx.paymentMethod === "pix" &&
@@ -86,8 +86,8 @@ const TEMPLATES: MessageTemplate[] = [
     tone: "empathetic",
     template:
       "Oi {name}, tudo bem? Vi que sua compra{product} ficou em aberto. " +
-      "Segue o link de pagamento e o Pix copia e cola aqui embaixo para facilitar sua retomada. " +
-      "Se precisar, estou por aqui!",
+      "Deixei o link e o Pix aqui embaixo caso queira retomar. " +
+      "Se precisar de algo, e so me chamar.",
     condition: (ctx) =>
       ctx.nextAction === "send_initial_message" &&
       ctx.paymentMethod === "pix" &&
@@ -99,9 +99,9 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "empathetic",
     template:
-      "Oi {name}, tudo bem? Identificamos que o pagamento do seu pedido{product} no valor de {value} ficou pendente. " +
-      "Segue o link abaixo para voce escolher a melhor forma de pagamento e finalizar sua compra. " +
-      "Se precisar de ajuda, estou por aqui!",
+      "Oi {name}, tudo bem? O pagamento{product} de {value} ficou pendente. " +
+      "Deixei o link aqui embaixo para voce escolher a melhor forma de pagamento. " +
+      "Qualquer duvida, e so me chamar.",
     condition: (ctx) => ctx.nextAction === "send_checkout_link",
   },
   {
@@ -109,8 +109,8 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "casual",
     template:
-      "E ai {name}! Vi que o pagamento{product} de {value} ficou pendente. " +
-      "Sem stress, segue o link pra voce escolher como quer pagar e finalizar.",
+      "Oi {name}! Vi que o pagamento{product} de {value} ficou pendente. " +
+      "Sem problema, o link pra voce finalizar esta aqui embaixo.",
     condition: (ctx) =>
       ctx.nextAction === "send_checkout_link" && ctx.cartValue < 20_000,
   },
@@ -119,8 +119,8 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "urgent",
     template:
-      "{name}, seu pagamento de {value}{product} nao foi processado. " +
-      "Para garantir sua compra, acesse o link abaixo e escolha a forma de pagamento.",
+      "{name}, o pagamento de {value}{product} nao foi processado. " +
+      "Acesse o link abaixo para finalizar sua compra agora.",
     condition: (ctx) =>
       ctx.nextAction === "send_checkout_link" && ctx.cartValue >= 50_000,
   },
@@ -130,17 +130,16 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "empathetic",
     template:
-      "Oi {name}! Notamos que houve um problema no pagamento do seu pedido{product}. " +
-      "Queremos te ajudar a finalizar sua compra rapidamente. " +
-      "Aqui está um novo link seguro para pagamento: {link}",
+      "Oi {name}, tudo bem? O pagamento{product} ficou pendente. " +
+      "Gerei um novo link seguro para voce finalizar: {link}",
   },
   {
     id: "wa_initial_casual",
     channel: "whatsapp",
     tone: "casual",
     template:
-      "E aí {name}! Tudo certo? Vi que o pagamento{product} não passou dessa vez. " +
-      "Sem stress - acontece bastante. Segue um novo link pra tentar: {link}",
+      "Oi {name}! Vi que o pagamento{product} nao foi concluido. " +
+      "Sem problema, segue o link pra tentar de novo: {link}",
     condition: (ctx) => ctx.cartValue < 20_000,
   },
   {
@@ -148,8 +147,8 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "urgent",
     template:
-      "{name}, seu pagamento de {value}{product} não foi processado. " +
-      "Para garantir sua compra, finalize o pagamento pelo link abaixo: {link}",
+      "{name}, o pagamento de {value}{product} nao foi processado. " +
+      "Finalize pelo link abaixo para garantir sua compra: {link}",
     condition: (ctx) => ctx.cartValue >= 50_000,
   },
   {
@@ -157,8 +156,8 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "empathetic",
     template:
-      "Oi {name}, passando aqui de novo. Ainda estamos com o link disponível " +
-      "para você completar o pagamento{product}. Qualquer dúvida, estou aqui! {link}",
+      "Oi {name}, o link para concluir o pagamento{product} continua disponivel. " +
+      "Se precisar de ajuda, e so me chamar: {link}",
     condition: (ctx) => ctx.attemptNumber >= 2,
   },
   {
@@ -166,8 +165,8 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "urgent",
     template:
-      "{name}, este é um lembrete importante: seu pagamento de {value}{product} " +
-      "continua pendente. O link expira em breve: {link}",
+      "{name}, seu pagamento de {value}{product} ainda esta pendente. " +
+      "O link expira em breve: {link}",
     condition: (ctx) => ctx.attemptNumber >= 2 && ctx.cartValue >= 30_000,
   },
   {
@@ -175,8 +174,8 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "empathetic",
     template:
-      "Oi {name}! Vimos que o pagamento{product} não passou por saldo insuficiente. " +
-      "Sem problema - geramos um link via Pix pra facilitar: {link}",
+      "Oi {name}, o pagamento{product} nao foi aprovado por saldo. " +
+      "Gerei um link via Pix para facilitar: {link}",
     condition: (ctx) => ctx.failureReason.includes("insufficient"),
   },
   {
@@ -184,8 +183,8 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "whatsapp",
     tone: "casual",
     template:
-      "Oi {name}! Parece que o cartão usado{product} está vencido. " +
-      "Você pode tentar com outro cartão ou Pix neste link: {link}",
+      "Oi {name}, parece que o cartao usado{product} esta vencido. " +
+      "Voce pode tentar com outro cartao ou Pix por aqui: {link}",
     condition: (ctx) => ctx.failureReason.includes("expired"),
   },
   {
@@ -348,8 +347,9 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     : isPixFirstInitial
       ? [
           "- Informe que o pagamento via Pix ja esta pronto.",
-          "- Diga que o link de pagamento e a chave Pix copia e cola estao logo abaixo na mensagem.",
+          "- Diga que o link e o Pix estao aqui embaixo.",
           "- NAO inclua o link nem o codigo Pix no corpo do texto (eles sao adicionados automaticamente abaixo).",
+          "- NAO escreva 'copia e cola' no texto — o codigo Pix e enviado separadamente.",
         ]
     : [
         ctx.paymentLink
@@ -383,19 +383,21 @@ function buildRecoveryPrompt(ctx: MessageContext) {
           ];
 
   return [
-    "Voce escreve mensagens curtas de recovery de pagamento para WhatsApp ou email, em portugues do Brasil.",
-    "Objetivo: recuperar a compra com linguagem humana, direta, confiavel e comercial.",
+    "Voce escreve mensagens curtas de recuperacao de pagamento para WhatsApp em portugues do Brasil.",
+    "Objetivo: recuperar a compra com linguagem humana, profissional e objetiva.",
     ...approachDirective,
     "Regras:",
-    "- Seja curto e natural.",
-    "- Mencione o primeiro nome do cliente.",
-    "- Explique o motivo do contato com clareza.",
-    "- Convide para concluir o pagamento agora.",
+    "- Escreva no maximo 3 frases curtas e diretas.",
+    "- Comece com 'Oi {nome}' e va direto ao ponto.",
+    "- Mencione o valor e o produto quando disponiveis.",
+    "- NAO repita informacoes. Cada frase deve trazer algo novo.",
     "- NAO inclua o codigo Pix nem o link de pagamento no corpo da mensagem (eles sao adicionados automaticamente abaixo do texto).",
+    "- Quando mencionar o link ou Pix, diga 'aqui embaixo' (nunca 'logo abaixo' ou 'abaixo').",
     `- Use apenas o link seguro da ${platformBrand.name} quando houver link disponivel.`,
     ...linkRule,
-    "- Nao use markdown, aspas, emojis nem texto tecnico.",
-    "- Nao use placeholders como [link] ou [link de pagamento].",
+    "- NAO use markdown, aspas, emojis, exclamacoes excessivas nem texto tecnico.",
+    "- NAO use placeholders como [link] ou [link de pagamento].",
+    "- NAO diga 'Posso te ajudar a finalizar agora?' nem variantes desta pergunta — e uma mensagem, nao um chat.",
     ...(ctx.sellerGuidance
       ? [
           "- Siga a direcao operacional do seller sem contradizer as regras acima.",
@@ -441,15 +443,17 @@ function buildReplyPrompt(input: ConversationReplyContext) {
         : ["Estilo: amigavel e acolhedor, como um amigo ajudando."];
 
   return [
-    "Voce responde um cliente em uma conversa de recovery de pagamento.",
-    "Escreva em portugues do Brasil, de forma curta, clara e comercial.",
+    "Voce responde um cliente em uma conversa de recuperacao de pagamento via WhatsApp.",
+    "Escreva em portugues do Brasil, de forma curta, profissional e objetiva.",
     ...replyApproachDirective,
     "Regras:",
-    "- Responda a ultima mensagem do cliente.",
-    "- Mostre ajuda e conduza para a conclusao do pagamento.",
+    "- Responda a ultima mensagem do cliente em no maximo 2 frases.",
+    "- Va direto ao ponto sem repeticoes.",
     "- NAO inclua o link nem o codigo Pix no corpo do texto (eles sao adicionados automaticamente abaixo da mensagem).",
-    `- Se houver cobranca ativa, mencione que o link e o Pix estao logo abaixo.`,
-    "- Nao use markdown, aspas, listas, emojis ou linguagem robotica.",
+    "- Quando mencionar link ou Pix, diga 'aqui embaixo'.",
+    "- NAO repita o valor ou o produto se ja foi mencionado na conversa.",
+    "- NAO use markdown, aspas, listas, emojis ou linguagem robotica.",
+    "- NAO faca perguntas desnecessarias como 'Posso te ajudar?' — conduza direto para a acao.",
     ...(input.sellerGuidance
       ? [
           "- Siga a direcao operacional do seller sem contradizer as regras acima.",
@@ -524,35 +528,35 @@ function buildFallbackReply(input: ConversationReplyContext) {
   const retrySentence = "";
 
   if (input.requiresHumanHandoff) {
-    return `Oi, ${name}. Vou encaminhar seu caso${product} para um acompanhamento mais proximo e manter o pagamento pronto por aqui.${retrySentence}`;
+    return `${name}, vou direcionar seu caso para atendimento. O pagamento${product} continua disponivel aqui embaixo.`;
   }
 
   if (input.latestInboundIntent === "payment_method_pix") {
-    return `Perfeito, ${name}. O link de pagamento e a chave Pix copia e cola${product} estao logo abaixo.${retrySentence}`;
+    return `Perfeito, ${name}. O link e o Pix${product} estao aqui embaixo.`;
   }
 
   if (input.latestInboundIntent === "payment_method_card") {
-    return `Perfeito, ${name}. Estou preparando o pagamento via cartao de credito${product}.${retrySentence}`;
+    return `Perfeito, ${name}. O link para pagamento via cartao${product} esta aqui embaixo.`;
   }
 
   if (input.latestInboundIntent === "payment_method_boleto") {
-    return `Perfeito, ${name}. Estou gerando o boleto${product}.${retrySentence}`;
+    return `Perfeito, ${name}. O boleto${product} esta sendo gerado, acesse pelo link aqui embaixo.`;
   }
 
   if (input.latestInboundIntent === "payment_intent") {
-    return `Perfeito, ${name}. Deixei o pagamento${product} pronto para voce concluir agora.${retrySentence}`;
+    return `Perfeito, ${name}. O pagamento${product} esta pronto aqui embaixo.`;
   }
 
   if (input.latestInboundIntent === "needs_time") {
-    return `Sem problema, ${name}. Vou deixar o pagamento${product} preparado para quando voce quiser retomar.${retrySentence}`;
+    return `Sem problema, ${name}. O link${product} fica disponivel quando voce quiser finalizar.`;
   }
 
   if (input.latestInboundIntent === "question") {
-    return `Oi, ${name}. Vou te ajudar com isso e ja deixei o pagamento${product} acessivel caso queira concluir agora.${retrySentence}`;
+    return `${name}, o pagamento${product} esta acessivel pelo link aqui embaixo. Se tiver duvidas, e so me chamar.`;
   }
 
   if (input.latestInboundIntent === "objection") {
-    return `Oi, ${name}. Entendi seu ponto sobre o pagamento${product}. Posso te ajudar a retomar da forma mais simples possivel.${retrySentence}`;
+    return `Entendi, ${name}. Se mudar de ideia, o link${product} esta aqui embaixo.`;
   }
 
   if (
@@ -560,7 +564,7 @@ function buildFallbackReply(input: ConversationReplyContext) {
     latestInbound.includes("link") ||
     latestInbound.includes("codigo")
   ) {
-    return `Oi, ${name}. Separei novamente o acesso ao pagamento${product} para facilitar sua conclusao.${retrySentence}`;
+    return `${name}, o link e o Pix${product} estao aqui embaixo.`;
   }
 
   if (
@@ -570,7 +574,7 @@ function buildFallbackReply(input: ConversationReplyContext) {
     latestInbound.includes("cartão") ||
     latestInbound.includes("cartao")
   ) {
-    return `Oi, ${name}. Entendi o problema no pagamento${product}. Posso te ajudar a retomar agora por um link seguro.${retrySentence}`;
+    return `${name}, gerei um novo link seguro${product} aqui embaixo para voce tentar novamente.`;
   }
 
   if (
@@ -579,10 +583,10 @@ function buildFallbackReply(input: ConversationReplyContext) {
     latestInbound.includes("amanhã") ||
     latestInbound.includes("amanha")
   ) {
-    return `Perfeito, ${name}. Vou deixar o pagamento${product} pronto para quando voce quiser finalizar.${retrySentence}`;
+    return `Sem problema, ${name}. O link${product} fica disponivel quando voce quiser.`;
   }
 
-  return `Oi, ${name}. Seu pagamento${product} ja esta pronto para conclusao. Se quiser, posso te ajudar por aqui.${retrySentence}`;
+  return `${name}, o pagamento${product} esta pronto aqui embaixo. Qualquer duvida, e so me chamar.`;
 }
 
 function firstName(value: string) {

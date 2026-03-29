@@ -1842,9 +1842,9 @@ export class PaymentRecoveryService {
       },
       payment: {
         paymentLink: initialPaymentAsset.paymentLink,
-        pixCode: useSellerCheckout ? undefined : initialPaymentAsset.pixCode,
-        pixQrCode: useSellerCheckout ? undefined : initialPaymentAsset.pixQrCode,
-        expiresAt: useSellerCheckout ? undefined : initialPaymentAsset.pixExpiresAt,
+        pixCode: initialPaymentAsset.pixCode ?? input.pixCode,
+        pixQrCode: initialPaymentAsset.pixQrCode ?? input.pixQrCode,
+        expiresAt: initialPaymentAsset.pixExpiresAt ?? input.pixExpiresAt,
       },
       automation: {
         sellerActive: automationPolicy.control?.active ?? true,
@@ -1871,9 +1871,9 @@ export class PaymentRecoveryService {
           input.payment.status,
         channel: target.channel,
         attemptNumber: 1,
-        paymentMethod: useSellerCheckout ? undefined : "pix",
+        paymentMethod: input.payment.paymentMethod || (useSellerCheckout ? undefined : "pix"),
         paymentLink: initialPaymentAsset.paymentLink,
-        pixCode: useSellerCheckout ? undefined : initialPaymentAsset.pixCode,
+        pixCode: initialPaymentAsset.pixCode ?? input.pixCode,
         tonePreference: decision.tone,
         messagingApproach: automationPolicy.control?.messagingApproach,
         nextAction: initialNextAction,
@@ -1896,7 +1896,7 @@ export class PaymentRecoveryService {
       followUpMode: decision.followUpMode,
       decisionReason: decision.reason,
       product: input.lead.product,
-      paymentMethod: useSellerCheckout ? undefined : "pix",
+      paymentMethod: input.payment.paymentMethod || (useSellerCheckout ? undefined : "pix"),
       paymentStatus: input.currentPaymentStatus,
       failureReason: input.failureReason,
       paymentValue: input.payment.amount,
@@ -1904,9 +1904,9 @@ export class PaymentRecoveryService {
       gatewayPaymentId: input.payment.gatewayPaymentId,
       retryLink: initialPaymentAsset.paymentLink,
       paymentUrl: initialPaymentAsset.paymentLink,
-      pixCode: useSellerCheckout ? undefined : initialPaymentAsset.pixCode,
-      pixQrCode: useSellerCheckout ? undefined : initialPaymentAsset.pixQrCode,
-      pixExpiresAt: useSellerCheckout ? undefined : initialPaymentAsset.pixExpiresAt,
+      pixCode: initialPaymentAsset.pixCode ?? input.pixCode,
+      pixQrCode: initialPaymentAsset.pixQrCode ?? input.pixQrCode,
+      pixExpiresAt: initialPaymentAsset.pixExpiresAt ?? input.pixExpiresAt,
       actionLabel: "Abrir pagamento",
       messagingApproach: automationPolicy.control?.messagingApproach,
     };
@@ -2024,7 +2024,7 @@ export class PaymentRecoveryService {
     let pixQrCode = input.pixQrCode?.trim() || undefined;
     let pixExpiresAt = input.pixExpiresAt?.trim() || undefined;
 
-    if ((!paymentLink && !pixCode) || (input.payment.paymentMethod === "pix" && !pixCode)) {
+    if (!paymentLink || (input.payment.paymentMethod === "pix" && !pixCode)) {
       const paymentResolution = await this.createImmediatePaymentLink(
         input.payment,
         input.failureReason,

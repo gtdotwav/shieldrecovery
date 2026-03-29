@@ -783,6 +783,39 @@ export class MessagingService {
       };
     }
 
+    // Send PIX code as separate message for easy copy on WhatsApp
+    const pixCode = extractPixCodeForSeparateMessage(input.metadata);
+    if (pixCode && payload?.messages?.[0]?.id) {
+      const approach = input.metadata?.messagingApproach ?? "friendly";
+      const pixLabel =
+        approach === "urgent"
+          ? "Pix copia e cola (expira em breve) 👇"
+          : approach === "professional"
+            ? "Pix copia e cola 👇"
+            : "Pix copia e cola pra facilitar 👇";
+      try {
+        await fetch(
+          `${input.apiBaseUrl.replace(/\/$/, "")}/${input.phoneNumberId}/messages`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${input.accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              to: input.phone,
+              type: "text",
+              text: { preview_url: false, body: `${pixLabel}\n\n${pixCode}` },
+            }),
+          },
+        );
+      } catch {
+        // non-critical — main message was already sent
+      }
+    }
+
     return {
       status: "sent",
       providerMessageId: payload?.messages?.[0]?.id,
@@ -813,7 +846,7 @@ export class MessagingService {
               number: input.phone,
               text: body,
             }),
-            signal: AbortSignal.timeout(15_000),
+            signal: AbortSignal.timeout(30_000),
           })
         : await fetch(config.sendUrl, {
             method: "POST",
@@ -828,7 +861,7 @@ export class MessagingService {
               text: body,
               preview_url: true,
             }),
-            signal: AbortSignal.timeout(15_000),
+            signal: AbortSignal.timeout(30_000),
           });
 
     const payload = (await safeParseJson(response)) as
@@ -853,15 +886,61 @@ export class MessagingService {
       };
     }
 
+    const providerMessageId =
+      payload?.id ??
+      payload?.messageId ??
+      firstString(payloadKey?.id) ??
+      payload?.data?.id ??
+      payload?.data?.messageId ??
+      payload?.messages?.[0]?.id;
+
+    // Send PIX code as separate message for easy copy on WhatsApp
+    const pixCode = extractPixCodeForSeparateMessage(input.metadata);
+    if (pixCode && providerMessageId) {
+      const approach = input.metadata?.messagingApproach ?? "friendly";
+      const pixLabel =
+        approach === "urgent"
+          ? "Pix copia e cola (expira em breve) 👇"
+          : approach === "professional"
+            ? "Pix copia e cola 👇"
+            : "Pix copia e cola pra facilitar 👇";
+      try {
+        const pixBody = `${pixLabel}\n\n${pixCode}`;
+        if (config.kind === "evolution") {
+          await fetch(config.sendUrl, {
+            method: "POST",
+            headers: {
+              ...buildWhatsAppApiHeaders(input.accessToken),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ number: input.phone, text: pixBody }),
+            signal: AbortSignal.timeout(30_000),
+          });
+        } else {
+          await fetch(config.sendUrl, {
+            method: "POST",
+            headers: {
+              ...buildWhatsAppApiHeaders(input.accessToken),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: input.phone,
+              type: "text",
+              message: pixBody,
+              text: pixBody,
+              preview_url: false,
+            }),
+            signal: AbortSignal.timeout(30_000),
+          });
+        }
+      } catch {
+        // non-critical — main message was already sent
+      }
+    }
+
     return {
       status: "sent",
-      providerMessageId:
-        payload?.id ??
-        payload?.messageId ??
-        firstString(payloadKey?.id) ??
-        payload?.data?.id ??
-        payload?.data?.messageId ??
-        payload?.messages?.[0]?.id,
+      providerMessageId,
     };
   }
 
@@ -1445,26 +1524,26 @@ function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata) 
   if (actionUrl && !content.includes(actionUrl)) {
     const linkLabel =
       approach === "urgent"
-        ? "Finalize agora pelo link abaixo"
+        ? "Finalize agora"
         : approach === "professional"
-          ? "Acesse o link para concluir seu pagamento"
+          ? "Link de pagamento"
           : "Segue o link pra voce finalizar";
     sections.push(`${linkLabel} 👇\n${actionUrl}`);
   }
 
-  // PIX copy-paste code at the bottom, easy to long-press and copy
-  const pixCode = metadata.pixCode?.trim();
-  if (pixCode && !content.includes(pixCode)) {
-    const pixLabel =
-      approach === "urgent"
-        ? "Pix copia e cola (expira em breve)"
-        : approach === "professional"
-          ? "Codigo Pix copia e cola"
-          : "Pix copia e cola pra facilitar";
-    sections.push(`${pixLabel} 👇\n${pixCode}`);
-  }
+  // PIX code is now sent as a separate message (see extractPixCodeForSeparateMessage)
+  // so do NOT include it here — it makes it easier to long-press and copy on WhatsApp
 
   return sections.filter(Boolean).join("\n\n");
+}
+
+function extractPixCodeForSeparateMessage(metadata?: MessageMetadata): string | null {
+  if (!metadata || (metadata.kind !== "recovery_prompt" && metadata.kind !== "ai_draft")) {
+    return null;
+  }
+  const pixCode = metadata.pixCode?.trim();
+  if (!pixCode) return null;
+  return pixCode;
 }
 
 function resolveWebApiConfig(
