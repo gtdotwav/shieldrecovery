@@ -32,8 +32,8 @@ const workerConcurrency = clampInteger(
   1,
   16,
 );
-const checkoutPlatformUrl = process.env.CHECKOUT_PLATFORM_URL ?? "";
-const checkoutPlatformApiKey = process.env.CHECKOUT_PLATFORM_API_KEY ?? "";
+const checkoutPlatformUrl = (process.env.CHECKOUT_PLATFORM_URL ?? "").trim();
+const checkoutPlatformApiKey = (process.env.CHECKOUT_PLATFORM_API_KEY ?? "").trim();
 const pagouAiEnvironment =
   (process.env.PAGOUAI_ENVIRONMENT ?? "production").toLowerCase() === "sandbox"
     ? "sandbox"

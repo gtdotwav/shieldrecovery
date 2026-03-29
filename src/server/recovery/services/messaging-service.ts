@@ -1441,7 +1441,7 @@ function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata) 
   const sections = [content.trim()];
 
   // Payment link on its own line so WhatsApp renders it as clickable
-  const actionUrl = metadata.paymentUrl ?? metadata.retryLink;
+  const actionUrl = (metadata.paymentUrl ?? metadata.retryLink)?.trim();
   if (actionUrl && !content.includes(actionUrl)) {
     const linkLabel =
       approach === "urgent"
