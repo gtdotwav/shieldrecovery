@@ -516,11 +516,12 @@ export class RecoveryWorkerService {
       };
     }
 
-    const message = await this.recovery.sendAiConversationReply({
+    const result = await this.recovery.sendAiConversationReply({
       conversationId: conversation.id,
     });
 
-    if (message.status === "failed" || message.status === "queued") {
+    const message = "message" in result ? result.message : result;
+    if (message && "status" in message && (message.status === "failed" || message.status === "queued")) {
       throw new Error(
         message.error ?? `AI follow-up for ${lead.record.leadId} was not dispatched.`,
       );

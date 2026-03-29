@@ -702,7 +702,6 @@ export class MessagingService {
     if (
       runtimeSettings.aiConfigured &&
       lead &&
-      lead.status !== "RECOVERED" &&
       lead.status !== "LOST"
     ) {
       const { getPaymentRecoveryService } = await import(

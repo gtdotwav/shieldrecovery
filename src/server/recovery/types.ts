@@ -115,12 +115,15 @@ export type MessageMetadata = {
     | "pause_automation"
     | "review_manually"
     | "close_as_recovered"
-    | "close_as_lost";
+    | "close_as_lost"
+    | "confirm_payment"
+    | "payment_confirmed";
   followUpMode?: "autonomous" | "supervised" | "manual";
   decisionReason?: string;
   selectedMethodType?: "pix" | "card" | "boleto";
   inboundIntent?:
     | "payment_intent"
+    | "payment_confirmed"
     | "payment_method_pix"
     | "payment_method_card"
     | "payment_method_boleto"

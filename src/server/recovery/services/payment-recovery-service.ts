@@ -1107,6 +1107,81 @@ export class PaymentRecoveryService {
       : null;
 
     const detectedIntent = decision?.intent?.intent;
+
+    // If lead is already RECOVERED and customer isn't confirming payment,
+    // don't send more recovery messages
+    if (
+      contact?.payment_status === "succeeded" &&
+      detectedIntent !== "payment_confirmed"
+    ) {
+      return { message: null, decision };
+    }
+
+    // ── Payment confirmed by customer ───────────────────────────────
+    // When the customer says "paguei" / "já paguei", re-check the lead
+    // status (the payment_succeeded webhook may have arrived by now) and
+    // reply with a thank-you instead of sending the link again.
+    if (detectedIntent === "payment_confirmed" && contact) {
+      // Re-fetch the lead to get the latest status
+      const freshLead = await this.storage.findLeadByLeadId(contact.lead_id);
+      const paymentConfirmed =
+        freshLead?.status === "RECOVERED" ||
+        contact.payment_status === "paid" ||
+        contact.payment_status === "succeeded" ||
+        contact.payment_status === "approved";
+
+      if (paymentConfirmed && freshLead) {
+        // Payment confirmed — thank the customer, no link
+        const thankYouContent =
+          `Pagamento confirmado, ${contact.customer_name?.split(" ")[0]}! ` +
+          `Muito obrigado pela compra. Se precisar de algo, estou por aqui.`;
+
+        const message = await this.createAndDispatchConversationMessage({
+          conversation,
+          content: thankYouContent,
+          senderName: `IA ${platformBrand.name}`,
+          metadata: {
+            kind: "ai_draft",
+            generatedBy: "ai",
+            nextAction: "payment_confirmed",
+            inboundIntent: detectedIntent,
+            product: contact.product,
+            paymentStatus: "recovered",
+            paymentValue: contact.payment_value,
+            gatewayPaymentId: contact.gateway_payment_id,
+          },
+          logMessage: "AI confirmed payment and thanked customer.",
+        });
+
+        return { message, decision };
+      }
+
+      // Payment not yet confirmed in our system — say we're checking
+      // (do NOT send "pay again" link)
+      const checkingContent =
+        `Obrigado, ${contact.customer_name?.split(" ")[0]}! ` +
+        `Estamos verificando seu pagamento. Em instantes confirmaremos aqui.`;
+
+      const message = await this.createAndDispatchConversationMessage({
+        conversation,
+        content: checkingContent,
+        senderName: `IA ${platformBrand.name}`,
+        metadata: {
+          kind: "ai_draft",
+          generatedBy: "ai",
+          nextAction: "confirm_payment",
+          inboundIntent: detectedIntent,
+          product: contact.product,
+          paymentStatus: contact.payment_status,
+          paymentValue: contact.payment_value,
+          gatewayPaymentId: contact.gateway_payment_id,
+        },
+        logMessage: "AI acknowledged customer payment claim — checking status.",
+      });
+
+      return { message, decision };
+    }
+
     const isMethodSelection =
       detectedIntent === "payment_method_pix" ||
       detectedIntent === "payment_method_card" ||

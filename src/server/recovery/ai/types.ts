@@ -27,9 +27,11 @@ export type RecoveryNextActionType =
   | "send_checkout_link"
   | "review_manually"
   | "close_as_recovered"
-  | "close_as_lost";
+  | "close_as_lost"
+  | "confirm_payment";
 export type InboundIntent =
   | "payment_intent"
+  | "payment_confirmed"
   | "payment_method_pix"
   | "payment_method_card"
   | "payment_method_boleto"

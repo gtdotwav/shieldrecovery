@@ -297,8 +297,31 @@ export class AIRecoveryOrchestrator {
 
     if (
       matchesAny(normalized, [
-        "vou pagar",
         "ja paguei",
+        "paguei",
+        "pago",
+        "fiz o pagamento",
+        "fiz o pix",
+        "ja fiz",
+        "ja transferi",
+        "acabei de pagar",
+        "pagamento feito",
+        "pix feito",
+        "ja foi",
+        "transferi",
+      ])
+    ) {
+      return {
+        intent: "payment_confirmed",
+        confidence: 0.92,
+        reasoning: "O cliente afirma que já realizou o pagamento.",
+        requiresHuman: false,
+      };
+    }
+
+    if (
+      matchesAny(normalized, [
+        "vou pagar",
         "quero pagar",
         "me manda o pix",
         "manda o link",
@@ -410,6 +433,20 @@ export class AIRecoveryOrchestrator {
         intent,
         nextAction: "generate_method_payment_link",
         reason: "O cliente selecionou a forma de pagamento. Gerar link e enviar.",
+        channel: base.channel,
+        tone: "reassuring",
+        sendNow: true,
+        followUpMode: base.followUpMode,
+        requiresHuman: false,
+        timingMinutes: 0,
+      };
+    }
+
+    if (intent.intent === "payment_confirmed") {
+      return {
+        intent,
+        nextAction: "confirm_payment",
+        reason: "O cliente afirma que já pagou. Verificar status e confirmar.",
         channel: base.channel,
         tone: "reassuring",
         sendNow: true,
