@@ -15,6 +15,7 @@ import {
   Eye,
   FileCheck,
   Globe,
+  Headphones,
   Layers,
   LineChart,
   Lock,
@@ -212,8 +213,9 @@ export default async function Home() {
               <Reveal direction="up" delay={400}>
                 <p className="mt-5 max-w-[36rem] text-[0.92rem] leading-[1.7] text-gray-500 dark:text-gray-400 sm:mt-7 sm:text-[1.05rem] sm:leading-[1.8] lg:mx-0">
                   Quando um pagamento falha, nossa IA contata o cliente em 2 minutos
-                  via WhatsApp com link direto. Resultado: até 38% da receita perdida
-                  recuperada — sem intervenção humana.
+                  via WhatsApp com link direto. Quando necessário, nosso Call Center
+                  humano entra em ação. Resultado: taxa de recuperação de 19% a 40%
+                  dependendo do funil.
                 </p>
               </Reveal>
 
@@ -297,9 +299,9 @@ export default async function Home() {
             <Reveal direction="up" delay={0}>
               <TiltCard>
                 <ImpactCard
-                  value={<CountUp end={38} suffix="%" duration={2000} />}
+                  value={<><CountUp end={19} duration={1500} />–<CountUp end={40} suffix="%" duration={2200} /></>}
                   label="Taxa de recuperação"
-                  sublabel="de pagamentos falhados recuperados"
+                  sublabel="dependendo do funil e nicho"
                 />
               </TiltCard>
             </Reveal>
@@ -388,8 +390,9 @@ export default async function Home() {
                     <BeforeAfterItem text="Falha detectada → contato em 2 minutos" />
                     <BeforeAfterItem text="IA identifica melhor momento e canal" />
                     <BeforeAfterItem text="WhatsApp automatizado com link de pagamento" />
+                    <BeforeAfterItem text="Call Center humano para casos que a IA não resolve" />
                     <BeforeAfterItem text="Dashboard com analytics em tempo real" />
-                    <BeforeAfterItem text="~38% da receita perdida é recuperada" />
+                    <BeforeAfterItem text="19% a 40% da receita perdida é recuperada" />
                   </ul>
                 </div>
               </TiltCard>
@@ -408,17 +411,18 @@ export default async function Home() {
                 Da falha à recuperação em minutos
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400 dark:text-gray-500">
-                Quatro etapas automatizadas. Zero intervenção manual.
+                Cinco etapas — IA e humanos trabalhando juntos.
               </p>
             </div>
           </Reveal>
 
-          <div className="mx-auto mt-10 grid max-w-[60rem] gap-3 sm:mt-14 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mx-auto mt-10 grid max-w-[60rem] gap-3 sm:mt-14 sm:gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {[
               { n: "01", icon: Zap, title: "Webhook detecta", desc: "Falha de pagamento capturada via webhook do gateway em tempo real." },
               { n: "02", icon: Bot, title: "IA personaliza", desc: "Analisa valor, método, histórico e define tom e momento ideal." },
               { n: "03", icon: MessageSquare, title: "WhatsApp contata", desc: "Mensagem humanizada com link de pagamento direto ao cliente." },
-              { n: "04", icon: TrendingUp, title: "Receita recuperada", desc: "Cliente paga, status atualiza. Dashboard reflete em tempo real." },
+              { n: "04", icon: Headphones, title: "Call Center atua", desc: "Casos complexos são escalados para operadores humanos treinados." },
+              { n: "05", icon: TrendingUp, title: "Receita recuperada", desc: "Cliente paga, status atualiza. Dashboard reflete em tempo real." },
             ].map((s, i) => (
               <Reveal key={s.n} direction="up" delay={i * 100}>
                 <TiltCard>
@@ -529,7 +533,7 @@ export default async function Home() {
                       Taxa de recuperação
                     </p>
                     <p className="mt-1.5 text-[2.2rem] font-bold leading-none tracking-tight" style={{ color: b.accent }}>
-                      {recoveryRate}%
+                      19–40%
                     </p>
                   </div>
                   <LineChart className="mb-1 h-7 w-7 opacity-30" style={{ color: b.accent }} />
@@ -540,6 +544,7 @@ export default async function Home() {
             <div className="grid gap-3 sm:grid-cols-2">
               {[
                 { icon: Bot, title: "IA conversacional", desc: "Mensagens com contexto: valor, método, histórico e tom personalizado." },
+                { icon: Headphones, title: "Call Center integrado", desc: "Operadores humanos acionados quando a IA identifica casos que precisam de toque pessoal." },
                 { icon: MessageSquare, title: "WhatsApp nativo", desc: "Envio, recebimento e respostas automáticas em tempo real." },
                 { icon: BarChart3, title: "Dashboard analítico", desc: "KPIs ao vivo: taxa, receita salva, tempo médio e performance." },
                 { icon: Clock, title: "Follow-up automático", desc: "Sequências inteligentes com delay configurável." },
@@ -786,9 +791,10 @@ export default async function Home() {
                   { label: "Tempo de resposta", manual: "Horas/dias", gateway: "~30 min", ours: "2 min" },
                   { label: "Canal de contato", manual: "E-mail", gateway: "E-mail", ours: "WhatsApp + IA" },
                   { label: "Personalização", manual: "Baixa", gateway: "Genérica", ours: "IA contextual" },
+                  { label: "Call Center", manual: "Terceirizado", gateway: "Não incluso", ours: "Integrado + IA" },
                   { label: "Disponibilidade", manual: "Horário comercial", gateway: "24/7", ours: "24/7" },
                   { label: "Escala", manual: "Limitada", gateway: "Limitada", ours: "Infinita" },
-                  { label: "Taxa de recuperação", manual: "5-10%", gateway: "10-15%", ours: "35-40%" },
+                  { label: "Taxa de recuperação", manual: "5-10%", gateway: "10-15%", ours: "19-40%" },
                 ].map((row) => (
                   <div key={row.label} className="grid grid-cols-4 border-b border-white/[0.03] last:border-b-0">
                     <div className="px-4 py-3 sm:px-5 sm:py-3.5">
@@ -902,7 +908,7 @@ export default async function Home() {
                 </h2>
                 <p className="mx-auto mt-5 max-w-lg text-[1rem] leading-7 text-gray-400 dark:text-gray-500">
                   Cada minuto sem recuperação ativa é dinheiro na mesa.
-                  Configure em minutos. Resultados no primeiro dia.
+                  IA + Call Center humano. Configure em minutos. Resultados no primeiro dia.
                 </p>
                 <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
                   <MagneticButton>
@@ -935,7 +941,7 @@ export default async function Home() {
                   <p className="text-sm font-semibold text-gray-400">{b.name}</p>
                 </div>
                 <p className="mt-3 max-w-[18rem] text-[0.75rem] leading-[1.7] text-gray-500 dark:text-gray-600">
-                  Plataforma de recuperação autônoma de pagamentos com IA e WhatsApp. Transforme falhas em receita.
+                  Recuperação autônoma de pagamentos com IA, WhatsApp e Call Center integrado. Transforme falhas em receita.
                 </p>
                 <div className="mt-4 flex items-center gap-2">
                   <ShieldCheck className="h-3.5 w-3.5" style={{ color: `rgba(${rgb},0.5)` }} />
