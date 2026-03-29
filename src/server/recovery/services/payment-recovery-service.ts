@@ -1511,55 +1511,77 @@ export class PaymentRecoveryService {
         status: "NEW_RECOVERY",
         assignedAgent: forcedAssignedAgent,
       });
-      jobs = await this.automation.scheduleRecovery({
-        lead,
-        payment,
-        event: normalizedEvent,
-      });
-      await this.prepareInitialFollowUp({
-        lead,
-        payment,
-        customer,
-        failureReason:
-          normalizedEvent.payment.failure_code ?? payment.failureCode ?? payment.status,
-        currentPaymentStatus: payment.status,
-        paymentUrl: normalizedEvent.metadata.paymentUrl,
-        pixCode: normalizedEvent.metadata.pixCode,
-        pixQrCode: normalizedEvent.metadata.pixQrCode,
-        pixExpiresAt: normalizedEvent.metadata.pixExpiresAt,
-        source: "webhook",
-      });
-      lead =
-        (await this.storage.updateLeadStatus({
-          leadId: lead.leadId,
-          status: "CONTACTING",
-        })) ?? lead;
 
-      await this.storage.addLog(
-        createStructuredLog({
-          eventType: "payment_failed",
-          level: "warn",
-          message: "Recoverable payment detected.",
-          context: {
-            paymentId: payment.id,
-            gatewayPaymentId: payment.gatewayPaymentId,
-            eventType: normalizedEvent.event_type,
-          },
-        }),
-      );
+      // Skip recovery scheduling if this lead is already being contacted
+      // (duplicate webhook from another endpoint or gateway retry)
+      const alreadyInProgress =
+        lead.status === "CONTACTING" || lead.status === "WAITING_CUSTOMER";
 
-      await this.storage.addLog(
-        createStructuredLog({
-          eventType: "recovery_started",
-          level: "info",
-          message: "Recovery workflow started.",
-          context: {
+      if (alreadyInProgress) {
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "duplicate_webhook",
+            level: "info",
+            message: "Lead already in progress — skipping duplicate recovery scheduling.",
+            context: {
+              leadId: lead.leadId,
+              leadStatus: lead.status,
+              paymentId: payment.id,
+              webhookId: input.webhookId,
+            },
+          }),
+        );
+      } else {
+        jobs = await this.automation.scheduleRecovery({
+          lead,
+          payment,
+          event: normalizedEvent,
+        });
+        await this.prepareInitialFollowUp({
+          lead,
+          payment,
+          customer,
+          failureReason:
+            normalizedEvent.payment.failure_code ?? payment.failureCode ?? payment.status,
+          currentPaymentStatus: payment.status,
+          paymentUrl: normalizedEvent.metadata.paymentUrl,
+          pixCode: normalizedEvent.metadata.pixCode,
+          pixQrCode: normalizedEvent.metadata.pixQrCode,
+          pixExpiresAt: normalizedEvent.metadata.pixExpiresAt,
+          source: "webhook",
+        });
+        lead =
+          (await this.storage.updateLeadStatus({
             leadId: lead.leadId,
-            assignedAgent: lead.assignedAgentName,
-            paymentId: payment.id,
-          },
-        }),
-      );
+            status: "CONTACTING",
+          })) ?? lead;
+
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "payment_failed",
+            level: "warn",
+            message: "Recoverable payment detected.",
+            context: {
+              paymentId: payment.id,
+              gatewayPaymentId: payment.gatewayPaymentId,
+              eventType: normalizedEvent.event_type,
+            },
+          }),
+        );
+
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "recovery_started",
+            level: "info",
+            message: "Recovery workflow started.",
+            context: {
+              leadId: lead.leadId,
+              assignedAgent: lead.assignedAgentName,
+              paymentId: payment.id,
+            },
+          }),
+        );
+      }
     } else if (shouldCreateFollowUpLead(normalizedEvent.event_type)) {
       lead = await createOrUpdateShieldLead({
         payment,
@@ -1568,38 +1590,58 @@ export class PaymentRecoveryService {
         status: "WAITING_CUSTOMER",
         assignedAgent: forcedAssignedAgent,
       });
-      jobs = await this.automation.scheduleRecovery({
-        lead,
-        payment,
-        event: normalizedEvent,
-      });
-      await this.prepareInitialFollowUp({
-        lead,
-        payment,
-        customer,
-        failureReason:
-          normalizedEvent.payment.failure_code ?? payment.failureCode ?? payment.status,
-        currentPaymentStatus: payment.status,
-        paymentUrl: normalizedEvent.metadata.paymentUrl,
-        pixCode: normalizedEvent.metadata.pixCode,
-        pixQrCode: normalizedEvent.metadata.pixQrCode,
-        pixExpiresAt: normalizedEvent.metadata.pixExpiresAt,
-        source: "webhook",
-      });
 
-      await this.storage.addLog(
-        createStructuredLog({
-          eventType: "recovery_started",
-          level: "info",
-          message: "Follow-up lead created from an open payment.",
-          context: {
-            leadId: lead.leadId,
-            assignedAgent: lead.assignedAgentName,
-            paymentId: payment.id,
-            eventType: normalizedEvent.event_type,
-          },
-        }),
-      );
+      // Skip if lead already has pending whatsapp-initial jobs (duplicate webhook)
+      const hasExistingJobs = await this.storage.hasScheduledJobsForLead(lead.leadId, "whatsapp-initial");
+
+      if (hasExistingJobs) {
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "duplicate_webhook",
+            level: "info",
+            message: "Lead already has scheduled jobs — skipping duplicate follow-up scheduling.",
+            context: {
+              leadId: lead.leadId,
+              leadStatus: lead.status,
+              paymentId: payment.id,
+              webhookId: input.webhookId,
+            },
+          }),
+        );
+      } else {
+        jobs = await this.automation.scheduleRecovery({
+          lead,
+          payment,
+          event: normalizedEvent,
+        });
+        await this.prepareInitialFollowUp({
+          lead,
+          payment,
+          customer,
+          failureReason:
+            normalizedEvent.payment.failure_code ?? payment.failureCode ?? payment.status,
+          currentPaymentStatus: payment.status,
+          paymentUrl: normalizedEvent.metadata.paymentUrl,
+          pixCode: normalizedEvent.metadata.pixCode,
+          pixQrCode: normalizedEvent.metadata.pixQrCode,
+          pixExpiresAt: normalizedEvent.metadata.pixExpiresAt,
+          source: "webhook",
+        });
+
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "recovery_started",
+            level: "info",
+            message: "Follow-up lead created from an open payment.",
+            context: {
+              leadId: lead.leadId,
+              assignedAgent: lead.assignedAgentName,
+              paymentId: payment.id,
+              eventType: normalizedEvent.event_type,
+            },
+          }),
+        );
+      }
     }
 
     if (normalizedEvent.event_type === "payment_succeeded") {

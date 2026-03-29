@@ -114,6 +114,7 @@ export interface RecoveryStorage {
     remainingAttempts: number;
     nextRunAt?: string;
   }): Promise<QueueJobRecord | undefined>;
+  hasScheduledJobsForLead(leadId: string, jobType: string): Promise<boolean>;
   createPaymentAttempt(input: {
     paymentId: string;
     paymentLink: string;
@@ -684,7 +685,10 @@ class LocalStorageService implements RecoveryStorage {
         existing.paymentValue = input.payment.amount;
         existing.product = input.product;
         existing.failureReason = input.failureReason;
-        existing.status = existing.status === "RECOVERED" ? "RECOVERED" : input.status;
+        existing.status =
+          existing.status === "RECOVERED" || existing.status === "CONTACTING"
+            ? existing.status
+            : input.status;
         existing.updatedAt = timestamp;
 
         if (input.assignedAgent && !existing.assignedAgentId) {
@@ -876,6 +880,16 @@ class LocalStorageService implements RecoveryStorage {
 
       return { ...job };
     });
+  }
+
+  async hasScheduledJobsForLead(leadId: string, jobType: string): Promise<boolean> {
+    const state = this.readState();
+    return state.queueJobs.some(
+      (job: QueueJobRecord) =>
+        job.jobType === jobType &&
+        (job.status === "scheduled" || job.status === "processing") &&
+        (job.payload as Record<string, unknown>)?.leadId === leadId,
+    );
   }
 
   async createPaymentAttempt(input: {

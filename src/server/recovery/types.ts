@@ -338,7 +338,8 @@ export type SystemLogRecord = {
     | "ai_reply_generated"
     | "worker_job_processed"
     | "worker_job_rescheduled"
-    | "worker_job_failed";
+    | "worker_job_failed"
+    | "duplicate_webhook";
   level: "info" | "warn" | "error";
   message: string;
   context: Record<string, unknown>;

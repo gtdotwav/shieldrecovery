@@ -709,7 +709,10 @@ export class SupabaseStorageService implements RecoveryStorage {
           payment_value: input.payment.amount,
           product: input.product,
           failure_reason: input.failureReason,
-          status: existing.status === "RECOVERED" ? "RECOVERED" : input.status,
+          status:
+            existing.status === "RECOVERED" || existing.status === "CONTACTING"
+              ? existing.status
+              : input.status,
           assigned_agent_id: assignedAgentId,
           updated_at: new Date().toISOString(),
         })
@@ -974,6 +977,16 @@ export class SupabaseStorageService implements RecoveryStorage {
 
     if (error || !data) return undefined;
     return mapQueueJob(data);
+  }
+
+  async hasScheduledJobsForLead(leadId: string, jobType: string): Promise<boolean> {
+    const { count } = await this.supabase
+      .from("queue_jobs")
+      .select("*", { count: "exact", head: true })
+      .eq("job_type", jobType)
+      .in("status", ["scheduled", "processing"])
+      .contains("payload", { leadId });
+    return (count ?? 0) > 0;
   }
 
   async createPaymentAttempt(input: {
