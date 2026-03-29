@@ -66,7 +66,7 @@ function getAllCredentialSets(): CredentialSet[] {
 const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/onboarding", roles: ["admin", "seller"] },
   { prefix: "/admin", roles: ["admin"] },
-  { prefix: "/dashboard", roles: ["admin"] },
+  { prefix: "/dashboard", roles: ["admin", "seller"] },
   { prefix: "/connect", roles: ["admin", "seller"] },
   { prefix: "/calendar", roles: ["admin", "seller"] },
   { prefix: "/inbox", roles: ["admin", "seller"] },
@@ -234,7 +234,7 @@ export async function verifySessionToken(token?: string | null) {
 }
 
 export function defaultPathForRole(role: UserRole) {
-  return role === "seller" ? "/leads" : "/dashboard";
+  return "/dashboard";
 }
 
 function normalizeName(value?: string | null) {

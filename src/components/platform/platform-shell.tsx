@@ -69,7 +69,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "O que precisa de acao agora.",
     icon: BarChart3,
     kind: "app",
-    allowedRoles: ["admin"],
+    allowedRoles: ["admin", "seller"],
   },
   {
     href: "/connect",

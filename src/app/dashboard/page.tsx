@@ -23,6 +23,8 @@ import { hasPhone, pickBestContact } from "@/lib/contact";
 import { formatCurrency } from "@/lib/format";
 import { platformBrand } from "@/lib/platform";
 import { recommendedNextAction, scorePriority } from "@/lib/stage";
+import { canRoleAccessAgent } from "@/server/auth/core";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import { getStorageService } from "@/server/recovery/services/storage";
@@ -35,14 +37,24 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  await requireAuthenticatedSession(["admin"]);
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
   const service = getPaymentRecoveryService();
   const callStorage = getStorageService();
-  const [analytics, contacts, callAnalytics] = await Promise.all([
+  const sellerIdentity =
+    session.role === "seller"
+      ? await getSellerIdentityByEmail(session.email)
+      : null;
+
+  const [analytics, allContacts, callAnalytics] = await Promise.all([
     service.getRecoveryAnalytics(),
     service.getFollowUpContacts(),
     callStorage.getCallAnalytics(),
   ]);
+
+  // Filter contacts by seller when applicable
+  const contacts = allContacts.filter((c) =>
+    canRoleAccessAgent(session.role, c.assigned_agent, sellerIdentity?.agentName),
+  );
 
   const activeContacts = contacts.filter(
     (c) => c.lead_status !== "RECOVERED" && c.lead_status !== "LOST",
@@ -56,6 +68,25 @@ export default async function DashboardPage() {
   const actionableContacts = activeContacts.filter(
     (c) => c.lead_status === "NEW_RECOVERY" || c.lead_status === "CONTACTING",
   );
+
+  // Seller-specific analytics override
+  const sellerAnalytics =
+    session.role === "seller"
+      ? {
+          total_failed_payments: contacts.length,
+          recovered_payments: recoveredContacts.length,
+          recovery_rate:
+            contacts.length > 0
+              ? (recoveredContacts.length / contacts.length) * 100
+              : 0,
+          recovered_revenue: recoveredContacts.reduce(
+            (sum, c) => sum + c.payment_value,
+            0,
+          ),
+          average_recovery_time_hours: analytics.average_recovery_time_hours,
+          active_recoveries: activeContacts.length,
+        }
+      : analytics;
 
   const prioritizedContacts = [...activeContacts]
     .sort((a, b) => scorePriority(b) - scorePriority(a))
@@ -81,14 +112,16 @@ export default async function DashboardPage() {
       currentPath="/dashboard"
       action={
         <div className="flex flex-wrap items-center gap-2">
-          <a
-            href="/api/export/contacts"
-            download
-            className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Exportar CSV
-          </a>
+          {session.role === "admin" ? (
+            <a
+              href="/api/export/contacts"
+              download
+              className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-white"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Exportar CSV
+            </a>
+          ) : null}
           <Link
             href="/leads"
             className="glass-button-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold"
@@ -111,18 +144,18 @@ export default async function DashboardPage() {
           icon={CheckCircle2}
           label="recuperados"
           value={recoveredContacts.length.toString()}
-          subtitle={formatCurrency(analytics.recovered_revenue)}
+          subtitle={formatCurrency(sellerAnalytics.recovered_revenue)}
         />
         <PlatformMetricCard
           icon={TrendingUp}
           label="taxa de recuperacao"
-          value={`${analytics.recovery_rate.toFixed(1)}%`}
+          value={`${sellerAnalytics.recovery_rate.toFixed(1)}%`}
           subtitle={`${waitingContacts.length} aguardando cliente`}
         />
         <PlatformMetricCard
           icon={Clock}
           label="tempo medio"
-          value={formatAverageRecoveryTime(analytics.average_recovery_time_hours)}
+          value={formatAverageRecoveryTime(sellerAnalytics.average_recovery_time_hours)}
           subtitle="ate fechar recuperacao"
         />
       </section>
@@ -196,10 +229,12 @@ export default async function DashboardPage() {
               <MetricLine label="Receita em risco" value={formatCurrency(revenueAtRisk)} highlight />
               <MetricLine label="Para agir" value={actionableContacts.length.toString()} />
               <MetricLine label="Aguardando cliente" value={waitingContacts.length.toString()} />
-              <MetricLine
-                label="Sem responsavel"
-                value={activeContacts.filter((c) => !c.assigned_agent).length.toString()}
-              />
+              {session.role === "admin" ? (
+                <MetricLine
+                  label="Sem responsavel"
+                  value={activeContacts.filter((c) => !c.assigned_agent).length.toString()}
+                />
+              ) : null}
               <MetricLine label="Alcancaveis" value={`${reachableCount} de ${activeContacts.length}`} />
             </div>
           </PlatformSurface>
