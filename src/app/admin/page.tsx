@@ -1349,7 +1349,7 @@ function Field({
 }: {
   label: string;
   name: string;
-  defaultValue: string | number;
+  defaultValue?: string | number;
   type?: "text" | "number" | "email" | "password" | "url";
   step?: string;
   placeholder?: string;
