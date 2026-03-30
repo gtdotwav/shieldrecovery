@@ -30,7 +30,8 @@ export function HeroHeading() {
   return (
     <h1
       ref={ref}
-      className="mt-6 text-balance text-[2rem] font-bold leading-[1.1] tracking-[-0.03em] text-gray-900 dark:text-white sm:mt-10 sm:text-[3rem] lg:text-[4.2rem]"
+      className="mt-6 text-balance text-[2rem] font-bold leading-[1.1] tracking-[-0.03em] sm:mt-10 sm:text-[3rem] lg:text-[4.2rem]"
+      style={{ color: "#f0f0f0", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}
     >
       {plainWords.map((word, i) => (
         <motion.span
@@ -53,8 +54,9 @@ export function HeroHeading() {
             animate={isInView ? "visible" : "hidden"}
             className="inline-block mr-[0.28em] last:mr-0 shimmer-text bg-clip-text text-transparent"
             style={{
-              backgroundImage: `linear-gradient(90deg, ${b.accent}, ${b.accentStrong}, ${b.accent}, ${b.accentStrong})`,
+              backgroundImage: `linear-gradient(90deg, ${b.accentStrong}, ${b.accent}, ${b.accentStrong}, ${b.accent})`,
               backgroundSize: "200% auto",
+              filter: "brightness(1.15) saturate(1.2)",
             }}
           >
             {word}

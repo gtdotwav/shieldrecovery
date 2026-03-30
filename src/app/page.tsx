@@ -63,31 +63,31 @@ const cardBg = `rgba(${b.slug === "pagrecovery" ? "6,20,15" : "13,13,13"}`;
 // ── Testimonials ──
 const testimonials = [
   {
-    text: "Em 48h recuperamos R$ 12 mil que estavam parados. A IA identificou o melhor canal e horario pra cada cliente automaticamente.",
+    text: "Em 48h recuperamos R$ 12 mil que estavam parados. A IA identificou o melhor canal e horário pra cada cliente automaticamente.",
     name: "Ricardo Mendes",
     role: "CEO",
     company: "DigitalPay",
   },
   {
-    text: "O call center de agentes IA e surreal. Ligam com voz humanizada, negociam e enviam o link de pagamento na hora. Nosso time nem precisa intervir.",
+    text: "O call center de agentes IA é surreal. Ligam com voz humanizada, negociam e enviam o link de pagamento na hora. Nosso time nem precisa intervir.",
     name: "Camila Rocha",
-    role: "Head de Operacoes",
+    role: "Head de Operações",
     company: "ShopFlex",
   },
   {
-    text: "Integramos em menos de 5 minutos. Conectamos o webhook e ja comecamos a recuperar no mesmo dia.",
+    text: "Integramos em menos de 5 minutos. Conectamos o webhook e já começamos a recuperar no mesmo dia.",
     name: "Fernando Lima",
     role: "CTO",
     company: "TechPay",
   },
   {
-    text: "A taxa de recuperacao subiu de 4% para 32% em duas semanas. O ROI se pagou no primeiro dia.",
+    text: "A taxa de recuperação subiu de 4% para 32% em duas semanas. O ROI se pagou no primeiro dia.",
     name: "Juliana Alves",
     role: "Diretora Financeira",
     company: "VendasOnline",
   },
   {
-    text: "O dashboard e muito claro. Vejo em tempo real cada tentativa, cada contato, cada pagamento recuperado. Controle total.",
+    text: "O dashboard é muito claro. Vejo em tempo real cada tentativa, cada contato, cada pagamento recuperado. Controle total.",
     name: "Bruno Nascimento",
     role: "Gerente de Produto",
     company: "PayHub",
@@ -95,23 +95,23 @@ const testimonials = [
   {
     text: "Antes eu perdia 40% dos pagamentos com falha. Hoje perco menos de 15%. A plataforma faz tudo sozinha.",
     name: "Patricia Duarte",
-    role: "Proprietaria",
+    role: "Proprietária",
     company: "EssencialStore",
   },
   {
-    text: "O suporte e incrivel. Nos ajudaram a configurar os funis, personalizar as mensagens e otimizar o timing de cada contato.",
+    text: "O suporte é incrível. Nos ajudaram a configurar os funis, personalizar as mensagens e otimizar o timing de cada contato.",
     name: "Marcos Costa",
     role: "Analista de Dados",
     company: "DataDriven",
   },
   {
-    text: "Usamos com 3 sellers diferentes. Cada um tem seu proprio painel, seus proprios leads. Perfeito pra nossa operacao white-label.",
+    text: "Usamos com 3 sellers diferentes. Cada um tem seu próprio painel, seus próprios leads. Perfeito pra nossa operação white-label.",
     name: "Ana Beatriz",
     role: "COO",
     company: "MultiGateway",
   },
   {
-    text: "A IA conversa pelo WhatsApp de forma tao natural que os clientes pensam que e um humano. A taxa de resposta triplicou.",
+    text: "A IA conversa pelo WhatsApp de forma tão natural que os clientes pensam que é um humano. A taxa de resposta triplicou.",
     name: "Diego Oliveira",
     role: "Head de Growth",
     company: "RapidCommerce",
@@ -253,7 +253,7 @@ export default async function Home() {
                   </MagneticButton>
                   <a
                     href="#como-funciona"
-                    className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-6 py-3 text-[0.85rem] font-medium text-gray-400 backdrop-blur-sm transition-all hover:border-white/12hover:border-white/14 hover:text-gray-300hover:text-gray-200 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-6 py-3 text-[0.85rem] font-medium text-gray-400 backdrop-blur-sm transition-all hover:border-white/[0.14] hover:text-gray-200 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
                   >
                     Como funciona
                     <ArrowDown className="h-4 w-4" />
@@ -349,14 +349,14 @@ export default async function Home() {
         <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="mx-auto max-w-[48rem] text-center">
-              <SectionEyebrow>A dor que ninguem ve</SectionEyebrow>
+              <SectionEyebrow>A dor que ninguém vê</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Cada pagamento falhado e um cliente que ja disse sim
+                Cada pagamento falhado é um cliente que já disse sim
               </h2>
               <p className="mx-auto mt-6 max-w-[38rem] text-[0.95rem] leading-[1.8] text-gray-400">
                 Ele escolheu o produto. Colocou os dados. Clicou em pagar.
-                Mas algo deu errado — e ninguem fez nada. O cliente sai.
-                A receita vai embora. E voce nem sabe que perdeu.
+                Mas algo deu errado — e ninguém fez nada. O cliente sai.
+                A receita vai embora. E você nem sabe que perdeu.
               </p>
             </div>
           </Reveal>
@@ -374,10 +374,10 @@ export default async function Home() {
                   62%
                 </p>
                 <p className="mt-3 text-[0.82rem] font-medium text-gray-300">
-                  dos pagamentos que falham nunca sao recuperados
+                  dos pagamentos que falham nunca são recuperados
                 </p>
                 <p className="mt-2 text-[0.72rem] leading-[1.7] text-gray-500">
-                  Sem sistema ativo, a maioria dos clientes simplesmente desiste. A janela de recuperacao fecha em horas.
+                  Sem sistema ativo, a maioria dos clientes simplesmente desiste. A janela de recuperação fecha em horas.
                 </p>
               </div>
             </Reveal>
@@ -393,10 +393,10 @@ export default async function Home() {
                   4h
                 </p>
                 <p className="mt-3 text-[0.82rem] font-medium text-gray-300">
-                  e o tempo medio que empresas levam para perceber a falha
+                  é o tempo médio que empresas levam para perceber a falha
                 </p>
                 <p className="mt-2 text-[0.72rem] leading-[1.7] text-gray-500">
-                  A cada minuto sem contato, a chance de recuperacao cai. Depois de 24h, o cliente ja esqueceu.
+                  A cada minuto sem contato, a chance de recuperação cai. Depois de 24h, o cliente já esqueceu.
                 </p>
               </div>
             </Reveal>
@@ -412,10 +412,10 @@ export default async function Home() {
                   2min
                 </p>
                 <p className="mt-3 text-[0.82rem] font-medium text-gray-300">
-                  e o tempo da {b.name} para fazer o primeiro contato
+                  é o tempo da {b.name} para fazer o primeiro contato
                 </p>
                 <p className="mt-2 text-[0.72rem] leading-[1.7] text-gray-500">
-                  A falha acontece e em 120 segundos o cliente recebe o link de pagamento no WhatsApp. Sem intervencao humana.
+                  A falha acontece e em 120 segundos o cliente recebe o link de pagamento no WhatsApp. Sem intervenção humana.
                 </p>
               </div>
             </Reveal>
@@ -423,8 +423,8 @@ export default async function Home() {
 
           <Reveal direction="up" delay={400}>
             <p className="mx-auto mt-10 max-w-[40rem] text-center text-[0.88rem] leading-[1.8] text-gray-400">
-              A maior dor nao e a falha no pagamento — e o silencio depois dela. Enquanto voce nao
-              sabe o que aconteceu, a {b.name} ja resolveu, contactou e recuperou.
+              A maior dor não é a falha no pagamento — é o silêncio depois dela. Enquanto você não
+              sabe o que aconteceu, a {b.name} já resolveu, contactou e recuperou.
             </p>
           </Reveal>
         </section>
@@ -435,14 +435,14 @@ export default async function Home() {
         <section className="relative mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="mx-auto max-w-[52rem] text-center">
-              <SectionEyebrow>Da falha a escala previsivel</SectionEyebrow>
+              <SectionEyebrow>Da falha à escala previsível</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Um funil que transforma caos em receita previsivel
+                Um funil que transforma caos em receita previsível
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-[0.95rem] leading-7 text-gray-400">
-                A maioria das empresas nao sabe quantos pagamentos falham por dia, nem quanto
+                A maioria das empresas não sabe quantos pagamentos falham por dia, nem quanto
                 dinheiro deixa de entrar. Com a {b.name}, cada falha vira um dado,
-                cada tentativa vira uma metrica, e cada recuperacao vira previsibilidade.
+                cada tentativa vira uma métrica, e cada recuperação vira previsibilidade.
               </p>
             </div>
           </Reveal>
@@ -451,13 +451,13 @@ export default async function Home() {
             {/* Timeline */}
             <div>
               {[
-                { time: "0s", title: "Falha detectada", desc: "Webhook chega. A plataforma classifica: valor, metodo, historico do cliente e motivo exato da falha.", accent: false },
-                { time: "30s", title: "Estrategia definida pela IA", desc: "Algoritmo escolhe canal, tom, urgencia e abordagem ideal com base no perfil do cliente.", accent: false },
-                { time: "2min", title: "WhatsApp disparado", desc: "Mensagem personalizada com link de pagamento, PIX copia-e-cola ou cartao. O cliente paga em 1 toque.", accent: true },
-                { time: "4h", title: "Follow-up adaptativo", desc: "Leu mas nao respondeu? A IA ajusta a abordagem: muda o tom, oferece parcelamento, troca de metodo.", accent: false },
-                { time: "12h", title: "Call Center IA liga", desc: "Para leads de alto valor, agente IA liga com voz natural, negocia condicoes e envia o link na hora.", accent: true },
-                { time: "48h", title: "Escalonamento inteligente", desc: "Novas abordagens: urgencia, oferta exclusiva, troca de canal. O sistema nunca repete a mesma tática.", accent: false },
-                { time: "7d", title: "Soft close com porta aberta", desc: "Ultima mensagem respeitosa. Link ativo. Sem pressao. O cliente decide quando quer pagar.", accent: false },
+                { time: "0s", title: "Falha detectada", desc: "Webhook chega. A plataforma classifica: valor, método, histórico do cliente e motivo exato da falha.", accent: false },
+                { time: "30s", title: "Estratégia definida pela IA", desc: "Algoritmo escolhe canal, tom, urgência e abordagem ideal com base no perfil do cliente.", accent: false },
+                { time: "2min", title: "WhatsApp disparado", desc: "Mensagem personalizada com link de pagamento, PIX copia-e-cola ou cartão. O cliente paga em 1 toque.", accent: true },
+                { time: "4h", title: "Follow-up adaptativo", desc: "Leu mas não respondeu? A IA ajusta a abordagem: muda o tom, oferece parcelamento, troca de método.", accent: false },
+                { time: "12h", title: "Call Center IA liga", desc: "Para leads de alto valor, agente IA liga com voz natural, negocia condições e envia o link na hora.", accent: true },
+                { time: "48h", title: "Escalonamento inteligente", desc: "Novas abordagens: urgência, oferta exclusiva, troca de canal. O sistema nunca repete a mesma tática.", accent: false },
+                { time: "7d", title: "Soft close com porta aberta", desc: "Última mensagem respeitosa. Link ativo. Sem pressão. O cliente decide quando quer pagar.", accent: false },
               ].map((step, i) => (
                 <Reveal key={step.time} direction="up" delay={i * 60}>
                   <div className="flex gap-5 sm:gap-7">
@@ -507,9 +507,9 @@ export default async function Home() {
                     Por que previsibilidade importa?
                   </h3>
                   <p className="mt-3 text-[0.82rem] leading-[1.7] text-gray-400">
-                    Um negocio que nao mede recuperacao nao tem controle sobre a propria receita.
-                    Voce sabe quantos pagamentos falharam essa semana? Quantos foram recuperados?
-                    Qual o tempo medio entre falha e pagamento? Sem essas respostas, voce opera no escuro.
+                    Um negócio que não mede recuperação não tem controle sobre a própria receita.
+                    Você sabe quantos pagamentos falharam essa semana? Quantos foram recuperados?
+                    Qual o tempo médio entre falha e pagamento? Sem essas respostas, você opera no escuro.
                   </p>
                 </div>
               </Reveal>
@@ -526,13 +526,13 @@ export default async function Home() {
                     Dashboard com controle total
                   </h3>
                   <p className="mt-3 text-[0.82rem] leading-[1.7] text-gray-400">
-                    Taxa de recuperacao por canal, por metodo de pagamento, por faixa de valor.
-                    Tempo medio de recuperacao. Receita salva por dia, semana, mes. Performance de cada
-                    seller. Tudo em tempo real, com historico completo.
+                    Taxa de recuperação por canal, por método de pagamento, por faixa de valor.
+                    Tempo médio de recuperação. Receita salva por dia, semana, mês. Performance de cada
+                    seller. Tudo em tempo real, com histórico completo.
                   </p>
                   <div className="mt-4 grid grid-cols-2 gap-3">
-                    <MiniStat label="Taxa media" value="19–40%" />
-                    <MiniStat label="Tempo medio" value="14 min" />
+                    <MiniStat label="Taxa média" value="19–40%" />
+                    <MiniStat label="Tempo médio" value="14 min" />
                     <MiniStat label="Canais ativos" value="3" />
                     <MiniStat label="Uptime" value="24/7" />
                   </div>
@@ -551,8 +551,8 @@ export default async function Home() {
                     Mesmo fluxo. Qualquer volume.
                   </p>
                   <p className="mt-2 text-[0.82rem] leading-[1.7] text-gray-400">
-                    10 transacoes ou 10.000 — o sistema escala automaticamente.
-                    Sem equipe, sem custo adicional, sem intervencao.
+                    10 transações ou 10.000 — o sistema escala automaticamente.
+                    Sem equipe, sem custo adicional, sem intervenção.
                   </p>
                 </div>
               </Reveal>
