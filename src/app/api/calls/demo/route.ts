@@ -134,10 +134,9 @@ export async function POST(request: NextRequest) {
           messages: [{ role: "system", content: systemPrompt }],
           temperature: 0.7,
         },
-        voice: {
-          provider: "11labs",
-          voiceId: "EXAVITQu4vr4xnSDxMaL",
-        },
+        voice: (process.env.CARTESIA_VOICE_ID ?? "").trim()
+          ? { provider: "cartesia" as const, voiceId: (process.env.CARTESIA_VOICE_ID ?? "").trim() }
+          : { provider: "11labs" as const, voiceId: "EXAVITQu4vr4xnSDxMaL" },
         firstMessage,
         endCallMessage: `Foi um prazer falar com você, ${firstName}! Vou te mandar mais detalhes por WhatsApp. Até logo!`,
         transcriber: {

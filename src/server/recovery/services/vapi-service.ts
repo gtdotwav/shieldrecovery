@@ -29,7 +29,7 @@ type VapiAssistantConfig = {
     temperature?: number;
   };
   voice: {
-    provider: "11labs" | "azure" | "deepgram" | "playht";
+    provider: "11labs" | "cartesia" | "azure" | "deepgram" | "playht";
     voiceId: string;
   };
   firstMessage: string;
@@ -108,7 +108,12 @@ export class VapiService {
 
     const tone = input.voiceTone ?? "empathetic";
     const gender = input.voiceGender ?? "female";
-    const voiceId = VOICE_MAP[gender]?.[tone] ?? VOICE_MAP.female.empathetic;
+
+    // Prefer Cartesia voice (better PT-BR quality) when configured
+    const cartesiaVoiceId = (process.env.CARTESIA_VOICE_ID ?? "").trim();
+    const voiceConfig: VapiAssistantConfig["voice"] = cartesiaVoiceId
+      ? { provider: "cartesia", voiceId: cartesiaVoiceId }
+      : { provider: "11labs", voiceId: VOICE_MAP[gender]?.[tone] ?? VOICE_MAP.female.empathetic };
 
     const systemPrompt = this.buildVoiceAgentPrompt({
       customerName: input.customerName,
@@ -133,10 +138,7 @@ export class VapiService {
           messages: [{ role: "system", content: systemPrompt }],
           temperature: 0.7,
         },
-        voice: {
-          provider: "11labs",
-          voiceId,
-        },
+        voice: voiceConfig,
         firstMessage,
         endCallMessage:
           "Obrigado pela atenção. Se precisar de algo, pode nos chamar pelo WhatsApp. Até mais!",
