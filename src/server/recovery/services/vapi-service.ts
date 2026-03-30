@@ -81,7 +81,7 @@ export class VapiService {
 
   constructor() {
     this.apiKey = process.env.VAPI_API_KEY ?? "";
-    this.phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID ?? "";
+    this.phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID ?? process.env.VAPI_PHONE_ID ?? "";
     this.serverUrl = `${appEnv.appBaseUrl}/api/webhooks/callcenter`;
   }
 

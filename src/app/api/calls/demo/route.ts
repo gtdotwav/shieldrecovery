@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Check VAPI is configured — both key and phone number are required
     const vapiKey = (process.env.VAPI_API_KEY ?? "").trim();
-    const vapiPhoneNumberId = (process.env.VAPI_PHONE_NUMBER_ID ?? "").trim();
+    const vapiPhoneNumberId = (process.env.VAPI_PHONE_NUMBER_ID ?? process.env.VAPI_PHONE_ID ?? "").trim();
     if (!vapiKey || !vapiPhoneNumberId) {
       console.error(
         `Demo call config missing: VAPI_API_KEY=${vapiKey ? "set" : "MISSING"}, VAPI_PHONE_NUMBER_ID=${vapiPhoneNumberId ? "set" : "MISSING"}`,
