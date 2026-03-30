@@ -66,7 +66,10 @@ export default async function CallingPage() {
       c.lead_status !== "LOST",
   );
 
-  const vapiConfigured = Boolean(process.env.VAPI_API_KEY);
+  const vapiConfigured = Boolean(
+    process.env.VAPI_API_KEY &&
+    (process.env.VAPI_PHONE_NUMBER_ID || process.env.VAPI_PHONE_ID),
+  );
 
   return (
     <PlatformAppPage currentPath="/calling">

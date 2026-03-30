@@ -86,7 +86,7 @@ export class VapiService {
   }
 
   get configured(): boolean {
-    return Boolean(this.apiKey);
+    return Boolean(this.apiKey && this.phoneNumberId);
   }
 
   /**
@@ -102,7 +102,8 @@ export class VapiService {
     voiceGender?: VoiceGender;
   }): Promise<{ ok: boolean; vapiCallId?: string; error?: string }> {
     if (!this.configured) {
-      return { ok: false, error: "Vapi API key not configured" };
+      console.error(`[VapiService] Not configured: apiKey=${this.apiKey ? "set" : "MISSING"}, phoneNumberId=${this.phoneNumberId ? "set" : "MISSING"}`);
+      return { ok: false, error: `Vapi not configured: apiKey=${this.apiKey ? "set" : "MISSING"}, phoneNumberId=${this.phoneNumberId ? "set" : "MISSING"}` };
     }
 
     const tone = input.voiceTone ?? "empathetic";
@@ -128,7 +129,7 @@ export class VapiService {
       assistant: {
         model: {
           provider: "openai",
-          model: "gpt-4.1-mini",
+          model: "gpt-4o-mini",
           messages: [{ role: "system", content: systemPrompt }],
           temperature: 0.7,
         },
@@ -152,7 +153,7 @@ export class VapiService {
         number: input.callRecord.toNumber,
         name: input.customerName,
       },
-      ...(this.phoneNumberId ? { phoneNumberId: this.phoneNumberId } : {}),
+      phoneNumberId: this.phoneNumberId,
       metadata: {
         leadId: input.callRecord.leadId,
         callRecordId: input.callRecord.id,
@@ -161,6 +162,8 @@ export class VapiService {
     };
 
     try {
+      console.log(`[VapiService] Initiating call to ${input.callRecord.toNumber}, phoneNumberId=${this.phoneNumberId}`);
+
       const response = await fetch("https://api.vapi.ai/call/phone", {
         method: "POST",
         headers: {
@@ -173,7 +176,8 @@ export class VapiService {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => "");
-        const error = `Vapi API error ${response.status}: ${errorText.slice(0, 200)}`;
+        const error = `Vapi API error ${response.status}: ${errorText.slice(0, 500)}`;
+        console.error(`[VapiService] ${error}`);
 
         await this.storage.updateCall(input.callRecord.id, {
           status: "failed",
