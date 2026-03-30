@@ -215,11 +215,16 @@ export class RecoveryWorkerService {
       sellerKey,
     });
 
+    const isDuplicate = "duplicate" in result && result.duplicate;
+    const isSkipped = "skipped" in result && result.skipped;
+
     return {
-      status: result.duplicate ? "skipped" : "processed",
-      detail: result.duplicate
+      status: isDuplicate || isSkipped ? "skipped" : "processed",
+      detail: isDuplicate
         ? `Webhook ${webhookId} was already processed.`
-        : `Webhook ${webhookId} processed from queue.`,
+        : isSkipped
+          ? `Webhook ${webhookId} skipped (${("reason" in result && result.reason) || "unsupported"}).`
+          : `Webhook ${webhookId} processed from queue.`,
     };
   }
 

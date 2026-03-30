@@ -1564,9 +1564,30 @@ export class PaymentRecoveryService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : `Unknown processing error: ${String(error)}`;
+
+      // Unsupported event types are not real failures — skip silently
+      const isUnsupportedEvent =
+        error instanceof HttpError &&
+        error.statusCode === 422 &&
+        errorMessage.includes("Unsupported payment event type");
+
+      if (isUnsupportedEvent) {
+        await this.storage.markWebhookProcessed({
+          webhookRecordId: input.webhookRecordId,
+          eventId: input.webhookId,
+          eventType: "unsupported",
+        });
+        return {
+          ok: true,
+          skipped: true,
+          reason: "unsupported_event_type",
+          webhook_id: input.webhookId,
+        };
+      }
+
       const errorStack = error instanceof Error ? error.stack : undefined;
 
-      console.error("[webhook-process] Error processing webhook:", input.webhookId, errorMessage, errorStack ?? error);
+      console.error("[webhook-process] Error processing webhook:", input.webhookId, errorMessage);
 
       await this.storage.markWebhookFailed(input.webhookRecordId, errorMessage);
       await this.storage.addLog(
@@ -1577,7 +1598,7 @@ export class PaymentRecoveryService {
           context: {
             webhookId: input.webhookId,
             error: errorMessage,
-            errorStack: errorStack ?? String(error),
+            errorStack: process.env.NODE_ENV === "development" ? errorStack : undefined,
             sellerKey: input.sellerKey ?? null,
           },
         }),
