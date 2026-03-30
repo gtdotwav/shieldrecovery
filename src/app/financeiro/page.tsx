@@ -45,7 +45,8 @@ export default async function FinanceiroPage({ searchParams }: PageProps) {
   let overrides: { baseUrl?: string; apiKey: string } | null = null;
 
   if (identity) {
-    const controls = await storage.getSellerAdminControls(identity.agentName);
+    const allControls = await storage.getSellerAdminControls();
+    const controls = allControls.find((c) => c.sellerKey === identity.agentName);
     if (controls?.checkoutApiKey) {
       checkoutConfigured = true;
       overrides = {

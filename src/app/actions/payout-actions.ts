@@ -17,7 +17,8 @@ async function getSellerCheckoutOverrides(email: string) {
   if (!identity) throw new Error("Seller não encontrado");
 
   const storage = getStorageService();
-  const controls = await storage.getSellerAdminControls(identity.agentName);
+  const allControls = await storage.getSellerAdminControls();
+  const controls = allControls.find((c) => c.sellerKey === identity.agentName);
   if (!controls?.checkoutApiKey) throw new Error("Checkout não configurado para este seller");
 
   return {

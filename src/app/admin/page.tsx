@@ -174,16 +174,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[1.95rem]">
               Um painel para ver sellers, carteira e autonomia sem perder controle.
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--foreground-secondary)]">
               O admin acompanha carteira, recuperação, fila e autonomia dos sellers
               em um só lugar.
             </p>
           </div>
 
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
-            {snapshot.totalSellers} sellers mapeados, {snapshot.pendingInvites} convites
-            pendentes, {snapshot.unassignedLeads} leads sem dono e{" "}
-            {sellersWithWebhookTraffic.length} sellers com tráfego no webhook.
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4 text-sm leading-6 text-[var(--foreground-secondary)]">
+            <span className="font-semibold text-[var(--foreground)]">{snapshot.totalSellers}</span> sellers mapeados, <span className="font-semibold text-[var(--foreground)]">{snapshot.pendingInvites}</span> convites
+            pendentes, <span className="font-semibold text-[var(--foreground)]">{snapshot.unassignedLeads}</span> leads sem dono e{" "}
+            <span className="font-semibold text-[var(--foreground)]">{sellersWithWebhookTraffic.length}</span> sellers com tráfego no webhook.
           </div>
         </div>
       </PlatformSurface>
@@ -196,10 +196,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               : "Nao foi possivel salvar o controle do seller."}
           </p>
           {params.saved ? (
-            <p className="mt-1 text-sm text-[var(--muted)]">Registro: {params.saved}</p>
+            <p className="mt-1 text-sm text-[var(--foreground-secondary)]">Registro: {params.saved}</p>
           ) : null}
           {params.message ? (
-            <p className="mt-1 text-sm text-[var(--muted)]">{params.message}</p>
+            <p className="mt-1 text-sm text-[var(--foreground-secondary)]">{params.message}</p>
           ) : null}
         </PlatformSurface>
       ) : null}
@@ -214,7 +214,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               className={
                 isActive
                   ? "rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
-                  : "rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
+                  : "rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 text-sm font-semibold text-[var(--foreground-secondary)] hover:text-[var(--foreground)]"
               }
             >
               {tab.label}
@@ -389,7 +389,7 @@ function TabOverview({
                   className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-3"
                 >
                   <p className="text-sm font-medium text-[var(--foreground)]">{job.jobType}</p>
-                  <p className="mt-1 text-xs text-[var(--muted)]">
+                  <p className="mt-1 text-xs text-[var(--foreground-secondary)]">
                     {job.status} · {formatRelativeTime(job.runAt)}
                   </p>
                 </div>
@@ -399,7 +399,7 @@ function TabOverview({
           {snapshot.worker.recentEvents.length > 0 ? (
             <div className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
               {snapshot.worker.recentEvents.slice(0, 4).map((event) => (
-                <div key={event.id} className="text-xs leading-5 text-[var(--muted)]">
+                <div key={event.id} className="text-xs leading-5 text-[var(--foreground-secondary)]">
                   <span className="font-medium text-[var(--foreground)]">{event.eventType}</span>{" "}
                   · {formatRelativeTime(event.createdAt)}
                 </div>
@@ -455,7 +455,7 @@ function TabSellers({
             <p className="mt-3 text-sm font-medium text-[var(--foreground)]">
               Nenhum seller/agente operacional apareceu ainda.
             </p>
-            <p className="mt-1.5 text-sm leading-6 text-[var(--muted)]">
+            <p className="mt-1.5 text-sm leading-6 text-[var(--foreground-secondary)]">
               Assim que a operação atribuir leads ou conversar com clientes,
               os sellers entram aqui automaticamente para controle administrativo.
             </p>
@@ -474,7 +474,7 @@ function TabSellers({
                 <p className="text-sm font-medium text-[var(--foreground)]">
                   Nenhum seller encontrado para essa busca.
                 </p>
-                <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+                <p className="mt-1 text-sm leading-6 text-[var(--foreground-secondary)]">
                   Ajuste o nome, email ou agente vinculado para localizar a carteira.
                 </p>
               </PlatformInset>
@@ -500,7 +500,7 @@ function TabSellers({
             <p className="text-lg font-semibold text-[var(--foreground)]">
               Abra um seller para ver detalhes, percentuais e controles.
             </p>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--foreground-secondary)]">
               A lista funciona como índice. Os dados densos ficam escondidos até
               você abrir um seller, o que deixa a navegação mais leve.
             </p>
@@ -579,7 +579,7 @@ function TabAcessos({
               defaultValue="7"
             />
             <label className="space-y-1">
-              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
                 Contexto do convite
               </span>
               <textarea
@@ -612,7 +612,7 @@ function TabAcessos({
             {snapshot.sellerUsers.length === 0 ? (
               <PlatformInset className="p-4 text-center">
                 <KeyRound className="mx-auto h-5 w-5 text-[var(--muted)]" />
-                <p className="mt-2 text-sm text-[var(--muted)]">
+                <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
                   Ainda não existem contas de seller persistidas.
                 </p>
               </PlatformInset>
@@ -638,7 +638,7 @@ function TabAcessos({
             {activeInvites.length === 0 ? (
               <PlatformInset className="p-4 text-center">
                 <KeyRound className="mx-auto h-5 w-5 text-[var(--muted)]" />
-                <p className="mt-2 text-sm text-[var(--muted)]">
+                <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
                   Nenhum convite gerado ainda.
                 </p>
               </PlatformInset>
@@ -680,7 +680,7 @@ function TabLeads({
             <p className="mt-3 text-sm font-medium text-[var(--foreground)]">
               Nenhum lead do quiz ainda.
             </p>
-            <p className="mt-1.5 text-sm leading-6 text-[var(--muted)]">
+            <p className="mt-1.5 text-sm leading-6 text-[var(--foreground-secondary)]">
               Quando visitantes completarem o quiz na landing page, os emails
               aparecem aqui para acompanhamento.
             </p>
@@ -711,7 +711,7 @@ function TabLeads({
             <p className="mt-3 text-sm font-medium text-[var(--foreground)]">
               Nenhum seller cadastrado ainda.
             </p>
-            <p className="mt-1.5 text-sm leading-6 text-[var(--muted)]">
+            <p className="mt-1.5 text-sm leading-6 text-[var(--foreground-secondary)]">
               Crie acessos manualmente ou envie convites para que os sellers finalizem o cadastro.
             </p>
           </PlatformInset>
@@ -762,11 +762,11 @@ function SellerControlCard({
             </p>
             <PlatformPill>{seller.control.active ? "ativo" : "pausado"}</PlatformPill>
           </div>
-          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+          <p className="mt-2 text-sm leading-6 text-[var(--foreground-secondary)]">
             {seller.sellerEmail || "sem email operacional"} · última movimentação{" "}
             {seller.lastActivityAt ? formatRelativeTime(seller.lastActivityAt) : "sem histórico"}
           </p>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+          <p className="mt-3 text-sm leading-6 text-[var(--foreground-secondary)]">
             Taxa real {seller.realRecoveryRate.toFixed(1)}% · meta {seller.control.recoveryTargetPercent.toFixed(1)}% · autonomia {seller.control.autonomyMode}
             {aboveLimit ? " · acima do limite" : ""}
           </p>
@@ -786,7 +786,7 @@ function SellerControlCard({
           <div className="flex justify-end">
             <Link
               href={closeHref}
-              className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--muted)] transition-colors hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)]"
+              className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--foreground-secondary)] transition-colors hover:bg-[var(--surface-strong)] hover:text-[var(--foreground)]"
             >
               Fechar detalhes
             </Link>
@@ -818,7 +818,7 @@ function SellerControlCard({
             />
           </div>
           <div className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] p-3">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
               webhook do seller
             </p>
             <p className="mt-2 break-all text-sm leading-6 text-[var(--foreground)]">
@@ -871,7 +871,7 @@ function SellerControlCard({
             defaultValue={String(seller.control.maxAssignedLeads)}
           />
           <PlatformInset className="p-4">
-            <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[var(--muted)]">
+            <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
               saúde do webhook
             </p>
             <p className="mt-1 text-lg font-semibold text-[var(--foreground)]">
@@ -881,14 +881,14 @@ function SellerControlCard({
                   ? "atenção"
                   : "aguardando"}
             </p>
-            <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+            <p className="mt-1 text-sm leading-6 text-[var(--foreground-secondary)]">
               {seller.webhook.lastReceivedAt
                 ? `último ${seller.webhook.lastEventType ?? "evento"} ${formatRelativeTime(seller.webhook.lastReceivedAt)}`
                 : "nenhum evento recebido ainda"}
             </p>
           </PlatformInset>
           <label className="space-y-1">
-            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
               Autonomia da IA
             </span>
             <select
@@ -902,7 +902,7 @@ function SellerControlCard({
             </select>
           </label>
           <label className="space-y-1 lg:col-span-2">
-            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
               Abordagem da mensagem
             </span>
             <div className="grid grid-cols-3 gap-2">
@@ -942,7 +942,7 @@ function SellerControlCard({
                   <span className="font-semibold text-[var(--foreground)] peer-checked:text-[var(--accent)]">
                     {opt.label}
                   </span>
-                  <span className="mt-0.5 text-xs leading-snug text-[var(--muted)]">
+                  <span className="mt-0.5 text-xs leading-snug text-[var(--foreground-secondary)]">
                     {opt.desc}
                   </span>
                 </label>
@@ -988,7 +988,7 @@ function SellerControlCard({
 
         <div className="grid gap-4 lg:grid-cols-2">
           <label className="space-y-1">
-            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
               Perfil whitelabel
             </span>
             <select
@@ -1014,7 +1014,7 @@ function SellerControlCard({
         </div>
 
         <label className="space-y-1">
-          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
             Observação do admin
           </span>
           <textarea
@@ -1027,7 +1027,7 @@ function SellerControlCard({
         </label>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
-          <p className="text-sm text-[var(--muted)]">
+          <p className="text-sm text-[var(--foreground-secondary)]">
             Atualizado {formatRelativeTime(seller.control.updatedAt)}
           </p>
           <button
@@ -1071,7 +1071,7 @@ function SellerListRow({
               <PlatformPill>{seller.unreadConversations} não lidas</PlatformPill>
             ) : null}
           </div>
-          <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+          <p className="mt-1 text-sm leading-6 text-[var(--foreground-secondary)]">
             {seller.sellerEmail || "sem email operacional"} ·{" "}
             {seller.lastActivityAt
               ? `última movimentação ${formatRelativeTime(seller.lastActivityAt)}`
@@ -1092,10 +1092,10 @@ function SellerListRow({
           />
         </div>
       </div>
-      <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+      <p className="mt-3 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--foreground-secondary)]">
         {active ? "detalhe aberto" : "abrir detalhes"}
       </p>
-      <p className="mt-1 text-xs text-[var(--muted)]">
+      <p className="mt-1 text-xs text-[var(--foreground-secondary)]">
         webhook:{" "}
         {seller.webhook.status === "healthy"
           ? "recebendo"
@@ -1147,9 +1147,9 @@ function CompactMetric({
 }) {
   return (
     <PlatformInset className="p-4">
-      <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[var(--muted)]">{label}</p>
+      <p className="text-[0.68rem] uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">{label}</p>
       <p className="mt-1 text-lg font-semibold text-[var(--foreground)]">{value}</p>
-      <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{detail}</p>
+      <p className="mt-1 text-sm leading-6 text-[var(--foreground-secondary)]">{detail}</p>
     </PlatformInset>
   );
 }
@@ -1197,13 +1197,13 @@ function AdminAccessRow({
           <p className="truncate text-sm font-semibold text-[var(--foreground)]">
             {seller.displayName}
           </p>
-          <p className="mt-1 truncate text-xs text-[var(--muted)]">{seller.email}</p>
+          <p className="mt-1 truncate text-xs text-[var(--foreground-secondary)]">{seller.email}</p>
         </div>
-        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--foreground-secondary)]">
           {seller.active ? "ativo" : "pausado"}
         </span>
       </div>
-      <p className="mt-2 text-xs text-[var(--muted)]">Agente vinculado: {seller.agentName}</p>
+      <p className="mt-2 text-xs text-[var(--foreground-secondary)]">Agente vinculado: {seller.agentName}</p>
     </div>
   );
 }
@@ -1229,16 +1229,16 @@ function SellerInviteRow({
           <p className="truncate text-sm font-semibold text-[var(--foreground)]">
             {invite.suggestedDisplayName || invite.email}
           </p>
-          <p className="mt-1 truncate text-xs text-[var(--muted)]">{invite.email}</p>
+          <p className="mt-1 truncate text-xs text-[var(--foreground-secondary)]">{invite.email}</p>
         </div>
         <PlatformPill>{statusLabel}</PlatformPill>
       </div>
-      <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+      <p className="mt-2 text-xs leading-5 text-[var(--foreground-secondary)]">
         {invite.agentName ? `Agente sugerido: ${invite.agentName}. ` : ""}
         Expira {formatRelativeTime(invite.expiresAt)}.
       </p>
       {invite.note ? (
-        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">{invite.note}</p>
+        <p className="mt-2 text-xs leading-5 text-[var(--foreground-secondary)]">{invite.note}</p>
       ) : null}
       <div className="mt-3 flex flex-wrap gap-2">
         <CopyButton value={invite.inviteUrl} label="Copiar convite" />
@@ -1276,8 +1276,8 @@ function SellerAccountCard({
           <p className="truncate text-base font-semibold text-[var(--foreground)]">
             {seller.displayName}
           </p>
-          <p className="mt-1 truncate text-sm text-[var(--muted)]">{seller.email}</p>
-          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-[var(--muted)]">
+          <p className="mt-1 truncate text-sm text-[var(--foreground-secondary)]">{seller.email}</p>
+          <p className="mt-2 text-xs uppercase tracking-[0.14em] text-[var(--foreground-secondary)]">
             agente vinculado
           </p>
           <p className="mt-1 text-sm text-[var(--foreground-secondary)]">{seller.agentName}</p>
@@ -1349,14 +1349,14 @@ function Field({
 }: {
   label: string;
   name: string;
-  defaultValue: string;
+  defaultValue: string | number;
   type?: "text" | "number" | "email" | "password" | "url";
   step?: string;
   placeholder?: string;
 }) {
   return (
     <label className="space-y-1">
-      <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+      <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
         {label}
       </span>
       <input
@@ -1412,7 +1412,7 @@ function QuizLeadRow({ lead }: { lead: QuizLeadRecord }) {
             </p>
             <PlatformPill>{statusLabel}</PlatformPill>
           </div>
-          <p className="mt-2 text-xs text-[var(--muted)]">
+          <p className="mt-2 text-xs text-[var(--foreground-secondary)]">
             Cadastro {formatRelativeTime(lead.createdAt)}
             {lead.whatsappSentAt
               ? ` · WhatsApp enviado ${formatRelativeTime(lead.whatsappSentAt)}`
@@ -1423,7 +1423,7 @@ function QuizLeadRow({ lead }: { lead: QuizLeadRecord }) {
               {lead.answers.map((answer, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.65rem] text-[var(--muted)]"
+                  className="inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[0.65rem] text-[var(--foreground-secondary)]"
                 >
                   {answer}
                 </span>
@@ -1439,7 +1439,7 @@ function QuizLeadRow({ lead }: { lead: QuizLeadRecord }) {
           >
             <input type="hidden" name="leadId" value={lead.id} />
             <label className="space-y-1">
-              <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+              <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
                 WhatsApp
               </span>
               <input
@@ -1459,7 +1459,7 @@ function QuizLeadRow({ lead }: { lead: QuizLeadRecord }) {
             </button>
           </form>
         ) : (
-          <span className="inline-flex items-center gap-1 text-xs text-[var(--muted)]">
+          <span className="inline-flex items-center gap-1 text-xs text-[var(--foreground-secondary)]">
             <Send className="h-3 w-3" />
             Enviado
           </span>
@@ -1516,7 +1516,7 @@ function TabFinanceiro({
       {/* Split config form */}
       <PlatformSurface className="mt-5">
         <div className="px-5 py-4">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
             Configuracao de Split
           </p>
           <form action={saveSplitConfigAction} className="mt-4 space-y-4">
@@ -1559,7 +1559,7 @@ function TabFinanceiro({
       {/* Merchant overrides */}
       <PlatformSurface className="mt-5">
         <div className="px-5 py-4">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
             Overrides por Merchant
           </p>
 
@@ -1574,7 +1574,7 @@ function TabFinanceiro({
                     <p className="text-sm font-semibold text-[var(--foreground)]">
                       {o.merchantName ?? o.merchantId.slice(0, 8)}
                     </p>
-                    <p className="text-xs text-[var(--muted)]">
+                    <p className="text-xs text-[var(--foreground-secondary)]">
                       Fee: {o.feePercent}%{o.notes ? ` — ${o.notes}` : ""}
                     </p>
                   </div>
@@ -1591,7 +1591,7 @@ function TabFinanceiro({
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-[var(--muted)]">
+            <p className="mt-3 text-sm text-[var(--foreground-secondary)]">
               Nenhum override configurado. Todos merchants usam o fee padrao.
             </p>
           )}
@@ -1599,7 +1599,7 @@ function TabFinanceiro({
           {/* Add override form */}
           <PlatformInset className="mt-4">
             <div className="px-4 py-3">
-              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
                 Adicionar Override
               </p>
               <form action={saveMerchantOverrideAction} className="mt-3 flex flex-wrap gap-3">
@@ -1641,11 +1641,11 @@ function TabSaques({
       {/* Pending approval */}
       <PlatformSurface>
         <div className="px-5 py-4">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
             Pendentes de Aprovacao ({pendingPayouts.length})
           </p>
           {pendingPayouts.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--muted)]">Nenhum saque pendente.</p>
+            <p className="mt-3 text-sm text-[var(--foreground-secondary)]">Nenhum saque pendente.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {pendingPayouts.map((p) => (
@@ -1657,10 +1657,10 @@ function TabSaques({
                     <p className="text-sm font-semibold text-[var(--foreground)]">
                       {formatCurrency(p.amount / 100)}
                     </p>
-                    <p className="text-xs text-[var(--muted)]">
+                    <p className="text-xs text-[var(--foreground-secondary)]">
                       {p.merchantId.slice(0, 8)} · PIX {p.pixKeyType}: {p.pixKey} · {p.holderName}
                     </p>
-                    <p className="text-xs text-[var(--muted)]">
+                    <p className="text-xs text-[var(--foreground-secondary)]">
                       Solicitado {formatRelativeTime(p.requestedAt)}
                     </p>
                   </div>
@@ -1695,11 +1695,11 @@ function TabSaques({
       {/* Approved — awaiting PIX */}
       <PlatformSurface className="mt-5">
         <div className="px-5 py-4">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
             Aprovados — Aguardando PIX ({approvedPayouts.length})
           </p>
           {approvedPayouts.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--muted)]">Nenhum saque aprovado aguardando.</p>
+            <p className="mt-3 text-sm text-[var(--foreground-secondary)]">Nenhum saque aprovado aguardando.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {approvedPayouts.map((p) => (
@@ -1712,10 +1712,10 @@ function TabSaques({
                       <p className="text-sm font-semibold text-[var(--foreground)]">
                         {formatCurrency(p.amount / 100)}
                       </p>
-                      <p className="text-xs text-[var(--muted)]">
+                      <p className="text-xs text-[var(--foreground-secondary)]">
                         {p.merchantId.slice(0, 8)} · PIX {p.pixKeyType}: {p.pixKey}
                       </p>
-                      <p className="text-xs text-[var(--muted)]">
+                      <p className="text-xs text-[var(--foreground-secondary)]">
                         Aprovado {p.approvedAt ? formatRelativeTime(p.approvedAt) : ""}
                         {p.approvedBy ? ` por ${p.approvedBy}` : ""}
                       </p>
@@ -1724,7 +1724,7 @@ function TabSaques({
                       <form action={completePayoutAction} className="flex items-end gap-2">
                         <input type="hidden" name="payoutId" value={p.id} />
                         <label className="space-y-1">
-                          <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                          <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
                             ID Transferencia
                           </span>
                           <input
@@ -1763,11 +1763,11 @@ function TabSaques({
       {/* History */}
       <PlatformSurface className="mt-5">
         <div className="px-5 py-4">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
             Historico ({completedPayouts.length})
           </p>
           {completedPayouts.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--muted)]">Nenhum saque no historico.</p>
+            <p className="mt-3 text-sm text-[var(--foreground-secondary)]">Nenhum saque no historico.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {completedPayouts.slice(0, 20).map((p) => (
@@ -1779,7 +1779,7 @@ function TabSaques({
                     <p className="text-sm font-semibold text-[var(--foreground)]">
                       {formatCurrency(p.amount / 100)}
                     </p>
-                    <p className="text-xs text-[var(--muted)]">
+                    <p className="text-xs text-[var(--foreground-secondary)]">
                       {p.merchantId.slice(0, 8)}
                       {p.pixTransferId ? ` · ${p.pixTransferId}` : ""}
                     </p>
