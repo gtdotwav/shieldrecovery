@@ -2,8 +2,17 @@ import { NextResponse } from "next/server";
 
 import type { ApiSession } from "@/server/auth/request";
 
+function getCorsOrigin(): string {
+  const url = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!url) {
+    console.warn("[CORS] NEXT_PUBLIC_APP_URL not set — defaulting to restricted origin");
+    return "https://pagrecovery.com.br";
+  }
+  return url;
+}
+
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": process.env.NEXT_PUBLIC_APP_URL || "*",
+  "Access-Control-Allow-Origin": getCorsOrigin(),
   "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age": "86400",

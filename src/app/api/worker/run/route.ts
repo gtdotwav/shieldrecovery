@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { ensureAuthenticatedRequest } from "@/server/auth/request";
 import { handleRunWorker } from "@/server/recovery/controllers/worker-controller";
 
@@ -32,6 +33,15 @@ async function ensureWorkerAccess(request: Request) {
   return ensureAuthenticatedRequest(request);
 }
 
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
+
 function hasValidWorkerSecret(request: Request) {
   const secrets = [
     process.env.WORKER_AUTH_TOKEN?.trim(),
@@ -48,5 +58,9 @@ function hasValidWorkerSecret(request: Request) {
     : "";
   const headerToken = request.headers.get("x-worker-secret")?.trim() ?? "";
 
-  return secrets.some((secret) => secret === bearerToken || secret === headerToken);
+  return secrets.some(
+    (secret) =>
+      (bearerToken && safeCompare(secret, bearerToken)) ||
+      (headerToken && safeCompare(secret, headerToken)),
+  );
 }

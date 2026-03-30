@@ -1,22 +1,45 @@
-import { scryptSync, timingSafeEqual } from "node:crypto";
+import { scryptSync, timingSafeEqual, randomBytes } from "node:crypto";
 
-const PASSWORD_NAMESPACE = "pagrecovery-seller-auth";
+const LEGACY_NAMESPACE = "pagrecovery-seller-auth";
+const SALT_LENGTH = 32;
 
-function deriveKey(password: string) {
-  return scryptSync(password, PASSWORD_NAMESPACE, 64);
+function deriveKey(password: string, salt: Buffer) {
+  return scryptSync(password, salt, 64);
 }
 
+/**
+ * Hash a password with a random salt.
+ * Returns "salt_hex:hash_hex" for storage.
+ */
 export function hashPlatformPassword(password: string) {
-  return deriveKey(password).toString("hex");
+  const salt = randomBytes(SALT_LENGTH);
+  const hash = deriveKey(password, salt);
+  return `${salt.toString("hex")}:${hash.toString("hex")}`;
 }
 
-export function verifyPlatformPassword(password: string, hash: string) {
-  if (!hash) {
+/**
+ * Verify a password against a stored hash.
+ * Supports both new format "salt:hash" and legacy format (plain hex with static salt).
+ */
+export function verifyPlatformPassword(password: string, storedHash: string) {
+  if (!storedHash) {
     return false;
   }
 
-  const incoming = deriveKey(password);
-  const stored = Buffer.from(hash, "hex");
+  let incoming: Buffer;
+  let stored: Buffer;
+
+  if (storedHash.includes(":")) {
+    // New format: "salt_hex:hash_hex"
+    const [saltHex, hashHex] = storedHash.split(":");
+    const salt = Buffer.from(saltHex, "hex");
+    stored = Buffer.from(hashHex, "hex");
+    incoming = deriveKey(password, salt);
+  } else {
+    // Legacy format: plain hex hash with static namespace salt
+    stored = Buffer.from(storedHash, "hex");
+    incoming = scryptSync(password, LEGACY_NAMESPACE, 64);
+  }
 
   if (incoming.byteLength !== stored.byteLength) {
     return false;

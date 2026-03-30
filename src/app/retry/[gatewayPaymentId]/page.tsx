@@ -66,9 +66,18 @@ export default async function RetryPaymentPage({
         },
       });
 
-      redirect(session.checkoutUrl);
+      // Validate redirect URL against configured checkout platform
+      const checkoutOrigin = process.env.CHECKOUT_PLATFORM_URL
+        ? new URL(process.env.CHECKOUT_PLATFORM_URL).origin
+        : null;
+      const redirectUrl = new URL(session.checkoutUrl);
+
+      if (checkoutOrigin && redirectUrl.origin === checkoutOrigin) {
+        redirect(session.checkoutUrl);
+      }
+      // Invalid origin — fall through to fallback
     } catch {
-      // Checkout platform unavailable — fall through to fallback
+      // Checkout platform unavailable or URL validation failed — fall through to fallback
     }
   }
 

@@ -1,21 +1,44 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import { getStorageService } from "@/server/recovery/services/storage";
 import { appEnv } from "@/server/recovery/config";
 
 export const dynamic = "force-dynamic";
 
+function isAuthorized(request: Request): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return false;
+
+  const authHeader = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${cronSecret}`;
+
+  if (authHeader.length !== expected.length) return false;
+
+  try {
+    return timingSafeEqual(
+      Buffer.from(authHeader),
+      Buffer.from(expected),
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const webhookId = searchParams.get("id");
   const action = searchParams.get("action") ?? "process";
 
   if (action === "check") {
-    // Diagnostic: check Supabase config and connectivity
     const storage = getStorageService();
     const envInfo = {
-      supabaseUrl: appEnv.supabaseUrl ? appEnv.supabaseUrl.slice(0, 40) + "..." : "MISSING",
-      supabaseKey: appEnv.supabaseServiceRoleKey ? appEnv.supabaseServiceRoleKey.slice(0, 20) + "..." : "MISSING",
+      supabaseUrl: appEnv.supabaseUrl ? "configured" : "MISSING",
+      supabaseKey: appEnv.supabaseServiceRoleKey ? "configured" : "MISSING",
       databaseConfigured: appEnv.databaseConfigured,
       storageMode: storage.mode,
     };
@@ -28,14 +51,13 @@ export async function GET(request: Request) {
           ok: true,
           env: envInfo,
           webhookFound: !!found,
-          webhookIds: webhooks.map((w) => w.webhookId),
           totalWebhooks: webhooks.length,
         });
-      } catch (err) {
+      } catch {
         return NextResponse.json({
           ok: false,
           env: envInfo,
-          error: err instanceof Error ? err.message : String(err),
+          error: "Failed to query webhooks.",
         });
       }
     }
@@ -55,21 +77,14 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ ok: true, result });
   } catch (error) {
-    const detail =
-      error instanceof Error
-        ? { message: error.message, stack: error.stack, name: error.name }
-        : {
-            raw: String(error),
-            type: typeof error,
-            keys: typeof error === "object" && error ? Object.keys(error) : [],
-            code: (error as Record<string, unknown>)?.code,
-            pgMessage: (error as Record<string, unknown>)?.message,
-            details: (error as Record<string, unknown>)?.details,
-            hint: (error as Record<string, unknown>)?.hint,
-          };
+    const message =
+      error instanceof Error ? error.message : "Unexpected webhook failure.";
 
-    console.error("[debug/process-webhook]", detail);
+    console.error("[debug/process-webhook]", error);
 
-    return NextResponse.json({ ok: false, error: detail }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: message },
+      { status: 500 },
+    );
   }
 }

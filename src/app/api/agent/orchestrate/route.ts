@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { handleAgentOrchestrate } from "@/server/recovery/controllers/agent-controller";
 
 export const dynamic = "force-dynamic";
@@ -32,15 +33,35 @@ function isAuthorized(request: Request): boolean {
   const cronSecret = process.env.CRON_SECRET;
 
   if (!cronSecret) {
-    // If no secret configured, allow (dev mode)
-    return true;
+    // Secret not configured — deny all access
+    return false;
   }
 
   const authHeader = request.headers.get("authorization") ?? "";
   const workerHeader = request.headers.get("x-worker-secret") ?? "";
 
-  if (authHeader === `Bearer ${cronSecret}`) return true;
-  if (workerHeader === cronSecret) return true;
+  // Check Bearer token (timing-safe)
+  const expectedBearer = `Bearer ${cronSecret}`;
+  if (authHeader.length === expectedBearer.length) {
+    try {
+      if (timingSafeEqual(Buffer.from(authHeader), Buffer.from(expectedBearer))) {
+        return true;
+      }
+    } catch {
+      // length mismatch after encoding — fall through
+    }
+  }
+
+  // Check x-worker-secret header (timing-safe)
+  if (workerHeader.length === cronSecret.length) {
+    try {
+      if (timingSafeEqual(Buffer.from(workerHeader), Buffer.from(cronSecret))) {
+        return true;
+      }
+    } catch {
+      // fall through
+    }
+  }
 
   return false;
 }

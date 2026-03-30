@@ -2,6 +2,17 @@ import { randomUUID } from "node:crypto";
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * Sanitize a value for use in PostgREST filter strings (.or(), .filter()).
+ * Prevents injection of PostgREST operators by stripping dangerous characters.
+ */
+function sanitizeFilterValue(value: string | null | undefined): string {
+  if (!value) return "";
+  // Allow only alphanumeric, hyphens, underscores, dots, and @
+  // This blocks commas, parentheses, and PostgREST operators
+  return value.replace(/[^a-zA-Z0-9\-_\.@]/g, "");
+}
+
 import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import { appEnv, createDefaultConnectionSettings } from "@/server/recovery/config";
 import type {
@@ -504,7 +515,7 @@ export class SupabaseStorageService implements RecoveryStorage {
     const { data: paymentRows } = await this.supabase
       .from("payments")
       .select("*")
-      .or(`gateway_payment_id.eq.${normalizedEvent.payment.id},order_id.eq.${normalizedEvent.payment.order_id}`)
+      .or(`gateway_payment_id.eq.${sanitizeFilterValue(normalizedEvent.payment.id)},order_id.eq.${sanitizeFilterValue(normalizedEvent.payment.order_id)}`)
       .order("created_at", { ascending: true })
       .limit(1);
 
@@ -558,9 +569,9 @@ export class SupabaseStorageService implements RecoveryStorage {
     orderId?: string;
   }): Promise<PaymentRecord | undefined> {
     const conditions = [];
-    if (input.paymentId) conditions.push(`id.eq.${input.paymentId}`);
-    if (input.gatewayPaymentId) conditions.push(`gateway_payment_id.eq.${input.gatewayPaymentId}`);
-    if (input.orderId) conditions.push(`order_id.eq.${input.orderId}`);
+    if (input.paymentId) conditions.push(`id.eq.${sanitizeFilterValue(input.paymentId)}`);
+    if (input.gatewayPaymentId) conditions.push(`gateway_payment_id.eq.${sanitizeFilterValue(input.gatewayPaymentId)}`);
+    if (input.orderId) conditions.push(`order_id.eq.${sanitizeFilterValue(input.orderId)}`);
 
     if (conditions.length === 0) return undefined;
 

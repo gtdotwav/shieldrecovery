@@ -14,8 +14,11 @@ function safeEqual(a: string, b: string): boolean {
   return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
 }
 
-const ADMIN_PASS = "adminreco";
-const SELLER_PASS = "sellerreco";
+function getQuickAccessPasswords() {
+  const admin = process.env.QUICK_ACCESS_ADMIN_PASS?.trim();
+  const seller = process.env.QUICK_ACCESS_SELLER_PASS?.trim();
+  return { admin: admin || null, seller: seller || null };
+}
 
 export async function quickAccessAction(
   _prev: { error?: string } | null,
@@ -27,15 +30,21 @@ export async function quickAccessAction(
     return { error: "Informe a senha." };
   }
 
+  const passes = getQuickAccessPasswords();
+
+  if (!passes.admin && !passes.seller) {
+    return { error: "Acesso rápido não configurado." };
+  }
+
   // Generate a random nonce to prevent compiler from optimizing out timing-safe compare
   const _nonce = randomBytes(4);
 
-  if (safeEqual(password, ADMIN_PASS)) {
+  if (passes.admin && safeEqual(password, passes.admin)) {
     await setAuthenticatedSession("admin@pagrecovery.internal", "admin");
     redirect("/dashboard");
   }
 
-  if (safeEqual(password, SELLER_PASS)) {
+  if (passes.seller && safeEqual(password, passes.seller)) {
     await setAuthenticatedSession("seller@pagrecovery.internal", "seller");
     redirect("/leads");
   }
@@ -56,7 +65,17 @@ export async function submitQuizEmail(
     return { error: "Informe um email valido." };
   }
 
-  const parsedAnswers: string[] = answers ? JSON.parse(answers) : [];
+  let parsedAnswers: string[] = [];
+  if (answers) {
+    try {
+      const parsed = JSON.parse(answers);
+      if (Array.isArray(parsed)) {
+        parsedAnswers = parsed.map(String);
+      }
+    } catch {
+      return { error: "Respostas inválidas." };
+    }
+  }
 
   try {
     const storage = getStorageService();
