@@ -75,77 +75,86 @@ export async function POST(request: NextRequest) {
       console.warn("Demo call lead creation failed (table may not exist):", dbError);
     }
 
-    // Build a short demo call via VAPI directly (max 90 seconds)
+    // Build a short demo call via VAPI directly (max 120 seconds)
     const firstName = name.split(/\s+/)[0] || "visitante";
     const brandName = platformBrand.name;
 
     const systemPrompt = [
       `Voce e a Ana, consultora de vendas da ${brandName}.`,
-      `Voce esta ligando para o ${name}, que acabou de pedir uma demonstracao ao vivo no site.`,
+      `Voce esta ligando para ${name}, que acabou de pedir uma demonstracao ao vivo no site.`,
       "",
-      `CONTEXTO: A ${brandName} e uma plataforma de recuperacao autonoma de pagamentos. Quando o pagamento de um cliente falha — Pix expirado, cartao recusado, boleto vencido — a plataforma detecta automaticamente e:`,
-      "1. Em 2 minutos, a IA envia uma mensagem personalizada no WhatsApp com link de pagamento",
-      "2. Se o cliente nao responde, a IA faz follow-ups inteligentes adaptando tom e abordagem",
-      "3. Para leads de alto valor, o Call Center de agentes IA (como voce!) liga com voz natural, negocia e envia o link na hora",
-      "4. Tudo opera 24/7 sem equipe humana, com dashboard em tempo real",
+      `A ${brandName} e uma plataforma de recuperacao autonoma de pagamentos. Quando um pagamento falha (Pix expirado, cartao recusado, boleto vencido), a plataforma:`,
+      "1. Em 2 minutos envia WhatsApp personalizado com link de pagamento",
+      "2. Faz follow-ups inteligentes adaptando tom e abordagem",
+      "3. Para leads de alto valor, liga com voz IA natural e negocia",
+      "4. Opera 24/7 sem equipe humana",
       "",
-      "TAXA DE RECUPERACAO: Entre 19% e 40% dependendo do nicho e funil.",
-      "MODELO DE NEGOCIO: Zero setup, zero mensalidade. So cobra uma porcentagem sobre o que recuperar.",
-      "",
-      "OBJETIVO: Convencer o visitante a se cadastrar e plugar a plataforma. E muito simples:",
-      "- Passo 1: Cria a conta gratuita no site",
-      "- Passo 2: Joga o webhook do gateway de pagamento (qualquer um: Stripe, Mercado Pago, PagouAi, Hotmart, Kiwify, etc)",
-      "- Passo 3: Escaneia o QR code do WhatsApp",
-      "- Pronto! A plataforma ja comeca a recuperar automaticamente",
+      "DADOS-CHAVE:",
+      "- Taxa de recuperacao: 19% a 40%",
+      "- Zero setup, zero mensalidade — so cobra % sobre o que recuperar",
+      "- Funciona com qualquer gateway (Stripe, Mercado Pago, Hotmart, Kiwify, Asaas, PagouAi)",
+      "- Integracao em 5 minutos: webhook + QR do WhatsApp",
       "",
       "ROTEIRO:",
-      `1. Cumprimente o ${firstName} pelo nome, se apresente como consultora da ${brandName}`,
-      "2. Diga que essa ligacao e a prova de como o sistema funciona — foi disparada automaticamente em segundos",
-      "3. Pergunte se ele ja vende online, qual gateway usa, se tem problema com pagamentos falhando",
-      "4. Explique os beneficios: recuperacao autonoma, WhatsApp + IA + Call Center, zero custo fixo",
-      "5. Enfatize a simplicidade: 'e so jogar o webhook e escanear o QR do WhatsApp, em 5 minutos ta rodando'",
-      "6. Tente fechar: convide a criar a conta agora mesmo, diga que vai mandar o link por WhatsApp",
-      "7. Se tiver duvida, responda com confianca usando os dados acima",
+      `1. Se apresente, diga que essa ligacao e a prova do sistema — foi disparada automaticamente`,
+      "2. Pergunte se ja vende online e qual gateway usa",
+      "3. Explique os beneficios de forma breve",
+      "4. Feche convidando a criar conta — diga que manda o link por WhatsApp",
       "",
-      "OBJECOES COMUNS:",
-      "- 'Quanto custa?' → 'Zero pra comecar. Voce so paga uma porcentagem sobre o que a gente recuperar. Se nao recuperar nada, nao paga nada.'",
-      "- 'Funciona com meu gateway?' → 'Sim, funciona com qualquer gateway via webhook. Stripe, Mercado Pago, Hotmart, Kiwify, Asaas, PagouAi... todos.'",
-      "- 'E dificil integrar?' → 'Leva 5 minutos. Voce cola a URL do webhook no seu gateway e escaneia o QR do WhatsApp. Pronto.'",
-      "- 'Preciso de equipe?' → 'Nao. A plataforma opera 100% sozinha, 24 horas por dia. Voce so acompanha os resultados no dashboard.'",
-      "- 'Ja tentei e nao funcionou' → 'Provavelmente era envio manual ou email. A gente usa WhatsApp + IA conversacional + voz, tudo em tempo real. E outro nivel.'",
+      "OBJECOES:",
+      "- Custo → Zero pra comecar, so paga sobre o que recuperar",
+      "- Gateway → Funciona com todos via webhook",
+      "- Dificuldade → 5 minutos, cola webhook e escaneia QR",
+      "- Equipe → 100% autonomo, 24h",
+      "- Ja tentei → Diferente de email/manual, usa WhatsApp + IA + voz em tempo real",
       "",
       "REGRAS:",
-      "- Fale em portugues brasileiro natural e coloquial — como uma vendedora experiente e entusiasmada",
-      "- Frases curtas e diretas. Nao enrole.",
+      "- Portugues brasileiro natural e coloquial — vendedora experiente e entusiasmada",
+      "- Frases CURTAS. Maximo 2 frases por vez. Espere o cliente responder.",
       "- Seja persuasiva mas genuina. Transmita confianca.",
-      "- NUNCA invente dados. Use apenas o que esta neste briefing.",
-      "- Se o lead demonstrar interesse, SEMPRE feche com 'vou te mandar o link por WhatsApp agora'",
-      "- Maximo 90 segundos — seja objetiva e va direto ao ponto",
+      "- NUNCA invente dados.",
+      "- Quando demonstrar interesse, feche com 'vou te mandar o link por WhatsApp agora'",
+      "- NAO fale tudo de uma vez. Converse naturalmente, faca perguntas, escute.",
     ].join("\n");
 
-    const firstMessage = `Oi ${firstName}! Aqui é a Ana, da ${brandName}. Você pediu uma demonstração do nosso call center de IA e é exatamente isso que tá acontecendo agora — essa ligação foi disparada automaticamente em segundos. Imagina isso acontecendo com cada cliente seu que tem um pagamento pendente. Me conta, você já vende online? Qual gateway você usa?`;
+    const firstMessage = `Oi ${firstName}! Aqui é a Ana, da ${brandName}. Você pediu uma demonstração do nosso call center de IA — e essa ligação é a prova ao vivo. Foi disparada automaticamente em segundos. Me conta, você já vende online?`;
+
+    // Voice configuration: prefer Cartesia for native PT-BR, fallback to 11labs Sarah
+    const cartesiaVoiceId = (process.env.CARTESIA_VOICE_ID ?? "").trim();
+    const voiceConfig = cartesiaVoiceId
+      ? { provider: "cartesia" as const, voiceId: cartesiaVoiceId }
+      : {
+          provider: "11labs" as const,
+          voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — warm female
+          stability: 0.6,
+          similarityBoost: 0.8,
+          speed: 1.05,
+        };
 
     const vapiPayload = {
       name: `Demo: ${name}`,
       assistant: {
         model: {
           provider: "openai",
-          model: "gpt-4o-mini",
+          model: "gpt-4o",
           messages: [{ role: "system", content: systemPrompt }],
-          temperature: 0.7,
+          temperature: 0.5,
+          maxTokens: 150,
         },
-        voice: (process.env.CARTESIA_VOICE_ID ?? "").trim()
-          ? { provider: "cartesia" as const, voiceId: (process.env.CARTESIA_VOICE_ID ?? "").trim() }
-          : { provider: "11labs" as const, voiceId: "EXAVITQu4vr4xnSDxMaL" },
+        voice: voiceConfig,
         firstMessage,
         endCallMessage: `Foi um prazer falar com você, ${firstName}! Vou te mandar mais detalhes por WhatsApp. Até logo!`,
         transcriber: {
           provider: "deepgram",
+          model: "nova-2",
           language: "pt-BR",
         },
-        maxDurationSeconds: 90,
-        silenceTimeoutSeconds: 15,
+        maxDurationSeconds: 120,
+        silenceTimeoutSeconds: 25,
+        responseDelaySeconds: 0.5,
         endCallFunctionEnabled: true,
+        backgroundDenoisingEnabled: true,
+        numWordsToInterruptAssistant: 2,
         serverUrl: `${appEnv.appBaseUrl}/api/webhooks/callcenter`,
       },
       phoneNumberId: vapiPhoneNumberId,
