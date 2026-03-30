@@ -2293,6 +2293,13 @@ export class SupabaseStorageService implements RecoveryStorage {
     return mapDemoCallLead(data as DatabaseDemoCallLeadRow);
   }
 
+  async deleteDemoCallLeadByPhone(phone: string): Promise<void> {
+    await this.supabase
+      .from("demo_call_leads")
+      .delete()
+      .eq("phone", phone.trim());
+  }
+
   async listDemoCallLeads(): Promise<DemoCallLeadRecord[]> {
     const { data, error } = await this.supabase
       .from("demo_call_leads")

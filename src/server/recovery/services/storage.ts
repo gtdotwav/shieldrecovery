@@ -246,6 +246,7 @@ export interface RecoveryStorage {
   findDemoCallLeadByPhone(phone: string): Promise<DemoCallLeadRecord | undefined>;
   createDemoCallLead(input: { name: string; phone: string }): Promise<DemoCallLeadRecord>;
   updateDemoCallLead(id: string, input: { status?: string; calledAt?: string; vapiCallId?: string }): Promise<DemoCallLeadRecord | undefined>;
+  deleteDemoCallLeadByPhone(phone: string): Promise<void>;
   listDemoCallLeads(): Promise<DemoCallLeadRecord[]>;
 
   /* Whitelabel */
@@ -1710,6 +1711,12 @@ class LocalStorageService implements RecoveryStorage {
       if (input.calledAt) lead.calledAt = input.calledAt;
       if (input.vapiCallId) lead.vapiCallId = input.vapiCallId;
       return { ...lead };
+    });
+  }
+
+  async deleteDemoCallLeadByPhone(phone: string): Promise<void> {
+    this.mutate((state) => {
+      state.demoCallLeads = state.demoCallLeads.filter((l) => l.phone !== phone.trim());
     });
   }
 

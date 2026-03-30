@@ -50,20 +50,35 @@ export async function POST(request: NextRequest) {
 
     const storage = getStorageService();
 
-    // Rate limit: 1 demo call per phone number ever
-    let existing: Awaited<ReturnType<typeof storage.findDemoCallLeadByPhone>> | null = null;
-    try {
-      existing = await storage.findDemoCallLeadByPhone(phone);
-    } catch (dbError) {
-      // Table might not exist yet — log and continue (skip rate limit)
-      console.warn("Demo call lead lookup failed (table may not exist):", dbError);
+    // Phones with unlimited demo calls (env comma-separated or hardcoded)
+    const unlimitedRaw = process.env.DEMO_CALL_UNLIMITED_PHONES ?? "";
+    const unlimitedPhones = new Set(
+      unlimitedRaw.split(",").map((p) => p.trim()).filter(Boolean),
+    );
+    unlimitedPhones.add("+5521999036887");
+
+    const isUnlimited = unlimitedPhones.has(phone);
+
+    // Rate limit: 1 demo call per phone number ever (skip for whitelisted)
+    if (!isUnlimited) {
+      let existing: Awaited<ReturnType<typeof storage.findDemoCallLeadByPhone>> | null = null;
+      try {
+        existing = await storage.findDemoCallLeadByPhone(phone);
+      } catch (dbError) {
+        console.warn("Demo call lead lookup failed (table may not exist):", dbError);
+      }
+
+      if (existing) {
+        return NextResponse.json(
+          { ok: false, error: "Este número já recebeu uma demonstração. Cada número pode testar apenas uma vez." },
+          { status: 429 },
+        );
+      }
     }
 
-    if (existing) {
-      return NextResponse.json(
-        { ok: false, error: "Este número já recebeu uma demonstração. Cada número pode testar apenas uma vez." },
-        { status: 429 },
-      );
+    // For unlimited phones, delete previous lead to avoid duplicates
+    if (isUnlimited) {
+      try { await storage.deleteDemoCallLeadByPhone(phone); } catch { /* ignore */ }
     }
 
     // Try to create the lead record (non-blocking if table doesn't exist)
