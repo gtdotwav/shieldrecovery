@@ -52,8 +52,16 @@ type AdminPageProps = {
     message?: string;
     query?: string;
     seller?: string;
+    tab?: string;
   }>;
 };
+
+const TABS = [
+  { key: undefined, label: "Visão Geral", href: "/admin" },
+  { key: "sellers", label: "Sellers", href: "/admin?tab=sellers" },
+  { key: "acessos", label: "Acessos", href: "/admin?tab=acessos" },
+  { key: "leads", label: "Leads", href: "/admin?tab=leads" },
+] as const;
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   await requireAuthenticatedSession(["admin"]);
@@ -83,6 +91,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     (invite) => invite.status === "pending" && !invite.expired,
   );
 
+  const activeTab = typeof params.tab === "string" ? params.tab : undefined;
+
   return (
     <PlatformAppPage
       currentPath="/admin"
@@ -105,6 +115,110 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
       }
     >
+      <PlatformSurface className="p-5 sm:p-6">
+        <div className="grid gap-5 border-b border-[var(--border)] pb-5 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:items-end">
+          <div>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
+              Governança da operação
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[1.95rem]">
+              Um painel para ver sellers, carteira e autonomia sem perder controle.
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+              O admin acompanha carteira, recuperação, fila e autonomia dos sellers
+              em um só lugar.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
+            {snapshot.totalSellers} sellers mapeados, {snapshot.pendingInvites} convites
+            pendentes, {snapshot.unassignedLeads} leads sem dono e{" "}
+            {sellersWithWebhookTraffic.length} sellers com tráfego no webhook.
+          </div>
+        </div>
+      </PlatformSurface>
+
+      {params.status ? (
+        <PlatformSurface className="mt-5 p-4">
+          <p className="text-sm font-medium text-[var(--foreground)]">
+            {params.status === "ok"
+              ? "Controle do seller atualizado com sucesso."
+              : "Nao foi possivel salvar o controle do seller."}
+          </p>
+          {params.saved ? (
+            <p className="mt-1 text-sm text-[var(--muted)]">Registro: {params.saved}</p>
+          ) : null}
+          {params.message ? (
+            <p className="mt-1 text-sm text-[var(--muted)]">{params.message}</p>
+          ) : null}
+        </PlatformSurface>
+      ) : null}
+
+      <nav className="mt-5 flex gap-2 border-b border-[var(--border)] pb-3 mb-5">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <Link
+              key={tab.label}
+              href={tab.href}
+              className={
+                isActive
+                  ? "rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white"
+                  : "rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-2 text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
+              }
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {activeTab === undefined ? (
+        <TabOverview
+          snapshot={snapshot}
+          overloadedSellers={overloadedSellers}
+          sellersWithWebhookTraffic={sellersWithWebhookTraffic}
+        />
+      ) : activeTab === "sellers" ? (
+        <TabSellers
+          snapshot={snapshot}
+          filteredSellers={filteredSellers}
+          selectedSeller={selectedSeller}
+          query={query}
+          whitelabelProfiles={whitelabelProfiles}
+        />
+      ) : activeTab === "acessos" ? (
+        <TabAcessos
+          snapshot={snapshot}
+          activeInvites={activeInvites}
+        />
+      ) : activeTab === "leads" ? (
+        <TabLeads
+          snapshot={snapshot}
+          quizLeads={quizLeads}
+        />
+      ) : (
+        <TabOverview
+          snapshot={snapshot}
+          overloadedSellers={overloadedSellers}
+          sellersWithWebhookTraffic={sellersWithWebhookTraffic}
+        />
+      )}
+    </PlatformAppPage>
+  );
+}
+
+function TabOverview({
+  snapshot,
+  overloadedSellers,
+  sellersWithWebhookTraffic,
+}: {
+  snapshot: Awaited<ReturnType<ReturnType<typeof getPaymentRecoveryService>["getAdminPanelSnapshot"]>>;
+  overloadedSellers: AdminSellerSnapshot[];
+  sellersWithWebhookTraffic: AdminSellerSnapshot[];
+}) {
+  return (
+    <>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
         <PlatformMetricCard
           icon={UsersRound}
@@ -150,181 +264,62 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         />
       </section>
 
-      <PlatformSurface className="mt-5 p-5 sm:p-6">
-        <div className="grid gap-5 border-b border-[var(--border)] pb-5 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:items-end">
-          <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--accent)]">
-              Governança da operação
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[1.95rem]">
-              Um painel para ver sellers, carteira e autonomia sem perder controle.
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
-              O admin acompanha carteira, recuperação, fila e autonomia dos sellers
-              em um só lugar.
-            </p>
+      <section className="mt-5 grid gap-5 lg:grid-cols-2">
+        <PlatformSurface className="p-5 sm:p-6">
+          <SectionHeader eyebrow="Gargalos do admin" title="Pontos que pedem ação." />
+          <div className="mt-4 space-y-3">
+            <AdminLine
+              label="Leads sem responsável"
+              value={String(snapshot.unassignedLeads)}
+              tone={snapshot.unassignedLeads > 0 ? "warn" : "ok"}
+            />
+            <AdminLine
+              label="Sellers acima do limite"
+              value={String(overloadedSellers.length)}
+              tone={overloadedSellers.length > 0 ? "warn" : "ok"}
+            />
+            <AdminLine
+              label="Conversas não lidas"
+              value={String(snapshot.totalUnreadConversations)}
+              tone={snapshot.totalUnreadConversations > 0 ? "warn" : "ok"}
+            />
           </div>
-
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-4 text-sm leading-6 text-[var(--muted)]">
-            {snapshot.totalSellers} sellers mapeados, {snapshot.pendingInvites} convites
-            pendentes, {snapshot.unassignedLeads} leads sem dono e{" "}
-            {sellersWithWebhookTraffic.length} sellers com tráfego no webhook.
-          </div>
-        </div>
-      </PlatformSurface>
-
-      {params.status ? (
-        <PlatformSurface className="mt-5 p-4">
-          <p className="text-sm font-medium text-[var(--foreground)]">
-            {params.status === "ok"
-              ? "Controle do seller atualizado com sucesso."
-              : "Nao foi possivel salvar o controle do seller."}
-          </p>
-          {params.saved ? (
-            <p className="mt-1 text-sm text-[var(--muted)]">Registro: {params.saved}</p>
-          ) : null}
-          {params.message ? (
-            <p className="mt-1 text-sm text-[var(--muted)]">{params.message}</p>
-          ) : null}
         </PlatformSurface>
-      ) : null}
 
-      <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_22rem]">
-        <div className="space-y-5">
-          <PlatformSurface className="p-4 sm:p-5">
-            <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
-              <SectionHeader
-                eyebrow="Sellers da operação"
-                title="Localize um seller pela lista ou pela busca."
-              />
-
-              <form className="w-full sm:max-w-xs">
-                <label className="relative block">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-                  <input
-                    type="search"
-                    name="query"
-                    defaultValue={query}
-                    placeholder="Buscar por nome, email ou agente"
-                    className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-10 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
-                  />
-                </label>
-              </form>
-            </div>
-
-            {snapshot.sellers.length === 0 ? (
-              <PlatformInset className="mt-4 p-6 text-center">
-                <UsersRound className="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
-                <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
-                  Nenhum seller/agente operacional apareceu ainda.
-                </p>
-                <p className="mt-1.5 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                  Assim que a operação atribuir leads ou conversar com clientes,
-                  os sellers entram aqui automaticamente para controle administrativo.
-                </p>
-                <Link
-                  href="/connect"
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
-                >
-                  Configurar integrações
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-              </PlatformInset>
-            ) : (
-              <div className="mt-4 space-y-2">
-                {filteredSellers.length === 0 ? (
-                  <PlatformInset className="p-4">
-                    <p className="text-sm font-medium text-[var(--foreground)]">
-                      Nenhum seller encontrado para essa busca.
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
-                      Ajuste o nome, email ou agente vinculado para localizar a carteira.
-                    </p>
-                  </PlatformInset>
-                ) : (
-                  filteredSellers.map((seller) => (
-                    <SellerListRow
-                      key={seller.sellerKey}
-                      seller={seller}
-                      active={seller.sellerKey === selectedSeller?.sellerKey}
-                      query={query}
-                    />
-                  ))
-                )}
-              </div>
-            )}
-          </PlatformSurface>
-
-          {selectedSeller ? (
-            <SellerControlCard seller={selectedSeller} query={query} whitelabelProfiles={whitelabelProfiles} />
-          ) : filteredSellers.length > 0 ? (
-            <PlatformSurface className="p-6">
-              <p className="text-lg font-semibold text-[var(--foreground)]">
-                Abra um seller para ver detalhes, percentuais e controles.
-              </p>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-                A lista funciona como índice. Os dados densos ficam escondidos até
-                você abrir um seller, o que deixa a navegação mais leve.
-              </p>
-            </PlatformSurface>
-          ) : null}
-        </div>
-
-        <div className="space-y-4">
-          <PlatformSurface className="p-4">
-            <SectionHeader eyebrow="Gargalos do admin" title="Pontos que pedem ação." compact />
-            <div className="mt-4 space-y-3">
-              <AdminLine
-                label="Leads sem responsável"
-                value={String(snapshot.unassignedLeads)}
-                tone={snapshot.unassignedLeads > 0 ? "warn" : "ok"}
-              />
-              <AdminLine
-                label="Sellers acima do limite"
-                value={String(overloadedSellers.length)}
-                tone={overloadedSellers.length > 0 ? "warn" : "ok"}
-              />
-              <AdminLine
-                label="Conversas não lidas"
-                value={String(snapshot.totalUnreadConversations)}
-                tone={snapshot.totalUnreadConversations > 0 ? "warn" : "ok"}
-              />
-            </div>
-          </PlatformSurface>
-
-          <PlatformSurface className="p-4">
-            <SectionHeader eyebrow="Worker e fila" title="Leitura rápida da automação." compact />
-            <div className="mt-4 space-y-3">
-              <AdminLine
-                label="jobs agendados"
-                value={String(snapshot.worker.scheduled)}
-                tone={snapshot.worker.scheduled > 0 ? "ok" : "ok"}
-              />
-              <AdminLine
-                label="jobs com falha"
-                value={String(snapshot.worker.failed)}
-                tone={snapshot.worker.failed > 0 ? "warn" : "ok"}
-              />
-              <AdminLine
-                label="vencidos agora"
-                value={String(snapshot.worker.dueNow)}
-                tone={snapshot.worker.dueNow > 0 ? "warn" : "ok"}
-              />
-              <AdminLine
-                label="atraso da fila"
-                value={
-                  snapshot.worker.queueLagMinutes > 0
-                    ? `${snapshot.worker.queueLagMinutes} min`
-                    : "em dia"
-                }
-                tone={snapshot.worker.queueLagMinutes > 10 ? "warn" : "ok"}
-              />
-              <AdminLine
-                label="capacidade por ciclo"
-                value={`${snapshot.worker.batchSize} jobs x ${snapshot.worker.concurrency}`}
-                tone="ok"
-              />
-            </div>
+        <PlatformSurface className="p-5 sm:p-6">
+          <SectionHeader eyebrow="Worker e fila" title="Leitura rápida da automação." />
+          <div className="mt-4 space-y-3">
+            <AdminLine
+              label="jobs agendados"
+              value={String(snapshot.worker.scheduled)}
+              tone="ok"
+            />
+            <AdminLine
+              label="jobs com falha"
+              value={String(snapshot.worker.failed)}
+              tone={snapshot.worker.failed > 0 ? "warn" : "ok"}
+            />
+            <AdminLine
+              label="vencidos agora"
+              value={String(snapshot.worker.dueNow)}
+              tone={snapshot.worker.dueNow > 0 ? "warn" : "ok"}
+            />
+            <AdminLine
+              label="atraso da fila"
+              value={
+                snapshot.worker.queueLagMinutes > 0
+                  ? `${snapshot.worker.queueLagMinutes} min`
+                  : "em dia"
+              }
+              tone={snapshot.worker.queueLagMinutes > 10 ? "warn" : "ok"}
+            />
+            <AdminLine
+              label="capacidade por ciclo"
+              value={`${snapshot.worker.batchSize} jobs x ${snapshot.worker.concurrency}`}
+              tone="ok"
+            />
+          </div>
+          {snapshot.worker.recentJobs.length > 0 ? (
             <div className="mt-4 space-y-2">
               {snapshot.worker.recentJobs.slice(0, 6).map((job) => (
                 <div
@@ -338,142 +333,275 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </div>
               ))}
             </div>
-            {snapshot.worker.recentEvents.length > 0 ? (
-              <div className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
-                {snapshot.worker.recentEvents.slice(0, 4).map((event) => (
-                  <div key={event.id} className="text-xs leading-5 text-[var(--muted)]">
-                    <span className="font-medium text-[var(--foreground)]">{event.eventType}</span>{" "}
-                    · {formatRelativeTime(event.createdAt)}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </PlatformSurface>
-
-          <PlatformSurface className="p-4">
-            <SectionHeader eyebrow="Acessos seller" title="Contas já persistidas." compact />
-            <div className="mt-4 space-y-3">
-              {snapshot.sellerUsers.length === 0 ? (
-                <PlatformInset className="p-4 text-center">
-                  <KeyRound className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Ainda não existem contas de seller persistidas.
-                  </p>
-                </PlatformInset>
-              ) : (
-                snapshot.sellerUsers.map((seller) => (
-                  <AdminAccessRow key={seller.id} seller={seller} />
-                ))
-              )}
+          ) : null}
+          {snapshot.worker.recentEvents.length > 0 ? (
+            <div className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
+              {snapshot.worker.recentEvents.slice(0, 4).map((event) => (
+                <div key={event.id} className="text-xs leading-5 text-[var(--muted)]">
+                  <span className="font-medium text-[var(--foreground)]">{event.eventType}</span>{" "}
+                  · {formatRelativeTime(event.createdAt)}
+                </div>
+              ))}
             </div>
-          </PlatformSurface>
+          ) : null}
+        </PlatformSurface>
+      </section>
+    </>
+  );
+}
 
-          <PlatformSurface className="p-4">
-            <SectionHeader
-              eyebrow="Criar seller manualmente"
-              title="Conta pronta sem depender de convite."
-              compact
-            />
-            <form action={saveSellerUserAction} className="mt-4 space-y-3">
-              <Field label="Nome" name="displayName" defaultValue="" />
-              <Field label="Email" name="email" type="email" defaultValue="" />
-              <Field
-                label="Agente vinculado"
-                name="agentName"
-                defaultValue=""
-                placeholder="Nome do agente que vai operar"
-              />
-              <Field
-                label="Senha inicial"
-                name="password"
-                type="password"
-                defaultValue=""
-                placeholder="Obrigatória ao criar; opcional ao editar"
-              />
-              <ToggleField label="Seller ativo" name="active" defaultChecked />
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
-              >
-                <KeyRound className="h-4 w-4" />
-                Salvar acesso
-              </button>
-            </form>
-          </PlatformSurface>
+function TabSellers({
+  snapshot,
+  filteredSellers,
+  selectedSeller,
+  query,
+  whitelabelProfiles,
+}: {
+  snapshot: Awaited<ReturnType<ReturnType<typeof getPaymentRecoveryService>["getAdminPanelSnapshot"]>>;
+  filteredSellers: AdminSellerSnapshot[];
+  selectedSeller: AdminSellerSnapshot | null;
+  query: string;
+  whitelabelProfiles: WhitelabelProfileRecord[];
+}) {
+  return (
+    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <PlatformSurface className="p-4 sm:p-5">
+        <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <SectionHeader
+            eyebrow="Sellers da operação"
+            title="Localize um seller pela lista ou pela busca."
+          />
 
-          <PlatformSurface className="p-4">
-            <SectionHeader
-              eyebrow="Convidar seller"
-              title="Gere um link para o seller preencher o próprio acesso."
-              compact
-            />
-            <form action={createSellerInviteAction} className="mt-4 space-y-3">
-              <Field label="Email" name="email" type="email" defaultValue="" />
-              <Field
-                label="Nome sugerido"
-                name="suggestedDisplayName"
-                defaultValue=""
-                placeholder="Como o seller vai aparecer"
+          <form className="w-full sm:max-w-xs">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+              <input
+                type="search"
+                name="query"
+                defaultValue={query}
+                placeholder="Buscar por nome, email ou agente"
+                className="w-full rounded-full border border-[var(--border)] bg-[var(--surface)] px-10 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
               />
-              <Field
-                label="Agente sugerido"
-                name="agentName"
-                defaultValue=""
-                placeholder="Opcional; seller pode ajustar"
-              />
-              <Field
-                label="Expira em (dias)"
-                name="expiresInDays"
-                type="number"
-                defaultValue="7"
-              />
-              <label className="space-y-1">
-                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
-                  Contexto do convite
-                </span>
-                <textarea
-                  name="note"
-                  rows={3}
-                  placeholder="Observação interna ou orientação para esse seller."
-                  className="w-full rounded-[1rem] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              <input type="hidden" name="tab" value="sellers" />
+            </label>
+          </form>
+        </div>
+
+        {snapshot.sellers.length === 0 ? (
+          <PlatformInset className="mt-4 p-6 text-center">
+            <UsersRound className="mx-auto h-6 w-6 text-[var(--muted)]" />
+            <p className="mt-3 text-sm font-medium text-[var(--foreground)]">
+              Nenhum seller/agente operacional apareceu ainda.
+            </p>
+            <p className="mt-1.5 text-sm leading-6 text-[var(--muted)]">
+              Assim que a operação atribuir leads ou conversar com clientes,
+              os sellers entram aqui automaticamente para controle administrativo.
+            </p>
+            <Link
+              href="/connect"
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--accent)] hover:underline"
+            >
+              Configurar integrações
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </PlatformInset>
+        ) : (
+          <div className="mt-4 space-y-2">
+            {filteredSellers.length === 0 ? (
+              <PlatformInset className="p-4">
+                <p className="text-sm font-medium text-[var(--foreground)]">
+                  Nenhum seller encontrado para essa busca.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-[var(--muted)]">
+                  Ajuste o nome, email ou agente vinculado para localizar a carteira.
+                </p>
+              </PlatformInset>
+            ) : (
+              filteredSellers.map((seller) => (
+                <SellerListRow
+                  key={seller.sellerKey}
+                  seller={seller}
+                  active={seller.sellerKey === selectedSeller?.sellerKey}
+                  query={query}
                 />
-              </label>
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
-              >
-                <KeyRound className="h-4 w-4" />
-                Gerar convite
-              </button>
-            </form>
-          </PlatformSurface>
+              ))
+            )}
+          </div>
+        )}
+      </PlatformSurface>
 
-          <PlatformSurface className="p-4">
+      <div>
+        {selectedSeller ? (
+          <SellerControlCard seller={selectedSeller} query={query} whitelabelProfiles={whitelabelProfiles} />
+        ) : filteredSellers.length > 0 ? (
+          <PlatformSurface className="p-6">
+            <p className="text-lg font-semibold text-[var(--foreground)]">
+              Abra um seller para ver detalhes, percentuais e controles.
+            </p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+              A lista funciona como índice. Os dados densos ficam escondidos até
+              você abrir um seller, o que deixa a navegação mais leve.
+            </p>
+          </PlatformSurface>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function TabAcessos({
+  snapshot,
+  activeInvites,
+}: {
+  snapshot: Awaited<ReturnType<ReturnType<typeof getPaymentRecoveryService>["getAdminPanelSnapshot"]>>;
+  activeInvites: SellerInviteSnapshot[];
+}) {
+  return (
+    <section className="grid gap-5 lg:grid-cols-2">
+      <div className="space-y-5">
+        <PlatformSurface className="p-5 sm:p-6">
+          <SectionHeader
+            eyebrow="Criar seller manualmente"
+            title="Conta pronta sem depender de convite."
+          />
+          <form action={saveSellerUserAction} className="mt-4 space-y-3">
+            <Field label="Nome" name="displayName" defaultValue="" />
+            <Field label="Email" name="email" type="email" defaultValue="" />
+            <Field
+              label="Agente vinculado"
+              name="agentName"
+              defaultValue=""
+              placeholder="Nome do agente que vai operar"
+            />
+            <Field
+              label="Senha inicial"
+              name="password"
+              type="password"
+              defaultValue=""
+              placeholder="Obrigatória ao criar; opcional ao editar"
+            />
+            <ToggleField label="Seller ativo" name="active" defaultChecked />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
+            >
+              <KeyRound className="h-4 w-4" />
+              Salvar acesso
+            </button>
+          </form>
+        </PlatformSurface>
+
+        <PlatformSurface className="p-5 sm:p-6">
+          <SectionHeader
+            eyebrow="Convidar seller"
+            title="Gere um link para o seller preencher o próprio acesso."
+          />
+          <form action={createSellerInviteAction} className="mt-4 space-y-3">
+            <Field label="Email" name="email" type="email" defaultValue="" />
+            <Field
+              label="Nome sugerido"
+              name="suggestedDisplayName"
+              defaultValue=""
+              placeholder="Como o seller vai aparecer"
+            />
+            <Field
+              label="Agente sugerido"
+              name="agentName"
+              defaultValue=""
+              placeholder="Opcional; seller pode ajustar"
+            />
+            <Field
+              label="Expira em (dias)"
+              name="expiresInDays"
+              type="number"
+              defaultValue="7"
+            />
+            <label className="space-y-1">
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                Contexto do convite
+              </span>
+              <textarea
+                name="note"
+                rows={3}
+                placeholder="Observação interna ou orientação para esse seller."
+                className="w-full rounded-[1rem] border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+              />
+            </label>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
+            >
+              <KeyRound className="h-4 w-4" />
+              Gerar convite
+            </button>
+          </form>
+        </PlatformSurface>
+      </div>
+
+      <div className="space-y-5">
+        <PlatformSurface className="p-5 sm:p-6">
+          <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
+            <SectionHeader eyebrow="Acessos seller" title="Contas já persistidas." />
+            <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+              {snapshot.sellerUsers.length} contas
+            </span>
+          </div>
+          <div className="mt-4 space-y-3">
+            {snapshot.sellerUsers.length === 0 ? (
+              <PlatformInset className="p-4 text-center">
+                <KeyRound className="mx-auto h-5 w-5 text-[var(--muted)]" />
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  Ainda não existem contas de seller persistidas.
+                </p>
+              </PlatformInset>
+            ) : (
+              snapshot.sellerUsers.map((seller) => (
+                <AdminAccessRow key={seller.id} seller={seller} />
+              ))
+            )}
+          </div>
+        </PlatformSurface>
+
+        <PlatformSurface className="p-5 sm:p-6">
+          <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
             <SectionHeader
               eyebrow="Convites ativos"
               title="Links prontos para o seller finalizar o acesso."
-              compact
             />
-            <div className="mt-4 space-y-3">
-              {activeInvites.length === 0 ? (
-                <PlatformInset className="p-4 text-center">
-                  <KeyRound className="mx-auto h-5 w-5 text-gray-300 dark:text-gray-600" />
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    Nenhum convite gerado ainda.
-                  </p>
-                </PlatformInset>
-              ) : (
-                activeInvites.slice(0, 8).map((invite) => (
-                  <SellerInviteRow key={invite.id} invite={invite} />
-                ))
-              )}
-            </div>
-          </PlatformSurface>
-        </div>
-      </section>
+            <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+              {activeInvites.length} pendentes
+            </span>
+          </div>
+          <div className="mt-4 space-y-3">
+            {activeInvites.length === 0 ? (
+              <PlatformInset className="p-4 text-center">
+                <KeyRound className="mx-auto h-5 w-5 text-[var(--muted)]" />
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  Nenhum convite gerado ainda.
+                </p>
+              </PlatformInset>
+            ) : (
+              activeInvites.slice(0, 8).map((invite) => (
+                <SellerInviteRow key={invite.id} invite={invite} />
+              ))
+            )}
+          </div>
+        </PlatformSurface>
+      </div>
+    </section>
+  );
+}
 
-      {/* ── Quiz Leads ── */}
-      <PlatformSurface className="mt-5 p-5 sm:p-6">
+function TabLeads({
+  snapshot,
+  quizLeads,
+}: {
+  snapshot: Awaited<ReturnType<ReturnType<typeof getPaymentRecoveryService>["getAdminPanelSnapshot"]>>;
+  quizLeads: QuizLeadRecord[];
+}) {
+  return (
+    <div className="space-y-5">
+      <PlatformSurface className="p-5 sm:p-6">
         <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeader
             eyebrow="Leads do quiz"
@@ -504,7 +632,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         )}
       </PlatformSurface>
 
-      <PlatformSurface className="mt-5 p-5 sm:p-6">
+      <PlatformSurface className="p-5 sm:p-6">
         <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeader
             eyebrow="Área de sellers"
@@ -517,11 +645,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
         {snapshot.sellerUsers.length === 0 ? (
           <PlatformInset className="mt-4 p-6 text-center">
-            <KeyRound className="mx-auto h-6 w-6 text-gray-300 dark:text-gray-600" />
-            <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
+            <KeyRound className="mx-auto h-6 w-6 text-[var(--muted)]" />
+            <p className="mt-3 text-sm font-medium text-[var(--foreground)]">
               Nenhum seller cadastrado ainda.
             </p>
-            <p className="mt-1.5 text-sm leading-6 text-gray-500 dark:text-gray-400">
+            <p className="mt-1.5 text-sm leading-6 text-[var(--muted)]">
               Crie acessos manualmente ou envie convites para que os sellers finalizem o cadastro.
             </p>
           </PlatformInset>
@@ -546,7 +674,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
         )}
       </PlatformSurface>
-    </PlatformAppPage>
+    </div>
   );
 }
 
@@ -560,11 +688,11 @@ function SellerControlCard({
   whitelabelProfiles: WhitelabelProfileRecord[];
 }) {
   const aboveLimit = seller.activeLeads > seller.control.maxAssignedLeads;
-  const closeHref = query ? `/admin?query=${encodeURIComponent(query)}` : "/admin";
+  const closeHref = query ? `/admin?tab=sellers&query=${encodeURIComponent(query)}` : "/admin?tab=sellers";
 
   return (
     <PlatformSurface className="p-5 sm:p-6">
-      <div className="grid gap-5 border-b border-[var(--border)] pb-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
+      <div className="grid gap-5 border-b border-[var(--border)] pb-5">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
@@ -739,7 +867,7 @@ function SellerControlCard({
                     "relative flex cursor-pointer flex-col rounded-[0.95rem] border px-3 py-2.5 text-sm transition",
                     seller.control.messagingApproach === opt.value
                       ? "border-[var(--accent)] bg-[var(--accent-soft)] ring-1 ring-[var(--accent)]"
-                      : "border-[var(--border)] bg-[var(--surface)] hover:border-sky-300",
+                      : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]",
                   ].join(" ")}
                 >
                   <input
@@ -938,6 +1066,7 @@ function matchesSellerQuery(seller: AdminSellerSnapshot, query: string) {
 
 function buildSellerHref(sellerKey: string, query: string) {
   const params = new URLSearchParams();
+  params.set("tab", "sellers");
   params.set("seller", sellerKey);
   if (query) {
     params.set("query", query);
