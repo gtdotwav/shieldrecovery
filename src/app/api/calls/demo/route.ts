@@ -35,10 +35,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check VAPI is configured — both key and phone number are required
+    const vapiKey = (process.env.VAPI_API_KEY ?? "").trim();
+    const vapiPhoneNumberId = (process.env.VAPI_PHONE_NUMBER_ID ?? "").trim();
+    if (!vapiKey || !vapiPhoneNumberId) {
+      console.error(
+        `Demo call config missing: VAPI_API_KEY=${vapiKey ? "set" : "MISSING"}, VAPI_PHONE_NUMBER_ID=${vapiPhoneNumberId ? "set" : "MISSING"}`,
+      );
+      return NextResponse.json(
+        { ok: false, error: "Sistema de chamadas temporariamente indisponível." },
+        { status: 503 },
+      );
+    }
+
     const storage = getStorageService();
 
     // Rate limit: 1 demo call per phone number ever
-    const existing = await storage.findDemoCallLeadByPhone(phone);
+    let existing: Awaited<ReturnType<typeof storage.findDemoCallLeadByPhone>> | null = null;
+    try {
+      existing = await storage.findDemoCallLeadByPhone(phone);
+    } catch (dbError) {
+      // Table might not exist yet — log and continue (skip rate limit)
+      console.warn("Demo call lead lookup failed (table may not exist):", dbError);
+    }
+
     if (existing) {
       return NextResponse.json(
         { ok: false, error: "Este número já recebeu uma demonstração. Cada número pode testar apenas uma vez." },
@@ -46,18 +66,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check VAPI is configured
-    const vapiKey = process.env.VAPI_API_KEY ?? "";
-    const vapiPhoneNumberId = process.env.VAPI_PHONE_NUMBER_ID ?? "";
-    if (!vapiKey) {
-      return NextResponse.json(
-        { ok: false, error: "Sistema de chamadas temporariamente indisponível." },
-        { status: 503 },
-      );
+    // Try to create the lead record (non-blocking if table doesn't exist)
+    let leadId: string | undefined;
+    try {
+      const lead = await storage.createDemoCallLead({ name, phone });
+      leadId = lead.id;
+    } catch (dbError) {
+      console.warn("Demo call lead creation failed (table may not exist):", dbError);
     }
-
-    // Create the lead record
-    const lead = await storage.createDemoCallLead({ name, phone });
 
     // Build a short demo call via VAPI directly (max 90 seconds)
     const firstName = name.split(/\s+/)[0] || "visitante";
@@ -67,7 +83,7 @@ export async function POST(request: NextRequest) {
       `Voce e a Ana, consultora de vendas da ${brandName}.`,
       `Voce esta ligando para o ${name}, que acabou de pedir uma demonstracao ao vivo no site.`,
       "",
-      "CONTEXTO: A ${brandName} e uma plataforma de recuperacao autonoma de pagamentos. Quando o pagamento de um cliente falha — Pix expirado, cartao recusado, boleto vencido — a plataforma detecta automaticamente e:",
+      `CONTEXTO: A ${brandName} e uma plataforma de recuperacao autonoma de pagamentos. Quando o pagamento de um cliente falha — Pix expirado, cartao recusado, boleto vencido — a plataforma detecta automaticamente e:`,
       "1. Em 2 minutos, a IA envia uma mensagem personalizada no WhatsApp com link de pagamento",
       "2. Se o cliente nao responde, a IA faz follow-ups inteligentes adaptando tom e abordagem",
       "3. Para leads de alto valor, o Call Center de agentes IA (como voce!) liga com voz natural, negocia e envia o link na hora",
@@ -114,13 +130,13 @@ export async function POST(request: NextRequest) {
       assistant: {
         model: {
           provider: "openai",
-          model: "gpt-4.1-mini",
+          model: "gpt-4o-mini",
           messages: [{ role: "system", content: systemPrompt }],
           temperature: 0.7,
         },
         voice: {
           provider: "11labs",
-          voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — warm/friendly
+          voiceId: "EXAVITQu4vr4xnSDxMaL",
         },
         firstMessage,
         endCallMessage: `Foi um prazer falar com você, ${firstName}! Vou te mandar mais detalhes por WhatsApp. Até logo!`,
@@ -133,16 +149,18 @@ export async function POST(request: NextRequest) {
         endCallFunctionEnabled: true,
         serverUrl: `${appEnv.appBaseUrl}/api/webhooks/callcenter`,
       },
+      phoneNumberId: vapiPhoneNumberId,
       customer: {
         number: phone,
         name,
       },
-      ...(vapiPhoneNumberId ? { phoneNumberId: vapiPhoneNumberId } : {}),
       metadata: {
-        demoCallLeadId: lead.id,
+        demoCallLeadId: leadId ?? "unknown",
         source: "landing_page_demo",
       },
     };
+
+    console.log(`Demo call: initiating for ${phone}, phoneNumberId=${vapiPhoneNumberId}`);
 
     const vapiResponse = await fetch("https://api.vapi.ai/call/phone", {
       method: "POST",
@@ -156,31 +174,39 @@ export async function POST(request: NextRequest) {
 
     if (!vapiResponse.ok) {
       const errorText = await vapiResponse.text().catch(() => "");
-      await storage.updateDemoCallLead(lead.id, { status: "failed" });
-      console.error(`Demo call VAPI error: ${vapiResponse.status} ${errorText.slice(0, 200)}`);
+      console.error(`Demo call VAPI error: status=${vapiResponse.status} body=${errorText.slice(0, 500)}`);
+
+      if (leadId) {
+        await storage.updateDemoCallLead(leadId, { status: "failed" }).catch(() => {});
+      }
+
       return NextResponse.json(
-        { ok: false, error: "Não foi possível iniciar a chamada. Tente novamente." },
+        { ok: false, error: `Não foi possível iniciar a chamada (${vapiResponse.status}). Tente novamente.` },
         { status: 502 },
       );
     }
 
     const vapiResult = (await vapiResponse.json()) as { id: string };
+    console.log(`Demo call: VAPI success, callId=${vapiResult.id}`);
 
-    await storage.updateDemoCallLead(lead.id, {
-      status: "calling",
-      calledAt: new Date().toISOString(),
-      vapiCallId: vapiResult.id,
-    });
+    if (leadId) {
+      await storage.updateDemoCallLead(leadId, {
+        status: "calling",
+        calledAt: new Date().toISOString(),
+        vapiCallId: vapiResult.id,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       ok: true,
       message: `Ligação a caminho! Atenda a chamada no ${phone}.`,
-      leadId: lead.id,
+      leadId: leadId ?? null,
     });
   } catch (error) {
     console.error("Demo call error:", error);
+    const msg = error instanceof Error ? error.message : "Unknown";
     return NextResponse.json(
-      { ok: false, error: "Erro interno. Tente novamente em instantes." },
+      { ok: false, error: `Erro interno: ${msg.slice(0, 100)}` },
       { status: 500 },
     );
   }
