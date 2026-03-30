@@ -15,6 +15,7 @@ const publicRoutePrefixes = [
   "/api/worker/",
   "/api/cron/",
   "/api/auth/token",
+  "/api/calls/demo",
   "/webhooks/",
 ];
 
