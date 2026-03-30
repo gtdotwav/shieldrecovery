@@ -78,3 +78,81 @@ export async function createCheckoutSession(
 
   return response.json();
 }
+
+// ── Merchant-facing financial endpoints ──────────────────────────
+
+async function checkoutFetch(
+  path: string,
+  overrides?: { baseUrl?: string; apiKey?: string },
+  init?: RequestInit,
+) {
+  const baseUrl = overrides?.baseUrl?.trim() || appEnv.checkoutPlatformUrl;
+  const apiKey = overrides?.apiKey?.trim() || appEnv.checkoutPlatformApiKey;
+
+  if (!baseUrl || !apiKey) {
+    throw new Error("Checkout platform not configured.");
+  }
+
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": apiKey,
+      ...init?.headers,
+    },
+    signal: AbortSignal.timeout(20_000),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Checkout API ${path} failed (${response.status}): ${errorBody}`);
+  }
+
+  return response.json();
+}
+
+export async function getSellerWallet(overrides?: { baseUrl?: string; apiKey?: string }) {
+  return checkoutFetch("/api/v1/merchants/wallet", overrides);
+}
+
+export async function getSellerSplits(
+  page: number = 1,
+  overrides?: { baseUrl?: string; apiKey?: string },
+) {
+  return checkoutFetch(`/api/v1/merchants/splits?page=${page}&limit=20`, overrides);
+}
+
+export async function getSellerPayouts(overrides?: { baseUrl?: string; apiKey?: string }) {
+  return checkoutFetch("/api/v1/merchants/payouts", overrides);
+}
+
+export async function requestSellerPayout(
+  amount: number,
+  pixAccountId: string,
+  overrides?: { baseUrl?: string; apiKey?: string },
+) {
+  return checkoutFetch("/api/v1/merchants/payouts", overrides, {
+    method: "POST",
+    body: JSON.stringify({ amount, pixAccountId }),
+  });
+}
+
+export async function getSellerPixAccounts(overrides?: { baseUrl?: string; apiKey?: string }) {
+  return checkoutFetch("/api/v1/merchants/pix-accounts", overrides);
+}
+
+export async function createSellerPixAccount(
+  data: {
+    pixKeyType: string;
+    pixKey: string;
+    holderName: string;
+    holderDocument: string;
+    bankName?: string;
+  },
+  overrides?: { baseUrl?: string; apiKey?: string },
+) {
+  return checkoutFetch("/api/v1/merchants/pix-accounts", overrides, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}

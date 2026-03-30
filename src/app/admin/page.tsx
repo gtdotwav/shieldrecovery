@@ -20,6 +20,26 @@ import {
   sendQuizLeadWhatsAppAction,
 } from "@/app/actions/admin-actions";
 import {
+  saveSplitConfigAction,
+  saveMerchantOverrideAction,
+  deleteMerchantOverrideAction,
+  approvePayoutAction,
+  rejectPayoutAction,
+  completePayoutAction,
+} from "@/app/actions/split-actions";
+import {
+  getSplitConfig,
+  listMerchantOverrides,
+  getPlatformFinancials,
+  listPayouts,
+} from "@/server/checkout-admin";
+import type {
+  SplitConfig,
+  MerchantOverride,
+  PlatformFinancials,
+  PayoutRecord,
+} from "@/server/checkout-admin";
+import {
   PlatformAppPage,
   PlatformInset,
   PlatformMetricCard,
@@ -61,6 +81,8 @@ const TABS = [
   { key: "sellers", label: "Sellers", href: "/admin?tab=sellers" },
   { key: "acessos", label: "Acessos", href: "/admin?tab=acessos" },
   { key: "leads", label: "Leads", href: "/admin?tab=leads" },
+  { key: "financeiro", label: "Financeiro", href: "/admin?tab=financeiro" },
+  { key: "saques", label: "Saques", href: "/admin?tab=saques" },
 ] as const;
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
@@ -73,6 +95,34 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     service.listWhitelabelProfiles(),
     storage.listQuizLeads(),
   ]);
+
+  // Split system data (loaded only when needed)
+  let splitConfig: SplitConfig | null = null;
+  let merchantOverrides: MerchantOverride[] = [];
+  let platformFinancials: PlatformFinancials | null = null;
+  let pendingPayouts: PayoutRecord[] = [];
+  let approvedPayouts: PayoutRecord[] = [];
+  let allPayouts: PayoutRecord[] = [];
+
+  const activeTabStr = typeof (await searchParams)?.tab === "string" ? (await searchParams)!.tab : undefined;
+  if (activeTabStr === "financeiro" || activeTabStr === "saques") {
+    try {
+      const results = await Promise.all([
+        getSplitConfig(),
+        listMerchantOverrides(),
+        getPlatformFinancials(),
+        listPayouts(),
+      ]);
+      splitConfig = results[0];
+      merchantOverrides = results[1].overrides;
+      platformFinancials = results[2];
+      allPayouts = results[3].payouts;
+      pendingPayouts = allPayouts.filter((p) => p.status === "requested");
+      approvedPayouts = allPayouts.filter((p) => p.status === "approved");
+    } catch {
+      // Split system not yet deployed or configured
+    }
+  }
   const query = typeof params.query === "string" ? params.query.trim() : "";
   const filteredSellers = snapshot.sellers.filter((seller) =>
     matchesSellerQuery(seller, query),
@@ -196,6 +246,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <TabLeads
           snapshot={snapshot}
           quizLeads={quizLeads}
+        />
+      ) : activeTab === "financeiro" ? (
+        <TabFinanceiro
+          splitConfig={splitConfig}
+          merchantOverrides={merchantOverrides}
+          platformFinancials={platformFinancials}
+        />
+      ) : activeTab === "saques" ? (
+        <TabSaques
+          pendingPayouts={pendingPayouts}
+          approvedPayouts={approvedPayouts}
+          allPayouts={allPayouts}
         />
       ) : (
         <TabOverview
@@ -1404,5 +1466,337 @@ function QuizLeadRow({ lead }: { lead: QuizLeadRecord }) {
         )}
       </div>
     </div>
+  );
+}
+
+// ── Tab Financeiro ────────────────────────────────────────────────
+
+function TabFinanceiro({
+  splitConfig,
+  merchantOverrides,
+  platformFinancials,
+}: {
+  splitConfig: SplitConfig | null;
+  merchantOverrides: MerchantOverride[];
+  platformFinancials: PlatformFinancials | null;
+}) {
+  const fin = platformFinancials;
+  const cfg = splitConfig;
+
+  return (
+    <>
+      {/* Platform metrics */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <PlatformMetricCard
+          icon={Wallet}
+          label="total recuperado"
+          value={fin ? formatCurrency(fin.totalGross / 100) : "—"}
+          subtitle={fin ? `${fin.splitCount} transacoes` : ""}
+        />
+        <PlatformMetricCard
+          icon={Target}
+          label="revenue plataforma"
+          value={fin ? formatCurrency(fin.totalFees / 100) : "—"}
+          subtitle="comissoes retidas"
+        />
+        <PlatformMetricCard
+          icon={Layers}
+          label="saldo pendente"
+          value={fin ? formatCurrency(fin.totalPendingBalance / 100) : "—"}
+          subtitle="aguardando periodo de hold"
+        />
+        <PlatformMetricCard
+          icon={ArrowRight}
+          label="disponivel para saque"
+          value={fin ? formatCurrency(fin.totalAvailableBalance / 100) : "—"}
+          subtitle={fin ? `${fin.merchantCount} merchants` : ""}
+        />
+      </section>
+
+      {/* Split config form */}
+      <PlatformSurface className="mt-5">
+        <div className="px-5 py-4">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            Configuracao de Split
+          </p>
+          <form action={saveSplitConfigAction} className="mt-4 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field
+                label="Fee padrao (%)"
+                name="defaultFeePercent"
+                type="number"
+                step="0.01"
+                defaultValue={cfg?.defaultFeePercent ?? 15}
+              />
+              <Field
+                label="Periodo de hold (dias)"
+                name="holdPeriodDays"
+                type="number"
+                defaultValue={cfg?.holdPeriodDays ?? 14}
+              />
+              <Field
+                label="Minimo para saque (centavos)"
+                name="minPayoutAmount"
+                type="number"
+                defaultValue={cfg?.minPayoutAmount ?? 5000}
+              />
+            </div>
+            <ToggleField
+              label="Auto-aprovar saques"
+              name="payoutAutoApprove"
+              defaultChecked={cfg?.payoutAutoApprove ?? false}
+            />
+            <button
+              type="submit"
+              className="rounded-full bg-[var(--accent)] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
+            >
+              Salvar Config
+            </button>
+          </form>
+        </div>
+      </PlatformSurface>
+
+      {/* Merchant overrides */}
+      <PlatformSurface className="mt-5">
+        <div className="px-5 py-4">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            Overrides por Merchant
+          </p>
+
+          {merchantOverrides.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              {merchantOverrides.map((o) => (
+                <div
+                  key={o.merchantId}
+                  className="flex items-center justify-between rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {o.merchantName ?? o.merchantId.slice(0, 8)}
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Fee: {o.feePercent}%{o.notes ? ` — ${o.notes}` : ""}
+                    </p>
+                  </div>
+                  <form action={deleteMerchantOverrideAction}>
+                    <input type="hidden" name="merchantId" value={o.merchantId} />
+                    <button
+                      type="submit"
+                      className="rounded-full border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+                    >
+                      Remover
+                    </button>
+                  </form>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              Nenhum override configurado. Todos merchants usam o fee padrao.
+            </p>
+          )}
+
+          {/* Add override form */}
+          <PlatformInset className="mt-4">
+            <div className="px-4 py-3">
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                Adicionar Override
+              </p>
+              <form action={saveMerchantOverrideAction} className="mt-3 flex flex-wrap gap-3">
+                <Field label="Merchant ID" name="merchantId" placeholder="uuid" />
+                <Field label="Fee (%)" name="feePercent" type="number" step="0.01" placeholder="12" />
+                <Field label="Notas" name="notes" placeholder="negociado por volume" />
+                <button
+                  type="submit"
+                  className="mt-5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
+                >
+                  Salvar
+                </button>
+              </form>
+            </div>
+          </PlatformInset>
+        </div>
+      </PlatformSurface>
+    </>
+  );
+}
+
+// ── Tab Saques ────────────────────────────────────────────────────
+
+function TabSaques({
+  pendingPayouts,
+  approvedPayouts,
+  allPayouts,
+}: {
+  pendingPayouts: PayoutRecord[];
+  approvedPayouts: PayoutRecord[];
+  allPayouts: PayoutRecord[];
+}) {
+  const completedPayouts = allPayouts.filter(
+    (p) => p.status === "completed" || p.status === "failed" || p.status === "cancelled",
+  );
+
+  return (
+    <>
+      {/* Pending approval */}
+      <PlatformSurface>
+        <div className="px-5 py-4">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            Pendentes de Aprovacao ({pendingPayouts.length})
+          </p>
+          {pendingPayouts.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--muted)]">Nenhum saque pendente.</p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {pendingPayouts.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex flex-col gap-3 rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {formatCurrency(p.amount / 100)}
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      {p.merchantId.slice(0, 8)} · PIX {p.pixKeyType}: {p.pixKey} · {p.holderName}
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Solicitado {formatRelativeTime(p.requestedAt)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <form action={approvePayoutAction}>
+                      <input type="hidden" name="payoutId" value={p.id} />
+                      <button
+                        type="submit"
+                        className="rounded-full bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+                      >
+                        Aprovar
+                      </button>
+                    </form>
+                    <form action={rejectPayoutAction}>
+                      <input type="hidden" name="payoutId" value={p.id} />
+                      <input type="hidden" name="reason" value="Rejeitado pelo admin" />
+                      <button
+                        type="submit"
+                        className="rounded-full border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+                      >
+                        Rejeitar
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </PlatformSurface>
+
+      {/* Approved — awaiting PIX */}
+      <PlatformSurface className="mt-5">
+        <div className="px-5 py-4">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            Aprovados — Aguardando PIX ({approvedPayouts.length})
+          </p>
+          {approvedPayouts.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--muted)]">Nenhum saque aprovado aguardando.</p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {approvedPayouts.map((p) => (
+                <div
+                  key={p.id}
+                  className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-[var(--foreground)]">
+                        {formatCurrency(p.amount / 100)}
+                      </p>
+                      <p className="text-xs text-[var(--muted)]">
+                        {p.merchantId.slice(0, 8)} · PIX {p.pixKeyType}: {p.pixKey}
+                      </p>
+                      <p className="text-xs text-[var(--muted)]">
+                        Aprovado {p.approvedAt ? formatRelativeTime(p.approvedAt) : ""}
+                        {p.approvedBy ? ` por ${p.approvedBy}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <form action={completePayoutAction} className="flex items-end gap-2">
+                        <input type="hidden" name="payoutId" value={p.id} />
+                        <label className="space-y-1">
+                          <span className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                            ID Transferencia
+                          </span>
+                          <input
+                            name="pixTransferId"
+                            type="text"
+                            placeholder="E12345..."
+                            className="w-40 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs text-[var(--foreground)] outline-none transition focus:border-[var(--accent)]"
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          className="rounded-full bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]"
+                        >
+                          Concluir
+                        </button>
+                      </form>
+                      <form action={rejectPayoutAction}>
+                        <input type="hidden" name="payoutId" value={p.id} />
+                        <input type="hidden" name="reason" value="Cancelado pelo admin apos aprovacao" />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+                        >
+                          Cancelar
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </PlatformSurface>
+
+      {/* History */}
+      <PlatformSurface className="mt-5">
+        <div className="px-5 py-4">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+            Historico ({completedPayouts.length})
+          </p>
+          {completedPayouts.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--muted)]">Nenhum saque no historico.</p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {completedPayouts.slice(0, 20).map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {formatCurrency(p.amount / 100)}
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      {p.merchantId.slice(0, 8)}
+                      {p.pixTransferId ? ` · ${p.pixTransferId}` : ""}
+                    </p>
+                  </div>
+                  <PlatformPill>
+                    {p.status === "completed"
+                      ? "concluido"
+                      : p.status === "failed"
+                        ? "falhou"
+                        : "cancelado"}
+                  </PlatformPill>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </PlatformSurface>
+    </>
   );
 }

@@ -16,6 +16,7 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  Wallet,
 } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth-actions";
@@ -68,6 +69,14 @@ export const platformRoutes: PlatformRoute[] = [
     label: "Recuperacao",
     description: "O que precisa de acao agora.",
     icon: BarChart3,
+    kind: "app",
+    allowedRoles: ["admin", "seller"],
+  },
+  {
+    href: "/financeiro",
+    label: "Financeiro",
+    description: "Saldo, comissoes e saques.",
+    icon: Wallet,
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },
