@@ -119,17 +119,8 @@ export async function POST(request: NextRequest) {
 
     const firstMessage = `Oi ${firstName}! Aqui é a Ana, da ${brandName}. Você pediu uma demonstração do nosso call center de IA — e essa ligação é a prova ao vivo. Foi disparada automaticamente em segundos. Me conta, você já vende online?`;
 
-    // Voice configuration: prefer Cartesia for native PT-BR, fallback to 11labs Sarah
-    const cartesiaVoiceId = (process.env.CARTESIA_VOICE_ID ?? "").trim();
-    const voiceConfig = cartesiaVoiceId
-      ? { provider: "cartesia" as const, voiceId: cartesiaVoiceId }
-      : {
-          provider: "11labs" as const,
-          voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — warm female
-          stability: 0.6,
-          similarityBoost: 0.8,
-          speed: 1.05,
-        };
+    // Voice: Cartesia (native PT-BR) with env override, fallback to 11labs Sarah
+    const cartesiaVoiceId = (process.env.CARTESIA_VOICE_ID ?? "700d1ee3-a641-4018-ba6e-899dcadc9e2b").trim();
 
     const vapiPayload = {
       name: `Demo: ${name}`,
@@ -139,22 +130,20 @@ export async function POST(request: NextRequest) {
           model: "gpt-4o",
           messages: [{ role: "system", content: systemPrompt }],
           temperature: 0.5,
-          maxTokens: 150,
         },
-        voice: voiceConfig,
+        voice: {
+          provider: "cartesia" as const,
+          voiceId: cartesiaVoiceId,
+        },
         firstMessage,
         endCallMessage: `Foi um prazer falar com você, ${firstName}! Vou te mandar mais detalhes por WhatsApp. Até logo!`,
         transcriber: {
           provider: "deepgram",
-          model: "nova-2",
           language: "pt-BR",
         },
         maxDurationSeconds: 120,
         silenceTimeoutSeconds: 25,
-        responseDelaySeconds: 0.5,
         endCallFunctionEnabled: true,
-        backgroundDenoisingEnabled: true,
-        numWordsToInterruptAssistant: 2,
         serverUrl: `${appEnv.appBaseUrl}/api/webhooks/callcenter`,
       },
       phoneNumberId: vapiPhoneNumberId,
