@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 
@@ -39,7 +40,7 @@ export default async function RetryPaymentPage({
     });
   }
 
-  // Try to redirect to Substratum checkout
+  // Try to redirect to PagRecovery checkout
   const storage = getStorageService();
   const payment = await storage.findPayment({ gatewayPaymentId });
 
@@ -76,8 +77,18 @@ export default async function RetryPaymentPage({
         redirect(session.checkoutUrl);
       }
       // Invalid origin — fall through to fallback
-    } catch {
-      // Checkout platform unavailable or URL validation failed — fall through to fallback
+      console.error("[retry] Checkout URL origin mismatch", {
+        gatewayPaymentId,
+        expected: checkoutOrigin,
+        got: redirectUrl.origin,
+      });
+    } catch (error) {
+      // Re-throw Next.js redirect (it uses a special error internally)
+      if (isRedirectError(error)) throw error;
+      console.error("[retry] Checkout session failed", {
+        gatewayPaymentId,
+        error: error instanceof Error ? error.message : "unknown",
+      });
     }
   }
 
@@ -95,13 +106,13 @@ function renderFallback(gatewayPaymentId: string) {
           Estamos preparando seu pagamento.
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-8 text-[#64748b]">
-          O checkout nao esta disponivel neste momento. Por favor, tente
+          O checkout não está disponível neste momento. Por favor, tente
           novamente em alguns instantes ou entre em contato com o suporte.
         </p>
 
         <div className="mt-6 rounded-[1.25rem] border border-sky-100 bg-sky-50 px-5 py-4">
           <p className="text-[0.68rem] uppercase tracking-[0.18em] text-sky-500">
-            Referencia
+            Referência
           </p>
           <p className="mt-2 break-all font-mono text-sm text-[#082f49]">
             {gatewayPaymentId}
@@ -146,7 +157,7 @@ async function renderPagouPixRetry(input: {
               Pagamento pronto para copiar ou escanear.
             </h1>
             <p className="mt-3 text-sm leading-7 text-[#475569]">
-              Esta cobranca foi criada para o fluxo de recovery da{" "}
+              Esta cobrança foi criada para o fluxo de recovery da{" "}
               {platformBrand.name}. Assim que o gateway confirmar o pagamento,
               o webhook atualiza o caso automaticamente.
             </p>
@@ -161,7 +172,7 @@ async function renderPagouPixRetry(input: {
                 />
               ) : (
                 <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-sky-200 bg-sky-50 text-sm text-sky-700">
-                  QR code indisponivel no momento.
+                  QR code indisponível no momento.
                 </div>
               )}
             </div>
@@ -180,10 +191,10 @@ async function renderPagouPixRetry(input: {
 
               <div className="mt-4 rounded-[1.25rem] border border-black/[0.06] bg-white p-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">
-                  Codigo Pix copia e cola
+                  Código Pix copia e cola
                 </p>
                 <p className="mt-3 break-all rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 font-mono text-xs leading-6 text-[#0f172a]">
-                  {pixCode || "Nao informado pelo gateway."}
+                  {pixCode || "Não informado pelo gateway."}
                 </p>
               </div>
 
@@ -212,13 +223,13 @@ async function renderPagouPixRetry(input: {
       <main className="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-16">
         <div className="w-full rounded-[2rem] border border-red-100 bg-white p-8 shadow-[0_26px_120px_rgba(15,23,42,0.08)]">
           <p className="text-[0.72rem] uppercase tracking-[0.28em] text-red-500">
-            Reemissao indisponivel
+            Reemissão indisponível
           </p>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[#082f49]">
-            Nao foi possivel carregar a cobranca Pix agora.
+            Não foi possível carregar a cobrança Pix agora.
           </h1>
           <p className="mt-4 text-sm leading-7 text-[#64748b]">
-            A transacao do gateway nao respondeu neste momento. Tente novamente
+            A transação do gateway não respondeu neste momento. Tente novamente
             em instantes ou use o fluxo de reenvio dentro da plataforma.
           </p>
           <div className="mt-6 rounded-[1.25rem] border border-red-100 bg-red-50 px-5 py-4">

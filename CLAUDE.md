@@ -21,7 +21,7 @@ Gateway webhook → Recovery Engine → AI Dispatch (WhatsApp/Email)
                                           ↓
                                    Customer clicks retry link
                                           ↓
-                                   Checkout Platform (Substratum)
+                                   Checkout Platform (PagRecovery Checkout)
                                           ↓
                                    Split calculation → Payout
 ```
@@ -51,7 +51,7 @@ src/
 │   ├── api/                # REST endpoints
 │   │   ├── agent/          # Autonomous recovery agent (cron)
 │   │   ├── auth/           # Token endpoint
-│   │   ├── checkout/       # Checkout API (deprecated, use Substratum)
+│   │   ├── checkout/       # Checkout API (deprecated, use PagRecovery Checkout)
 │   │   ├── debug/          # Protected debug tools
 │   │   ├── webhooks/       # Payment gateway webhooks
 │   │   └── worker/         # Background job runner
@@ -108,7 +108,7 @@ Supabase (PostgreSQL). Schema in `supabase/schema.sql` + `supabase/migrations/`.
 | Service | Purpose | Env Vars |
 |---------|---------|----------|
 | Supabase | Database | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` |
-| Substratum | Checkout platform | `CHECKOUT_PLATFORM_URL`, `CHECKOUT_PLATFORM_API_KEY` |
+| PagRecovery Checkout | Checkout platform | `CHECKOUT_PLATFORM_URL`, `CHECKOUT_PLATFORM_API_KEY` |
 | WhatsApp Cloud API | Messaging | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` |
 | SendGrid | Email | `SENDGRID_API_KEY` |
 | OpenAI/Claude | AI message gen | `OPENAI_API_KEY` |
@@ -140,7 +140,7 @@ Tests in `tests/security/` cover: auth, API routes, injection prevention, input 
 Admin dashboard → Sellers tab → Invite
 
 ### Change split fee
-Admin dashboard → Financeiro tab → Edit fee % (calls Substratum admin API)
+Admin dashboard → Financeiro tab → Edit fee % (calls PagRecovery Checkout admin API)
 
 ### Debug a webhook
 Requires CRON_SECRET: `GET /api/debug/process-webhook?action=check&id=<webhookId>`

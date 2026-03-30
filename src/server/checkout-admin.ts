@@ -1,6 +1,6 @@
 import { appEnv } from "@/server/recovery/config";
 
-// ── Admin API Client for Substratum Split System ─────────────────
+// ── Admin API Client for PagRecovery Checkout Split System ───────
 // Calls the checkout platform's admin endpoints using a shared secret.
 
 const ADMIN_SECRET = process.env.ADMIN_API_SECRET ?? process.env.CRON_SECRET ?? "";

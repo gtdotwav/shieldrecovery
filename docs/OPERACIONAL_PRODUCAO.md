@@ -39,16 +39,16 @@
 │      7. Fecha leads exauridos (7+ dias sem engajamento)         │
 ├─────────────────────────────────────────────────────────────────┤
 │ 5. CHECKOUT (quando cliente clica no link)                      │
-│    /retry/{id} → createCheckoutSession() → Substratum           │
+│    /retry/{id} → createCheckoutSession() → PagRecovery Checkout           │
 │    Redirect para checkout hosted                                │
-│    Pagamento PIX/Cartão processado no Substratum                │
+│    Pagamento PIX/Cartão processado no PagRecovery Checkout                │
 ├─────────────────────────────────────────────────────────────────┤
 │ 6. CONFIRMAÇÃO                                                   │
 │    Gateway (PagouAi) → webhook payment_succeeded                │
 │    Lead status → RECOVERED, Payment → recovered_at = NOW()      │
 │    Conversa fechada, automação pausada                          │
 ├─────────────────────────────────────────────────────────────────┤
-│ 7. SPLIT (automático no Substratum)                             │
+│ 7. SPLIT (automático no PagRecovery Checkout)                             │
 │    Cada pagamento → split baseado em fee % (global ou override) │
 │    Valor retido por holdPeriodDays                              │
 │    Merchant solicita payout → admin aprova → PIX enviado        │
@@ -122,7 +122,7 @@ Verificar via `vercel env ls --project pagrecovery` — mesmas vars necessárias
 ### Split/Payout
 - [x] CHECKOUT_PLATFORM_URL configurado
 - [x] ADMIN_API_SECRET configurado
-- [x] Split config definido no Substratum
+- [x] Split config definido no PagRecovery Checkout
 - [ ] Fee % definido para cada seller (admin → Financeiro)
 
 ## 4. Tabelas do Banco (28 total)
@@ -156,7 +156,7 @@ Verificar via `vercel env ls --project pagrecovery` — mesmas vars necessárias
 | `calendar_notes` | - | Notas do calendário |
 | `system_logs` | - | Logs do sistema |
 
-### Checkout (Supabase separado — Substratum)
+### Checkout (Supabase separado — PagRecovery Checkout)
 | Tabela | Propósito |
 |--------|-----------|
 | `checkout_sessions` | Sessões de pagamento |

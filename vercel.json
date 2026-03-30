@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/checkout/:path*",
+      "destination": "https://pagrecovery-checkout.vercel.app/checkout/:path*"
+    }
+  ],
   "crons": [
     {
       "path": "/api/worker/run",
