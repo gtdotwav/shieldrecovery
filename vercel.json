@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/checkout/:path*",
-      "destination": "https://pagrecovery-checkout.vercel.app/checkout/:path*"
+      "destination": "https://checkout-mu-dun.vercel.app/checkout/:path*"
     }
   ],
   "crons": [
