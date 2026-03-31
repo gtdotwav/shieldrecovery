@@ -1658,7 +1658,9 @@ export class PaymentRecoveryService {
       return await this.processInboundPayload(input);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : `Unknown processing error: ${String(error)}`;
+        error instanceof Error
+          ? error.message
+          : `Unknown processing error: ${typeof error === "object" ? JSON.stringify(error) : String(error)}`;
 
       // Unsupported event types are not real failures — skip silently
       const isUnsupportedEvent =
@@ -2564,7 +2566,7 @@ export class PaymentRecoveryService {
           context: {
             paymentId: normalizedEvent.payment.id,
             sellerKey: sellerKey ?? null,
-            error: error instanceof Error ? error.message : String(error),
+            error: error instanceof Error ? error.message : (typeof error === "object" ? JSON.stringify(error) : String(error)),
           },
         }),
       );

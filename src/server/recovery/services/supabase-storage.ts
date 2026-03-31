@@ -542,23 +542,55 @@ export class SupabaseStorageService implements RecoveryStorage {
       if (error) throw new Error(`Failed to update payment: ${error.message}`);
       return mapPayment(data);
     } else {
+      const insertPayload = {
+        gateway_payment_id: normalizedEvent.payment.id,
+        order_id: normalizedEvent.payment.order_id,
+        customer_id: customerId,
+        status: normalizedEvent.payment.status,
+        amount: normalizedEvent.payment.amount,
+        currency: normalizedEvent.payment.currency,
+        payment_method: normalizedEvent.payment.method,
+        failure_code: normalizedEvent.payment.failure_code,
+        first_failure_at: markAsFailure ? new Date().toISOString() : null,
+        recovered_at: normalizedEvent.event_type === "payment_succeeded" ? new Date().toISOString() : null,
+      };
       const { data, error } = await this.supabase
         .from("payments")
-        .insert({
-          gateway_payment_id: normalizedEvent.payment.id,
-          order_id: normalizedEvent.payment.order_id,
-          customer_id: customerId,
-          status: normalizedEvent.payment.status,
-          amount: normalizedEvent.payment.amount,
-          currency: normalizedEvent.payment.currency,
-          payment_method: normalizedEvent.payment.method,
-          failure_code: normalizedEvent.payment.failure_code,
-          first_failure_at: markAsFailure ? new Date().toISOString() : null,
-          recovered_at: normalizedEvent.event_type === "payment_succeeded" ? new Date().toISOString() : null,
-        })
+        .insert(insertPayload)
         .select()
         .single();
-      if (error) throw new Error(`Failed to insert payment: ${error.message}`);
+      if (error) {
+        // Race condition: another webhook inserted the same payment between our SELECT and INSERT
+        if (error.code === "23505" && error.message.includes("gateway_payment_id")) {
+          const { data: raceExisting } = await this.supabase
+            .from("payments")
+            .select("*")
+            .eq("gateway_payment_id", normalizedEvent.payment.id)
+            .single();
+          if (raceExisting) {
+            const { data: updated, error: updateError } = await this.supabase
+              .from("payments")
+              .update({
+                order_id: normalizedEvent.payment.order_id,
+                customer_id: customerId,
+                status: normalizedEvent.payment.status,
+                amount: normalizedEvent.payment.amount,
+                currency: normalizedEvent.payment.currency,
+                payment_method: normalizedEvent.payment.method,
+                failure_code: normalizedEvent.payment.failure_code,
+                first_failure_at: markAsFailure && !raceExisting.first_failure_at ? new Date().toISOString() : raceExisting.first_failure_at,
+                recovered_at: normalizedEvent.event_type === "payment_succeeded" && raceExisting.first_failure_at ? new Date().toISOString() : raceExisting.recovered_at,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", raceExisting.id)
+              .select()
+              .single();
+            if (updateError) throw new Error(`Failed to update payment after race: ${updateError.message}`);
+            return mapPayment(updated);
+          }
+        }
+        throw new Error(`Failed to insert payment: ${error.message}`);
+      }
       return mapPayment(data);
     }
   }
