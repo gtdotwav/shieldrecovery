@@ -3,6 +3,10 @@
   "framework": "nextjs",
   "rewrites": [
     {
+      "source": "/checkout",
+      "destination": "https://checkout-mu-dun.vercel.app/checkout"
+    },
+    {
       "source": "/checkout/:path*",
       "destination": "https://checkout-mu-dun.vercel.app/checkout/:path*"
     }
