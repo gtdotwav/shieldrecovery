@@ -32,22 +32,22 @@ export async function GET(request: Request) {
     );
 
     const todayRecovered = recovered.filter(
-      (c) => c.recovered_at && new Date(c.recovered_at) >= todayStart,
+      (c) => c.updated_at && new Date(c.updated_at) >= todayStart,
     );
     const weekRecovered = recovered.filter(
-      (c) => c.recovered_at && new Date(c.recovered_at) >= weekStart,
+      (c) => c.updated_at && new Date(c.updated_at) >= weekStart,
     );
 
     const totalRecoveredAmount = recovered.reduce(
-      (sum, c) => sum + (c.amount || 0),
+      (sum, c) => sum + (c.payment_value || 0),
       0,
     );
     const todayRecoveredAmount = todayRecovered.reduce(
-      (sum, c) => sum + (c.amount || 0),
+      (sum, c) => sum + (c.payment_value || 0),
       0,
     );
     const weekRecoveredAmount = weekRecovered.reduce(
-      (sum, c) => sum + (c.amount || 0),
+      (sum, c) => sum + (c.payment_value || 0),
       0,
     );
 
