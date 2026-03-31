@@ -136,6 +136,15 @@ export const platformRoutes: PlatformRoute[] = [
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },
+  {
+    href: "/checkout/dashboard",
+    label: "Checkout",
+    description: "Plataforma de pagamentos e transacoes.",
+    icon: Link2,
+    kind: "app",
+    external: true,
+    allowedRoles: ["admin"],
+  },
 ];
 
 function getVisibleRoutes(role?: UserRole) {
