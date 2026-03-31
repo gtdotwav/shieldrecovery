@@ -53,8 +53,8 @@ export async function requestPayoutAction(formData: FormData) {
     revalidatePath("/financeiro");
     redirect("/financeiro?status=ok&saved=payout-requested");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao solicitar saque";
-    redirect(`/financeiro?status=error&message=${encodeURIComponent(message)}`);
+    console.error("[requestPayoutAction]", err instanceof Error ? err.message : err);
+    redirect("/financeiro?status=error&message=Erro%20ao%20solicitar%20saque");
   }
 }
 
@@ -90,7 +90,7 @@ export async function createPixAccountAction(formData: FormData) {
     revalidatePath("/financeiro");
     redirect("/financeiro?status=ok&saved=pix-account-created");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao cadastrar conta PIX";
-    redirect(`/financeiro?status=error&message=${encodeURIComponent(message)}`);
+    console.error("[createPixAccountAction]", err instanceof Error ? err.message : err);
+    redirect("/financeiro?status=error&message=Erro%20ao%20cadastrar%20conta%20PIX");
   }
 }

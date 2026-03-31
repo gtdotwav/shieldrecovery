@@ -95,5 +95,6 @@ export async function POST(request: Request) {
     role: identity.role,
     email: identity.email,
     expiresIn: 60 * 60 * 24 * 7,
+    expiresAt: Date.now() + 60 * 60 * 24 * 7 * 1000,
   });
 }

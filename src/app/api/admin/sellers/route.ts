@@ -66,9 +66,7 @@ export async function POST(request: Request) {
 
     return apiOk({ seller }, 201);
   } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : "Failed to save seller.",
-      500,
-    );
+    console.error("[POST /api/admin/sellers]", error instanceof Error ? error.message : error);
+    return apiError("Failed to save seller.", 500);
   }
 }

@@ -68,10 +68,8 @@ export async function POST(
   try {
     await service.addManualConversationMessage({ conversationId, content });
   } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : "Failed to send reply.",
-      500,
-    );
+    console.error("[POST /api/inbox/:id/reply]", error instanceof Error ? error.message : error);
+    return apiError("Failed to send reply.", 500);
   }
 
   return apiOk({ ok: true });

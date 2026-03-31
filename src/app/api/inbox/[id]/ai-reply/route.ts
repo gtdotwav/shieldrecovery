@@ -45,10 +45,8 @@ export async function POST(
   try {
     await service.sendAiConversationReply({ conversationId });
   } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : "Failed to generate AI reply.",
-      500,
-    );
+    console.error("[POST /api/inbox/:id/ai-reply]", error instanceof Error ? error.message : error);
+    return apiError("Failed to generate AI reply.", 500);
   }
 
   return apiOk({ ok: true });

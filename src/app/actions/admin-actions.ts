@@ -63,13 +63,18 @@ export async function saveSellerUserAction(formData: FormData) {
     passwordHash: password ? hashPlatformPassword(password) : undefined,
   };
 
-  await getPaymentRecoveryService().saveSellerUser(input);
-  await getPaymentRecoveryService().saveSellerAdminControl({
-    sellerKey: agentName,
-    sellerName: agentName,
-    sellerEmail: email,
-    active,
-  });
+  try {
+    await getPaymentRecoveryService().saveSellerUser(input);
+    await getPaymentRecoveryService().saveSellerAdminControl({
+      sellerKey: agentName,
+      sellerName: agentName,
+      sellerEmail: email,
+      active,
+    });
+  } catch (error) {
+    console.error("[saveSellerUser]", error instanceof Error ? error.message : error);
+    redirect("/admin?status=error&message=Erro%20ao%20salvar%20seller");
+  }
 
   revalidateAdminRoutes();
   redirect(`/admin?status=ok&saved=${encodeURIComponent(email)}`);
@@ -137,36 +142,41 @@ export async function saveSellerControlAction(formData: FormData) {
     redirect("/admin?status=error&message=Seller%20invalido");
   }
 
-  await getPaymentRecoveryService().saveSellerAdminControl({
-    sellerKey,
-    sellerName,
-    sellerEmail: sellerEmail || undefined,
-    recoveryTargetPercent,
-    reportedRecoveryRatePercent: reportedRecoveryRateRaw
-      ? Number(reportedRecoveryRateRaw)
-      : undefined,
-    maxAssignedLeads,
-    active: formData.get("active") === "on",
-    inboxEnabled: formData.get("inboxEnabled") === "on",
-    automationsEnabled: formData.get("automationsEnabled") === "on",
-    autonomyMode:
-      autonomyMode === "assisted" ||
-      autonomyMode === "supervised" ||
-      autonomyMode === "autonomous"
-        ? autonomyMode
-        : "autonomous",
-    messagingApproach:
-      messagingApproach === "friendly" ||
-      messagingApproach === "professional" ||
-      messagingApproach === "urgent"
-        ? messagingApproach
-        : "friendly",
-    checkoutUrl: checkoutUrl || undefined,
-    checkoutApiKey: checkoutApiKey || undefined,
-    gatewayApiKey: gatewayApiKey || undefined,
-    whitelabelId: whitelabelId || undefined,
-    notes: notes || undefined,
-  });
+  try {
+    await getPaymentRecoveryService().saveSellerAdminControl({
+      sellerKey,
+      sellerName,
+      sellerEmail: sellerEmail || undefined,
+      recoveryTargetPercent,
+      reportedRecoveryRatePercent: reportedRecoveryRateRaw
+        ? Number(reportedRecoveryRateRaw)
+        : undefined,
+      maxAssignedLeads,
+      active: formData.get("active") === "on",
+      inboxEnabled: formData.get("inboxEnabled") === "on",
+      automationsEnabled: formData.get("automationsEnabled") === "on",
+      autonomyMode:
+        autonomyMode === "assisted" ||
+        autonomyMode === "supervised" ||
+        autonomyMode === "autonomous"
+          ? autonomyMode
+          : "autonomous",
+      messagingApproach:
+        messagingApproach === "friendly" ||
+        messagingApproach === "professional" ||
+        messagingApproach === "urgent"
+          ? messagingApproach
+          : "friendly",
+      checkoutUrl: checkoutUrl || undefined,
+      checkoutApiKey: checkoutApiKey || undefined,
+      gatewayApiKey: gatewayApiKey || undefined,
+      whitelabelId: whitelabelId || undefined,
+      notes: notes || undefined,
+    });
+  } catch (error) {
+    console.error("[saveSellerControl]", error instanceof Error ? error.message : error);
+    redirect("/admin?status=error&message=Erro%20ao%20salvar%20configurações%20do%20seller");
+  }
 
   revalidateAdminRoutes();
   redirect(`/admin?status=ok&saved=${encodeURIComponent(sellerKey)}`);
@@ -199,23 +209,28 @@ export async function saveWhitelabelProfileAction(formData: FormData) {
     ? (gatewayProvider as GatewayProvider)
     : ("custom" as GatewayProvider);
 
-  await getPaymentRecoveryService().saveWhitelabelProfile(
-    {
-      name,
-      slug: slug || undefined,
-      gatewayProvider: validProvider,
-      gatewayBaseUrl: gatewayBaseUrl || undefined,
-      gatewayDocsUrl: gatewayDocsUrl || undefined,
-      gatewayWebhookPath: gatewayWebhookPath || undefined,
-      checkoutUrl: checkoutUrl || undefined,
-      checkoutApiKey: checkoutApiKey || undefined,
-      brandAccent: brandAccent || undefined,
-      brandLogo: brandLogo || undefined,
-      active,
-      notes: notes || undefined,
-    },
-    id,
-  );
+  try {
+    await getPaymentRecoveryService().saveWhitelabelProfile(
+      {
+        name,
+        slug: slug || undefined,
+        gatewayProvider: validProvider,
+        gatewayBaseUrl: gatewayBaseUrl || undefined,
+        gatewayDocsUrl: gatewayDocsUrl || undefined,
+        gatewayWebhookPath: gatewayWebhookPath || undefined,
+        checkoutUrl: checkoutUrl || undefined,
+        checkoutApiKey: checkoutApiKey || undefined,
+        brandAccent: brandAccent || undefined,
+        brandLogo: brandLogo || undefined,
+        active,
+        notes: notes || undefined,
+      },
+      id,
+    );
+  } catch (error) {
+    console.error("[saveWhitelabelProfile]", error instanceof Error ? error.message : error);
+    redirect("/admin/whitelabel?status=error&message=Erro%20ao%20salvar%20perfil");
+  }
 
   revalidatePath("/admin/whitelabel");
   revalidatePath("/admin");
@@ -233,7 +248,12 @@ export async function deleteWhitelabelProfileAction(formData: FormData) {
     redirect("/admin/whitelabel?status=error&message=ID%20obrigatorio");
   }
 
-  await getPaymentRecoveryService().deleteWhitelabelProfile(id);
+  try {
+    await getPaymentRecoveryService().deleteWhitelabelProfile(id);
+  } catch (error) {
+    console.error("[deleteWhitelabelProfile]", error instanceof Error ? error.message : error);
+    redirect("/admin/whitelabel?status=error&message=Erro%20ao%20remover%20perfil");
+  }
 
   revalidatePath("/admin/whitelabel");
   revalidatePath("/admin");
@@ -311,11 +331,16 @@ export async function saveSellerGatewayKeyAction(formData: FormData) {
     redirect("/connect?status=error&message=Seller%20invalido");
   }
 
-  await getPaymentRecoveryService().saveSellerAdminControl({
-    sellerKey,
-    gatewayApiKey: gatewayApiKey || undefined,
-    whitelabelId: whitelabelId || undefined,
-  });
+  try {
+    await getPaymentRecoveryService().saveSellerAdminControl({
+      sellerKey,
+      gatewayApiKey: gatewayApiKey || undefined,
+      whitelabelId: whitelabelId || undefined,
+    });
+  } catch (error) {
+    console.error("[saveSellerGatewayKey]", error instanceof Error ? error.message : error);
+    redirect("/connect?status=error&message=Erro%20ao%20salvar%20chave%20do%20gateway");
+  }
 
   revalidatePath("/connect");
   redirect("/connect?status=ok&saved=gateway");

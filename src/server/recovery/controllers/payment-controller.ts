@@ -23,11 +23,14 @@ export async function handlePaymentRetry(request: Request) {
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
+    console.error("[handlePaymentRetry]", error instanceof Error ? error.message : error);
 
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Unexpected retry error.",
+        error: error instanceof HttpError
+          ? error.message
+          : "Erro ao processar tentativa de pagamento.",
         details: error instanceof HttpError ? error.details ?? null : null,
       },
       { status: statusCode },

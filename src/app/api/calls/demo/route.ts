@@ -216,9 +216,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Demo call error:", error);
-    const msg = error instanceof Error ? error.message : "Unknown";
     return NextResponse.json(
-      { ok: false, error: `Erro interno: ${msg.slice(0, 100)}` },
+      { ok: false, error: "Erro interno ao processar a chamada. Tente novamente." },
       { status: 500 },
     );
   }

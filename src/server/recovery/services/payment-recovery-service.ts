@@ -15,6 +15,7 @@ import { getConnectionSettingsService } from "@/server/recovery/services/connect
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getStorageService } from "@/server/recovery/services/storage";
 import { getAIOrchestrator } from "@/server/recovery/ai/orchestrator";
+import { notifyPaymentRecovered, notifyNewLead } from "@/server/push-notifications";
 import {
   generateConversationReply,
   generateRecoveryMessage,
@@ -1805,6 +1806,12 @@ export class PaymentRecoveryService {
             },
           }),
         );
+
+        // Push notification for new recovery lead
+        notifyNewLead(
+          normalizedEvent.customer?.name || "Cliente",
+          payment.amount,
+        ).catch((err) => console.error("[push] new lead notify error:", err));
       }
     } else if (shouldCreateFollowUpLead(normalizedEvent.event_type)) {
       lead = await createOrUpdateShieldLead({
@@ -1883,6 +1890,12 @@ export class PaymentRecoveryService {
           },
         }),
       );
+
+      // Push notification to mobile app
+      notifyPaymentRecovered(
+        normalizedEvent.customer?.name || "Cliente",
+        payment.amount,
+      ).catch((err) => console.error("[push] recovery notify error:", err));
     }
 
     if (

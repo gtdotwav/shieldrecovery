@@ -83,10 +83,8 @@ export async function POST(
       }
     }
   } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : "Failed to transition lead.",
-      500,
-    );
+    console.error("[POST /api/leads/:id/transition]", error instanceof Error ? error.message : error);
+    return apiError("Failed to transition lead.", 500);
   }
 
   return apiOk({ ok: true });

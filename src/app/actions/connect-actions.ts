@@ -129,9 +129,7 @@ export async function saveDatabaseBootstrapAction(formData: FormData) {
         redirect("/connect?status=error&message=Credenciais%20do%20Supabase%20invalidas");
       }
 
-      redirect(
-        `/connect?status=error&message=${encodeURIComponent(error.message)}`,
-      );
+      redirect("/connect?status=error&message=Erro%20ao%20validar%20conexão%20com%20o%20banco");
     }
 
     getPlatformBootstrapService().saveSettings({
@@ -139,11 +137,8 @@ export async function saveDatabaseBootstrapAction(formData: FormData) {
       supabaseServiceRoleKey,
     });
   } catch (error) {
-    redirect(
-      `/connect?status=error&message=${encodeURIComponent(
-        error instanceof Error ? error.message : "Falha ao validar o Supabase",
-      )}`,
-    );
+    console.error("[saveDatabaseBootstrap]", error instanceof Error ? error.message : error);
+    redirect("/connect?status=error&message=Falha%20ao%20validar%20o%20Supabase");
   }
 
   revalidateOperationalRoutes();
@@ -155,11 +150,8 @@ export async function startWhatsAppQrSessionAction() {
   try {
     await new MessagingService().startWhatsAppWebSession();
   } catch (error) {
-    redirect(
-      `/connect?status=error&message=${encodeURIComponent(
-        error instanceof Error ? error.message : "Falha ao iniciar QR",
-      )}`,
-    );
+    console.error("[startWhatsAppQrSession]", error instanceof Error ? error.message : error);
+    redirect("/connect?status=error&message=Falha%20ao%20iniciar%20sessão%20QR");
   }
 
   revalidateOperationalRoutes();
@@ -171,11 +163,8 @@ export async function refreshWhatsAppQrSessionAction() {
   try {
     await new MessagingService().refreshWhatsAppWebSession();
   } catch (error) {
-    redirect(
-      `/connect?status=error&message=${encodeURIComponent(
-        error instanceof Error ? error.message : "Falha ao atualizar QR",
-      )}`,
-    );
+    console.error("[refreshWhatsAppQrSession]", error instanceof Error ? error.message : error);
+    redirect("/connect?status=error&message=Falha%20ao%20atualizar%20sessão%20QR");
   }
 
   revalidateOperationalRoutes();
@@ -187,11 +176,8 @@ export async function disconnectWhatsAppQrSessionAction() {
   try {
     await new MessagingService().disconnectWhatsAppWebSession();
   } catch (error) {
-    redirect(
-      `/connect?status=error&message=${encodeURIComponent(
-        error instanceof Error ? error.message : "Falha ao desconectar QR",
-      )}`,
-    );
+    console.error("[disconnectWhatsAppQrSession]", error instanceof Error ? error.message : error);
+    redirect("/connect?status=error&message=Falha%20ao%20desconectar%20sessão%20QR");
   }
 
   revalidateOperationalRoutes();

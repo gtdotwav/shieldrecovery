@@ -52,9 +52,7 @@ export async function POST(request: Request) {
 
     return apiOk({ invite }, 201);
   } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : "Failed to create invite.",
-      500,
-    );
+    console.error("[POST /api/admin/invites]", error instanceof Error ? error.message : error);
+    return apiError("Failed to create invite.", 500);
   }
 }

@@ -49,8 +49,8 @@ export async function saveSplitConfigAction(formData: FormData) {
     revalidateAdminRoutes();
     redirect("/admin?tab=financeiro&status=ok&saved=split-config");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao salvar config";
-    redirect(`/admin?tab=financeiro&status=error&message=${encodeURIComponent(message)}`);
+    console.error("[saveSplitConfig]", err instanceof Error ? err.message : err);
+    redirect("/admin?tab=financeiro&status=error&message=Erro%20ao%20salvar%20configuração");
   }
 }
 
@@ -86,8 +86,8 @@ export async function saveMerchantOverrideAction(formData: FormData) {
     revalidateAdminRoutes();
     redirect("/admin?tab=financeiro&status=ok&saved=override");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao salvar override";
-    redirect(`/admin?tab=financeiro&status=error&message=${encodeURIComponent(message)}`);
+    console.error("[saveMerchantOverride]", err instanceof Error ? err.message : err);
+    redirect("/admin?tab=financeiro&status=error&message=Erro%20ao%20salvar%20override");
   }
 }
 
@@ -104,8 +104,8 @@ export async function deleteMerchantOverrideAction(formData: FormData) {
     revalidateAdminRoutes();
     redirect("/admin?tab=financeiro&status=ok&saved=override-deleted");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao remover override";
-    redirect(`/admin?tab=financeiro&status=error&message=${encodeURIComponent(message)}`);
+    console.error("[deleteMerchantOverride]", err instanceof Error ? err.message : err);
+    redirect("/admin?tab=financeiro&status=error&message=Erro%20ao%20remover%20override");
   }
 }
 
@@ -124,8 +124,8 @@ export async function approvePayoutAction(formData: FormData) {
     revalidateAdminRoutes();
     redirect("/admin?tab=saques&status=ok&saved=payout-approved");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao aprovar saque";
-    redirect(`/admin?tab=saques&status=error&message=${encodeURIComponent(message)}`);
+    console.error("[approvePayout]", err instanceof Error ? err.message : err);
+    redirect("/admin?tab=saques&status=error&message=Erro%20ao%20aprovar%20saque");
   }
 }
 
@@ -144,8 +144,8 @@ export async function rejectPayoutAction(formData: FormData) {
     revalidateAdminRoutes();
     redirect("/admin?tab=saques&status=ok&saved=payout-rejected");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao rejeitar saque";
-    redirect(`/admin?tab=saques&status=error&message=${encodeURIComponent(message)}`);
+    console.error("[rejectPayout]", err instanceof Error ? err.message : err);
+    redirect("/admin?tab=saques&status=error&message=Erro%20ao%20rejeitar%20saque");
   }
 }
 
@@ -165,7 +165,7 @@ export async function completePayoutAction(formData: FormData) {
     revalidateAdminRoutes();
     redirect("/admin?tab=saques&status=ok&saved=payout-completed");
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erro ao completar saque";
-    redirect(`/admin?tab=saques&status=error&message=${encodeURIComponent(message)}`);
+    console.error("[completePayout]", err instanceof Error ? err.message : err);
+    redirect("/admin?tab=saques&status=error&message=Erro%20ao%20completar%20saque");
   }
 }

@@ -67,10 +67,8 @@ export async function PATCH(
   try {
     await service.updateConversationStatus({ conversationId, status });
   } catch (error) {
-    return apiError(
-      error instanceof Error ? error.message : "Failed to update status.",
-      500,
-    );
+    console.error("[PATCH /api/inbox/:id/status]", error instanceof Error ? error.message : error);
+    return apiError("Failed to update status.", 500);
   }
 
   return apiOk({ ok: true });
