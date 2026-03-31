@@ -1,6 +1,8 @@
+import { createClient } from "@supabase/supabase-js";
+
 import { requireApiAuth } from "@/server/auth/request";
 import { apiOk, apiError, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
-import { getStorageService } from "@/server/recovery/services/storage";
+import { appEnv } from "@/server/recovery/config";
 
 export function OPTIONS() {
   return corsOptions();
@@ -30,8 +32,7 @@ export async function POST(request: Request) {
       return apiError("Invalid Expo push token format", 400);
     }
 
-    const storage = getStorageService();
-    const db = storage.getClient();
+    const db = createClient(appEnv.supabaseUrl, appEnv.supabaseServiceRoleKey);
 
     await db.from("push_tokens").upsert(
       {

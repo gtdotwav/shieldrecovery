@@ -1,10 +1,16 @@
-import { getStorageService } from "@/server/recovery/services/storage";
+import { createClient } from "@supabase/supabase-js";
+
+import { appEnv } from "@/server/recovery/config";
 
 // ── Expo Push Notification Service ──────────────────────────────
 // Sends push notifications to mobile app via Expo Push API.
 // Tokens are Expo push tokens stored in the push_tokens table.
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+
+function getPushDb() {
+  return createClient(appEnv.supabaseUrl, appEnv.supabaseServiceRoleKey);
+}
 
 interface PushMessage {
   to: string;
@@ -162,8 +168,7 @@ export async function notifyNewLead(customerName: string, amount: number) {
 // ── Token management (direct Supabase) ──────────────────────────
 
 async function getActiveTokensForUser(userEmail: string): Promise<string[]> {
-  const storage = getStorageService();
-  const db = storage.getClient();
+  const db = getPushDb();
   const { data } = await db
     .from("push_tokens")
     .select("token")
@@ -173,8 +178,7 @@ async function getActiveTokensForUser(userEmail: string): Promise<string[]> {
 }
 
 async function getAllActiveTokens(): Promise<string[]> {
-  const storage = getStorageService();
-  const db = storage.getClient();
+  const db = getPushDb();
   const { data } = await db
     .from("push_tokens")
     .select("token")
@@ -183,8 +187,7 @@ async function getAllActiveTokens(): Promise<string[]> {
 }
 
 async function deactivateTokens(tokens: string[]) {
-  const storage = getStorageService();
-  const db = storage.getClient();
+  const db = getPushDb();
   await db
     .from("push_tokens")
     .update({ active: false, updated_at: new Date().toISOString() })
