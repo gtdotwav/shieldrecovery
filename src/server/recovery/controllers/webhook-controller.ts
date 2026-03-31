@@ -80,8 +80,8 @@ export async function handleShieldGatewayHealth(
       { status: 200 },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Health check failed.";
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    console.error("[handleHealthCheck]", error instanceof Error ? error.message : error);
+    return NextResponse.json({ ok: false, error: "Health check failed." }, { status: 500 });
   }
 }
 
@@ -156,6 +156,69 @@ export async function handleSuperPayWebhook(
 }
 
 export async function handleSuperPayHealth(
+  request: Request,
+  options?: { sellerKey?: string | null },
+) {
+  return handleShieldGatewayHealth(request, options);
+}
+
+export async function handleBuckPayWebhook(
+  request: Request,
+  options?: { sellerKey?: string | null },
+) {
+  let rawBody: string;
+
+  try {
+    rawBody = await request.text();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Failed to read request body." },
+      { status: 400 },
+    );
+  }
+
+  const service = getPaymentRecoveryService();
+
+  try {
+    const result = await service.handleBuckPayWebhook({
+      rawBody,
+      sellerKey: options?.sellerKey,
+    });
+
+    return NextResponse.json(result, { status: 200 });
+  } catch (error) {
+    const statusCode = error instanceof HttpError ? error.statusCode : 500;
+    const message =
+      error instanceof Error ? error.message : "Unexpected BuckPay webhook failure.";
+
+    await getStorageService()
+      .addLog(
+        createStructuredLog({
+          eventType:
+            error instanceof HttpError ? "webhook_rejected" : "processing_error",
+          level: statusCode >= 500 ? "error" : "warn",
+          message,
+          context: {
+            statusCode,
+            sellerKey: options?.sellerKey ?? null,
+            provider: "buckpay",
+          },
+        }),
+      )
+      .catch(() => {});
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error: message,
+        details: error instanceof HttpError ? error.details ?? null : null,
+      },
+      { status: statusCode },
+    );
+  }
+}
+
+export async function handleBuckPayHealth(
   request: Request,
   options?: { sellerKey?: string | null },
 ) {

@@ -277,6 +277,7 @@ function normalizeEventType(
   const explicitMap: Record<string, SupportedPaymentEvent> = {
     transaction_created: "payment_created",
     transaction_pending: "payment_pending",
+    transaction_processed: "payment_succeeded",
     transaction_paid: "payment_succeeded",
     transaction_cancelled: "payment_canceled",
     transaction_canceled: "payment_canceled",

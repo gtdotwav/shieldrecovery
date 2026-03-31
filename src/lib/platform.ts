@@ -87,6 +87,7 @@ const gatewayRegistry: Record<string, { name: string; webhookBasePath: string }>
   superpay: { name: "SuperPay", webhookBasePath: "/api/webhooks/superpay" },
   pagouai: { name: "Pagou.ai", webhookBasePath: "/api/webhooks/pagouai" },
   "shield-gateway": { name: "Shield Gateway", webhookBasePath: "/api/webhooks/shield-gateway" },
+  buckpay: { name: "BuckPay", webhookBasePath: "/api/webhooks/buckpay" },
 };
 
 export function resolveGateway(slug?: string | null) {
