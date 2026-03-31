@@ -2,8 +2,8 @@ import { authenticatePlatformUser, registerSellerLogin } from "@/server/auth/ide
 import { createSessionToken, isAuthConfigured } from "@/server/auth/core";
 import { apiError, apiOk, corsOptions } from "@/server/recovery/utils/api-response";
 
-export function OPTIONS() {
-  return corsOptions();
+export function OPTIONS(request: Request) {
+  return corsOptions(request);
 }
 
 /* ── Simple in-memory rate limiter ── */
@@ -57,31 +57,31 @@ export async function POST(request: Request) {
   const ip = getClientIp(request);
 
   if (isRateLimited(ip)) {
-    return apiError("Muitas tentativas. Tente novamente em 1 minuto.", 429);
+    return apiError("Muitas tentativas. Tente novamente em 1 minuto.", 429, request);
   }
 
   if (!isAuthConfigured()) {
-    return apiError("Platform authentication is not configured.", 503);
+    return apiError("Platform authentication is not configured.", 503, request);
   }
 
   let body: { email?: string; password?: string };
   try {
     body = await request.json();
   } catch {
-    return apiError("Invalid JSON body.", 400);
+    return apiError("Invalid JSON body.", 400, request);
   }
 
   const email = body.email?.trim().toLowerCase() ?? "";
   const password = body.password?.trim() ?? "";
 
   if (!email || !password) {
-    return apiError("Email and password are required.", 400);
+    return apiError("Email and password are required.", 400, request);
   }
 
   const identity = await authenticatePlatformUser({ email, password });
 
   if (!identity) {
-    return apiError("Invalid credentials.", 401);
+    return apiError("Invalid credentials.", 401, request);
   }
 
   if (identity.role === "seller") {
@@ -96,5 +96,5 @@ export async function POST(request: Request) {
     email: identity.email,
     expiresIn: 60 * 60 * 24 * 7,
     expiresAt: Date.now() + 60 * 60 * 24 * 7 * 1000,
-  });
+  }, 200, request);
 }
