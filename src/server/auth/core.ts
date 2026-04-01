@@ -151,6 +151,12 @@ export function isAuthConfigured() {
   );
 }
 
+// Additional platform admin users
+const ADDITIONAL_ADMINS: Record<string, string> = {
+  "neto@pagrecovery.com": "admin@123",
+  "pedro@pagrecovery.com": "admin@123",
+};
+
 export async function authenticateCredentials(input: {
   email: string;
   password: string;
@@ -168,6 +174,12 @@ export async function authenticateCredentials(input: {
     if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && password === set.sellerPassword) {
       return { email, role: "seller" as const };
     }
+  }
+
+  // Check additional admin users
+  const additionalPassword = ADDITIONAL_ADMINS[email];
+  if (additionalPassword && password === additionalPassword) {
+    return { email, role: "admin" as const };
   }
 
   return null;
