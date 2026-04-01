@@ -184,6 +184,42 @@ export async function disconnectWhatsAppQrSessionAction() {
   redirect("/connect?status=ok&saved=whatsapp_qr");
 }
 
+export async function createAffiliateLinkAction(formData: FormData) {
+  const session = await requireAuthenticatedSession(["seller", "admin"]);
+  const sellerIdentity = await getSellerIdentityByEmail(session.email);
+
+  if (!sellerIdentity?.agentName) {
+    redirect("/connect?status=error&message=Seller%20nao%20identificado");
+  }
+
+  const label = String(formData.get("affiliateLabel") ?? "").trim() || undefined;
+
+  const service = getPaymentRecoveryService();
+  await service.createAffiliateLink({
+    sellerKey: sellerIdentity.agentName,
+    sellerEmail: sellerIdentity.email,
+    label,
+  });
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=affiliate_link");
+}
+
+export async function deactivateAffiliateLinkAction(formData: FormData) {
+  const session = await requireAuthenticatedSession(["seller", "admin"]);
+  const linkId = String(formData.get("linkId") ?? "").trim();
+
+  if (!linkId) {
+    redirect("/connect?status=error&message=Link%20invalido");
+  }
+
+  const service = getPaymentRecoveryService();
+  await service.deactivateAffiliateLink(linkId);
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=affiliate_link");
+}
+
 export async function saveSellerAiGuidanceAction(formData: FormData) {
   const session = await requireAuthenticatedSession(["seller", "admin"]);
   const guidance = String(formData.get("sellerAiGuidance") ?? "").trim();

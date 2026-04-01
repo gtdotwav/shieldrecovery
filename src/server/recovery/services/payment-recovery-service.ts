@@ -21,6 +21,10 @@ import {
   generateRecoveryMessage,
 } from "@/server/recovery/ai/message-generator";
 import type {
+  AffiliateLinkInput,
+  AffiliateLinkRecord,
+  AffiliateReferralRecord,
+  AffiliateStats,
   AdminPanelSnapshot,
   AdminSellerSnapshot,
   AgentRecord,
@@ -654,6 +658,32 @@ export class PaymentRecoveryService {
     }
 
     return this.storage.saveSellerAdminControl(input);
+  }
+
+  /* ── Affiliates ── */
+
+  async createAffiliateLink(input: AffiliateLinkInput): Promise<AffiliateLinkRecord> {
+    return this.storage.createAffiliateLink(input);
+  }
+
+  async listAffiliateLinks(sellerKey: string): Promise<AffiliateLinkRecord[]> {
+    return this.storage.listAffiliateLinks(sellerKey);
+  }
+
+  async getAffiliateLinkByCode(code: string): Promise<AffiliateLinkRecord | undefined> {
+    return this.storage.getAffiliateLinkByCode(code);
+  }
+
+  async deactivateAffiliateLink(linkId: string): Promise<void> {
+    return this.storage.deactivateAffiliateLink(linkId);
+  }
+
+  async listAffiliateReferrals(sellerKey: string): Promise<AffiliateReferralRecord[]> {
+    return this.storage.listAffiliateReferrals(sellerKey);
+  }
+
+  async getAffiliateStats(sellerKey: string): Promise<AffiliateStats> {
+    return this.storage.getAffiliateStats(sellerKey);
   }
 
   /* ── Whitelabel Profiles ── */

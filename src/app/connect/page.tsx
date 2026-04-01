@@ -14,12 +14,17 @@ import {
   RefreshCw,
   Save,
   Brain,
+  Link2,
+  Trash2,
   Unplug,
+  UserPlus,
   UsersRound,
 } from "lucide-react";
 
 import { saveSellerGatewayKeyAction } from "@/app/actions/admin-actions";
 import {
+  createAffiliateLinkAction,
+  deactivateAffiliateLinkAction,
   disconnectWhatsAppQrSessionAction,
   refreshWhatsAppQrSessionAction,
   saveConnectionSettingsAction,
@@ -106,6 +111,15 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
           sellerIdentity?.agentName ?? sellerIdentity?.displayName ?? session.email,
         )
       : null;
+  const sellerAgentKey =
+    sellerIdentity?.agentName ?? sellerIdentity?.displayName ?? session.email;
+  const [affiliateLinks, affiliateStats] =
+    session.role === "seller"
+      ? await Promise.all([
+          service.listAffiliateLinks(sellerAgentKey),
+          service.getAffiliateStats(sellerAgentKey),
+        ])
+      : [[], null];
 
   const contactableLeads = contacts.filter(
     (contact) =>
@@ -210,6 +224,9 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
         sellerWhitelabelId={sellerControl?.whitelabelId ?? ""}
         sellerWhitelabelName={sellerWhitelabel?.name}
         sellerWhitelabelProvider={sellerWhitelabel?.gatewayProvider}
+        affiliateLinks={affiliateLinks}
+        affiliateStats={affiliateStats}
+        appBaseUrl={runtimeSettings.appBaseUrl}
       />
     );
   }
@@ -497,6 +514,9 @@ function SellerConnectView({
   sellerWhitelabelId,
   sellerWhitelabelName,
   sellerWhitelabelProvider,
+  affiliateLinks,
+  affiliateStats,
+  appBaseUrl,
 }: {
   activeCount: number;
   analyticsTotal: number;
@@ -549,6 +569,23 @@ function SellerConnectView({
   sellerWhitelabelId: string;
   sellerWhitelabelName?: string;
   sellerWhitelabelProvider?: string;
+  affiliateLinks: Array<{
+    id: string;
+    code: string;
+    label?: string;
+    commissionPct: number;
+    clicks: number;
+    active: boolean;
+    createdAt: string;
+  }>;
+  affiliateStats: {
+    totalLinks: number;
+    totalClicks: number;
+    totalSignups: number;
+    activeReferrals: number;
+    pendingReferrals: number;
+  } | null;
+  appBaseUrl: string;
 }) {
   return (
     <PlatformAppPage
@@ -780,6 +817,107 @@ function SellerConnectView({
               </p>
               <SaveButton label="Salvar direção da IA" />
             </form>
+          </PlatformSurface>
+
+          <PlatformSurface className="p-5">
+            <SectionHeader
+              eyebrow="Afiliados"
+              title="Convide sellers e ganhe comissão sobre cada recuperação."
+            />
+            <p className="mt-3 text-sm leading-6 text-[#717182]">
+              Crie um link de convite exclusivo, compartilhe com outros sellers e receba
+              uma porcentagem sobre cada pagamento recuperado por quem se afiliar a você.
+            </p>
+
+            {affiliateStats ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-black/[0.06] bg-[#f8f8fa] px-4 py-3 text-center">
+                  <p className="text-lg font-semibold text-[#111827]">{affiliateStats.totalLinks}</p>
+                  <p className="text-xs text-[#6b7280]">links criados</p>
+                </div>
+                <div className="rounded-xl border border-black/[0.06] bg-[#f8f8fa] px-4 py-3 text-center">
+                  <p className="text-lg font-semibold text-[#111827]">{affiliateStats.totalClicks}</p>
+                  <p className="text-xs text-[#6b7280]">cliques</p>
+                </div>
+                <div className="rounded-xl border border-black/[0.06] bg-[#f8f8fa] px-4 py-3 text-center">
+                  <p className="text-lg font-semibold text-[#111827]">{affiliateStats.totalSignups}</p>
+                  <p className="text-xs text-[#6b7280]">cadastros</p>
+                </div>
+                <div className="rounded-xl border border-black/[0.06] bg-[#f8f8fa] px-4 py-3 text-center">
+                  <p className="text-lg font-semibold text-[#111827]">{affiliateStats.activeReferrals}</p>
+                  <p className="text-xs text-[#6b7280]">ativos</p>
+                </div>
+              </div>
+            ) : null}
+
+            <form action={createAffiliateLinkAction} className="mt-5 space-y-4">
+              <Field
+                label="Nome do link (opcional)"
+                name="affiliateLabel"
+                placeholder="Ex.: Instagram, grupo WhatsApp, indicação pessoal"
+              />
+              <button className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700">
+                <UserPlus className="h-4 w-4" />
+                Criar link de afiliado
+              </button>
+            </form>
+
+            {affiliateLinks.length > 0 ? (
+              <div className="mt-5 space-y-3">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#9ca3af]">
+                  Seus links
+                </p>
+                {affiliateLinks.map((link) => {
+                  const affiliateUrl = `${appBaseUrl}/login?ref=${link.code}`;
+                  return (
+                    <div
+                      key={link.id}
+                      className={`flex flex-col gap-3 rounded-2xl border px-4 py-4 sm:flex-row sm:items-center ${
+                        link.active
+                          ? "border-black/[0.06] bg-[#fafafa]"
+                          : "border-black/[0.04] bg-[#f5f5f5] opacity-60"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Link2 className="h-4 w-4 shrink-0 text-green-600" />
+                          <p className="truncate text-sm font-medium text-[#1a1a2e]">
+                            {link.label || link.code}
+                          </p>
+                          {!link.active ? (
+                            <span className="rounded-full bg-[#e5e7eb] px-2 py-0.5 text-[0.65rem] font-medium text-[#6b7280]">
+                              inativo
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 break-all text-xs text-[#6b7280]">
+                          {affiliateUrl}
+                        </p>
+                        <div className="mt-2 flex gap-3 text-xs text-[#9ca3af]">
+                          <span>{link.commissionPct}% comissão</span>
+                          <span>{link.clicks} cliques</span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <CopyButton value={affiliateUrl} />
+                        {link.active ? (
+                          <form action={deactivateAffiliateLinkAction}>
+                            <input type="hidden" name="linkId" value={link.id} />
+                            <button
+                              className="inline-flex items-center gap-1 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-medium text-[#6b7280] transition-colors hover:bg-red-50 hover:text-red-600"
+                              title="Desativar link"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Desativar
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </PlatformSurface>
         </div>
 

@@ -156,3 +156,46 @@ export async function createSellerPixAccount(
     body: JSON.stringify(data),
   });
 }
+
+// ── Merchant config & sessions ──────────────────────────────────
+
+export type SellerFeeConfig = {
+  feePercent: number;
+  holdPeriodDays: number;
+  minPayoutAmount: number;
+  source: "override" | "default";
+};
+
+export async function getSellerConfig(
+  overrides?: { baseUrl?: string; apiKey?: string },
+): Promise<SellerFeeConfig> {
+  return checkoutFetch("/api/v1/merchants/config", overrides);
+}
+
+export type SellerSession = {
+  id: string;
+  shortId: string;
+  amount: number;
+  currency: string;
+  description: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  status: string;
+  source: string;
+  paidAt?: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export async function getSellerSessions(
+  options?: { limit?: number; offset?: number; status?: string },
+  overrides?: { baseUrl?: string; apiKey?: string },
+): Promise<{ sessions: SellerSession[]; count: number }> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set("limit", String(options.limit));
+  if (options?.offset) params.set("offset", String(options.offset));
+  if (options?.status) params.set("status", options.status);
+  const qs = params.toString();
+  return checkoutFetch(`/api/v1/merchants/sessions${qs ? `?${qs}` : ""}`, overrides);
+}

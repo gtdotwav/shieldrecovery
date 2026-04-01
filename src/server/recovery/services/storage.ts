@@ -6,6 +6,10 @@ import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import { appEnv } from "@/server/recovery/config";
 import { createDefaultConnectionSettings } from "@/server/recovery/config";
 import type {
+  AffiliateLinkInput,
+  AffiliateLinkRecord,
+  AffiliateReferralRecord,
+  AffiliateStats,
   AgentRecord,
   CalendarSnapshot,
   CalendarNoteRecord,
@@ -200,6 +204,16 @@ export interface RecoveryStorage {
   findSellerInviteByToken(token: string): Promise<SellerInviteRecord | undefined>;
   createSellerInvite(input: SellerInviteInput): Promise<SellerInviteRecord>;
   markSellerInviteAccepted(token: string): Promise<SellerInviteRecord | undefined>;
+
+  /* Affiliates */
+  createAffiliateLink(input: AffiliateLinkInput): Promise<AffiliateLinkRecord>;
+  listAffiliateLinks(sellerKey: string): Promise<AffiliateLinkRecord[]>;
+  getAffiliateLinkByCode(code: string): Promise<AffiliateLinkRecord | undefined>;
+  deactivateAffiliateLink(linkId: string): Promise<void>;
+  incrementAffiliateLinkClicks(code: string): Promise<void>;
+  listAffiliateReferrals(sellerKey: string): Promise<AffiliateReferralRecord[]>;
+  getAffiliateStats(sellerKey: string): Promise<AffiliateStats>;
+
   getConnectionSettings(): Promise<ConnectionSettingsRecord>;
   saveConnectionSettings(
     input: ConnectionSettingsInput,
@@ -1471,6 +1485,90 @@ class LocalStorageService implements RecoveryStorage {
       invite.updatedAt = now;
       return { ...invite };
     });
+  }
+
+  /* ── Affiliates (local JSON fallback) ── */
+
+  private getAffiliateLinks(): AffiliateLinkRecord[] {
+    const state = this.readState();
+    return (state as StorageState & { affiliateLinks?: AffiliateLinkRecord[] }).affiliateLinks ?? [];
+  }
+
+  private getAffiliateReferrals(): AffiliateReferralRecord[] {
+    const state = this.readState();
+    return (state as StorageState & { affiliateReferrals?: AffiliateReferralRecord[] }).affiliateReferrals ?? [];
+  }
+
+  async createAffiliateLink(input: AffiliateLinkInput): Promise<AffiliateLinkRecord> {
+    const now = new Date().toISOString();
+    const code = randomUUID().replace(/-/g, "").slice(0, 12);
+    const record: AffiliateLinkRecord = {
+      id: randomUUID(),
+      sellerKey: input.sellerKey,
+      sellerEmail: input.sellerEmail,
+      code,
+      label: input.label,
+      commissionPct: input.commissionPct ?? 5,
+      clicks: 0,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.mutate((state) => {
+      const ext = state as StorageState & { affiliateLinks?: AffiliateLinkRecord[] };
+      if (!ext.affiliateLinks) ext.affiliateLinks = [];
+      ext.affiliateLinks.push(record);
+    });
+    return record;
+  }
+
+  async listAffiliateLinks(sellerKey: string): Promise<AffiliateLinkRecord[]> {
+    return this.getAffiliateLinks()
+      .filter((link) => link.sellerKey === sellerKey)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async getAffiliateLinkByCode(code: string): Promise<AffiliateLinkRecord | undefined> {
+    return this.getAffiliateLinks().find((link) => link.code === code);
+  }
+
+  async deactivateAffiliateLink(linkId: string): Promise<void> {
+    this.mutate((state) => {
+      const ext = state as StorageState & { affiliateLinks?: AffiliateLinkRecord[] };
+      const link = ext.affiliateLinks?.find((l) => l.id === linkId);
+      if (link) {
+        link.active = false;
+        link.updatedAt = new Date().toISOString();
+      }
+    });
+  }
+
+  async incrementAffiliateLinkClicks(code: string): Promise<void> {
+    this.mutate((state) => {
+      const ext = state as StorageState & { affiliateLinks?: AffiliateLinkRecord[] };
+      const link = ext.affiliateLinks?.find((l) => l.code === code);
+      if (link) {
+        link.clicks += 1;
+      }
+    });
+  }
+
+  async listAffiliateReferrals(sellerKey: string): Promise<AffiliateReferralRecord[]> {
+    return this.getAffiliateReferrals()
+      .filter((r) => r.referrerSellerKey === sellerKey)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async getAffiliateStats(sellerKey: string): Promise<AffiliateStats> {
+    const links = this.getAffiliateLinks().filter((l) => l.sellerKey === sellerKey);
+    const referrals = this.getAffiliateReferrals().filter((r) => r.referrerSellerKey === sellerKey);
+    return {
+      totalLinks: links.length,
+      totalClicks: links.reduce((sum, l) => sum + l.clicks, 0),
+      totalSignups: referrals.length,
+      activeReferrals: referrals.filter((r) => r.status === "active").length,
+      pendingReferrals: referrals.filter((r) => r.status === "pending").length,
+    };
   }
 
   async saveSellerAdminControl(

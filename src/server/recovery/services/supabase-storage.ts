@@ -16,6 +16,10 @@ function sanitizeFilterValue(value: string | null | undefined): string {
 import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import { appEnv, createDefaultConnectionSettings } from "@/server/recovery/config";
 import type {
+  AffiliateLinkInput,
+  AffiliateLinkRecord,
+  AffiliateReferralRecord,
+  AffiliateStats,
   AgentRecord,
   CalendarActivityItem,
   CalendarDaySummary,
@@ -1710,6 +1714,100 @@ export class SupabaseStorageService implements RecoveryStorage {
     return mapSellerInvite(data as DatabaseSellerInviteRow);
   }
 
+  /* ── Affiliates ── */
+
+  async createAffiliateLink(input: AffiliateLinkInput): Promise<AffiliateLinkRecord> {
+    const code = randomUUID().replace(/-/g, "").slice(0, 12);
+    const now = new Date().toISOString();
+    const payload = {
+      seller_key: input.sellerKey,
+      seller_email: input.sellerEmail,
+      code,
+      label: input.label ?? null,
+      commission_pct: input.commissionPct ?? 5,
+      clicks: 0,
+      active: true,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const { data, error } = await this.supabase
+      .from("affiliate_links")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create affiliate link: ${error?.message ?? "no data"}`);
+    }
+
+    return mapAffiliateLink(data);
+  }
+
+  async listAffiliateLinks(sellerKey: string): Promise<AffiliateLinkRecord[]> {
+    const { data, error } = await this.supabase
+      .from("affiliate_links")
+      .select("*")
+      .eq("seller_key", sellerKey)
+      .order("created_at", { ascending: false });
+
+    if (error) return [];
+    return (data ?? []).map(mapAffiliateLink);
+  }
+
+  async getAffiliateLinkByCode(code: string): Promise<AffiliateLinkRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("affiliate_links")
+      .select("*")
+      .eq("code", code)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapAffiliateLink(data);
+  }
+
+  async deactivateAffiliateLink(linkId: string): Promise<void> {
+    await this.supabase
+      .from("affiliate_links")
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq("id", linkId);
+  }
+
+  async incrementAffiliateLinkClicks(code: string): Promise<void> {
+    const link = await this.getAffiliateLinkByCode(code);
+    if (!link) return;
+    await this.supabase
+      .from("affiliate_links")
+      .update({ clicks: link.clicks + 1 })
+      .eq("code", code);
+  }
+
+  async listAffiliateReferrals(sellerKey: string): Promise<AffiliateReferralRecord[]> {
+    const { data, error } = await this.supabase
+      .from("affiliate_referrals")
+      .select("*")
+      .eq("referrer_seller_key", sellerKey)
+      .order("created_at", { ascending: false });
+
+    if (error) return [];
+    return (data ?? []).map(mapAffiliateReferral);
+  }
+
+  async getAffiliateStats(sellerKey: string): Promise<AffiliateStats> {
+    const [links, referrals] = await Promise.all([
+      this.listAffiliateLinks(sellerKey),
+      this.listAffiliateReferrals(sellerKey),
+    ]);
+
+    return {
+      totalLinks: links.length,
+      totalClicks: links.reduce((sum, l) => sum + l.clicks, 0),
+      totalSignups: referrals.length,
+      activeReferrals: referrals.filter((r) => r.status === "active").length,
+      pendingReferrals: referrals.filter((r) => r.status === "pending").length,
+    };
+  }
+
   async saveSellerAdminControl(
     input: SellerAdminControlInput,
   ): Promise<SellerAdminControlRecord> {
@@ -3149,6 +3247,34 @@ function mapDemoCallLead(data: DatabaseDemoCallLeadRow): DemoCallLeadRecord {
     vapiCallId: data.vapi_call_id ?? undefined,
     status: data.status as DemoCallLeadRecord["status"],
     createdAt: toIsoStringOrNow(data.created_at),
+  };
+}
+
+function mapAffiliateLink(data: Record<string, unknown>): AffiliateLinkRecord {
+  return {
+    id: String(data.id),
+    sellerKey: String(data.seller_key),
+    sellerEmail: String(data.seller_email),
+    code: String(data.code),
+    label: data.label ? String(data.label) : undefined,
+    commissionPct: Number(data.commission_pct ?? 5),
+    clicks: Number(data.clicks ?? 0),
+    active: Boolean(data.active),
+    createdAt: toIsoStringOrNow(data.created_at as string),
+    updatedAt: toIsoStringOrNow(data.updated_at as string),
+  };
+}
+
+function mapAffiliateReferral(data: Record<string, unknown>): AffiliateReferralRecord {
+  return {
+    id: String(data.id),
+    affiliateLinkId: String(data.affiliate_link_id),
+    referrerSellerKey: String(data.referrer_seller_key),
+    referredEmail: String(data.referred_email),
+    referredSellerKey: data.referred_seller_key ? String(data.referred_seller_key) : undefined,
+    status: String(data.status) as AffiliateReferralRecord["status"],
+    createdAt: toIsoStringOrNow(data.created_at as string),
+    activatedAt: data.activated_at ? String(data.activated_at) : undefined,
   };
 }
 

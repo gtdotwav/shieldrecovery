@@ -967,3 +967,52 @@ export type UpdateCallInput = {
   checkoutUrl?: string;
   metadata?: Record<string, unknown>;
 };
+
+// ── Affiliates ──
+
+export const AFFILIATE_REFERRAL_STATUSES = [
+  "pending",
+  "active",
+  "inactive",
+] as const;
+export type AffiliateReferralStatus =
+  (typeof AFFILIATE_REFERRAL_STATUSES)[number];
+
+export type AffiliateLinkRecord = {
+  id: string;
+  sellerKey: string;
+  sellerEmail: string;
+  code: string;
+  label?: string;
+  commissionPct: number;
+  clicks: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AffiliateLinkInput = {
+  sellerKey: string;
+  sellerEmail: string;
+  label?: string;
+  commissionPct?: number;
+};
+
+export type AffiliateReferralRecord = {
+  id: string;
+  affiliateLinkId: string;
+  referrerSellerKey: string;
+  referredEmail: string;
+  referredSellerKey?: string;
+  status: AffiliateReferralStatus;
+  createdAt: string;
+  activatedAt?: string;
+};
+
+export type AffiliateStats = {
+  totalLinks: number;
+  totalClicks: number;
+  totalSignups: number;
+  activeReferrals: number;
+  pendingReferrals: number;
+};

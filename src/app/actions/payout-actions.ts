@@ -10,6 +10,7 @@ import { getStorageService } from "@/server/recovery/services/storage";
 import {
   requestSellerPayout,
   createSellerPixAccount,
+  createCheckoutSession,
 } from "@/server/checkout";
 
 async function getSellerCheckoutOverrides(email: string) {
@@ -67,6 +68,55 @@ const createPixSchema = z.object({
   holderDocument: z.string().min(1),
   bankName: z.string().optional(),
 });
+
+// ── Create Checkout Link ─────────────────────────────────────────
+
+const createCheckoutLinkSchema = z.object({
+  amount: z.coerce.number().positive(),
+  description: z.string().min(1),
+  customerName: z.string().optional(),
+  customerEmail: z.string().optional(),
+  customerPhone: z.string().optional(),
+});
+
+export async function createCheckoutLinkAction(formData: FormData) {
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
+
+  const parsed = createCheckoutLinkSchema.safeParse({
+    amount: formData.get("amount"),
+    description: formData.get("description"),
+    customerName: formData.get("customerName") || undefined,
+    customerEmail: formData.get("customerEmail") || undefined,
+    customerPhone: formData.get("customerPhone") || undefined,
+  });
+
+  if (!parsed.success) {
+    const message = parsed.error.issues.map((i) => i.message).join(", ");
+    redirect(`/financeiro?status=error&message=${encodeURIComponent(message)}`);
+  }
+
+  try {
+    const overrides = await getSellerCheckoutOverrides(session.email);
+    const result = await createCheckoutSession(
+      {
+        amount: parsed.data.amount,
+        description: parsed.data.description,
+        customerName: parsed.data.customerName ?? "",
+        customerEmail: parsed.data.customerEmail ?? "",
+        customerPhone: parsed.data.customerPhone ?? "",
+        source: "direct",
+      },
+      overrides,
+    );
+    revalidatePath("/financeiro");
+    redirect(`/financeiro?status=ok&saved=link-created&checkoutUrl=${encodeURIComponent(result.checkoutUrl)}`);
+  } catch (err) {
+    console.error("[createCheckoutLinkAction]", err instanceof Error ? err.message : err);
+    redirect("/financeiro?status=error&message=Erro%20ao%20criar%20link%20de%20pagamento");
+  }
+}
+
+// ── Create PIX Account ───────────────────────────────────────────
 
 export async function createPixAccountAction(formData: FormData) {
   const session = await requireAuthenticatedSession(["admin", "seller"]);
