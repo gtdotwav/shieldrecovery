@@ -256,28 +256,6 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
         />
       </section>
 
-      <PlatformSurface className="mt-5 p-5 sm:p-6">
-        <div className="grid gap-5 border-b border-black/[0.06] pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(17rem,0.8fr)] lg:items-end">
-          <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-green-600">
-              Setup da plataforma
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
-              Conecte o núcleo da operação.
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#6b7280]">
-              Banco, Gateway, WhatsApp, CRM e IA ficam aqui. A ideia é
-              simples: configurar o que pode viver no runtime e deixar as
-              chaves críticas do gateway prontas para white label via ambiente.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
-            Ordem ideal: banco, gateway, WhatsApp e IA.
-          </div>
-        </div>
-      </PlatformSurface>
-
       {params.status ? (
         <PlatformSurface className="mt-5 p-4">
           <p className="text-sm font-medium text-[#1a1a2e]">
@@ -298,351 +276,141 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
 
       <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_21rem]">
         <div className="space-y-5">
-          <SettingsCard
-            eyebrow="Banco"
-            title="Supabase operacional"
-            description="Cole a URL do projeto e a service role key. Se o schema já estiver aplicado, a persistência troca para Supabase."
-          >
-            <form action={saveDatabaseBootstrapAction} className="space-y-4">
-              <Field
-                label="Supabase URL"
-                name="supabaseUrl"
-                defaultValue={databaseSettings.supabaseUrl}
-                placeholder="https://xxxx.supabase.co"
-              />
-              <Field
-                label="Service role key"
-                name="supabaseServiceRoleKey"
-                defaultValue={databaseSettings.supabaseServiceRoleKey}
-                placeholder="supabase service role key"
-                type="password"
-              />
-              <SaveButton label="Salvar banco" />
-            </form>
-          </SettingsCard>
-
-          <SettingsCard
-            eyebrow="Workspace"
-            title="Base pública e compatibilidade"
-            description="URL oficial da operação e parâmetros do webhook legado de compatibilidade."
-          >
-            <form action={saveConnectionSettingsAction} className="space-y-4">
-              <input type="hidden" name="scope" value="workspace" />
-              <Field
-                label="App base URL"
-                name="appBaseUrl"
-                defaultValue={runtimeSettings.appBaseUrl}
-                placeholder="https://sua-url.com"
-              />
-              <Field
-                label="Webhook secret"
-                name="webhookSecret"
-                defaultValue={runtimeSettings.webhookSecret}
-                placeholder="legacy_webhook_secret"
-                type="password"
-              />
-              <Field
-                label="Tolerância do webhook (segundos)"
-                name="webhookToleranceSeconds"
-                defaultValue={String(runtimeSettings.webhookToleranceSeconds)}
-                placeholder="300"
-                type="number"
-              />
-              <SaveButton />
-            </form>
-          </SettingsCard>
-
-          <SettingsCard
-            eyebrow="Gateway"
-            title={`${platformBrand.gateway.name} v2`}
-            description="Gateway de pagamento para Pix de recovery e reconciliação de webhooks."
-          >
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <PlatformPill icon={CreditCard}>
-                  {appEnv.pagouAiConfigured
-                    ? "secret key carregada"
-                    : "secret key pendente"}
-                </PlatformPill>
-                <PlatformPill icon={QrCode}>
-                  {appEnv.pagouAiCardConfigured
-                    ? "public key disponivel"
-                    : "checkout card opcional"}
-                </PlatformPill>
-                <PlatformPill>
-                  {appEnv.pagouAiEnvironment === "sandbox"
-                    ? "ambiente sandbox"
-                    : "ambiente producao"}
-                </PlatformPill>
-              </div>
-
-              <div className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-4 text-sm leading-6 text-[#6b7280]">
-                Pix ja cria transacao direto em <code>/v2/transactions</code> e
-                o webhook reconcilia a cobranca com <code>GET /v2/transactions/{"{id}"}</code>
-                quando faltar contexto no payload. Para habilitar cartao no
-                checkout hospedado do gateway, mantenha tambem a public key no ambiente.
-              </div>
-
-              <div className="rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-4 text-sm leading-6 text-[#6b7280]">
-                Variaveis esperadas: <code>PAGOUAI_SECRET_KEY</code>,{" "}
-                <code>PAGOUAI_ENVIRONMENT</code>, <code>PAGOUAI_API_BASE_URL</code>{" "}
-                (opcional) e <code>NEXT_PUBLIC_PAGOUAI_PUBLIC_KEY</code> para card.
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href={platformBrand.gateway.docsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
-                >
-                  Docs atuais
-                </Link>
-                <Link
-                  href={platformBrand.gateway.legacyDocsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
-                >
-                  Docs legados
-                </Link>
-              </div>
-            </div>
-          </SettingsCard>
-
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.9fr)]">
-            <SettingsCard
-              eyebrow="WhatsApp"
-              title="Conecte sua operação de mensagens"
-              description="Cloud API segue o fluxo oficial da Meta. Para QR Code, use um provider Web API compatível."
-            >
-              <form action={saveConnectionSettingsAction} className="space-y-4">
-                <input type="hidden" name="scope" value="whatsapp" />
-                <SelectField
-                  label="Provider"
-                  name="whatsappProvider"
-                  defaultValue={runtimeSettings.whatsappProvider}
-                  options={[
-                    { label: "WhatsApp Cloud API", value: "cloud_api" },
-                    { label: "WhatsApp Web API", value: "web_api" },
-                  ]}
-                />
-                <Field
-                  label="API base URL"
-                  name="whatsappApiBaseUrl"
-                  defaultValue={runtimeSettings.whatsappApiBaseUrl}
-                  placeholder={
-                    runtimeSettings.whatsappProvider === "web_api"
-                      ? "https://seu-provider-whatsapp-web.com"
-                      : "https://graph.facebook.com/v22.0"
-                  }
-                />
-                <Field
-                  label={
-                    runtimeSettings.whatsappProvider === "web_api"
-                      ? "API key / access token"
-                      : "Access token"
-                  }
-                  name="whatsappAccessToken"
-                  defaultValue={runtimeSettings.whatsappAccessToken}
-                  placeholder="token da API"
-                  type="password"
-                />
-                {runtimeSettings.whatsappProvider === "web_api" ? (
-                  <Field
-                    label="Session ID"
-                    name="whatsappWebSessionId"
-                    defaultValue={runtimeSettings.whatsappWebSessionId}
-                    placeholder={platformBrand.slug}
-                  />
-                ) : null}
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field
-                    label="Phone number ID"
-                    name="whatsappPhoneNumberId"
-                    defaultValue={runtimeSettings.whatsappPhoneNumberId}
-                    placeholder={
-                      runtimeSettings.whatsappProvider === "web_api"
-                        ? "opcional para providers próprios"
-                        : "id do numero"
-                    }
-                  />
-                  <Field
-                    label="Business account ID"
-                    name="whatsappBusinessAccountId"
-                    defaultValue={runtimeSettings.whatsappBusinessAccountId}
-                    placeholder={
-                      runtimeSettings.whatsappProvider === "web_api"
-                        ? "opcional para providers próprios"
-                        : "id da conta"
-                    }
-                  />
-                </div>
-                <Field
-                  label="Webhook verify token"
-                  name="whatsappWebhookVerifyToken"
-                  defaultValue={runtimeSettings.whatsappWebhookVerifyToken}
-                  placeholder="token de verificação"
-                  type="password"
-                />
-                {runtimeSettings.whatsappProvider === "web_api" ? (
-                  <div className="rounded-[1rem] border border-black/[0.06] bg-[#fbfbfc] px-4 py-3 text-sm leading-6 text-[#6b7280]">
-                    Para QR, use a URL do seu provider WhatsApp Web. Se a URL da
-                    Meta continuar aqui, a sessão não vai nascer.
-                  </div>
-                ) : null}
-                {isWebApiOnCloudUrl ? (
-                  <p className="text-sm text-red-500">
-                    A URL atual ainda é da Cloud API da Meta. Troque para a URL do seu provider WhatsApp Web para gerar QR.
-                  </p>
-                ) : null}
-                {whatsappDiagnostics.missingFields.length > 0 ? (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-700">
-                    Faltando para ativar: {whatsappDiagnostics.missingFields.join(", ")}.
-                  </div>
-                ) : null}
-                <SaveButton />
-              </form>
-            </SettingsCard>
-
-            <SettingsCard
-              eyebrow="QR"
-              title="Sessão WhatsApp Web"
-              description="Use este bloco quando o provider for Web API. O QR nasce, atualiza e desconecta por aqui."
-            >
-              {runtimeSettings.whatsappProvider !== "web_api" ? (
-                    <div className="rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-5 text-sm text-[#6b7280]">
-                      Troque o provider para <span className="font-medium text-[#1a1a2e]">WhatsApp Web API</span> para habilitar conexão por QR.
-                    </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <PlatformPill icon={QrCode}>
-                      {describeQrStatus(whatsappSession.sessionStatus)}
-                    </PlatformPill>
-                    {whatsappSession.connectedPhone ? (
-                      <PlatformPill>{whatsappSession.connectedPhone}</PlatformPill>
-                    ) : null}
-                  </div>
-
-                  {whatsappSession.qrCode ? (
-                    <div className="flex justify-center rounded-xl border border-black/[0.06] bg-[#f8f9fb] p-4">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={whatsappSession.qrCode}
-                        alt="QR Code do WhatsApp"
-                        className="h-64 w-64 rounded-xl bg-white object-contain p-3 shadow-sm"
-                      />
-                    </div>
-                  ) : (
-                    <div className="rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-5 text-sm text-[#6b7280]">
-                      Nenhum QR disponível. Gere ou atualize a sessão para receber um novo código.
-                    </div>
-                  )}
-
-                  {whatsappSession.error ? (
-                    <p className="text-sm text-red-500">{whatsappSession.error}</p>
+          {/* WhatsApp — seção principal */}
+          <PlatformSurface className="p-5">
+            <SectionHeader eyebrow="WhatsApp" title="Conecte o canal de mensagens." />
+            {runtimeSettings.whatsappProvider === "web_api" ? (
+              <div className="mt-4 space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <PlatformPill icon={QrCode}>
+                    {describeQrStatus(whatsappSession.sessionStatus)}
+                  </PlatformPill>
+                  {whatsappSession.connectedPhone ? (
+                    <PlatformPill>{whatsappSession.connectedPhone}</PlatformPill>
                   ) : null}
-
-                  <div className="flex flex-wrap gap-2">
-                    <form action={startWhatsAppQrSessionAction}>
-                      <button className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700">
-                        <QrCode className="h-4 w-4" />
-                        Gerar QR
-                      </button>
-                    </form>
-
-                    <form action={refreshWhatsAppQrSessionAction}>
-                      <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
-                        <RefreshCw className="h-4 w-4" />
-                        Atualizar
-                      </button>
-                    </form>
-
-                    <form action={disconnectWhatsAppQrSessionAction}>
-                      <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
-                        <Unplug className="h-4 w-4" />
-                        Desconectar
-                      </button>
-                    </form>
-                  </div>
                 </div>
-              )}
-            </SettingsCard>
-          </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            <SettingsCard
-              eyebrow="Email"
-              title="Canal de email"
-            description="Ative lembretes por email e testes de envio."
-            >
-              <form action={saveConnectionSettingsAction} className="space-y-4">
-                <input type="hidden" name="scope" value="email" />
-                <Field
-                  label="API key"
-                  name="emailApiKey"
-                  defaultValue={runtimeSettings.emailApiKey}
-                  placeholder="sendgrid api key"
-                  type="password"
-                />
-                <Field
-                  label="From address"
-                  name="emailFromAddress"
-                  defaultValue={runtimeSettings.emailFromAddress}
-                  placeholder="recovery@suaempresa.com"
-                />
-                <SaveButton />
-              </form>
-            </SettingsCard>
+                {whatsappSession.qrCode ? (
+                  <div className="flex justify-center rounded-xl border border-black/[0.06] bg-[#f8f9fb] p-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={whatsappSession.qrCode}
+                      alt="QR Code do WhatsApp"
+                      className="h-64 w-64 rounded-xl bg-white object-contain p-3 shadow-sm"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-5 text-sm text-[#6b7280]">
+                    Nenhum QR disponível. Gere um novo código para escanear.
+                  </div>
+                )}
 
-            <SettingsCard
-              eyebrow="CRM"
-              title={platformBrand.crm.name}
-              description="Conecte a URL e a chave do seu CRM para sincronizar casos reais."
-            >
-              <form action={saveConnectionSettingsAction} className="space-y-4">
-                <input type="hidden" name="scope" value="crm" />
-                <Field
-                  label="API URL"
-                  name="crmApiUrl"
-                  defaultValue={runtimeSettings.crmApiUrl}
-                  placeholder="https://crm.exemplo.com/api"
-                />
-                <Field
-                  label="API key"
-                  name="crmApiKey"
-                  defaultValue={runtimeSettings.crmApiKey}
-                  placeholder="crm api key"
-                  type="password"
-                />
-                <SaveButton />
-              </form>
-            </SettingsCard>
-          </div>
+                {whatsappSession.error ? (
+                  <p className="text-sm text-red-500">{whatsappSession.error}</p>
+                ) : null}
 
-          <SettingsCard
-            eyebrow="AI"
-            title="Camada de inteligência"
-            description="Salve a chave da IA para ativar leitura, copy e automação assistida."
-          >
-            <form action={saveConnectionSettingsAction} className="space-y-4">
-              <input type="hidden" name="scope" value="ai" />
-              <Field
-                label="OpenAI API key"
-                name="openAiApiKey"
-                defaultValue={runtimeSettings.openAiApiKey}
-                placeholder="openai api key"
-                type="password"
-              />
-              <SaveButton />
-            </form>
-          </SettingsCard>
+                <div className="flex flex-wrap gap-2">
+                  <form action={startWhatsAppQrSessionAction}>
+                    <button className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700">
+                      <QrCode className="h-4 w-4" />
+                      Gerar QR
+                    </button>
+                  </form>
+                  <form action={refreshWhatsAppQrSessionAction}>
+                    <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
+                      <RefreshCw className="h-4 w-4" />
+                      Atualizar
+                    </button>
+                  </form>
+                  <form action={disconnectWhatsAppQrSessionAction}>
+                    <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
+                      <Unplug className="h-4 w-4" />
+                      Desconectar
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                <PlatformPill icon={MessageCircle}>
+                  {runtimeSettings.whatsappConfigured
+                    ? `Cloud API ativa · ${inbox.conversations.length} conversas`
+                    : "Provider pendente"}
+                </PlatformPill>
+                <p className="text-sm leading-6 text-[#717182]">
+                  Para usar QR Code, troque o provider para Web API nas configurações abaixo.
+                </p>
+              </div>
+            )}
+          </PlatformSurface>
+
+          {/* Endpoints */}
+          <PlatformSurface className="p-5">
+            <SectionHeader eyebrow="Endpoints" title="URLs da operação." />
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <SideLine label={`${platformBrand.gateway.name} webhook`} value={health.webhook_url} />
+              <SideLine label="WhatsApp webhook" value={health.whatsapp_webhook_url} />
+              <SideLine label="Worker executor" value={health.worker_url} />
+              <SideLine label="Import" value={`${runtimeSettings.appBaseUrl}/api/import`} />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <CopyButton value={health.webhook_url} />
+              <Link
+                href="/connect/docs"
+                className="inline-flex items-center gap-2 rounded-full border border-black/[0.08] bg-white px-4 py-2 text-sm font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+              >
+                <BookOpen className="h-4 w-4" />
+                Documentação da API
+              </Link>
+            </div>
+          </PlatformSurface>
+
+          {/* Gateway */}
+          <PlatformSurface className="p-5">
+            <SectionHeader eyebrow="Gateway" title={`${platformBrand.gateway.name}`} />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <PlatformPill icon={CreditCard}>
+                {appEnv.pagouAiConfigured ? "secret key carregada" : "secret key pendente"}
+              </PlatformPill>
+              <PlatformPill icon={QrCode}>
+                {appEnv.pagouAiCardConfigured ? "public key ativa" : "card opcional"}
+              </PlatformPill>
+              <PlatformPill>
+                {appEnv.pagouAiEnvironment === "sandbox" ? "sandbox" : "producao"}
+              </PlatformPill>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href={platformBrand.gateway.docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+              >
+                Docs atuais
+              </Link>
+              <Link
+                href={platformBrand.gateway.legacyDocsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3 py-1.5 text-xs font-medium text-[#4b5563] transition-colors hover:bg-[#f5f5f7] hover:text-[#111827]"
+              >
+                Docs legados
+              </Link>
+            </div>
+          </PlatformSurface>
+
+          {/* Configurações avançadas — colapsável */}
+          <AdminAdvancedSettings
+            runtimeSettings={runtimeSettings}
+            databaseSettings={databaseSettings}
+            whatsappDiagnostics={whatsappDiagnostics}
+            isWebApiOnCloudUrl={isWebApiOnCloudUrl}
+          />
         </div>
 
         <div className="space-y-4">
           <PlatformSurface className="p-4">
-            <SectionHeader eyebrow="Estado do runtime" title="Leitura rápida do que já está ativo." compact />
+            <SectionHeader eyebrow="Estado do runtime" title="Integrações ativas." compact />
             <div className="mt-4 space-y-2">
               {integrations.map((item) => (
                 <IntegrationLine key={item.title} item={item} />
@@ -651,20 +419,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <SectionHeader eyebrow="Endpoints oficiais" title="URLs públicas da operação." compact />
-            <div className="mt-4 space-y-3">
-              <SideLine label={`${platformBrand.gateway.name} webhook`} value={health.webhook_url} />
-              <SideLine
-                label="WhatsApp webhook"
-                value={health.whatsapp_webhook_url}
-              />
-              <SideLine label="Worker executor" value={health.worker_url} />
-              <SideLine label="Import" value={`${runtimeSettings.appBaseUrl}/api/import`} />
-            </div>
-          </PlatformSurface>
-
-          <PlatformSurface className="p-4">
-            <SectionHeader eyebrow="Persistência e automação" title="Banco e execução contínua." compact />
+            <SectionHeader eyebrow="Persistência" title="Banco e automação." compact />
             <div className="mt-4 space-y-3">
               <SideLine
                 label="Banco"
@@ -685,23 +440,19 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
                 }
               />
             </div>
-            <p className="mt-3 text-sm leading-6 text-[#717182]">
-              Se o cron já estiver ativo, o worker cuida do follow-up contínuo.
-            </p>
           </PlatformSurface>
 
           <PlatformSurface className="p-4">
-            <SectionHeader eyebrow="Diagnóstico do WhatsApp" title="Estado atual do canal." compact />
+            <SectionHeader eyebrow="WhatsApp" title="Diagnóstico." compact />
             <div className="mt-4 space-y-3">
               <SideLine
-                label="Estado do canal"
+                label="Canal"
                 value={whatsappDiagnostics.ready ? "pronto" : "incompleto"}
               />
               <SideLine
                 label="Modo"
-                value={whatsappDiagnostics.qrSupported ? "QR suportado" : "Cloud API oficial"}
+                value={whatsappDiagnostics.qrSupported ? "QR suportado" : "Cloud API"}
               />
-              <SideLine label="Webhook do canal" value={whatsappDiagnostics.webhookUrl} />
               <SideLine
                 label="Sessão"
                 value={describeQrStatus(whatsappDiagnostics.sessionStatus)}
@@ -709,7 +460,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
             </div>
             {whatsappDiagnostics.missingFields.length > 0 ? (
               <p className="mt-3 text-sm leading-6 text-[#717182]">
-                Campos pendentes: {whatsappDiagnostics.missingFields.join(", ")}.
+                Pendentes: {whatsappDiagnostics.missingFields.join(", ")}.
               </p>
             ) : null}
             {whatsappDiagnostics.warnings.length > 0 ? (
@@ -1120,6 +871,125 @@ function SellerConnectView({
         </div>
       </section>
     </PlatformAppPage>
+  );
+}
+
+function AdminAdvancedSettings({
+  runtimeSettings,
+  databaseSettings,
+  whatsappDiagnostics,
+  isWebApiOnCloudUrl,
+}: {
+  runtimeSettings: {
+    appBaseUrl: string;
+    webhookSecret: string;
+    webhookToleranceSeconds: number;
+    whatsappProvider: string;
+    whatsappApiBaseUrl: string;
+    whatsappAccessToken: string;
+    whatsappWebSessionId: string;
+    whatsappPhoneNumberId: string;
+    whatsappBusinessAccountId: string;
+    whatsappWebhookVerifyToken: string;
+    emailApiKey: string;
+    emailFromAddress: string;
+    crmApiUrl: string;
+    crmApiKey: string;
+    openAiApiKey: string;
+  };
+  databaseSettings: { supabaseUrl: string; supabaseServiceRoleKey: string };
+  whatsappDiagnostics: { missingFields: string[] };
+  isWebApiOnCloudUrl: boolean;
+}) {
+  return (
+    <details className="group">
+      <summary className="flex cursor-pointer items-center gap-2 rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-5 py-4 text-sm font-semibold text-[#4b5563] transition-colors hover:bg-[#f5f5f7] [&::-webkit-details-marker]:hidden">
+        <svg className="h-4 w-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+        Configurações avançadas
+        <span className="ml-auto text-xs font-normal text-[#9ca3af]">banco, WhatsApp, email, CRM, AI</span>
+      </summary>
+      <div className="mt-5 space-y-5">
+        <SettingsCard eyebrow="Banco" title="Supabase" description="URL do projeto e service role key.">
+          <form action={saveDatabaseBootstrapAction} className="space-y-4">
+            <Field label="Supabase URL" name="supabaseUrl" defaultValue={databaseSettings.supabaseUrl} placeholder="https://xxxx.supabase.co" />
+            <Field label="Service role key" name="supabaseServiceRoleKey" defaultValue={databaseSettings.supabaseServiceRoleKey} placeholder="service role key" type="password" />
+            <SaveButton label="Salvar banco" />
+          </form>
+        </SettingsCard>
+
+        <SettingsCard eyebrow="Workspace" title="Base URL e webhook" description="URL da operação e parâmetros de compatibilidade.">
+          <form action={saveConnectionSettingsAction} className="space-y-4">
+            <input type="hidden" name="scope" value="workspace" />
+            <Field label="App base URL" name="appBaseUrl" defaultValue={runtimeSettings.appBaseUrl} placeholder="https://sua-url.com" />
+            <Field label="Webhook secret" name="webhookSecret" defaultValue={runtimeSettings.webhookSecret} placeholder="legacy_webhook_secret" type="password" />
+            <Field label="Tolerância (seg)" name="webhookToleranceSeconds" defaultValue={String(runtimeSettings.webhookToleranceSeconds)} placeholder="300" type="number" />
+            <SaveButton />
+          </form>
+        </SettingsCard>
+
+        <SettingsCard eyebrow="WhatsApp" title="Configuração do provider" description="API URL, token e credenciais do canal.">
+          <form action={saveConnectionSettingsAction} className="space-y-4">
+            <input type="hidden" name="scope" value="whatsapp" />
+            <SelectField
+              label="Provider"
+              name="whatsappProvider"
+              defaultValue={runtimeSettings.whatsappProvider}
+              options={[
+                { label: "WhatsApp Cloud API", value: "cloud_api" },
+                { label: "WhatsApp Web API", value: "web_api" },
+              ]}
+            />
+            <Field label="API base URL" name="whatsappApiBaseUrl" defaultValue={runtimeSettings.whatsappApiBaseUrl} placeholder="https://..." />
+            <Field label="Access token" name="whatsappAccessToken" defaultValue={runtimeSettings.whatsappAccessToken} placeholder="token da API" type="password" />
+            {runtimeSettings.whatsappProvider === "web_api" ? (
+              <Field label="Session ID" name="whatsappWebSessionId" defaultValue={runtimeSettings.whatsappWebSessionId} placeholder="session id" />
+            ) : null}
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Phone number ID" name="whatsappPhoneNumberId" defaultValue={runtimeSettings.whatsappPhoneNumberId} placeholder="id do numero" />
+              <Field label="Business account ID" name="whatsappBusinessAccountId" defaultValue={runtimeSettings.whatsappBusinessAccountId} placeholder="id da conta" />
+            </div>
+            <Field label="Webhook verify token" name="whatsappWebhookVerifyToken" defaultValue={runtimeSettings.whatsappWebhookVerifyToken} placeholder="token" type="password" />
+            {isWebApiOnCloudUrl ? (
+              <p className="text-sm text-red-500">URL da Meta detectada. Troque para a URL do provider Web API.</p>
+            ) : null}
+            {whatsappDiagnostics.missingFields.length > 0 ? (
+              <p className="text-sm text-amber-700">Faltando: {whatsappDiagnostics.missingFields.join(", ")}.</p>
+            ) : null}
+            <SaveButton />
+          </form>
+        </SettingsCard>
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <SettingsCard eyebrow="Email" title="SendGrid" description="API key e remetente.">
+            <form action={saveConnectionSettingsAction} className="space-y-4">
+              <input type="hidden" name="scope" value="email" />
+              <Field label="API key" name="emailApiKey" defaultValue={runtimeSettings.emailApiKey} placeholder="sendgrid api key" type="password" />
+              <Field label="From address" name="emailFromAddress" defaultValue={runtimeSettings.emailFromAddress} placeholder="recovery@empresa.com" />
+              <SaveButton />
+            </form>
+          </SettingsCard>
+
+          <SettingsCard eyebrow="CRM" title={platformBrand.crm.name} description="URL e chave do CRM.">
+            <form action={saveConnectionSettingsAction} className="space-y-4">
+              <input type="hidden" name="scope" value="crm" />
+              <Field label="API URL" name="crmApiUrl" defaultValue={runtimeSettings.crmApiUrl} placeholder="https://crm.exemplo.com/api" />
+              <Field label="API key" name="crmApiKey" defaultValue={runtimeSettings.crmApiKey} placeholder="crm api key" type="password" />
+              <SaveButton />
+            </form>
+          </SettingsCard>
+        </div>
+
+        <SettingsCard eyebrow="AI" title="OpenAI" description="Chave da IA para automação.">
+          <form action={saveConnectionSettingsAction} className="space-y-4">
+            <input type="hidden" name="scope" value="ai" />
+            <Field label="OpenAI API key" name="openAiApiKey" defaultValue={runtimeSettings.openAiApiKey} placeholder="openai api key" type="password" />
+            <SaveButton />
+          </form>
+        </SettingsCard>
+      </div>
+    </details>
   );
 }
 
