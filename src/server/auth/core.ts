@@ -157,6 +157,10 @@ const ADDITIONAL_ADMINS: Record<string, string> = {
   "pedro@pagrecovery.com": "admin@123",
 };
 
+const ADDITIONAL_SELLERS: Record<string, string> = {
+  "seller@pagrecovery.com": "seller@123",
+};
+
 export async function authenticateCredentials(input: {
   email: string;
   password: string;
@@ -180,6 +184,12 @@ export async function authenticateCredentials(input: {
   const additionalPassword = ADDITIONAL_ADMINS[email];
   if (additionalPassword && password === additionalPassword) {
     return { email, role: "admin" as const };
+  }
+
+  // Check additional seller users
+  const sellerPassword = ADDITIONAL_SELLERS[email];
+  if (sellerPassword && password === sellerPassword) {
+    return { email, role: "seller" as const };
   }
 
   return null;
