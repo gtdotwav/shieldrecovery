@@ -9,36 +9,24 @@ const b = platformBrand;
 
 const faqs = [
   {
-    q: "Como funciona a recuperação automática?",
-    a: "Quando um pagamento falha, o webhook captura o evento em tempo real. A IA analisa o contexto — valor, método, histórico do cliente — e envia uma mensagem personalizada via WhatsApp com link de pagamento. Se o cliente não responder, o Call Center IA liga automaticamente. Tudo sem intervenção humana, 24/7.",
+    q: "Como funciona a recuperação?",
+    a: "Quando um pagamento falha, o webhook captura o evento em tempo real. A IA analisa o contexto e envia uma mensagem personalizada via WhatsApp com link de pagamento. Se não houver resposta, o Call Center IA liga automaticamente. Tudo sem intervenção humana, 24/7.",
   },
   {
     q: "Preciso de equipe técnica para integrar?",
-    a: "Não. Basta configurar o webhook do seu gateway para apontar para a nossa URL. O processo leva menos de 5 minutos e não requer nenhuma linha de código. Oferecemos suporte dedicado durante todo o onboarding.",
+    a: "Não. Basta configurar o webhook do seu gateway para apontar para a nossa URL. O processo leva poucos minutos e não requer código. Oferecemos suporte durante todo o onboarding.",
   },
   {
-    q: "Quais gateways de pagamento são suportados?",
-    a: "Suportamos os principais gateways do mercado, com novos sendo adicionados continuamente. Nossa API é universal — se o seu gateway envia webhooks, podemos integrá-lo. A integração é via REST API padrão.",
-  },
-  {
-    q: "O cliente não vai se sentir incomodado?",
-    a: "Não. Nossas mensagens são contextuais e enviadas no momento certo — logo após a falha, quando o cliente ainda tem intenção de compra. Não é cobrança genérica, é um lembrete inteligente. A taxa de bloqueio é inferior a 0.3%.",
-  },
-  {
-    q: "Meus dados e os dos clientes estão seguros?",
-    a: "Sim. Nunca armazenamos dados de cartão — operamos apenas com tokens e links de pagamento. Infraestrutura protegida com criptografia AES-256, isolamento de dados por tenant (RLS) e conformidade total com LGPD e PCI-DSS.",
+    q: "Quais gateways são suportados?",
+    a: "Suportamos os principais gateways do mercado brasileiro. Nossa API é universal — se o seu gateway envia webhooks, podemos integrá-lo via REST API padrão.",
   },
   {
     q: "Quanto custa?",
-    a: "Setup e onboarding são gratuitos. O modelo é 100% baseado em performance — você só paga uma porcentagem sobre a receita efetivamente recuperada. Sem taxa fixa, sem mensalidade, sem contrato mínimo. Se não recuperarmos, você não paga nada.",
+    a: "Setup e onboarding são gratuitos. O modelo é 100% baseado em performance — você só paga uma porcentagem sobre a receita efetivamente recuperada. O percentual é definido no onboarding com base no seu volume. Sem resultado, sem custo.",
   },
   {
-    q: "Funciona com Pix, boleto e cartão?",
-    a: "Sim. A plataforma gera links de pagamento que aceitam múltiplos métodos. Se o cartão falhou, o cliente pode pagar via Pix instantâneo ou gerar um novo boleto — tudo pelo mesmo link, sem fricção.",
-  },
-  {
-    q: "Qual o tempo médio de recuperação?",
-    a: "O primeiro contato acontece em até 2 minutos após a falha. Em média, 68% das recuperações ocorrem nos primeiros 30 minutos, enquanto o cliente ainda tem a intenção de compra ativa.",
+    q: "O cliente não vai se sentir incomodado?",
+    a: "Não. As mensagens são contextuais e enviadas logo após a falha, quando o cliente ainda tem intenção de compra. Não é cobrança genérica — é um lembrete inteligente com link para finalizar o pagamento.",
   },
 ];
 
