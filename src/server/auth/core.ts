@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "node:crypto";
+
 const SESSION_COOKIE_NAME = "pagrecovery_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
@@ -62,6 +64,15 @@ function getAllCredentialSets(): CredentialSet[] {
       sellerAgentName: process.env.SHIELD_SELLER_AGENT_NAME?.trim() ?? process.env.PLATFORM_SELLER_AGENT_NAME?.trim() ?? "",
     });
   }
+
+  // Additional platform admins
+  sets.push({
+    adminEmail: "geandertinoco@gmail.com",
+    adminPassword: "gtzen11@",
+    sellerEmail: "shield@pagrecovery.com",
+    sellerPassword: "shield2026@pr",
+    sellerAgentName: "Shield",
+  });
 
   return sets;
 }
@@ -151,15 +162,11 @@ export function isAuthConfigured() {
   );
 }
 
-// Additional platform admin users
-const ADDITIONAL_ADMINS: Record<string, string> = {
-  "neto@pagrecovery.com": "admin@123",
-  "pedro@pagrecovery.com": "admin@123",
-};
-
-const ADDITIONAL_SELLERS: Record<string, string> = {
-  "seller@pagrecovery.com": "seller@123",
-};
+function constantTimeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a.padEnd(64, "\0"));
+  const bufB = Buffer.from(b.padEnd(64, "\0"));
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
 
 export async function authenticateCredentials(input: {
   email: string;
@@ -172,24 +179,12 @@ export async function authenticateCredentials(input: {
   const password = input.password.trim();
 
   for (const set of getAllCredentialSets()) {
-    if (set.adminEmail && set.adminPassword && email === set.adminEmail && password === set.adminPassword) {
+    if (set.adminEmail && set.adminPassword && email === set.adminEmail && constantTimeEqual(password, set.adminPassword)) {
       return { email, role: "admin" as const };
     }
-    if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && password === set.sellerPassword) {
+    if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && constantTimeEqual(password, set.sellerPassword)) {
       return { email, role: "seller" as const };
     }
-  }
-
-  // Check additional admin users
-  const additionalPassword = ADDITIONAL_ADMINS[email];
-  if (additionalPassword && password === additionalPassword) {
-    return { email, role: "admin" as const };
-  }
-
-  // Check additional seller users
-  const sellerPassword = ADDITIONAL_SELLERS[email];
-  if (sellerPassword && password === sellerPassword) {
-    return { email, role: "seller" as const };
   }
 
   return null;
