@@ -3,6 +3,7 @@
 type BrandConfig = {
   name: string;
   slug: string;
+  contactEmail: string;
   shortDescription: string;
   longDescription: string;
   marketingHeadline: string;
@@ -30,6 +31,7 @@ const brands: Record<string, BrandConfig> = {
   pagrecovery: {
     name: "PagRecovery",
     slug: "pagrecovery",
+    contactEmail: "contato@pagrecovery.com",
     shortDescription: "Recuperação inteligente de pagamentos",
     longDescription:
       "Plataforma inteligente de recuperação de pagamentos. Detecta falhas, contacta clientes e recupera vendas automaticamente.",
@@ -43,9 +45,9 @@ const brands: Record<string, BrandConfig> = {
     bgDark: "#030a07",
     bgDarkSecondary: "#041510",
     gateway: {
-      name: "SuperPay",
-      slug: "superpay",
-      webhookBasePath: "/api/webhooks/superpay",
+      name: "PagNet",
+      slug: "pagnet",
+      webhookBasePath: "/api/webhooks/pagnet",
       docsUrl: "",
       legacyDocsUrl: "",
     },
@@ -54,6 +56,7 @@ const brands: Record<string, BrandConfig> = {
   shield: {
     name: "Shield Recovery",
     slug: "shield-recovery",
+    contactEmail: "contato@shieldrecovery.com",
     shortDescription: "Plataforma de recuperação de receita",
     longDescription:
       "Plataforma inteligente que detecta falhas e recupera vendas automaticamente.",
@@ -84,7 +87,7 @@ export const platformBrand: BrandConfig =
   brands[activeBrand] ?? brands.pagrecovery;
 
 const gatewayRegistry: Record<string, { name: string; webhookBasePath: string }> = {
-  superpay: { name: "SuperPay", webhookBasePath: "/api/webhooks/superpay" },
+  pagnet: { name: "PagNet", webhookBasePath: "/api/webhooks/pagnet" },
   pagouai: { name: "Pagou.ai", webhookBasePath: "/api/webhooks/pagouai" },
   "shield-gateway": { name: "Shield Gateway", webhookBasePath: "/api/webhooks/shield-gateway" },
   buckpay: { name: "BuckPay", webhookBasePath: "/api/webhooks/buckpay" },

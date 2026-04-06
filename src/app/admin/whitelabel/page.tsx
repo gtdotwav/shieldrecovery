@@ -39,10 +39,10 @@ const PROVIDER_META: Record<
     docsHint: "https://docs.pagouai.com",
     baseHint: "https://api.pagouai.com",
   },
-  superpay: {
-    label: "SuperPay",
-    docsHint: "https://docs.superpay.com.br",
-    baseHint: "https://api.superpay.com.br",
+  pagnet: {
+    label: "PagNet",
+    docsHint: "https://docs.pagnet.com.br",
+    baseHint: "https://api.pagnet.com.br",
   },
   stripe: {
     label: "Stripe",

@@ -1,4 +1,3 @@
-// Legacy alias — redirects to PagNet handler
 import {
   handlePagNetHealth,
   handlePagNetWebhook,

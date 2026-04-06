@@ -304,6 +304,13 @@ export type MessageRecord = {
   readAt?: string;
   error?: string;
   metadata?: MessageMetadata;
+  queuedAt?: string;
+  sentAt?: string;
+  failedAt?: string;
+  clickedAt?: string;
+  convertedAt?: string;
+  providerStatus?: string;
+  deliveryChannel?: string;
 };
 
 export type InboxConversation = {
@@ -441,6 +448,17 @@ export type SellerAdminControlRecord = {
   checkoutApiKey?: string;
   whitelabelId?: string;
   notes?: string;
+  maxContactsPerLeadPerWeek?: number;
+  maxContactsPerLeadPerDay?: number;
+  smsEnabled?: boolean;
+  smsProvider?: string;
+  smsApiKey?: string;
+  smsFromNumber?: string;
+  emailRecoveryEnabled?: boolean;
+  preferredChannels?: string[];
+  aiNegotiationEnabled?: boolean;
+  aiMaxDiscountPct?: number;
+  aiNegotiationStrategy?: string;
   updatedAt: string;
 };
 
@@ -462,13 +480,24 @@ export type SellerAdminControlInput = {
   checkoutApiKey?: string;
   whitelabelId?: string;
   notes?: string;
+  maxContactsPerLeadPerWeek?: number;
+  maxContactsPerLeadPerDay?: number;
+  smsEnabled?: boolean;
+  smsProvider?: string;
+  smsApiKey?: string;
+  smsFromNumber?: string;
+  emailRecoveryEnabled?: boolean;
+  preferredChannels?: string[];
+  aiNegotiationEnabled?: boolean;
+  aiMaxDiscountPct?: number;
+  aiNegotiationStrategy?: string;
 };
 
 /* ── Whitelabel Profiles ── */
 
 export const GATEWAY_PROVIDERS = [
   "pagouai",
-  "superpay",
+  "pagnet",
   "stripe",
   "mercadopago",
   "pagarme",
@@ -1015,4 +1044,255 @@ export type AffiliateStats = {
   totalSignups: number;
   activeReferrals: number;
   pendingReferrals: number;
+};
+
+/* ── Opt-out / Blacklist ── */
+
+export const OPT_OUT_CHANNELS = ["whatsapp", "sms", "email", "voice", "all"] as const;
+export type OptOutChannel = (typeof OPT_OUT_CHANNELS)[number];
+
+export const OPT_OUT_SOURCES = [
+  "inbound_keyword",
+  "admin_manual",
+  "api",
+  "legal_request",
+] as const;
+export type OptOutSource = (typeof OPT_OUT_SOURCES)[number];
+
+export type OptOutRecord = {
+  id: string;
+  channel: OptOutChannel;
+  contactValue: string;
+  reason: string;
+  optedOutAt: string;
+  source: OptOutSource;
+  sellerKey?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type OptOutInput = {
+  channel: OptOutChannel;
+  contactValue: string;
+  reason?: string;
+  source?: OptOutSource;
+  sellerKey?: string;
+  metadata?: Record<string, unknown>;
+};
+
+/* ── Contact Frequency Log ── */
+
+export type FrequencyLogRecord = {
+  id: string;
+  contactValue: string;
+  channel: string;
+  direction: string;
+  sentAt: string;
+  messageId?: string;
+  callId?: string;
+  sellerKey?: string;
+};
+
+export type FrequencyLogInput = {
+  contactValue: string;
+  channel: string;
+  direction?: string;
+  messageId?: string;
+  callId?: string;
+  sellerKey?: string;
+};
+
+export type FrequencyCheck = {
+  allowed: boolean;
+  reason?: string;
+  contactsToday: number;
+  contactsThisWeek: number;
+  maxPerDay: number;
+  maxPerWeek: number;
+};
+
+/* ── Message Templates ── */
+
+export const TEMPLATE_CATEGORIES = [
+  "recovery",
+  "followup",
+  "notification",
+  "promotional",
+] as const;
+export type TemplateCategory = (typeof TEMPLATE_CATEGORIES)[number];
+
+export const TEMPLATE_VERTICALS = [
+  "general",
+  "ecommerce",
+  "saas",
+  "infoproduct",
+] as const;
+export type TemplateVertical = (typeof TEMPLATE_VERTICALS)[number];
+
+export type MessageTemplateRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  category: TemplateCategory;
+  vertical: TemplateVertical;
+  channel: string;
+  subject?: string;
+  bodyWhatsapp: string;
+  bodySms?: string;
+  bodyEmailHtml?: string;
+  bodyEmailText?: string;
+  variables: string[];
+  active: boolean;
+  usageCount: number;
+  conversionCount: number;
+  sellerKey?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MessageTemplateInput = {
+  name: string;
+  slug?: string;
+  category?: TemplateCategory;
+  vertical?: TemplateVertical;
+  channel?: string;
+  subject?: string;
+  bodyWhatsapp: string;
+  bodySms?: string;
+  bodyEmailHtml?: string;
+  bodyEmailText?: string;
+  variables?: string[];
+  active?: boolean;
+  sellerKey?: string;
+};
+
+export type RenderedTemplate = {
+  channel: string;
+  subject?: string;
+  body: string;
+  templateId: string;
+  templateSlug: string;
+};
+
+/* ── A/B Testing ── */
+
+export const AB_TEST_STATUSES = [
+  "draft",
+  "running",
+  "completed",
+  "archived",
+] as const;
+export type ABTestStatus = (typeof AB_TEST_STATUSES)[number];
+
+export type ABTestRecord = {
+  id: string;
+  name: string;
+  status: ABTestStatus;
+  templateAId: string;
+  templateBId: string;
+  channel: string;
+  sellerKey?: string;
+  totalSentA: number;
+  totalSentB: number;
+  totalDeliveredA: number;
+  totalDeliveredB: number;
+  totalClickedA: number;
+  totalClickedB: number;
+  totalConvertedA: number;
+  totalConvertedB: number;
+  winner?: "a" | "b" | "tie";
+  confidencePct?: number;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ABTestInput = {
+  name: string;
+  templateAId: string;
+  templateBId: string;
+  channel?: string;
+  sellerKey?: string;
+};
+
+export type ABTestAssignmentRecord = {
+  id: string;
+  abTestId: string;
+  contactValue: string;
+  variant: "a" | "b";
+  messageId?: string;
+  delivered: boolean;
+  clicked: boolean;
+  converted: boolean;
+  createdAt: string;
+};
+
+/* ── Recovery Funnel Snapshots ── */
+
+export type RecoveryFunnelSnapshot = {
+  id: string;
+  snapshotDate: string;
+  sellerKey?: string;
+  channel: string;
+  totalSent: number;
+  totalDelivered: number;
+  totalRead: number;
+  totalClicked: number;
+  totalConverted: number;
+  totalOptedOut: number;
+  totalRevenueRecovered: number;
+  createdAt: string;
+};
+
+/* ── Extended Seller Admin Controls (new fields from migration) ── */
+
+export type SellerFrequencyConfig = {
+  maxContactsPerLeadPerWeek: number;
+  maxContactsPerLeadPerDay: number;
+  smsEnabled: boolean;
+  smsProvider?: string;
+  smsApiKey?: string;
+  smsFromNumber?: string;
+  emailRecoveryEnabled: boolean;
+  preferredChannels: string[];
+  aiNegotiationEnabled: boolean;
+  aiMaxDiscountPct: number;
+  aiNegotiationStrategy: string;
+};
+
+/* ── Negotiation Engine ── */
+
+export type NegotiationOffer = {
+  discountPct: number;
+  strategy: "progressive" | "fixed" | "conditional";
+  reason: string;
+  expiresAt?: string;
+  couponCode?: string;
+};
+
+export type NegotiationContext = {
+  leadId: string;
+  currentStep: number;
+  previousOffers: NegotiationOffer[];
+  maxDiscountPct: number;
+  customerSentiment: string;
+  paymentValue: number;
+};
+
+/* ── Multi-channel Delivery ── */
+
+export type ChannelDeliveryResult = {
+  channel: string;
+  status: "sent" | "delivered" | "failed" | "skipped";
+  providerMessageId?: string;
+  error?: string;
+  fallbackTriggered?: boolean;
+};
+
+export type MultiChannelSequenceStep = {
+  channel: string;
+  delayMinutes: number;
+  templateSlug?: string;
+  condition: "always" | "if_not_delivered" | "if_not_read";
 };

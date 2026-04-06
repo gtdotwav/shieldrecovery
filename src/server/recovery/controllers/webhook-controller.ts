@@ -148,14 +148,14 @@ export async function handlePagouAiHealth(
   return handleShieldGatewayHealth(request, options);
 }
 
-export async function handleSuperPayWebhook(
+export async function handlePagNetWebhook(
   request: Request,
   options?: { sellerKey?: string | null },
 ) {
   return handlePagouAiWebhook(request, options);
 }
 
-export async function handleSuperPayHealth(
+export async function handlePagNetHealth(
   request: Request,
   options?: { sellerKey?: string | null },
 ) {
