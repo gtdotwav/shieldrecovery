@@ -1,5 +1,4 @@
 import {
-  CalendarDays,
   CheckCircle2,
   Clock,
   CreditCard,
@@ -299,15 +298,9 @@ export default async function MarketingPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-5 xl:sticky xl:top-20 xl:self-start">
+        <div className="space-y-5 xl:sticky xl:top-20 xl:self-start xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:scrollbar-thin">
           {/* Calendar */}
-          <PlatformSurface className="p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <CalendarDays className="h-3.5 w-3.5 text-[var(--accent)]/60" />
-              <p className="eyebrow text-gray-400 dark:text-gray-500">Calendário de recuperação</p>
-            </div>
-            <RecoveryCalendar commissionRate={COMMISSION_RATE} />
-          </PlatformSurface>
+          <RecoveryCalendar commissionRate={COMMISSION_RATE} />
 
           {/* Operation health */}
           <PlatformSurface className="p-5">
