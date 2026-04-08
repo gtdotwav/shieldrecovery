@@ -1,11 +1,10 @@
 import {
+  CalendarDays,
   CheckCircle2,
-  Circle,
   Clock,
   CreditCard,
   MessageSquare,
   Phone,
-  Send,
   TrendingUp,
   Users,
   Wallet,
@@ -14,12 +13,13 @@ import {
 
 import {
   PlatformAppPage,
-  PlatformInset,
   PlatformMetricCard,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { RecoveryChart } from "@/components/ui/recovery-chart";
 import type { DataPoint } from "@/components/ui/recovery-chart";
+import { LiveRecoveryFeed } from "@/components/marketing/live-recovery-feed";
+import { RecoveryCalendar } from "@/components/marketing/recovery-calendar";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -40,13 +40,15 @@ const AVG_RECOVERY_HOURS = 4.2;
 const ACTIVE_CASES = 1_847;
 const ACTIONABLE_NOW = 612;
 
+/* Chart: non-linear growth with dips, dramatic acceleration, lines converging */
 const CHART_DATA: DataPoint[] = [
-  { label: "Nov", recovered: 142, lost: 2158 },
-  { label: "Dez", recovered: 198, lost: 2102 },
-  { label: "Jan", recovered: 271, lost: 2029 },
-  { label: "Fev", recovered: 340, lost: 1960 },
-  { label: "Mar", recovered: 412, lost: 1888 },
-  { label: "Abr", recovered: 487, lost: 1847 },
+  { label: "Out", recovered: 189, lost: 1580 },
+  { label: "Nov", recovered: 312, lost: 1450 },
+  { label: "Dez", recovered: 256, lost: 1520 },
+  { label: "Jan", recovered: 487, lost: 1280 },
+  { label: "Fev", recovered: 734, lost: 1040 },
+  { label: "Mar", recovered: 1091, lost: 870 },
+  { label: "Abr", recovered: 1247, lost: 847 },
 ];
 
 const CHANNELS = { whatsapp: 72, email: 21, voice: 7 };
@@ -74,78 +76,6 @@ const DEMO_LEADS: DemoLead[] = [
   { name: "Lucas Ferreira", email: "lucas.f@empresa.io", phone: "(85) 98765-4410", product: "Setup + Treinamento", value: 5600_00, status: "RECOVERED", updatedAgo: "6h" },
   { name: "Amanda Rocha", email: "amanda.rocha@outlook.com", phone: "(27) 99632-1185", product: "Plano Starter", value: 197_00, status: "WAITING_CUSTOMER", updatedAgo: "2h" },
   { name: "Pedro Henrique Dias", email: "pedro.hd@gmail.com", phone: "(62) 98544-3290", product: "Enterprise Anual", value: 12000_00, status: "RECOVERED", updatedAgo: "1d" },
-];
-
-/* ── Demo conversations (recovered) ── */
-
-type DemoMessage = {
-  direction: "outbound" | "inbound";
-  content: string;
-  time: string;
-};
-
-type DemoConversation = {
-  customerName: string;
-  channel: "whatsapp" | "email";
-  messages: DemoMessage[];
-};
-
-const DEMO_CONVERSATIONS: DemoConversation[] = [
-  {
-    customerName: "Mariana Costa Silva",
-    channel: "whatsapp",
-    messages: [
-      { direction: "outbound", content: "Oi Mariana! Notamos que seu pagamento do Plano Pro Anual de R$ 2.497,00 não foi processado. Pode ter sido um problema temporário com o cartão. Quer tentar novamente? Geramos um link seguro pra você 😊", time: "14:32" },
-      { direction: "inbound", content: "Oi! Sim, vi que deu erro. Pode mandar o link?", time: "14:45" },
-      { direction: "outbound", content: "Claro! Aqui está o link para refazer o pagamento: https://pay.pagrecovery.com/r/mcs-2497 — aceita cartão, PIX e boleto. Qualquer dúvida estou aqui!", time: "14:46" },
-      { direction: "inbound", content: "Paguei via PIX agora! ✅", time: "15:02" },
-      { direction: "outbound", content: "Confirmado! Pagamento recebido com sucesso. Seu acesso ao Plano Pro já está liberado. Obrigado, Mariana! 🎉", time: "15:03" },
-    ],
-  },
-  {
-    customerName: "Rafael Oliveira",
-    channel: "whatsapp",
-    messages: [
-      { direction: "outbound", content: "Rafael, tudo bem? Identificamos que a cobrança do Setup Enterprise (R$ 8.900,00) não foi aprovada pelo cartão. Isso pode acontecer por limite ou bloqueio temporário do banco.", time: "09:15" },
-      { direction: "inbound", content: "Putz, deve ser o limite do cartão mesmo. Tem como pagar via PIX?", time: "09:28" },
-      { direction: "outbound", content: "Tem sim! Segue o PIX Copia e Cola para pagamento imediato:", time: "09:29" },
-      { direction: "outbound", content: "00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890-abcd-ef1234567890520400005303986540889005802BR5925PAGRECOVERY LTDA6009SAO PAULO62140510pgr8900ent6304A1B2", time: "09:29" },
-      { direction: "inbound", content: "Feito! Paguei agora pelo app do banco", time: "09:41" },
-      { direction: "outbound", content: "Pagamento confirmado, Rafael! R$ 8.900,00 recebido. Seu setup Enterprise será iniciado em até 24h. Bem-vindo! 🚀", time: "09:42" },
-    ],
-  },
-  {
-    customerName: "Juliana Mendes",
-    channel: "email",
-    messages: [
-      { direction: "outbound", content: "Olá Juliana, tudo bem?\n\nNotamos que o pagamento da sua Licença Semestral no valor de R$ 1.450,00 não foi concluído. Isso pode ter ocorrido por um problema temporário.\n\nPreparamos um link seguro para você refazer o pagamento com facilidade:\nhttps://pay.pagrecovery.com/r/jm-1450\n\nCaso precise de ajuda, estamos à disposição.\n\nAtenciosamente,\nEquipe PagRecovery", time: "10:20" },
-      { direction: "inbound", content: "Obrigada pelo aviso! Realmente não tinha percebido. Acabei de pagar pelo link. Pode confirmar?", time: "11:05" },
-      { direction: "outbound", content: "Confirmado, Juliana! Pagamento processado com sucesso. Sua licença semestral está ativa. Obrigado! 😊", time: "11:07" },
-    ],
-  },
-  {
-    customerName: "Lucas Ferreira",
-    channel: "whatsapp",
-    messages: [
-      { direction: "outbound", content: "Fala Lucas! Vimos que a compra do Setup + Treinamento (R$ 5.600,00) teve uma falha no pagamento. Provavelmente foi algo pontual. Quer tentar de novo? Posso enviar um link atualizado 👍", time: "16:10" },
-      { direction: "inbound", content: "Opa! Pode mandar sim, vou tentar com outro cartão", time: "16:22" },
-      { direction: "outbound", content: "Aqui está: https://pay.pagrecovery.com/r/lf-5600 — pode usar cartão, PIX ou boleto!", time: "16:23" },
-      { direction: "inbound", content: "Pronto, paguei no cartão de crédito do Nubank agora", time: "16:31" },
-      { direction: "outbound", content: "Perfeito, Lucas! Pagamento aprovado ✅ R$ 5.600,00 confirmado. Vamos agendar seu treinamento. Obrigado pela confiança!", time: "16:32" },
-    ],
-  },
-  {
-    customerName: "Pedro Henrique Dias",
-    channel: "whatsapp",
-    messages: [
-      { direction: "outbound", content: "Pedro, boa tarde! O pagamento do Enterprise Anual (R$ 12.000,00) retornou como recusado. Geralmente é proteção anti-fraude do banco. Quer que a gente gere um novo link?", time: "11:00" },
-      { direction: "inbound", content: "Sim por favor, vou ligar pro banco pra liberar", time: "11:15" },
-      { direction: "inbound", content: "Pronto, liberei com o banco. Manda o link", time: "11:32" },
-      { direction: "outbound", content: "Perfeito! Segue o link: https://pay.pagrecovery.com/r/phd-12000", time: "11:33" },
-      { direction: "inbound", content: "Pago! Dessa vez foi 👍", time: "11:40" },
-      { direction: "outbound", content: "Confirmado! R$ 12.000,00 aprovado. Seu plano Enterprise Anual já está ativo. Parabéns pela escolha, Pedro! 🎉", time: "11:41" },
-    ],
-  },
 ];
 
 /* ── Formatters ── */
@@ -362,74 +292,23 @@ export default async function MarketingPage() {
             </div>
           </PlatformSurface>
 
-          {/* Chat history — Recovered conversations */}
-          <PlatformSurface className="p-5 sm:p-6">
-            <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="eyebrow text-gray-400 dark:text-gray-500">Conversas recuperadas</p>
-                <h3 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-gray-900 dark:text-white">
-                  Histórico de recuperação
-                </h3>
-              </div>
-              <span className="muted-pill inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs">
-                <MessageSquare className="h-3 w-3 text-[var(--accent)]/60" />
-                {DEMO_CONVERSATIONS.length} conversas · {DEMO_CONVERSATIONS.reduce((s, c) => s + c.messages.length, 0)} mensagens
-              </span>
-            </div>
-
-            <div className="mt-4 space-y-4">
-              {DEMO_CONVERSATIONS.map((conv, ci) => (
-                <div key={ci} className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                  {/* Thread header */}
-                  <div className="flex items-center justify-between gap-3 bg-gray-50 dark:bg-[#111] px-4 py-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent)]/10 shrink-0">
-                        <span className="text-[0.6rem] font-bold text-[var(--accent)]">
-                          {conv.customerName.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                        </span>
-                      </div>
-                      <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{conv.customerName}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.6rem] font-semibold ${conv.channel === "whatsapp" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-blue-500/10 text-blue-600 dark:text-blue-400"}`}>
-                        {conv.channel === "whatsapp" ? <MessageSquare className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
-                        {conv.channel === "whatsapp" ? "WhatsApp" : "Email"}
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[0.6rem] font-semibold text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="h-2.5 w-2.5" />
-                        Recuperado
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Messages */}
-                  <div className="px-4 py-3 space-y-2.5 max-h-[320px] overflow-y-auto">
-                    {conv.messages.map((msg, mi) => (
-                      <div key={mi} className={`flex ${msg.direction === "outbound" ? "justify-end" : "justify-start"}`}>
-                        <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 ${
-                          msg.direction === "outbound"
-                            ? "bg-[var(--accent)]/10 text-gray-800 dark:text-gray-200"
-                            : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                        }`}>
-                          <p className="text-[0.8rem] leading-relaxed whitespace-pre-line break-words">{msg.content}</p>
-                          <div className={`mt-1 flex items-center gap-1.5 ${msg.direction === "outbound" ? "justify-end" : ""}`}>
-                            <span className="text-[0.6rem] text-gray-400">{msg.time}</span>
-                            {msg.direction === "outbound" && (
-                              <CheckCircle2 className="h-2.5 w-2.5 text-[var(--accent)]/50" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Live recovery feed — replaces static chat */}
+          <PlatformSurface className="overflow-hidden">
+            <LiveRecoveryFeed />
           </PlatformSurface>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-5 xl:sticky xl:top-20 xl:self-start">
+          {/* Calendar */}
+          <PlatformSurface className="p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <CalendarDays className="h-3.5 w-3.5 text-[var(--accent)]/60" />
+              <p className="eyebrow text-gray-400 dark:text-gray-500">Calendário de recuperação</p>
+            </div>
+            <RecoveryCalendar commissionRate={COMMISSION_RATE} />
+          </PlatformSurface>
+
           {/* Operation health */}
           <PlatformSurface className="p-5">
             <p className="eyebrow text-gray-400 dark:text-gray-500">Saúde da operação</p>
@@ -462,33 +341,6 @@ export default async function MarketingPage() {
               <MetricLine label="Receita mensal" value={fmtBRL(MONTHLY_COMMISSION)} highlight />
               <MetricLine label="Taxa de recuperação" value={`${RECOVERY_RATE}%`} />
               <MetricLine label="Recuperação/mês" value={fmtBRL(MONTHLY_RECOVERED)} />
-            </div>
-          </PlatformSurface>
-
-          {/* Conversation queue */}
-          <PlatformSurface className="p-5">
-            <p className="eyebrow text-gray-400 dark:text-gray-500">Fila de conversas</p>
-            <div className="mt-4 space-y-2">
-              {DEMO_CONVERSATIONS.map((conv, i) => (
-                <div key={i} className="glass-inset glass-hover rounded-xl px-3.5 py-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent)]/10 shrink-0">
-                        <span className="text-[0.5rem] font-bold text-[var(--accent)]">
-                          {conv.customerName.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                        </span>
-                      </div>
-                      <p className="truncate text-xs font-semibold text-gray-900 dark:text-white">{conv.customerName.split(" ")[0]}</p>
-                    </div>
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[0.55rem] font-semibold text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="h-2 w-2" />
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[0.65rem] text-gray-400 truncate">
-                    {conv.messages[conv.messages.length - 1].content.slice(0, 60)}...
-                  </p>
-                </div>
-              ))}
             </div>
           </PlatformSurface>
         </div>
