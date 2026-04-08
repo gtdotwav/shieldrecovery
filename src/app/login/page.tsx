@@ -46,12 +46,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 Acesso protegido
               </p>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                Plataforma privada para operacao de recovery.
+                Plataforma privada para operação de recovery.
               </h1>
               <p className="mt-4 text-sm leading-7 text-gray-400">
-                O login protege CRM, conversas, integracoes e testes. Os
-                webhooks publicos continuam funcionando para o gateway, mas o
-                painel operacional agora exige sessao valida.
+                O login protege CRM, conversas, integrações e testes. Os
+                webhooks públicos continuam funcionando para o gateway, mas o
+                painel operacional agora exige sessão válida.
               </p>
             </div>
 
@@ -75,7 +75,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 Entrar
               </p>
               <h2 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-white">
-                Acesse a operacao.
+                Acesse a operação.
               </h2>
               <p className="mt-2 text-sm leading-6 text-gray-500">
                 O sistema identifica automaticamente se o acesso e de administrador ou seller.
@@ -83,23 +83,23 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
               {params.logged_out === "1" ? (
                 <Notice tone="neutral">
-                  Sessao encerrada com sucesso.
+                  Sessão encerrada com sucesso.
                 </Notice>
               ) : null}
 
               {invalidCredentials ? (
                 <Notice tone="error">
-                  Email ou senha invalidos.
+                  Email ou senha inválidos.
                 </Notice>
               ) : null}
 
               {configurationMissing ? (
                 <Notice tone="warning">
-                  Login ainda nao configurado no ambiente. Defina
+                  Login ainda não configurado no ambiente. Defina
                   `PLATFORM_AUTH_EMAIL`, `PLATFORM_AUTH_PASSWORD` e
                   `PLATFORM_AUTH_SECRET`. Os sellers agora podem ser criados no
                   painel Admin; em desenvolvimento, o fallback por env continua
-                  disponivel.
+                  disponível.
                 </Notice>
               ) : null}
 

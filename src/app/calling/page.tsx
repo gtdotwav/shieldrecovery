@@ -32,6 +32,7 @@ import {
 import { StageBadge } from "@/components/ui/stage-badge";
 import { formatCurrency, formatRelativeTime } from "@/lib/format";
 import { formatPhone, hasPhone } from "@/lib/contact";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getStorageService } from "@/server/recovery/services/storage";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -51,11 +52,20 @@ export default async function CallingPage() {
   const service = getPaymentRecoveryService();
 
   const sellerKey = session.email.split("@")[0];
+  const sellerIdentity =
+    session.role === "seller"
+      ? await getSellerIdentityByEmail(session.email)
+      : null;
+  const sellerAgentName =
+    session.role === "seller" ? sellerIdentity?.agentName : undefined;
 
   const [calls, analytics, contacts, settings] = await Promise.all([
-    storage.listCalls({ limit: 50 }),
+    storage.listCalls({
+      limit: 50,
+      sellerKey: isAdmin ? undefined : sellerKey,
+    }),
     storage.getCallAnalytics(),
-    service.getFollowUpContacts(),
+    service.getFollowUpContacts(sellerAgentName),
     storage.getCallcenterSettings(sellerKey),
   ]);
 

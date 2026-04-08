@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { UNKNOWN_EMAIL, NOT_PROVIDED } from "@/lib/contact";
 import { appEnv } from "@/server/recovery/config";
 import { getStorageService } from "@/server/recovery/services/storage";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -85,6 +86,9 @@ export class AutonomousRecoveryAgent {
   private readonly errors: string[] = [];
 
   async tick(): Promise<AgentRunResult> {
+    // Reset errors from previous tick to prevent stale error accumulation
+    this.errors.length = 0;
+
     const runId = randomUUID();
     const startedAt = Date.now();
     const counters = {
@@ -387,6 +391,11 @@ export class AutonomousRecoveryAgent {
 
       for (const contact of activeLeads.slice(0, 20)) {
         try {
+          // Check if seller has automations enabled before scheduling cadence
+          const automationPolicy =
+            await this.recovery.getAutomationPolicyForSeller(contact.assigned_agent);
+          if (!automationPolicy.enabled) continue;
+
           const existingSteps = await this.getCadenceStepsForLead(contact.lead_id);
 
           // Only schedule if no cadence steps exist beyond the initial 3
@@ -516,9 +525,76 @@ export class AutonomousRecoveryAgent {
   /* ── 5. Refresh recovery scores ── */
 
   private async refreshRecoveryScores(): Promise<number> {
-    // Recovery scores are computed on-the-fly by the classifier.
-    // This step logs a periodic snapshot for analytics.
-    return 0;
+    let refreshed = 0;
+
+    try {
+      const contacts = await this.recovery.getFollowUpContacts();
+      const activeContacts = contacts.filter(
+        (c) =>
+          c.lead_status !== "RECOVERED" &&
+          c.lead_status !== "LOST",
+      );
+
+      for (const contact of activeContacts.slice(0, 30)) {
+        try {
+          const lead = await this.storage.findLeadByLeadId(contact.lead_id);
+          if (!lead) continue;
+
+          // Compute a basic recovery score based on available signals
+          const leadAgeDays =
+            (Date.now() - new Date(lead.createdAt).getTime()) / 86_400_000;
+          const paymentValue = contact.payment_value;
+
+          // Score factors (0-100):
+          // - Recency: newer leads score higher
+          // - Value: higher value = higher priority
+          // - Status: WAITING_CUSTOMER scores higher than CONTACTING
+          const recencyScore = Math.max(0, 100 - leadAgeDays * 10);
+          const valueScore = Math.min(100, paymentValue / 1000); // R$10+ gets full score
+          const statusBonus =
+            contact.lead_status === "WAITING_CUSTOMER" ? 15 : 0;
+
+          const scorePriority = Math.round(
+            recencyScore * 0.4 + valueScore * 0.4 + statusBonus * 0.2,
+          );
+          const clampedScore = Math.max(0, Math.min(100, scorePriority));
+
+          // Persist the score to the lead's metadata via Supabase
+          const supabase = this.getSupabaseClient();
+          if (supabase) {
+            await supabase
+              .from("recovery_leads")
+              .update({
+                metadata: { scorePriority: clampedScore, scoreUpdatedAt: new Date().toISOString() },
+              })
+              .eq("lead_id", lead.leadId);
+          }
+
+          refreshed++;
+        } catch (error) {
+          this.errors.push(
+            `Score refresh error for ${contact.lead_id}: ${error instanceof Error ? error.message : "unknown"}`,
+          );
+        }
+      }
+
+      if (refreshed > 0) {
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "worker_job_processed",
+            level: "info",
+            message: `Agent refreshed recovery scores for ${refreshed} leads`,
+            context: { refreshed },
+          }),
+        );
+      }
+    } catch (error) {
+      this.errors.push(
+        `Score refresh batch error: ${error instanceof Error ? error.message : "unknown"}`,
+      );
+    }
+
+    return refreshed;
   }
 
   /* ── 6. Escalate to human ── */
@@ -573,6 +649,7 @@ export class AutonomousRecoveryAgent {
 
     try {
       const contacts = await this.recovery.getFollowUpContacts();
+      const runtime = await getConnectionSettingsService().getRuntimeSettings();
 
       for (const contact of contacts) {
         if (
@@ -587,18 +664,41 @@ export class AutonomousRecoveryAgent {
         // Close leads older than 10 days with no recent activity
         if (daysOld > 10) {
           const lead = await this.storage.findLeadByLeadId(contact.lead_id);
-          if (lead) {
-            await this.storage.markLeadLost(lead.id);
-            await this.storage.addLog(
-              createStructuredLog({
-                eventType: "ai_reply_generated",
-                level: "info",
-                message: `Agent closed exhausted lead ${contact.lead_id} after ${Math.round(daysOld)} days`,
-                context: { leadId: contact.lead_id, daysOld: Math.round(daysOld) },
-              }),
-            );
-            closed++;
+          if (!lead) continue;
+
+          // Also check the last inbound message date — don't close if the
+          // customer sent a message within the last 10 days.
+          let lastCustomerMessageAgeDays = Infinity;
+          try {
+            const conversation = await this.findActiveConversation(lead, runtime);
+            if (conversation) {
+              const messages = await this.storage.getConversationMessages(conversation.id);
+              const lastInbound = [...messages]
+                .reverse()
+                .find((m) => m.direction === "inbound");
+              if (lastInbound) {
+                lastCustomerMessageAgeDays =
+                  (Date.now() - new Date(lastInbound.createdAt).getTime()) / 86_400_000;
+              }
+            }
+          } catch {
+            // If conversation lookup fails, rely on updated_at alone
           }
+
+          // Only close if BOTH the lead hasn't been updated AND no customer
+          // message was received in the last 10 days
+          if (lastCustomerMessageAgeDays <= 10) continue;
+
+          await this.storage.markLeadLost(lead.id);
+          await this.storage.addLog(
+            createStructuredLog({
+              eventType: "ai_reply_generated",
+              level: "info",
+              message: `Agent closed exhausted lead ${contact.lead_id} after ${Math.round(daysOld)} days`,
+              context: { leadId: contact.lead_id, daysOld: Math.round(daysOld) },
+            }),
+          );
+          closed++;
         }
       }
     } catch (error) {
@@ -984,9 +1084,9 @@ function mapCadenceRow(row: Record<string, unknown>): CadenceStepRecord {
 /* ── Utility ── */
 
 function isUsablePhone(phone?: string | null) {
-  return Boolean(phone && phone !== "not_provided");
+  return Boolean(phone && phone !== NOT_PROVIDED);
 }
 
 function isUsableEmail(email?: string | null) {
-  return Boolean(email && email !== "unknown@pagrecovery.local");
+  return Boolean(email && email !== UNKNOWN_EMAIL);
 }

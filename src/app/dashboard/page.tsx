@@ -23,7 +23,6 @@ import { hasPhone, pickBestContact } from "@/lib/contact";
 import { formatCurrency } from "@/lib/format";
 import { platformBrand } from "@/lib/platform";
 import { recommendedNextAction, scorePriority } from "@/lib/stage";
-import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -45,16 +44,14 @@ export default async function DashboardPage() {
       ? await getSellerIdentityByEmail(session.email)
       : null;
 
-  const [analytics, allContacts, callAnalytics] = await Promise.all([
-    service.getRecoveryAnalytics(),
-    service.getFollowUpContacts(),
+  const sellerAgentName =
+    session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
+  const [analytics, contacts, callAnalytics] = await Promise.all([
+    service.getRecoveryAnalytics(sellerAgentName),
+    service.getFollowUpContacts(sellerAgentName),
     callStorage.getCallAnalytics(),
   ]);
-
-  // Filter contacts by seller when applicable
-  const contacts = allContacts.filter((c) =>
-    canRoleAccessAgent(session.role, c.assigned_agent, sellerIdentity?.agentName),
-  );
 
   const activeContacts = contacts.filter(
     (c) => c.lead_status !== "RECOVERED" && c.lead_status !== "LOST",
@@ -136,7 +133,7 @@ export default async function DashboardPage() {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <PlatformMetricCard
           icon={CreditCard}
-          label="em recuperacao"
+          label="em recuperação"
           value={activeContacts.length.toString()}
           subtitle={`${actionableContacts.length} para agir agora`}
         />
@@ -148,15 +145,15 @@ export default async function DashboardPage() {
         />
         <PlatformMetricCard
           icon={TrendingUp}
-          label="taxa de recuperacao"
+          label="taxa de recuperação"
           value={`${sellerAnalytics.recovery_rate.toFixed(1)}%`}
           subtitle={`${waitingContacts.length} aguardando cliente`}
         />
         <PlatformMetricCard
           icon={Clock}
-          label="tempo medio"
+          label="tempo médio"
           value={formatAverageRecoveryTime(sellerAnalytics.average_recovery_time_hours)}
-          subtitle="ate fechar recuperacao"
+          subtitle="até fechar recuperação"
         />
       </section>
 
@@ -167,7 +164,7 @@ export default async function DashboardPage() {
             <div className="flex flex-col gap-3 border-b border-[var(--border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="eyebrow text-[var(--muted)]">
-                  Evolucao mensal
+                  Evolução mensal
                 </p>
                 <h3 className="mt-1.5 text-base font-semibold tracking-[-0.02em] text-[var(--foreground)]">
                   Recuperadas vs. abertas
@@ -223,7 +220,7 @@ export default async function DashboardPage() {
           {/* Portfolio health */}
           <PlatformSurface className="p-5">
             <p className="eyebrow text-gray-400 dark:text-gray-500">
-              Saude da carteira
+              Saúde da carteira
             </p>
             <div className="mt-4 space-y-2.5">
               <MetricLine label="Receita em risco" value={formatCurrency(revenueAtRisk)} highlight />
@@ -231,18 +228,18 @@ export default async function DashboardPage() {
               <MetricLine label="Aguardando cliente" value={waitingContacts.length.toString()} />
               {session.role === "admin" ? (
                 <MetricLine
-                  label="Sem responsavel"
+                  label="Sem responsável"
                   value={activeContacts.filter((c) => !c.assigned_agent).length.toString()}
                 />
               ) : null}
-              <MetricLine label="Alcancaveis" value={`${reachableCount} de ${activeContacts.length}`} />
+              <MetricLine label="Alcançáveis" value={`${reachableCount} de ${activeContacts.length}`} />
             </div>
           </PlatformSurface>
 
           {/* Channel coverage */}
           <PlatformSurface className="p-5">
             <p className="eyebrow text-gray-400 dark:text-gray-500">
-              Canais disponiveis
+              Canais disponíveis
             </p>
             <div className="mt-4 space-y-3.5">
               <ChannelBar label="WhatsApp" count={whatsappCount} total={contacts.length} color="bg-[var(--accent)]" />
@@ -350,7 +347,7 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
             <TimeBadge updatedAt={contact.updated_at} />
           </div>
           <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-            {contact.product || "Produto nao informado"} · {pickBestContact(contact.phone, contact.email)}
+            {contact.product || "Produto não informado"} · {pickBestContact(contact.phone, contact.email)}
           </p>
         </div>
         <p className="shrink-0 text-sm font-semibold tabular-nums text-[var(--accent)]">
@@ -359,9 +356,9 @@ function PriorityLeadRow({ contact }: { contact: FollowUpContact }) {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <DetailPill label="Responsavel" value={contact.assigned_agent || "Sem dono"} />
+        <DetailPill label="Responsável" value={contact.assigned_agent || "Sem dono"} />
         <DetailPill label="Canal" value={hasPhone(contact.phone) ? "WhatsApp" : "Email"} />
-        <DetailPill label="Acao" value={recommendedNextAction(contact)} />
+        <DetailPill label="Ação" value={recommendedNextAction(contact)} />
       </div>
     </Link>
   );

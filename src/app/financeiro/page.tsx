@@ -178,20 +178,20 @@ export default async function FinanceiroPage({ searchParams }: PageProps) {
         <PlatformMetricCard
           icon={Wallet}
           label="disponivel"
-          value={formatCurrency(available / 100)}
+          value={formatCurrency(available)}
           subtitle="pronto para saque"
         />
         <PlatformMetricCard
           icon={Clock}
           label="pendente"
-          value={formatCurrency(pending / 100)}
+          value={formatCurrency(pending)}
           subtitle={feeConfig ? `hold ${feeConfig.holdPeriodDays}d` : "aguardando hold"}
         />
         <PlatformMetricCard
           icon={TrendingUp}
           label="total liquido"
-          value={formatCurrency((totalReceived - totalFees) / 100)}
-          subtitle={`fee total: ${formatCurrency(totalFees / 100)}`}
+          value={formatCurrency(totalReceived - totalFees)}
+          subtitle={`fee total: ${formatCurrency(totalFees)}`}
         />
         <PlatformMetricCard
           icon={Percent}
@@ -290,10 +290,10 @@ export default async function FinanceiroPage({ searchParams }: PageProps) {
                     >
                       <div>
                         <p className="text-sm font-semibold text-[var(--foreground)]">
-                          {formatCurrency((entry.grossAmount as number) / 100)}
+                          {formatCurrency(entry.grossAmount as number)}
                           <span className="ml-2 text-xs text-[var(--muted)]">
                             fee {entry.feePercent as number}% → liquido{" "}
-                            {formatCurrency((entry.netAmount as number) / 100)}
+                            {formatCurrency(entry.netAmount as number)}
                           </span>
                         </p>
                         <p className="text-xs text-[var(--muted)]">
@@ -465,10 +465,10 @@ export default async function FinanceiroPage({ searchParams }: PageProps) {
                   >
                     <div>
                       <p className="text-sm font-semibold text-[var(--foreground)]">
-                        {formatCurrency((entry.grossAmount as number) / 100)}
+                        {formatCurrency(entry.grossAmount as number)}
                         <span className="ml-2 text-xs text-[var(--muted)]">
                           fee {entry.feePercent as number}% → liquido{" "}
-                          {formatCurrency((entry.netAmount as number) / 100)}
+                          {formatCurrency(entry.netAmount as number)}
                         </span>
                       </p>
                       <p className="text-xs text-[var(--muted)]">
@@ -512,7 +512,7 @@ export default async function FinanceiroPage({ searchParams }: PageProps) {
                     >
                       <div>
                         <p className="text-sm font-semibold text-[var(--foreground)]">
-                          {formatCurrency((p.amount as number) / 100)}
+                          {formatCurrency(p.amount as number)}
                         </p>
                         <p className="text-xs text-[var(--muted)]">
                           {formatRelativeTime(p.requestedAt as string)}
@@ -546,7 +546,7 @@ export default async function FinanceiroPage({ searchParams }: PageProps) {
                 </p>
                 {feeConfig && feeConfig.minPayoutAmount > 0 ? (
                   <p className="mt-1 text-xs text-[var(--muted)]">
-                    Valor minimo: {formatCurrency(feeConfig.minPayoutAmount / 100)}
+                    Valor minimo: {formatCurrency(feeConfig.minPayoutAmount)}
                   </p>
                 ) : null}
                 <form action={requestPayoutAction} className="mt-3 flex flex-wrap items-end gap-3">

@@ -40,6 +40,7 @@ type ProviderRow = {
 
 type SessionRow = {
   id: string;
+  merchant_id: string;
   short_id: string;
   amount: number;
   currency: string;
@@ -154,14 +155,12 @@ function mapTracking(r: TrackingRow): CheckoutTrackingRecord {
 
 // ─── Short ID generator ─────────────────────────────────────────────
 
-const SHORT_ID_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+const SHORT_ID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 function generateShortId(length = CHECKOUT_SHORT_ID_LENGTH): string {
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += SHORT_ID_CHARS[Math.floor(Math.random() * SHORT_ID_CHARS.length)];
-  }
-  return result;
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => SHORT_ID_CHARS[b % SHORT_ID_CHARS.length]).join("");
 }
 
 // ─── Storage class ──────────────────────────────────────────────────
@@ -245,6 +244,7 @@ export class CheckoutStorage {
 
     const row: Partial<SessionRow> = {
       id,
+      merchant_id: input.merchantId,
       short_id: shortId,
       amount: input.amount,
       currency: input.currency ?? CHECKOUT_DEFAULT_CURRENCY,
@@ -394,37 +394,103 @@ export class CheckoutStorage {
     fromDate?: string,
     toDate?: string,
   ): Promise<CheckoutAnalytics> {
-    let sessionsQuery = this.db.from("checkout_sessions").select("*");
+    // Build date filter for RPC or manual SQL via Supabase
+    const dateFilters: string[] = [];
+    if (fromDate) dateFilters.push(`created_at >= '${fromDate}'`);
+    if (toDate) dateFilters.push(`created_at <= '${toDate}'`);
+    const whereClause = dateFilters.length > 0
+      ? `WHERE ${dateFilters.join(" AND ")}`
+      : "";
 
-    if (fromDate) sessionsQuery = sessionsQuery.gte("created_at", fromDate);
-    if (toDate) sessionsQuery = sessionsQuery.lte("created_at", toDate);
+    // ── Totals via SQL aggregation ──
+    type AnalyticsTotals = {
+      total_sessions: number;
+      paid_sessions: number;
+      total_revenue: number;
+    };
+    const { data: totalsData, error: totalsError } = await this.db.rpc(
+      "run_checkout_analytics_totals",
+      { date_filter: whereClause },
+    ).single<AnalyticsTotals>();
 
-    const { data: sessions, error: sessionsError } = await sessionsQuery;
-    if (sessionsError) throw new Error(`getAnalytics: ${sessionsError.message}`);
+    // Fallback: if RPC doesn't exist, use filtered count queries
+    let total: number;
+    let paidCount: number;
+    let totalRevenue: number;
 
-    const rows = sessions as SessionRow[];
-    const total = rows.length;
-    const paid = rows.filter((s) => s.status === "paid");
-    const paidCount = paid.length;
-    const totalRevenue = paid.reduce((sum, s) => sum + s.amount, 0);
+    if (totalsError || !totalsData) {
+      // Fallback: use Supabase count queries (no SELECT *)
+      let countQuery = this.db
+        .from("checkout_sessions")
+        .select("id", { count: "exact", head: true });
+      if (fromDate) countQuery = countQuery.gte("created_at", fromDate);
+      if (toDate) countQuery = countQuery.lte("created_at", toDate);
+      const { count: totalCount } = await countQuery;
+      total = totalCount ?? 0;
 
+      let paidQuery = this.db
+        .from("checkout_sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "paid");
+      if (fromDate) paidQuery = paidQuery.gte("created_at", fromDate);
+      if (toDate) paidQuery = paidQuery.lte("created_at", toDate);
+      const { count: paidTotal } = await paidQuery;
+      paidCount = paidTotal ?? 0;
+
+      // Revenue: fetch only paid sessions' amounts (not SELECT *)
+      let revenueQuery = this.db
+        .from("checkout_sessions")
+        .select("amount")
+        .eq("status", "paid");
+      if (fromDate) revenueQuery = revenueQuery.gte("created_at", fromDate);
+      if (toDate) revenueQuery = revenueQuery.lte("created_at", toDate);
+      const { data: revenueRows } = await revenueQuery;
+      totalRevenue = (revenueRows ?? []).reduce(
+        (sum: number, r: { amount: number }) => sum + r.amount,
+        0,
+      );
+    } else {
+      total = Number(totalsData.total_sessions ?? 0);
+      paidCount = Number(totalsData.paid_sessions ?? 0);
+      totalRevenue = Number(totalsData.total_revenue ?? 0);
+    }
+
+    // ── By-method breakdown ──
     const byMethod: CheckoutAnalytics["byMethod"] = {} as CheckoutAnalytics["byMethod"];
     for (const method of ["card", "pix", "boleto", "crypto"] as const) {
-      const methodSessions = rows.filter(
-        (s) => s.selected_method_type === method,
+      let methodCountQuery = this.db
+        .from("checkout_sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("selected_method_type", method);
+      if (fromDate) methodCountQuery = methodCountQuery.gte("created_at", fromDate);
+      if (toDate) methodCountQuery = methodCountQuery.lte("created_at", toDate);
+      const { count: methodTotal } = await methodCountQuery;
+
+      let methodPaidQuery = this.db
+        .from("checkout_sessions")
+        .select("amount")
+        .eq("selected_method_type", method)
+        .eq("status", "paid");
+      if (fromDate) methodPaidQuery = methodPaidQuery.gte("created_at", fromDate);
+      if (toDate) methodPaidQuery = methodPaidQuery.lte("created_at", toDate);
+      const { data: methodPaidRows } = await methodPaidQuery;
+
+      const methodPaidCount = methodPaidRows?.length ?? 0;
+      const methodRevenue = (methodPaidRows ?? []).reduce(
+        (sum: number, r: { amount: number }) => sum + r.amount,
+        0,
       );
-      const methodPaid = methodSessions.filter((s) => s.status === "paid");
+      const methodTotalCount = methodTotal ?? 0;
+
       byMethod[method] = {
-        count: methodPaid.length,
-        revenue: methodPaid.reduce((sum, s) => sum + s.amount, 0),
+        count: methodPaidCount,
+        revenue: methodRevenue,
         conversionRate:
-          methodSessions.length > 0
-            ? methodPaid.length / methodSessions.length
-            : 0,
+          methodTotalCount > 0 ? methodPaidCount / methodTotalCount : 0,
       };
     }
 
-    // Tracking funnel
+    // ── Tracking funnel (aggregated count per event_type) ──
     let trackingQuery = this.db
       .from("checkout_tracking_events")
       .select("event_type");
@@ -447,5 +513,20 @@ export class CheckoutStorage {
       byMethod,
       funnel,
     };
+  }
+
+  // ── Bulk expire open sessions ─────────────────────────────────
+
+  async bulkExpireOpenSessions(): Promise<number> {
+    const now = new Date().toISOString();
+    const { data, error } = await this.db
+      .from("checkout_sessions")
+      .update({ status: "expired", updated_at: now })
+      .eq("status", "open")
+      .lt("expires_at", now)
+      .select("id");
+
+    if (error) throw new Error(`bulkExpireOpenSessions: ${error.message}`);
+    return data?.length ?? 0;
   }
 }

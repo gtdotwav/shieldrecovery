@@ -3,6 +3,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 
+import { formatCurrency } from "@/lib/format";
 import { platformBrand } from "@/lib/platform";
 import { retrievePagouTransaction } from "@/server/pagouai/client";
 import { createCheckoutSession } from "@/server/checkout";
@@ -255,9 +256,3 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatCurrency(amountInCents: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format((amountInCents || 0) / 100);
-}

@@ -7,6 +7,7 @@ import type {
   ConversationRecord,
   ConversationThread,
   MessageMetadata,
+  MessageRecord,
   MessageStatus,
   RecoveryLeadRecord,
   WhatsAppWebSessionStatus,
@@ -366,6 +367,38 @@ export class MessagingService {
       };
     }
 
+    // Opt-out & frequency guard
+    let complianceCheckFailed = false;
+    try {
+      const { canContactLead } = await import(
+        "@/server/recovery/services/frequency-service"
+      );
+      const guard = await canContactLead({
+        contactValue: input.conversation.contactValue,
+        channel: input.conversation.channel,
+      });
+      if (!guard.allowed) {
+        return {
+          status: "failed",
+          error: guard.reason ?? "Contact blocked by compliance rules.",
+        };
+      }
+    } catch (complianceError) {
+      // Non-blocking — if compliance check fails, proceed with send but flag it
+      console.error("[messaging] Compliance check failed, proceeding with send:", complianceError);
+      complianceCheckFailed = true;
+    }
+
+    if (input.conversation.channel === "email") {
+      const result = await this.dispatchViaEmail({
+        conversation: input.conversation,
+        content,
+        metadata: input.metadata,
+        complianceCheckFailed,
+      });
+      return result;
+    }
+
     if (input.conversation.channel !== "whatsapp") {
       return {
         status: "queued",
@@ -391,8 +424,10 @@ export class MessagingService {
     }
 
     try {
+      let result: DispatchOutboundMessageResult;
+
       if (runtimeSettings.whatsappProvider === "web_api") {
-        return await this.dispatchViaWebApi({
+        result = await this.dispatchViaWebApi({
           apiBaseUrl: runtimeSettings.whatsappApiBaseUrl,
           accessToken: runtimeSettings.whatsappAccessToken,
           sessionId: runtimeSettings.whatsappWebSessionId || platformBrand.slug,
@@ -400,16 +435,38 @@ export class MessagingService {
           content,
           metadata: input.metadata,
         });
+      } else {
+        result = await this.dispatchViaCloudApi({
+          apiBaseUrl: runtimeSettings.whatsappApiBaseUrl,
+          accessToken: runtimeSettings.whatsappAccessToken,
+          phoneNumberId: runtimeSettings.whatsappPhoneNumberId,
+          phone: normalizedPhone,
+          content,
+          metadata: input.metadata,
+        });
       }
 
-      return await this.dispatchViaCloudApi({
-        apiBaseUrl: runtimeSettings.whatsappApiBaseUrl,
-        accessToken: runtimeSettings.whatsappAccessToken,
-        phoneNumberId: runtimeSettings.whatsappPhoneNumberId,
-        phone: normalizedPhone,
-        content,
-        metadata: input.metadata,
-      });
+      // Log frequency after successful dispatch
+      if (result.status === "sent") {
+        try {
+          const { logOutboundContact } = await import(
+            "@/server/recovery/services/frequency-service"
+          );
+          await logOutboundContact({
+            contactValue: input.conversation.contactValue,
+            channel: "whatsapp",
+            messageId: result.providerMessageId,
+          });
+        } catch {
+          // Non-critical — frequency logging should not block dispatch
+        }
+      }
+
+      if (complianceCheckFailed && result.status === "sent") {
+        return { ...result, error: "compliance_check_skipped" };
+      }
+
+      return result;
     } catch (error) {
       return {
         status: "failed",
@@ -419,6 +476,169 @@ export class MessagingService {
             : "Unable to dispatch message to WhatsApp.",
       };
     }
+  }
+
+  private async dispatchViaEmail(input: {
+    conversation: ConversationRecord;
+    content: string;
+    metadata?: MessageMetadata;
+    complianceCheckFailed?: boolean;
+  }): Promise<DispatchOutboundMessageResult> {
+    const runtimeSettings =
+      await getConnectionSettingsService().getRuntimeSettings();
+
+    if (!runtimeSettings.emailConfigured) {
+      return {
+        status: "queued",
+        error: "Email is not configured (missing SendGrid API key).",
+      };
+    }
+
+    const recipientEmail = input.conversation.contactValue;
+
+    if (!recipientEmail || !recipientEmail.includes("@")) {
+      return {
+        status: "failed",
+        error: "Conversation does not have a valid email address.",
+      };
+    }
+
+    const sendgridApiKey = runtimeSettings.emailApiKey;
+    const fromAddress = runtimeSettings.emailFromAddress || platformBrand.contactEmail || "noreply@pagrecovery.com";
+
+    try {
+      const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sendgridApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: recipientEmail }] }],
+          from: { email: fromAddress, name: platformBrand.name },
+          subject: `${platformBrand.name} - Recuperacao de pagamento`,
+          content: [{ type: "text/plain", value: input.content }],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await safeParseJson(response);
+        const errorRecord = asRecord(errorBody);
+        const errors = Array.isArray(errorRecord?.errors) ? errorRecord.errors : [];
+        const firstError = asRecord(errors[0]);
+        const errorMessage =
+          firstString(firstError?.message) ??
+          `SendGrid API returned ${response.status}.`;
+
+        return {
+          status: "failed",
+          error: errorMessage,
+        };
+      }
+
+      // SendGrid returns 202 Accepted with no body on success
+      const providerMessageId = response.headers.get("x-message-id") ?? undefined;
+
+      // Log frequency after successful email dispatch
+      try {
+        const { logOutboundContact } = await import(
+          "@/server/recovery/services/frequency-service"
+        );
+        await logOutboundContact({
+          contactValue: input.conversation.contactValue,
+          channel: "email",
+          messageId: providerMessageId,
+        });
+      } catch {
+        // Non-critical — frequency logging should not block dispatch
+      }
+
+      const result: DispatchOutboundMessageResult = {
+        status: "sent",
+        providerMessageId,
+      };
+
+      if (input.complianceCheckFailed) {
+        return { ...result, error: "compliance_check_skipped" };
+      }
+
+      return result;
+    } catch (error) {
+      return {
+        status: "failed",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to dispatch email via SendGrid.",
+      };
+    }
+  }
+
+  async retryFailedMessage(messageId: string): Promise<DispatchOutboundMessageResult> {
+    // Find the message by iterating conversations in inbox
+    const inboxSnapshot = await this.getInboxSnapshot();
+    let targetMessage: MessageRecord | undefined;
+    let targetConversation: ConversationRecord | undefined;
+
+    for (const conv of inboxSnapshot.conversations) {
+      const convMessages = await this.storage.getConversationMessages(conv.conversation_id);
+      const found = convMessages.find((m) => m.id === messageId);
+      if (found) {
+        targetMessage = found;
+        targetConversation = await this.storage.findConversationById(conv.conversation_id) ?? undefined;
+        break;
+      }
+    }
+
+    if (!targetMessage) {
+      return {
+        status: "failed",
+        error: `Message ${messageId} not found.`,
+      };
+    }
+
+    if (targetMessage.status !== "failed") {
+      return {
+        status: "failed",
+        error: `Message ${messageId} is not in failed state (current: ${targetMessage.status}).`,
+      };
+    }
+
+    const attempts = (targetMessage.metadata?.retryAttempts as number | undefined) ?? 0;
+    if (attempts >= 3) {
+      return {
+        status: "failed",
+        error: `Message ${messageId} has exhausted retry attempts (${attempts}/3).`,
+      };
+    }
+
+    if (!targetConversation) {
+      return {
+        status: "failed",
+        error: `Conversation not found for message ${messageId}.`,
+      };
+    }
+
+    // Re-dispatch the message
+    const result = await this.dispatchOutboundMessage({
+      conversation: targetConversation,
+      content: targetMessage.content,
+      metadata: {
+        ...targetMessage.metadata,
+        retryAttempts: attempts + 1,
+        retriedFromMessageId: messageId,
+      },
+    });
+
+    // Update the original message status
+    await this.storage.updateMessageById({
+      messageId,
+      status: result.status,
+      providerMessageId: result.providerMessageId,
+      error: result.error,
+    });
+
+    return result;
   }
 
   async dispatchPaymentMethodButtons(input: {
@@ -698,6 +918,68 @@ export class MessagingService {
         },
       }),
     );
+
+    // Opt-out keyword detection
+    try {
+      const { detectOptOutIntent, processOptOut, getOptOutConfirmation } =
+        await import("@/server/recovery/services/opt-out-service");
+      if (detectOptOutIntent(message.content)) {
+        await processOptOut({
+          contactValue: message.from,
+          channel: "whatsapp",
+          source: "inbound_keyword",
+        });
+
+        // Cancel pending cadence steps for this lead by marking it LOST
+        // (worker jobs check lead status and skip LOST leads automatically)
+        if (lead && lead.status !== "RECOVERED" && lead.status !== "LOST") {
+          await this.storage.updateLeadStatus({
+            leadId: lead.leadId,
+            status: "LOST",
+          }).catch((err) => {
+            console.error("[messaging] Failed to mark lead as LOST after opt-out:", err);
+          });
+        }
+
+        // Send opt-out confirmation message to the customer
+        const confirmContent = getOptOutConfirmation();
+        const confirmResult = await this.dispatchOutboundMessage({
+          conversation,
+          content: confirmContent,
+          metadata: { kind: "operator_note", generatedBy: "workflow" },
+        });
+
+        await this.storage.createMessage({
+          conversationId: conversation.id,
+          channel: "whatsapp",
+          direction: "outbound",
+          senderAddress: "system",
+          content: confirmContent,
+          status: confirmResult.status,
+          providerMessageId: confirmResult.providerMessageId,
+          error: confirmResult.error,
+          metadata: { kind: "operator_note", generatedBy: "workflow" },
+        });
+
+        await this.storage.addLog(
+          createStructuredLog({
+            eventType: "opt_out_processed",
+            level: "info",
+            message: "Customer opted out via inbound keyword.",
+            context: {
+              conversationId: conversation.id,
+              from: message.from,
+              leadId: lead?.leadId,
+              confirmationStatus: confirmResult.status,
+            },
+          }),
+        );
+
+        return conversation.id; // Stop further processing (no AI reply)
+      }
+    } catch (err) {
+      console.error("[messaging] Opt-out detection error", err);
+    }
 
     if (
       runtimeSettings.aiConfigured &&

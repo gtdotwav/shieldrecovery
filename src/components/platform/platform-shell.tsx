@@ -7,10 +7,10 @@ import {
   CalendarDays,
   ChevronRight,
   FlaskConical,
-  Inbox,
   LayoutDashboard,
   Link2,
   LogOut,
+  Megaphone,
   MessageSquare,
   PhoneCall,
   Settings,
@@ -21,6 +21,7 @@ import {
 
 import { logoutAction } from "@/app/actions/auth-actions";
 import { PlatformLogo } from "@/components/platform/platform-logo";
+import { MobileMoreMenu } from "@/components/platform/mobile-more-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
@@ -59,15 +60,15 @@ export const platformRoutes: PlatformRoute[] = [
   {
     href: "/admin",
     label: "Admin",
-    description: "Governanca dos sellers e da recuperacao.",
+    description: "Governança dos sellers e da recuperação.",
     icon: ShieldCheck,
     kind: "app",
     allowedRoles: ["admin"],
   },
   {
     href: "/dashboard",
-    label: "Recuperacao",
-    description: "O que precisa de acao agora.",
+    label: "Recuperação",
+    description: "O que precisa de ação agora.",
     icon: BarChart3,
     kind: "app",
     allowedRoles: ["admin", "seller"],
@@ -75,23 +76,23 @@ export const platformRoutes: PlatformRoute[] = [
   {
     href: "/financeiro",
     label: "Financeiro",
-    description: "Saldo, comissoes e saques.",
+    description: "Saldo, comissões e saques.",
     icon: Wallet,
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },
   {
     href: "/connect",
-    label: "Integracoes",
-    description: "O que esta ativo e o que falta.",
+    label: "Integrações",
+    description: "O que está ativo e o que falta.",
     icon: Settings,
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },
   {
     href: "/calendar",
-    label: "Calendario",
-    description: "Movimento, notas e automacoes por dia.",
+    label: "Calendário",
+    description: "Movimento, notas e automações por dia.",
     icon: CalendarDays,
     kind: "app",
     allowedRoles: ["admin", "seller"],
@@ -114,8 +115,8 @@ export const platformRoutes: PlatformRoute[] = [
   },
   {
     href: "/ai",
-    label: "Automacoes",
-    description: "IA e automacoes da operacao.",
+    label: "Automações",
+    description: "IA e automações da operação.",
     icon: Bot,
     kind: "app",
     allowedRoles: ["admin", "seller"],
@@ -131,15 +132,23 @@ export const platformRoutes: PlatformRoute[] = [
   {
     href: "/calling",
     label: "CallCenter",
-    description: "Agente de voz IA para recuperacao de clientes.",
+    description: "Agente de voz IA para recuperação de clientes.",
     icon: PhoneCall,
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },
   {
+    href: "/marketing",
+    label: "Marketing",
+    description: "Painel de resultados e estratégias de captação.",
+    icon: Megaphone,
+    kind: "app",
+    allowedRoles: ["admin", "market"],
+  },
+  {
     href: "/checkout/dashboard",
     label: "Checkout",
-    description: "Plataforma de pagamentos e transacoes.",
+    description: "Plataforma de pagamentos e transações.",
     icon: Link2,
     kind: "app",
     external: true,
@@ -171,7 +180,9 @@ function getInitials(email: string) {
 }
 
 function getRoleLabel(role: UserRole) {
-  return role === "admin" ? "Admin" : "Seller";
+  if (role === "admin") return "Admin";
+  if (role === "market") return "Marketing";
+  return "Seller";
 }
 
 /* ── Shield logo mark (3x3 dot grid) ── */
@@ -202,7 +213,6 @@ export function PlatformPage({
   children,
 }: {
   currentPath: string;
-  note?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -259,7 +269,6 @@ export async function PlatformAppPage({
   children,
 }: {
   currentPath: string;
-  note?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -282,7 +291,7 @@ export async function PlatformAppPage({
     <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-300">
       {/* ─── Desktop sidebar (icon-only, w-16) ─── */}
       <aside className="hidden md:flex w-16 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex-col items-center py-4 justify-between shrink-0 h-screen sticky top-0 transition-colors duration-300">
-        <nav aria-label="Navegacao principal" className="flex flex-col items-center gap-1">
+        <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1">
           <ShieldMark />
 
           {appRoutes.map((route) => {
@@ -336,7 +345,7 @@ export async function PlatformAppPage({
               <LogOut className="w-5 h-5" />
               <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 w-max max-w-[12rem] rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 opacity-0 scale-95 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50 shadow-lg">
                 <span className="block text-xs font-semibold text-white dark:text-gray-900">Sair</span>
-                <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">Encerrar sessao e voltar ao login.</span>
+                <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">Encerrar sessão e voltar ao login.</span>
               </span>
             </button>
           </form>
@@ -345,7 +354,7 @@ export async function PlatformAppPage({
       </aside>
 
       {/* ─── Mobile bottom nav ─── */}
-      <nav aria-label="Navegacao mobile" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-1 py-2 safe-bottom transition-colors duration-300">
+      <nav aria-label="Navegação mobile" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-gray-200 dark:border-gray-800 flex items-center justify-around px-1 py-2 safe-bottom transition-colors duration-300">
         {appRoutes.slice(0, 4).map((route) => {
           const isActive = !route.external && currentPath === route.href;
           const cls = cn(
@@ -406,76 +415,6 @@ export async function PlatformAppPage({
         <main id="main-content" className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 pb-16 md:pb-6">
           {children}
         </main>
-      </div>
-    </div>
-  );
-}
-
-/* ── Mobile "More" dropdown ── */
-
-function MobileMoreMenu({
-  routes,
-  currentPath,
-}: {
-  routes: PlatformRoute[];
-  currentPath: string;
-}) {
-  const isActive = routes.some((r) => r.href === currentPath);
-
-  return (
-    <div className="relative group">
-      <button
-        className={cn(
-          "flex flex-col items-center gap-0.5 min-w-[3rem] min-h-[2.75rem] justify-center px-1.5 rounded-lg transition-colors",
-          isActive
-            ? "text-[var(--accent)]"
-            : "text-gray-400 dark:text-gray-500",
-        )}
-      >
-        <Inbox className="w-5 h-5 shrink-0" />
-        <span className="text-[0.6rem] leading-tight">Mais</span>
-      </button>
-      <div className="absolute bottom-full right-0 mb-2 hidden group-focus-within:block bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg min-w-[160px] py-1 z-50">
-        {routes.map((route) => {
-          const active = !route.external && currentPath === route.href;
-          const itemClass = cn(
-            "flex items-center gap-2.5 px-3 py-2 text-sm transition-colors",
-            active
-              ? "text-[var(--accent)] bg-[var(--accent)]/5"
-              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800",
-          );
-
-          return route.external ? (
-            <a
-              key={route.href}
-              href={route.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={itemClass}
-            >
-              <route.icon className="w-4 h-4" />
-              {route.label}
-            </a>
-          ) : (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={itemClass}
-            >
-              <route.icon className="w-4 h-4" />
-              {route.label}
-            </Link>
-          );
-        })}
-        <form action={logoutAction} className="border-t border-gray-200 dark:border-gray-800 mt-1 pt-1">
-          <button
-            type="submit"
-            className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 w-full transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
-          </button>
-        </form>
       </div>
     </div>
   );

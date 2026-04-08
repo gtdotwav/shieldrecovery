@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { NOT_PROVIDED } from "@/lib/contact";
 import { hoursSince } from "@/lib/format";
 import type { FollowUpContact } from "@/server/recovery/types";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
@@ -774,7 +775,7 @@ export function getAIOrchestrator(): AIRecoveryOrchestrator {
 
 function pickPreferredChannel(context: RecoveryDecisionContext) {
   return context.contact.phone &&
-    context.contact.phone !== "not_provided" &&
+    context.contact.phone !== NOT_PROVIDED &&
     context.contact.phone.trim()
     ? "whatsapp"
     : "email";

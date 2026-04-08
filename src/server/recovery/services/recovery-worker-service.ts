@@ -1,3 +1,4 @@
+import { UNKNOWN_EMAIL, NOT_PROVIDED } from "@/lib/contact";
 import { appEnv } from "@/server/recovery/config";
 import { getAIOrchestrator } from "@/server/recovery/ai/orchestrator";
 import { createStructuredLog } from "@/server/recovery/utils/structured-logger";
@@ -200,6 +201,8 @@ export class RecoveryWorkerService {
         return this.handleAgentTask(job);
       case "payment-link-generated":
         return this.handleRetryLinkGenerated(job);
+      case "retry-failed-message":
+        return this.handleRetryFailedMessage(job);
       default:
         throw new Error(`Unsupported worker job type: ${job.jobType}`);
     }
@@ -547,6 +550,25 @@ export class RecoveryWorkerService {
     };
   }
 
+  private async handleRetryFailedMessage(job: QueueJobRecord): Promise<WorkerJobOutcome> {
+    const messageId = readPayloadString(job, "messageId");
+
+    const { MessagingService } = await import(
+      "@/server/recovery/services/messaging-service"
+    );
+    const messagingService = new MessagingService();
+    const result = await messagingService.retryFailedMessage(messageId);
+
+    if (result.status === "failed") {
+      throw new Error(result.error ?? `Retry failed for message ${messageId}.`);
+    }
+
+    return {
+      status: "processed",
+      detail: `Message ${messageId} retried successfully (status: ${result.status}).`,
+    };
+  }
+
   private async resolveLeadDependencies(
     leadId: string,
   ): Promise<
@@ -760,7 +782,7 @@ function retryDelayMinutesForAttempt(attempts: number) {
 }
 
 function isUsablePhone(phone?: string | null) {
-  return Boolean(phone && phone !== "not_provided");
+  return Boolean(phone && phone !== NOT_PROVIDED);
 }
 
 function countInboundMessagesAfterLatestOutbound(
@@ -782,5 +804,5 @@ function countInboundMessagesAfterLatestOutbound(
 }
 
 function isUsableEmail(email?: string | null) {
-  return Boolean(email && email !== "unknown@pagrecovery.local");
+  return Boolean(email && email !== UNKNOWN_EMAIL);
 }

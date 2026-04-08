@@ -1,8 +1,10 @@
+import { z } from "zod";
+
 import type { CheckoutService } from "../services/checkout-service";
-import type {
-  CreateSessionInput,
-  ProcessPaymentInput,
-  TrackEventInput,
+import {
+  CHECKOUT_METHOD_TYPES,
+  CHECKOUT_SESSION_SOURCES,
+  CHECKOUT_TRACKING_EVENTS,
 } from "../types";
 
 type JsonResponse = {
@@ -10,25 +12,83 @@ type JsonResponse = {
   body: unknown;
 };
 
+// ─── Zod schemas ──────────────────────────────────────────────────
+
+const createSessionSchema = z.object({
+  amount: z.number().positive("amount deve ser positivo"),
+  currency: z.string().min(3).max(3).optional(),
+  description: z.string().min(1, "description é obrigatório"),
+  customerName: z.string().min(1, "customerName é obrigatório"),
+  customerEmail: z.string().email("customerEmail inválido"),
+  customerPhone: z.string().min(8, "customerPhone inválido"),
+  customerDocument: z.string().optional(),
+  source: z.enum(CHECKOUT_SESSION_SOURCES),
+  sourceReferenceId: z.string().optional(),
+  expiresInMinutes: z.number().positive().optional(),
+  utmSource: z.string().optional(),
+  utmMedium: z.string().optional(),
+  utmCampaign: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+const processPaymentSchema = z.object({
+  sessionId: z.string().uuid("sessionId inválido"),
+  providerId: z.string().uuid("providerId inválido"),
+  methodType: z.enum(CHECKOUT_METHOD_TYPES),
+  installments: z.number().int().min(1).max(24).optional(),
+  cardToken: z.string().optional(),
+  customerDocument: z.string().optional(),
+});
+
+const trackEventSchema = z.object({
+  sessionId: z.string().uuid("sessionId inválido"),
+  eventType: z.enum(CHECKOUT_TRACKING_EVENTS),
+  methodType: z.enum(CHECKOUT_METHOD_TYPES).optional(),
+  providerId: z.string().uuid().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+// ─── Handlers ─────────────────────────────────────────────────────
+
 /**
- * POST /api/checkout/session
+ * POST /api/v1/sessions
  * Creates a new checkout session. Requires authentication.
+ * The route handler must resolve `merchantId` from the authenticated API key
+ * and pass it here — the client does NOT send merchantId in the body.
  */
 export async function handleCreateSession(
   service: CheckoutService,
   body: unknown,
+  merchantId: string,
 ): Promise<JsonResponse> {
-  const input = body as CreateSessionInput;
-
-  if (!input.amount || !input.customerName || !input.customerPhone) {
+  if (!merchantId) {
     return {
-      status: 400,
-      body: { error: "amount, customerName, customerPhone são obrigatórios" },
+      status: 401,
+      body: { error: "Merchant não autenticado" },
     };
   }
 
+  let input: z.infer<typeof createSessionSchema>;
   try {
-    const result = await service.createSession(input);
+    input = createSessionSchema.parse(body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return {
+        status: 400,
+        body: {
+          error: "Dados inválidos",
+          details: err.issues.map((i) => ({
+            field: i.path.join("."),
+            message: i.message,
+          })),
+        },
+      };
+    }
+    return { status: 400, body: { error: "Corpo da requisição inválido" } };
+  }
+
+  try {
+    const result = await service.createSession({ ...input, merchantId });
     return { status: 201, body: result };
   } catch (err) {
     return {
@@ -76,15 +136,23 @@ export async function handleProcessPayment(
   service: CheckoutService,
   body: unknown,
 ): Promise<JsonResponse> {
-  const input = body as ProcessPaymentInput;
-
-  if (!input.sessionId || !input.providerId || !input.methodType) {
-    return {
-      status: 400,
-      body: {
-        error: "sessionId, providerId, methodType são obrigatórios",
-      },
-    };
+  let input: z.infer<typeof processPaymentSchema>;
+  try {
+    input = processPaymentSchema.parse(body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return {
+        status: 400,
+        body: {
+          error: "Dados inválidos",
+          details: err.issues.map((i) => ({
+            field: i.path.join("."),
+            message: i.message,
+          })),
+        },
+      };
+    }
+    return { status: 400, body: { error: "Corpo da requisição inválido" } };
   }
 
   try {
@@ -109,13 +177,23 @@ export async function handleTrackEvent(
   service: CheckoutService,
   body: unknown,
 ): Promise<JsonResponse> {
-  const input = body as TrackEventInput;
-
-  if (!input.sessionId || !input.eventType) {
-    return {
-      status: 400,
-      body: { error: "sessionId e eventType são obrigatórios" },
-    };
+  let input: z.infer<typeof trackEventSchema>;
+  try {
+    input = trackEventSchema.parse(body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return {
+        status: 400,
+        body: {
+          error: "Dados inválidos",
+          details: err.issues.map((i) => ({
+            field: i.path.join("."),
+            message: i.message,
+          })),
+        },
+      };
+    }
+    return { status: 400, body: { error: "Corpo da requisição inválido" } };
   }
 
   try {

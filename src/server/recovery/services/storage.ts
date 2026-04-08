@@ -54,6 +54,17 @@ import type {
   WebhookEventRecord,
   WhitelabelProfileInput,
   WhitelabelProfileRecord,
+  OptOutRecord,
+  OptOutInput,
+  FrequencyLogRecord,
+  FrequencyLogInput,
+  FrequencyCheck,
+  MessageTemplateRecord,
+  MessageTemplateInput,
+  ABTestRecord,
+  ABTestInput,
+  ABTestAssignmentRecord,
+  RecoveryFunnelSnapshot,
 } from "@/server/recovery/types";
 
 export type StorageMode = "local_json" | "supabase";
@@ -186,11 +197,11 @@ export interface RecoveryStorage {
   }): Promise<CalendarSnapshot>;
   createCalendarNote(input: CreateCalendarNoteInput): Promise<CalendarNoteRecord>;
   deleteCalendarNote(noteId: string): Promise<void>;
-  getAnalytics(): Promise<RecoveryAnalytics>;
+  getAnalytics(agentName?: string): Promise<RecoveryAnalytics>;
   listQueueJobs(limit?: number): Promise<QueueJobRecord[]>;
   listSystemLogs(limit?: number): Promise<SystemLogRecord[]>;
-  getFollowUpContacts(): Promise<FollowUpContact[]>;
-  getInboxConversations(): Promise<InboxConversation[]>;
+  getFollowUpContacts(agentName?: string): Promise<FollowUpContact[]>;
+  getInboxConversations(agentName?: string): Promise<InboxConversation[]>;
   getConversationMessages(conversationId: string): Promise<MessageRecord[]>;
   getSellerAdminControls(): Promise<SellerAdminControlRecord[]>;
   saveSellerAdminControl(
@@ -226,6 +237,7 @@ export interface RecoveryStorage {
     customerId?: string;
     campaignId?: string;
     status?: string;
+    sellerKey?: string;
     limit?: number;
     offset?: number;
   }): Promise<CallRecord[]>;
@@ -268,6 +280,37 @@ export interface RecoveryStorage {
   getWhitelabelProfile(id: string): Promise<WhitelabelProfileRecord | undefined>;
   saveWhitelabelProfile(input: WhitelabelProfileInput, id?: string): Promise<WhitelabelProfileRecord>;
   deleteWhitelabelProfile(id: string): Promise<void>;
+
+  /* Opt-out / Blacklist */
+  createOptOut(input: OptOutInput): Promise<OptOutRecord>;
+  removeOptOut(channel: string, contactValue: string): Promise<void>;
+  isOptedOut(channel: string, contactValue: string): Promise<boolean>;
+  listOptOuts(options?: { contactValue?: string; channel?: string; limit?: number }): Promise<OptOutRecord[]>;
+
+  /* Frequency Capping */
+  logContactFrequency(input: FrequencyLogInput): Promise<FrequencyLogRecord>;
+  checkFrequencyLimit(contactValue: string, sellerKey?: string): Promise<FrequencyCheck>;
+  getContactFrequencyLog(contactValue: string, options?: { since?: string; channel?: string; limit?: number }): Promise<FrequencyLogRecord[]>;
+
+  /* Message Templates */
+  listMessageTemplates(options?: { category?: string; vertical?: string; channel?: string; sellerKey?: string; active?: boolean }): Promise<MessageTemplateRecord[]>;
+  getMessageTemplate(idOrSlug: string): Promise<MessageTemplateRecord | undefined>;
+  createMessageTemplate(input: MessageTemplateInput): Promise<MessageTemplateRecord>;
+  updateMessageTemplate(id: string, input: Partial<MessageTemplateInput>): Promise<MessageTemplateRecord>;
+  incrementTemplateUsage(id: string, converted?: boolean): Promise<void>;
+
+  /* A/B Testing */
+  createABTest(input: ABTestInput): Promise<ABTestRecord>;
+  getABTest(id: string): Promise<ABTestRecord | undefined>;
+  listABTests(options?: { status?: string; sellerKey?: string }): Promise<ABTestRecord[]>;
+  updateABTest(id: string, input: Partial<ABTestRecord>): Promise<ABTestRecord>;
+  createABTestAssignment(input: { abTestId: string; contactValue: string; variant: "a" | "b"; messageId?: string }): Promise<ABTestAssignmentRecord>;
+  getABTestAssignment(abTestId: string, contactValue: string): Promise<ABTestAssignmentRecord | undefined>;
+  updateABTestAssignment(id: string, input: Partial<{ delivered: boolean; clicked: boolean; converted: boolean }>): Promise<void>;
+
+  /* Recovery Funnel */
+  upsertFunnelSnapshot(input: Omit<RecoveryFunnelSnapshot, "id" | "createdAt">): Promise<RecoveryFunnelSnapshot>;
+  getFunnelSnapshots(options: { startDate: string; endDate: string; sellerKey?: string; channel?: string }): Promise<RecoveryFunnelSnapshot[]>;
 }
 
 const DEFAULT_AGENTS: AgentRecord[] = [];
@@ -1234,10 +1277,23 @@ class LocalStorageService implements RecoveryStorage {
     });
   }
 
-  async getAnalytics(): Promise<RecoveryAnalytics> {
+  async getAnalytics(agentName?: string): Promise<RecoveryAnalytics> {
     const state = this.readState();
-    const failedPayments = state.payments.filter((payment) => payment.firstFailureAt);
-    const recoveredPayments = state.payments.filter(
+
+    // When scoped to a seller, only count their leads/payments
+    const scopedLeads = agentName
+      ? state.leads.filter(
+          (lead) =>
+            lead.assignedAgentName?.toLowerCase() === agentName.toLowerCase(),
+        )
+      : state.leads;
+    const scopedPaymentIds = new Set(scopedLeads.map((l) => l.paymentId));
+    const scopedPayments = agentName
+      ? state.payments.filter((p) => scopedPaymentIds.has(p.id))
+      : state.payments;
+
+    const failedPayments = scopedPayments.filter((payment) => payment.firstFailureAt);
+    const recoveredPayments = scopedPayments.filter(
       (payment) => payment.firstFailureAt && payment.recoveredAt,
     );
 
@@ -1264,7 +1320,7 @@ class LocalStorageService implements RecoveryStorage {
       average_recovery_time_hours: recoveredPayments.length
         ? Number((totalRecoveryHours / recoveredPayments.length).toFixed(2))
         : 0,
-      active_recoveries: state.leads.filter(
+      active_recoveries: scopedLeads.filter(
         (lead) => lead.status !== "RECOVERED" && lead.status !== "LOST",
       ).length,
     };
@@ -1290,10 +1346,17 @@ class LocalStorageService implements RecoveryStorage {
       .slice(0, Math.max(1, limit));
   }
 
-  async getFollowUpContacts(): Promise<FollowUpContact[]> {
+  async getFollowUpContacts(agentName?: string): Promise<FollowUpContact[]> {
     const state = this.readState();
 
-    return state.leads
+    const leads = agentName
+      ? state.leads.filter(
+          (lead) =>
+            lead.assignedAgentName?.toLowerCase() === agentName.toLowerCase(),
+        )
+      : state.leads;
+
+    return leads
       .map((lead) => {
         const payment = state.payments.find((item) => item.id === lead.paymentId);
 
@@ -1316,10 +1379,17 @@ class LocalStorageService implements RecoveryStorage {
       });
   }
 
-  async getInboxConversations(): Promise<InboxConversation[]> {
+  async getInboxConversations(agentName?: string): Promise<InboxConversation[]> {
     const state = this.readState();
 
-    return state.conversations
+    const filteredConversations = agentName
+      ? state.conversations.filter(
+          (conversation) =>
+            conversation.assignedAgentName?.toLowerCase() === agentName.toLowerCase(),
+        )
+      : state.conversations;
+
+    return filteredConversations
       .map((conversation) => {
         const relatedMessages = state.messages
           .filter((message) => message.conversationId === conversation.id)
@@ -1822,6 +1892,212 @@ class LocalStorageService implements RecoveryStorage {
     return this.readState().demoCallLeads
       .map((lead) => ({ ...lead }))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  /* Opt-out / Blacklist — stubs for local mode */
+
+  async createOptOut(input: OptOutInput): Promise<OptOutRecord> {
+    const now = new Date().toISOString();
+    return {
+      id: randomUUID(),
+      channel: input.channel,
+      contactValue: input.contactValue,
+      reason: input.reason ?? "",
+      optedOutAt: now,
+      source: input.source ?? "api",
+      sellerKey: input.sellerKey,
+      metadata: input.metadata ?? {},
+      createdAt: now,
+    };
+  }
+
+  async removeOptOut(_channel: string, _contactValue: string): Promise<void> {}
+
+  async isOptedOut(_channel: string, _contactValue: string): Promise<boolean> {
+    return false;
+  }
+
+  async listOptOuts(_options?: { contactValue?: string; channel?: string; limit?: number }): Promise<OptOutRecord[]> {
+    return [];
+  }
+
+  /* Frequency Capping — stubs for local mode */
+
+  async logContactFrequency(input: FrequencyLogInput): Promise<FrequencyLogRecord> {
+    const now = new Date().toISOString();
+    return {
+      id: randomUUID(),
+      contactValue: input.contactValue,
+      channel: input.channel,
+      direction: input.direction ?? "outbound",
+      sentAt: now,
+      messageId: input.messageId,
+      callId: input.callId,
+      sellerKey: input.sellerKey,
+    };
+  }
+
+  async checkFrequencyLimit(_contactValue: string, _sellerKey?: string): Promise<FrequencyCheck> {
+    return { allowed: true, contactsToday: 0, contactsThisWeek: 0, maxPerDay: 2, maxPerWeek: 5 };
+  }
+
+  async getContactFrequencyLog(_contactValue: string, _options?: { since?: string; channel?: string; limit?: number }): Promise<FrequencyLogRecord[]> {
+    return [];
+  }
+
+  /* Message Templates — stubs for local mode */
+
+  async listMessageTemplates(_options?: { category?: string; vertical?: string; channel?: string; sellerKey?: string; active?: boolean }): Promise<MessageTemplateRecord[]> {
+    return [];
+  }
+
+  async getMessageTemplate(_idOrSlug: string): Promise<MessageTemplateRecord | undefined> {
+    return undefined;
+  }
+
+  async createMessageTemplate(input: MessageTemplateInput): Promise<MessageTemplateRecord> {
+    const now = new Date().toISOString();
+    return {
+      id: randomUUID(),
+      slug: input.slug ?? input.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      name: input.name,
+      channel: input.channel ?? "whatsapp",
+      category: input.category ?? "recovery",
+      vertical: input.vertical ?? "general",
+      sellerKey: input.sellerKey,
+      subject: input.subject,
+      bodyWhatsapp: input.bodyWhatsapp,
+      bodySms: input.bodySms,
+      bodyEmailHtml: input.bodyEmailHtml,
+      bodyEmailText: input.bodyEmailText,
+      variables: input.variables ?? [],
+      active: input.active ?? true,
+      usageCount: 0,
+      conversionCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  async updateMessageTemplate(id: string, input: Partial<MessageTemplateInput>): Promise<MessageTemplateRecord> {
+    const now = new Date().toISOString();
+    return {
+      id,
+      slug: input.slug ?? "unknown",
+      name: input.name ?? "Unknown",
+      channel: input.channel ?? "whatsapp",
+      category: input.category ?? "recovery",
+      vertical: input.vertical ?? "general",
+      sellerKey: input.sellerKey,
+      subject: input.subject,
+      bodyWhatsapp: input.bodyWhatsapp ?? "",
+      bodySms: input.bodySms,
+      bodyEmailHtml: input.bodyEmailHtml,
+      bodyEmailText: input.bodyEmailText,
+      variables: input.variables ?? [],
+      active: input.active ?? true,
+      usageCount: 0,
+      conversionCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  async incrementTemplateUsage(_id: string, _converted?: boolean): Promise<void> {}
+
+  /* A/B Testing — stubs for local mode */
+
+  async createABTest(input: ABTestInput): Promise<ABTestRecord> {
+    const now = new Date().toISOString();
+    return {
+      id: randomUUID(),
+      name: input.name,
+      status: "draft",
+      templateAId: input.templateAId,
+      templateBId: input.templateBId,
+      channel: input.channel ?? "whatsapp",
+      sellerKey: input.sellerKey,
+      totalSentA: 0,
+      totalSentB: 0,
+      totalDeliveredA: 0,
+      totalDeliveredB: 0,
+      totalClickedA: 0,
+      totalClickedB: 0,
+      totalConvertedA: 0,
+      totalConvertedB: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  async getABTest(_id: string): Promise<ABTestRecord | undefined> {
+    return undefined;
+  }
+
+  async listABTests(_options?: { status?: string; sellerKey?: string }): Promise<ABTestRecord[]> {
+    return [];
+  }
+
+  async updateABTest(id: string, input: Partial<ABTestRecord>): Promise<ABTestRecord> {
+    const now = new Date().toISOString();
+    return {
+      id,
+      name: input.name ?? "Unknown",
+      status: input.status ?? "draft",
+      templateAId: input.templateAId ?? "",
+      templateBId: input.templateBId ?? "",
+      channel: input.channel ?? "whatsapp",
+      sellerKey: input.sellerKey,
+      totalSentA: input.totalSentA ?? 0,
+      totalSentB: input.totalSentB ?? 0,
+      totalDeliveredA: input.totalDeliveredA ?? 0,
+      totalDeliveredB: input.totalDeliveredB ?? 0,
+      totalClickedA: input.totalClickedA ?? 0,
+      totalClickedB: input.totalClickedB ?? 0,
+      totalConvertedA: input.totalConvertedA ?? 0,
+      totalConvertedB: input.totalConvertedB ?? 0,
+      winner: input.winner,
+      confidencePct: input.confidencePct,
+      startedAt: input.startedAt,
+      completedAt: input.completedAt,
+      createdAt: input.createdAt ?? now,
+      updatedAt: now,
+    };
+  }
+
+  async createABTestAssignment(input: { abTestId: string; contactValue: string; variant: "a" | "b"; messageId?: string }): Promise<ABTestAssignmentRecord> {
+    const now = new Date().toISOString();
+    return {
+      id: randomUUID(),
+      abTestId: input.abTestId,
+      contactValue: input.contactValue,
+      variant: input.variant,
+      messageId: input.messageId,
+      delivered: false,
+      clicked: false,
+      converted: false,
+      createdAt: now,
+    };
+  }
+
+  async getABTestAssignment(_abTestId: string, _contactValue: string): Promise<ABTestAssignmentRecord | undefined> {
+    return undefined;
+  }
+
+  async updateABTestAssignment(_id: string, _input: Partial<{ delivered: boolean; clicked: boolean; converted: boolean }>): Promise<void> {}
+
+  /* Recovery Funnel — stubs for local mode */
+
+  async upsertFunnelSnapshot(input: Omit<RecoveryFunnelSnapshot, "id" | "createdAt">): Promise<RecoveryFunnelSnapshot> {
+    return {
+      id: randomUUID(),
+      ...input,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  async getFunnelSnapshots(_options: { startDate: string; endDate: string; sellerKey?: string; channel?: string }): Promise<RecoveryFunnelSnapshot[]> {
+    return [];
   }
 }
 

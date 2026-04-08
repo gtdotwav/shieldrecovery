@@ -1,14 +1,17 @@
+export const UNKNOWN_EMAIL = "unknown@pagrecovery.local";
+export const NOT_PROVIDED = "not_provided";
+
 export function hasPhone(value: string) {
-  return value !== "not_provided" && value.replace(/\D/g, "").length >= 10;
+  return value !== NOT_PROVIDED && value.replace(/\D/g, "").length >= 10;
 }
 
 export function hasReachableChannel(phone: string, email: string) {
-  return hasPhone(phone) || (Boolean(email) && email !== "unknown@pagrecovery.local");
+  return hasPhone(phone) || (Boolean(email) && email !== UNKNOWN_EMAIL);
 }
 
 export function pickBestContact(phone: string, email: string) {
   if (hasPhone(phone)) return phone;
-  if (email && email !== "unknown@pagrecovery.local") return email;
+  if (email && email !== UNKNOWN_EMAIL) return email;
   return "Sem contato";
 }
 

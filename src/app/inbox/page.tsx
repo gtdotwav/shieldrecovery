@@ -78,38 +78,29 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     );
   }
 
+  const sellerAgentName =
+    session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
   const messaging = new MessagingService();
-  const [allContacts, inboxSnapshot] = await Promise.all([
-    service.getFollowUpContacts(),
+  const [contacts, inboxSnapshot] = await Promise.all([
+    service.getFollowUpContacts(sellerAgentName),
     messaging.getInboxSnapshot(),
   ]);
 
-  const contacts =
-    session.role === "admin"
-      ? allContacts
-      : allContacts.filter((contact) =>
-          canRoleAccessAgent(
-            session.role,
-            contact.assigned_agent,
-            sellerIdentity?.agentName,
-          ),
-        );
+  // When seller-scoped, filter conversations to only those belonging to the seller
   const accessibleLeadIds = new Set(contacts.map((contact) => contact.lead_id));
-  const conversations = inboxSnapshot.conversations.filter((conversation) => {
-    if (session.role === "admin") {
-      return true;
-    }
-
-    if (conversation.lead_id) {
-      return accessibleLeadIds.has(conversation.lead_id);
-    }
-
-    return canRoleAccessAgent(
-      session.role,
-      conversation.assigned_agent,
-      sellerIdentity?.agentName,
-    );
-  });
+  const conversations = sellerAgentName
+    ? inboxSnapshot.conversations.filter((conversation) => {
+        if (conversation.lead_id) {
+          return accessibleLeadIds.has(conversation.lead_id);
+        }
+        return canRoleAccessAgent(
+          session.role,
+          conversation.assigned_agent,
+          sellerIdentity?.agentName,
+        );
+      })
+    : inboxSnapshot.conversations;
   const selectedConversation =
     (params.conversationId
       ? conversations.find(

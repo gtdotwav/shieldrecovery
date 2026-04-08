@@ -3,7 +3,7 @@ import { appEnv } from "@/server/recovery/config";
 // ── Admin API Client for PagRecovery Checkout Split System ───────
 // Calls the checkout platform's admin endpoints using a shared secret.
 
-const ADMIN_SECRET = process.env.ADMIN_API_SECRET ?? process.env.CRON_SECRET ?? "";
+const ADMIN_SECRET = process.env.ADMIN_API_SECRET ?? "";
 
 async function adminFetch(path: string, init?: RequestInit) {
   const baseUrl = appEnv.checkoutPlatformUrl;

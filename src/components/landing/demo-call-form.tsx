@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Phone, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { platformBrand } from "@/lib/platform";
 

@@ -187,7 +187,7 @@ export default function QuizPage() {
           {isEmailStep && !isDone && (
             <div className="animate-fade-in">
               <h2 className="text-center text-xl font-semibold tracking-[-0.02em] text-white sm:text-2xl">
-                Quase la!
+                Quase lá!
               </h2>
               <p className="mt-3 text-center text-sm leading-6 text-gray-400">
                 Deixe seu email para ser um dos primeiros a testar a plataforma.
@@ -237,10 +237,10 @@ export default function QuizPage() {
               </div>
 
               <h2 className="mt-6 text-xl font-semibold tracking-[-0.02em] text-white sm:text-2xl">
-                Inscricao confirmada!
+                Inscrição confirmada!
               </h2>
               <p className="mt-3 max-w-sm text-sm leading-6 text-gray-400">
-                Voce sera um dos primeiros a testar a plataforma.
+                Você será um dos primeiros a testar a plataforma.
                 Entraremos em contato em breve.
               </p>
 

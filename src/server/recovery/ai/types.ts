@@ -180,6 +180,8 @@ export type MessageContext = {
   recoveryUrgency?: RecoveryUrgency;
   decisionReason?: string;
   sellerGuidance?: string;
+  /** When set, overrides platformBrand.name in templates (seller white-label). */
+  sellerBrandName?: string;
 };
 
 export type GeneratedMessage = {

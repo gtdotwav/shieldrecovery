@@ -21,6 +21,7 @@ import {
   UsersRound,
 } from "lucide-react";
 
+import { UNKNOWN_EMAIL, NOT_PROVIDED } from "@/lib/contact";
 import { saveSellerGatewayKeyAction } from "@/app/actions/admin-actions";
 import {
   createAffiliateLinkAction,
@@ -123,8 +124,8 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
 
   const contactableLeads = contacts.filter(
     (contact) =>
-      (contact.phone && contact.phone !== "not_provided") ||
-      (contact.email && contact.email !== "unknown@pagrecovery.local"),
+      (contact.phone && contact.phone !== NOT_PROVIDED) ||
+      (contact.email && contact.email !== UNKNOWN_EMAIL),
   ).length;
 
   const integrations: IntegrationStatus[] = [

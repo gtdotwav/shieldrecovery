@@ -1,5 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
-
 const SESSION_COOKIE_NAME = "pagrecovery_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
@@ -21,7 +19,7 @@ const publicRoutePrefixes = [
   "/webhooks/",
 ];
 
-export type UserRole = "admin" | "seller";
+export type UserRole = "admin" | "seller" | "market";
 
 type SessionPayload = {
   sub: string;
@@ -35,6 +33,8 @@ type CredentialSet = {
   sellerEmail: string;
   sellerPassword: string;
   sellerAgentName: string;
+  marketEmail?: string;
+  marketPassword?: string;
 };
 
 function getAuthConfig() {
@@ -65,14 +65,21 @@ function getAllCredentialSets(): CredentialSet[] {
     });
   }
 
-  // Additional platform admins
-  sets.push({
-    adminEmail: "geandertinoco@gmail.com",
-    adminPassword: "gtzen11@",
-    sellerEmail: "shield@pagrecovery.com",
-    sellerPassword: "shield2026@pr",
-    sellerAgentName: "Shield",
-  });
+  // Additional platform admins (from env vars)
+  const extraAdminEmail = process.env.EXTRA_ADMIN_EMAIL?.trim().toLowerCase();
+  const extraSellerEmail = process.env.EXTRA_SELLER_EMAIL?.trim().toLowerCase();
+  const extraMarketEmail = process.env.MARKET_AUTH_EMAIL?.trim().toLowerCase();
+  if (extraAdminEmail || extraSellerEmail || extraMarketEmail) {
+    sets.push({
+      adminEmail: extraAdminEmail ?? "",
+      adminPassword: process.env.EXTRA_ADMIN_PASSWORD?.trim() ?? "",
+      sellerEmail: extraSellerEmail ?? "",
+      sellerPassword: process.env.EXTRA_SELLER_PASSWORD?.trim() ?? "",
+      sellerAgentName: process.env.EXTRA_SELLER_AGENT_NAME?.trim() ?? "",
+      marketEmail: extraMarketEmail,
+      marketPassword: process.env.MARKET_AUTH_PASSWORD?.trim() ?? "",
+    });
+  }
 
   return sets;
 }
@@ -103,6 +110,8 @@ const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/calling", roles: ["admin", "seller"] },
   { prefix: "/api/calls", roles: ["admin", "seller"] },
   { prefix: "/api/calendar", roles: ["admin", "seller"] },
+  { prefix: "/marketing", roles: ["admin", "market"] },
+  { prefix: "/api/marketing", roles: ["admin", "market"] },
   { prefix: "/analytics/recovery", roles: ["admin"] },
   { prefix: "/followups/contacts", roles: ["admin"] },
   { prefix: "/imports/shield-transaction", roles: ["admin"] },
@@ -162,10 +171,26 @@ export function isAuthConfigured() {
   );
 }
 
-function constantTimeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a.padEnd(64, "\0"));
-  const bufB = Buffer.from(b.padEnd(64, "\0"));
-  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+async function constantTimeEqual(a: string, b: string): Promise<boolean> {
+  const enc = new TextEncoder();
+  const keyData = crypto.getRandomValues(new Uint8Array(32));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const [macA, macB] = await Promise.all([
+    crypto.subtle.sign("HMAC", key, enc.encode(a)),
+    crypto.subtle.sign("HMAC", key, enc.encode(b)),
+  ]);
+  const bytesA = new Uint8Array(macA);
+  const bytesB = new Uint8Array(macB);
+  if (bytesA.length !== bytesB.length) return false;
+  let diff = 0;
+  for (let i = 0; i < bytesA.length; i++) diff |= bytesA[i] ^ bytesB[i];
+  return diff === 0;
 }
 
 export async function authenticateCredentials(input: {
@@ -179,11 +204,14 @@ export async function authenticateCredentials(input: {
   const password = input.password.trim();
 
   for (const set of getAllCredentialSets()) {
-    if (set.adminEmail && set.adminPassword && email === set.adminEmail && constantTimeEqual(password, set.adminPassword)) {
+    if (set.adminEmail && set.adminPassword && email === set.adminEmail && await constantTimeEqual(password, set.adminPassword)) {
       return { email, role: "admin" as const };
     }
-    if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && constantTimeEqual(password, set.sellerPassword)) {
+    if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && await constantTimeEqual(password, set.sellerPassword)) {
       return { email, role: "seller" as const };
+    }
+    if (set.marketEmail && set.marketPassword && email === set.marketEmail && await constantTimeEqual(password, set.marketPassword)) {
+      return { email, role: "market" as const };
     }
   }
 
@@ -256,6 +284,7 @@ export async function verifySessionToken(token?: string | null) {
 }
 
 export function defaultPathForRole(role: UserRole) {
+  if (role === "market") return "/marketing";
   return "/dashboard";
 }
 

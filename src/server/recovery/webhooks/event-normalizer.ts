@@ -1,3 +1,4 @@
+import { UNKNOWN_EMAIL, NOT_PROVIDED } from "@/lib/contact";
 import { HttpError } from "@/server/recovery/utils/http-error";
 import {
   SUPPORTED_PAYMENT_EVENTS,
@@ -216,7 +217,7 @@ export function normalizeShieldGatewayEvent(
         ) ?? "Unknown customer",
       email:
         pickString(customer.email, payload.email, payment.buyer_email) ??
-        "unknown@pagrecovery.local",
+        UNKNOWN_EMAIL,
       phone:
         pickString(
           customer.phone,
@@ -225,7 +226,7 @@ export function normalizeShieldGatewayEvent(
           customer.mobilePhone,
           payment.buyer_phone,
         ) ??
-        "not_provided",
+        NOT_PROVIDED,
       document:
         pickString(
           customer.document,

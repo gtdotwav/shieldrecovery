@@ -106,8 +106,8 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">9. Contato</h2>
           <p className="mt-3">
             Para dúvidas sobre estes termos:{" "}
-            <a href="mailto:contato@pagrecovery.com" className="font-medium text-[var(--accent)] hover:underline">
-              contato@pagrecovery.com
+            <a href={`mailto:${b.contactEmail}`} className="font-medium text-[var(--accent)] hover:underline">
+              {b.contactEmail}
             </a>
           </p>
         </section>

@@ -147,6 +147,9 @@ export type MessageMetadata = {
   pixExpiresAt?: string;
   actionLabel?: string;
   messagingApproach?: SellerMessagingApproach;
+  retryAttempts?: number;
+  retriedFromMessageId?: string;
+  complianceCheckSkipped?: boolean;
 };
 
 export type NormalizedPaymentEvent = {
@@ -350,7 +353,8 @@ export type SystemLogRecord = {
     | "worker_job_rescheduled"
     | "worker_job_failed"
     | "duplicate_webhook"
-    | "callcenter_checkout";
+    | "callcenter_checkout"
+    | "opt_out_processed";
   level: "info" | "warn" | "error";
   message: string;
   context: Record<string, unknown>;
@@ -394,7 +398,7 @@ export type CalendarNoteRecord = {
   title: string;
   content?: string;
   createdByEmail: string;
-  createdByRole: "admin" | "seller";
+  createdByRole: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -730,7 +734,7 @@ export type CreateCalendarNoteInput = {
   title: string;
   content?: string;
   createdByEmail: string;
-  createdByRole: "admin" | "seller";
+  createdByRole: string;
 };
 
 export type FollowUpContact = {

@@ -20,7 +20,7 @@ type NoteData = {
   content?: string;
   lane: string;
   createdByEmail: string;
-  createdByRole: "admin" | "seller";
+  createdByRole: string;
   updatedAt: string;
 };
 
@@ -47,7 +47,7 @@ export function CalendarNoteDialog({
   notes: NoteData[];
   lanes: LaneConfig[];
   currentUserEmail: string;
-  currentUserRole: "admin" | "seller";
+  currentUserRole: string;
 }) {
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);

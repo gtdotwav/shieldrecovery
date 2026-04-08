@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import QRCode from "qrcode";
 
+import { UNKNOWN_EMAIL, NOT_PROVIDED } from "@/lib/contact";
 import { getSellerAgentProfile } from "@/server/auth/core";
 import { appEnv } from "@/server/recovery/config";
 import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
@@ -526,8 +527,8 @@ export class PaymentRecoveryService {
     };
   }
 
-  async getRecoveryAnalytics() {
-    return this.storage.getAnalytics();
+  async getRecoveryAnalytics(agentName?: string) {
+    return this.storage.getAnalytics(agentName);
   }
 
   async getAdminPanelSnapshot(): Promise<AdminPanelSnapshot> {
@@ -854,8 +855,8 @@ export class PaymentRecoveryService {
     };
   }
 
-  async getFollowUpContacts(): Promise<FollowUpContact[]> {
-    return this.storage.getFollowUpContacts();
+  async getFollowUpContacts(agentName?: string): Promise<FollowUpContact[]> {
+    return this.storage.getFollowUpContacts(agentName);
   }
 
   async getCalendarSnapshot(input: {
@@ -1386,17 +1387,26 @@ export class PaymentRecoveryService {
       resolvedPixQrCode = paymentResolution.pixQrCode ?? resolvedPixQrCode;
       resolvedPixExpiresAt = paymentResolution.pixExpiresAt ?? resolvedPixExpiresAt;
     } else {
-      // Look for existing link in previous messages, or generate one if needed
-      retryLink =
-        [...messages]
-          .reverse()
-          .find((message) => message.metadata?.retryLink || message.metadata?.paymentUrl)
-          ?.metadata?.paymentUrl ??
-        [...messages]
-          .reverse()
-          .find((message) => message.metadata?.retryLink || message.metadata?.paymentUrl)
-          ?.metadata?.retryLink ??
-        (payment && contact
+      // Look for existing link in previous messages, but only reuse if
+      // the checkout session hasn't expired.
+      const existingMsg = [...messages]
+        .reverse()
+        .find((message) => message.metadata?.retryLink || message.metadata?.paymentUrl);
+      const existingUrl = existingMsg?.metadata?.paymentUrl ?? existingMsg?.metadata?.retryLink;
+      const pixExpiry = existingMsg?.metadata?.pixExpiresAt;
+
+      const isExpired = pixExpiry
+        ? new Date(pixExpiry).getTime() <= Date.now()
+        : existingMsg
+          // If no explicit expiry, consider sessions older than 24h as expired
+          ? (Date.now() - new Date(existingMsg.createdAt).getTime()) > 24 * 3_600_000
+          : true;
+
+      if (existingUrl && !isExpired) {
+        retryLink = existingUrl;
+      } else {
+        // Existing session expired or not found — create a fresh one
+        retryLink = payment && contact
           ? (
               await this.createImmediatePaymentLink(
               payment,
@@ -1416,7 +1426,8 @@ export class PaymentRecoveryService {
               replyCheckoutOverrides,
             )
             ).paymentLink
-          : undefined);
+          : undefined;
+      }
     }
 
     const content = await generateConversationReply({
@@ -2189,6 +2200,7 @@ export class PaymentRecoveryService {
         recoveryUrgency: decision.urgency,
         decisionReason: decision.reason,
         sellerGuidance: automationPolicy.control?.notes,
+        sellerBrandName: automationPolicy.control?.sellerName || undefined,
       },
     });
 
@@ -2403,6 +2415,36 @@ export class PaymentRecoveryService {
     pixQrCode?: string;
     pixExpiresAt?: string;
   }> {
+    // Loop prevention: stop creating new sessions if > 5 already exist for this payment
+    const MAX_CHECKOUT_SESSIONS = 5;
+    try {
+      const storageAny = this.storage as unknown as Record<string, unknown>;
+      const supabase = storageAny.supabase as
+        | { from: (table: string) => { select: (...args: unknown[]) => { eq: (col: string, val: string) => Promise<{ count: number | null }> } } }
+        | undefined;
+      if (supabase) {
+        const { count } = await supabase
+          .from("payment_attempts")
+          .select("*", { count: "exact", head: true })
+          .eq("payment_id", payment.id);
+        if ((count ?? 0) >= MAX_CHECKOUT_SESSIONS) {
+          await this.storage.addLog(
+            createStructuredLog({
+              eventType: "processing_error",
+              level: "warn",
+              message: `Checkout session limit reached (${count}/${MAX_CHECKOUT_SESSIONS}) for payment ${payment.id}. Skipping new session creation.`,
+              context: { paymentId: payment.id, existingSessions: count },
+            }),
+          ).catch(() => {});
+          // Return a fallback link instead of creating yet another session
+          const fallbackLink = `${baseUrl}/retry/${payment.gatewayPaymentId}?token=limit-reached`;
+          return { paymentLink: fallbackLink };
+        }
+      }
+    } catch {
+      // If count check fails, proceed with session creation
+    }
+
     if (appEnv.pagouAiConfigured && selectedMethodType === "pix" && !checkoutOverrides?.baseUrl) {
       try {
         return await this.createPagouPixRecovery({
@@ -2497,11 +2539,11 @@ export class PaymentRecoveryService {
     const buyerName = input.customer?.name?.trim() || `Cliente ${platformBrand.name}`;
     const buyerEmail =
       input.customer?.email?.trim() &&
-      input.customer.email !== "unknown@pagrecovery.local"
+      input.customer.email !== UNKNOWN_EMAIL
         ? input.customer.email.trim()
         : undefined;
     const buyerPhone =
-      input.customer?.phone && input.customer.phone !== "not_provided"
+      input.customer?.phone && input.customer.phone !== NOT_PROVIDED
         ? input.customer.phone
         : undefined;
     const description = `Recuperacao #${input.payment.orderId || input.payment.gatewayPaymentId}`;
@@ -2558,8 +2600,8 @@ export class PaymentRecoveryService {
     }
 
     const missingCustomerDetails =
-      normalizedEvent.customer.email === "unknown@pagrecovery.local" &&
-      normalizedEvent.customer.phone === "not_provided";
+      normalizedEvent.customer.email === UNKNOWN_EMAIL &&
+      normalizedEvent.customer.phone === NOT_PROVIDED;
     const missingPixDisplay = normalizedEvent.payment.method === "pix" && !normalizedEvent.metadata.pixCode;
 
     if (!missingCustomerDetails && !missingPixDisplay) {
@@ -3011,14 +3053,14 @@ function resolveFollowUpTarget(customer: CustomerRecord): {
   channel: "whatsapp" | "email";
   contactValue: string;
 } | null {
-  if (customer.phone && customer.phone !== "not_provided") {
+  if (customer.phone && customer.phone !== NOT_PROVIDED) {
     return {
       channel: "whatsapp",
       contactValue: customer.phone,
     };
   }
 
-  if (customer.email && customer.email !== "unknown@pagrecovery.local") {
+  if (customer.email && customer.email !== UNKNOWN_EMAIL) {
     return {
       channel: "email",
       contactValue: customer.email,

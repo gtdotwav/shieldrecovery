@@ -16,6 +16,10 @@ export type CadenceStep = {
   strategy: CadenceStrategy;
   tone: RecoveryMessageTone;
   condition?: CadenceCondition;
+  fallbackChannel?: MessagingChannel;
+  fallbackDelayMinutes?: number;
+  templateSlug?: string;
+  negotiationEligible?: boolean;
 };
 
 export type CadenceStrategy =
@@ -94,8 +98,10 @@ export function buildFollowUpCadence(input: {
   hasResponded: boolean;
   hasReadMessages: boolean;
   lastOutboundAt?: string;
+  smsEnabled?: boolean;
+  aiNegotiationEnabled?: boolean;
 }): CadenceStep[] {
-  const { lead, payment, hasResponded, hasReadMessages } = input;
+  const { lead, payment, hasResponded, hasReadMessages, smsEnabled } = input;
   const isHighValue = payment.amount >= 30_000; // R$300+
   const isVeryHighValue = payment.amount >= 100_000; // R$1000+
   const baseDelay = hasResponded ? 120 : 240; // 2h if responded, 4h if not
@@ -103,6 +109,7 @@ export function buildFollowUpCadence(input: {
   const steps: CadenceStep[] = [];
 
   // Step 4: Contextual follow-up (T+4h or T+2h if engaged)
+  // Fallback to SMS if WhatsApp not delivered after 1h
   steps.push({
     stepNumber: 4,
     delayMinutes: baseDelay,
@@ -110,9 +117,12 @@ export function buildFollowUpCadence(input: {
     strategy: "contextual",
     tone: hasReadMessages ? "direct" : "empathetic",
     condition: hasReadMessages ? "read_no_reply" : "no_response",
+    fallbackChannel: smsEnabled ? "sms" : undefined,
+    fallbackDelayMinutes: 60,
+    templateSlug: "gentle-reminder-general",
   });
 
-  // Step 5: Voice call for high-value OR WhatsApp for standard
+  // Step 5: Voice call for high-value OR SMS fallback for standard
   if (isHighValue) {
     steps.push({
       stepNumber: 5,
@@ -121,6 +131,7 @@ export function buildFollowUpCadence(input: {
       strategy: "voice_outreach",
       tone: "empathetic",
       condition: "high_value",
+      templateSlug: "post-call-checkout",
     });
   } else {
     steps.push({
@@ -130,10 +141,13 @@ export function buildFollowUpCadence(input: {
       strategy: "contextual",
       tone: "casual",
       condition: "no_response",
+      fallbackChannel: smsEnabled ? "sms" : undefined,
+      fallbackDelayMinutes: 360, // 6h SMS fallback
+      templateSlug: "reengagement-48h",
     });
   }
 
-  // Step 6: Approach shift — change tone and offer alternatives (T+48h)
+  // Step 6: Approach shift — offer alternatives + negotiation (T+48h)
   steps.push({
     stepNumber: 6,
     delayMinutes: 2_880,
@@ -141,19 +155,25 @@ export function buildFollowUpCadence(input: {
     strategy: "alternative",
     tone: "urgent",
     condition: "no_response",
+    templateSlug: "payment-alternative",
+    negotiationEligible: input.aiNegotiationEnabled,
   });
 
-  // Step 7: Última chance with calibrated urgency (T+72h)
+  // Step 7: Discount offer if negotiation enabled, else last chance (T+72h)
   steps.push({
     stepNumber: 7,
     delayMinutes: 4_320,
     channel: "whatsapp",
-    strategy: "last_chance",
+    strategy: input.aiNegotiationEnabled ? "urgency" : "last_chance",
     tone: isVeryHighValue ? "urgent" : "empathetic",
     condition: "no_response",
+    templateSlug: input.aiNegotiationEnabled ? "discount-offer" : "last-chance",
+    negotiationEligible: input.aiNegotiationEnabled,
+    fallbackChannel: smsEnabled ? "sms" : undefined,
+    fallbackDelayMinutes: 360,
   });
 
-  // Step 8: Re-engagement (T+5 days)
+  // Step 8: Multi-channel re-engagement — email (T+5 days)
   steps.push({
     stepNumber: 8,
     delayMinutes: 7_200,
@@ -161,28 +181,45 @@ export function buildFollowUpCadence(input: {
     strategy: "reengagement",
     tone: "casual",
     condition: "no_response",
+    templateSlug: "reengagement-48h",
   });
 
-  // Step 9: Voice attempt for very high value at T+5 days
-  if (isVeryHighValue) {
+  // Step 9: SMS follow-up right after email if enabled (T+5d + 6h)
+  if (smsEnabled) {
     steps.push({
       stepNumber: 9,
-      delayMinutes: 7_500,
+      delayMinutes: 7_560,
+      channel: "sms",
+      strategy: "reengagement",
+      tone: "direct",
+      condition: "no_response",
+      templateSlug: "last-chance",
+    });
+  }
+
+  // Step 10: Voice attempt for very high value at T+5.5 days
+  if (isVeryHighValue) {
+    steps.push({
+      stepNumber: 10,
+      delayMinutes: 7_920,
       channel: "voice",
       strategy: "voice_outreach",
       tone: "direct",
       condition: "high_value",
+      templateSlug: "post-call-checkout",
     });
   }
 
-  // Step 10: Soft close with open door (T+7 days)
+  // Final step: Soft close with open door (T+7 days)
+  const finalStep = isVeryHighValue ? 11 : smsEnabled ? 10 : 9;
   steps.push({
-    stepNumber: isVeryHighValue ? 10 : 9,
+    stepNumber: finalStep,
     delayMinutes: 10_080,
     channel: "whatsapp",
     strategy: "soft_close",
     tone: "empathetic",
     condition: "no_response",
+    templateSlug: "last-chance",
   });
 
   // Filter out steps that already exist
@@ -217,7 +254,11 @@ export function adjustToBusinessHours(
     adjusted.setUTCHours(BUSINESS_HOUR_START - offset, 0, 0, 0);
   }
 
-  // Skip Sunday (day 0)
+  // Skip Saturday (day 6) → push to Monday
+  if (adjusted.getUTCDay() === 6) {
+    adjusted.setDate(adjusted.getDate() + 2);
+  }
+  // Skip Sunday (day 0) → push to Monday
   if (adjusted.getUTCDay() === 0) {
     adjusted.setDate(adjusted.getDate() + 1);
   }
@@ -245,4 +286,51 @@ function getTimezoneOffset(phone?: string): number {
   const cleaned = phone.replace(/\D/g, "");
   const ddd = cleaned.startsWith("55") ? cleaned.slice(2, 4) : cleaned.slice(0, 2);
   return DDD_TIMEZONE_MAP[ddd] ?? -3;
+}
+
+/* ── Multi-channel fallback ── */
+
+/**
+ * Determine the fallback channel order for a given primary channel.
+ * Returns the next channel to try if the primary fails or is undelivered.
+ */
+export function getFallbackChannels(
+  primary: MessagingChannel,
+  smsEnabled: boolean,
+): MessagingChannel[] {
+  switch (primary) {
+    case "whatsapp":
+      return smsEnabled ? ["sms", "email"] : ["email"];
+    case "sms":
+      return ["whatsapp", "email"];
+    case "email":
+      return smsEnabled ? ["sms", "whatsapp"] : ["whatsapp"];
+    case "voice":
+      return smsEnabled ? ["whatsapp", "sms"] : ["whatsapp"];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Build a multi-channel sequence for a single step.
+ * Example: WhatsApp at T+0, SMS fallback at T+1h if not delivered, Email at T+24h if still not delivered.
+ */
+export function buildMultiChannelSequence(
+  step: CadenceStep,
+  smsEnabled: boolean,
+): Array<{ channel: MessagingChannel; delayMinutes: number; condition: string }> {
+  const sequence: Array<{ channel: MessagingChannel; delayMinutes: number; condition: string }> = [
+    { channel: step.channel, delayMinutes: 0, condition: "always" },
+  ];
+
+  if (step.fallbackChannel && step.fallbackDelayMinutes) {
+    sequence.push({
+      channel: step.fallbackChannel,
+      delayMinutes: step.fallbackDelayMinutes,
+      condition: "if_not_delivered",
+    });
+  }
+
+  return sequence;
 }

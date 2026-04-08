@@ -14,6 +14,7 @@ import type {
 
 import type { CadenceStrategy } from "./cadence-engine";
 
+import { formatCurrency } from "@/lib/format";
 import { platformBrand } from "@/lib/platform";
 
 /* ── Types ── */
@@ -31,6 +32,8 @@ export type ConversationContext = {
   lastInboundIntent?: InboundIntent;
   callTranscriptSummary?: string;
   insightsFromHistory?: string[];
+  negotiationOffer?: { discountPct: number; reason: string };
+  templateBody?: string;
 };
 
 export type CustomerSentiment =
@@ -160,6 +163,17 @@ function buildAgentSystemPrompt(): string {
     "- NAO inclua links ou codigos PIX no texto (sao adicionados automaticamente)",
     "- Quando referenciar link ou PIX, diga 'aqui embaixo'",
     "",
+    "NEGOCIACAO:",
+    "- Se autorizado pelo seller, ofereca descontos progressivos em steps avancados",
+    "- Steps 4-5: desconto pequeno (ex: 5-10%). Steps 6-7: medio. Steps 8+: maximo",
+    "- Sempre apresente o desconto como cortesia, nunca como desespero",
+    "- Se o campo 'negotiationOffer' estiver presente no contexto, use-o na mensagem",
+    "",
+    "CANAIS:",
+    "- WhatsApp e o canal principal. SMS e usado como fallback quando WhatsApp nao entrega",
+    "- Email para reengajamento em steps mais tardios",
+    "- Chamada de voz para leads de alto valor ou quando outros canais falharam",
+    "",
     "DETECCAO DE COMPROMISSOS:",
     "- Se o cliente disser 'vou pagar amanha/depois/segunda' → detecte como compromisso",
     "- Se disser 'ja paguei' → verifique e confirme",
@@ -217,6 +231,12 @@ function buildAgentUserPrompt(
     "",
     `OBJECOES JA REGISTRADAS: ${ctx.objections.length ? ctx.objections.join(", ") : "nenhuma"}`,
     `COMPROMISSOS ANTERIORES: ${ctx.commitments.length ? ctx.commitments.join(", ") : "nenhum"}`,
+    ctx.negotiationOffer
+      ? `\nOFERTA DE DESCONTO AUTORIZADA: ${ctx.negotiationOffer.discountPct}% (${ctx.negotiationOffer.reason}). Inclua na mensagem de forma natural.`
+      : "",
+    ctx.templateBody
+      ? `\nTEMPLATE BASE (use como referencia, personalize):\n${ctx.templateBody}`
+      : "",
     insightsBlock,
     transcriptBlock,
     "",
@@ -473,12 +493,6 @@ function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] || "Cliente";
 }
 
-function formatCurrency(amountCents: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format((Number.isFinite(amountCents) ? amountCents : 0) / 100);
-}
 
 function hasAny(text: string, fragments: string[]): boolean {
   return fragments.some((f) => text.includes(f));

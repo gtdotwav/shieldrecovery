@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { MessagingService } from "@/server/recovery/services/messaging-service";
@@ -24,6 +25,38 @@ export async function handleWhatsAppWebhookVerification(request: Request) {
   }
 }
 
+function verifyWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
+  const appSecret = process.env.WHATSAPP_APP_SECRET?.trim();
+  if (!appSecret) {
+    if (process.env.NODE_ENV === "production") {
+      return false;
+    }
+    console.warn("[WhatsApp] Skipping webhook signature verification — WHATSAPP_APP_SECRET not configured (dev mode)");
+    return true;
+  }
+
+  if (!signatureHeader) {
+    return false;
+  }
+
+  const expectedSignature = createHmac("sha256", appSecret)
+    .update(rawBody)
+    .digest("hex");
+
+  const providedSignature = signatureHeader.replace("sha256=", "");
+
+  if (expectedSignature.length !== providedSignature.length) {
+    return false;
+  }
+
+  // Constant-time comparison
+  const bufExpected = Buffer.from(expectedSignature, "hex");
+  const bufProvided = Buffer.from(providedSignature, "hex");
+  if (bufExpected.length !== bufProvided.length) return false;
+
+  return timingSafeEqual(bufExpected, bufProvided);
+}
+
 export async function handleWhatsAppWebhook(request: Request) {
   const service = new MessagingService();
   let rawBody: string;
@@ -33,6 +66,14 @@ export async function handleWhatsAppWebhook(request: Request) {
     return NextResponse.json(
       { ok: false, error: "Failed to read request body." },
       { status: 400 },
+    );
+  }
+
+  const signature = request.headers.get("x-hub-signature-256");
+  if (!verifyWhatsAppSignature(rawBody, signature)) {
+    return NextResponse.json(
+      { ok: false, error: "Invalid signature." },
+      { status: 401 },
     );
   }
 

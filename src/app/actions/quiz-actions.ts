@@ -61,7 +61,7 @@ export async function submitQuizEmail(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const answers = String(formData.get("answers") ?? "");
 
-  if (!email || !email.includes("@") || !email.includes(".")) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { error: "Informe um email valido." };
   }
 

@@ -72,3 +72,15 @@ export type { PaymentProvider } from "./providers/types";
 export { CheckoutService } from "./services/checkout-service";
 export { CheckoutStorage } from "./services/checkout-storage";
 export { TrackingService } from "./services/tracking-service";
+
+// API
+export { authenticateApiKey } from "./api/auth";
+export type { AuthenticatedMerchant } from "./api/auth";
+export {
+  handleCreateSession,
+  handleGetSession,
+  handleProcessPayment,
+  handleTrackEvent,
+  handleWebhook,
+  handleGetAnalytics,
+} from "./api/handlers";

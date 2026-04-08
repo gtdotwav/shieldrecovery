@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { canRoleAccessAgent } from "@/server/auth/core";
+import type { UserRole } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -14,7 +16,7 @@ export type ActionResult = { error?: string } | void;
 
 async function getAccessibleConversation(input: {
   conversationId: string;
-  role: "admin" | "seller";
+  role: UserRole;
   email?: string;
 }) {
   const service = getPaymentRecoveryService();
@@ -66,18 +68,11 @@ export async function transitionLeadStage(formData: FormData) {
         !contact ||
         !canRoleAccessAgent(session.role, contact.assigned_agent, sellerIdentity?.agentName)
       ) {
-        console.warn("[transitionLeadStage] Sem permissao para acessar lead", {
-          leadId,
-          email: session.email,
-        });
         return;
       }
 
       if (!sellerIdentity?.agentName) {
-        console.warn("[transitionLeadStage] Identidade do seller nao configurada", {
-          email: session.email,
-        });
-        return;
+          return;
       }
 
       const assignedAgent = await service.ensureOperationalAgent({
@@ -99,11 +94,7 @@ export async function transitionLeadStage(formData: FormData) {
       }
     }
   } catch (error) {
-    console.error("[transitionLeadStage] Erro ao transicionar lead", {
-      leadId,
-      status,
-      error: error instanceof Error ? error.message : error,
-    });
+    console.error("[transitionLeadStage]", error instanceof Error ? error.message : error);
     return;
   }
 
@@ -122,9 +113,6 @@ export async function registerConversationReply(formData: FormData) {
   const content = String(formData.get("content") ?? "");
 
   if (!conversationId || !content.trim()) {
-    console.warn("[registerConversationReply] Conversa ou conteudo ausente", {
-      conversationId,
-    });
     return;
   }
 
@@ -135,20 +123,13 @@ export async function registerConversationReply(formData: FormData) {
   });
 
   if (!conversation) {
-    console.warn("[registerConversationReply] Conversa nao encontrada ou sem permissao", {
-      conversationId,
-      email: session.email,
-    });
     return;
   }
 
   try {
     await service.addManualConversationMessage({ conversationId, content });
   } catch (error) {
-    console.error("[registerConversationReply] Erro ao registrar resposta", {
-      conversationId,
-      error: error instanceof Error ? error.message : error,
-    });
+    console.error("[registerConversationReply]", error instanceof Error ? error.message : error);
     return;
   }
 
@@ -163,7 +144,6 @@ export async function sendAiConversationReply(formData: FormData) {
   const conversationId = String(formData.get("conversationId") ?? "");
 
   if (!conversationId) {
-    console.warn("[sendAiConversationReply] ID da conversa ausente");
     return;
   }
 
@@ -174,20 +154,13 @@ export async function sendAiConversationReply(formData: FormData) {
   });
 
   if (!conversation) {
-    console.warn("[sendAiConversationReply] Conversa nao encontrada ou sem permissao", {
-      conversationId,
-      email: session.email,
-    });
     return;
   }
 
   try {
     await service.sendAiConversationReply({ conversationId });
   } catch (error) {
-    console.error("[sendAiConversationReply] Erro ao enviar resposta da IA", {
-      conversationId,
-      error: error instanceof Error ? error.message : error,
-    });
+    console.error("[sendAiConversationReply]", error instanceof Error ? error.message : error);
     return;
   }
 
@@ -203,10 +176,6 @@ export async function changeConversationStatus(formData: FormData) {
   const status = String(formData.get("status") ?? "") as ConversationStatus;
 
   if (!conversationId || !status) {
-    console.warn("[changeConversationStatus] Conversa ou status ausente", {
-      conversationId,
-      status,
-    });
     return;
   }
 
@@ -217,21 +186,13 @@ export async function changeConversationStatus(formData: FormData) {
   });
 
   if (!conversation) {
-    console.warn("[changeConversationStatus] Conversa nao encontrada ou sem permissao", {
-      conversationId,
-      email: session.email,
-    });
     return;
   }
 
   try {
     await service.updateConversationStatus({ conversationId, status });
   } catch (error) {
-    console.error("[changeConversationStatus] Erro ao alterar status da conversa", {
-      conversationId,
-      status,
-      error: error instanceof Error ? error.message : error,
-    });
+    console.error("[changeConversationStatus]", error instanceof Error ? error.message : error);
     return;
   }
 
@@ -397,7 +358,14 @@ export async function saveCallcenterSettings(formData: FormData) {
   const session = await requireAuthenticatedSession(["admin", "seller"]);
   const storage = getStorageService();
 
-  const sellerKey = String(formData.get("sellerKey") ?? session.email.split("@")[0]);
+  let sellerKey: string;
+  if (session.role === "seller") {
+    const identity = await getSellerIdentityByEmail(session.email);
+    if (!identity?.agentName) return;
+    sellerKey = identity.agentName;
+  } else {
+    sellerKey = String(formData.get("sellerKey") ?? session.email.split("@")[0]);
+  }
   const voiceTone = String(formData.get("voiceTone") || "empathetic") as VoiceTone;
   const voiceGender = String(formData.get("voiceGender") || "female") as VoiceGender;
   const discountPercent = Math.min(100, Math.max(0, Number(formData.get("discountPercent") || 0)));
@@ -422,12 +390,10 @@ export async function saveCallcenterSettings(formData: FormData) {
       autoCallEnabled,
     });
   } catch (error) {
-    console.error("[saveCallcenterSettings] Erro ao salvar configuracoes", {
-      sellerKey,
-      error: error instanceof Error ? error.message : error,
-    });
-    return;
+    console.error("[saveCallcenterSettings]", error instanceof Error ? error.message : error);
+    redirect("/calling?status=error&message=Erro%20ao%20salvar%20configurações");
   }
 
   revalidatePath("/calling");
+  redirect("/calling?status=ok&message=Configurações%20salvas");
 }

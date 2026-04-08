@@ -84,8 +84,8 @@ export default function PrivacyPage() {
           </ul>
           <p className="mt-3">
             Para exercer qualquer um desses direitos, entre em contato pelo email{" "}
-            <a href="mailto:contato@pagrecovery.com" className="font-medium text-[var(--accent)] hover:underline">
-              contato@pagrecovery.com
+            <a href={`mailto:${b.contactEmail}`} className="font-medium text-[var(--accent)] hover:underline">
+              {b.contactEmail}
             </a>.
           </p>
         </section>
@@ -102,8 +102,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">7. Contato</h2>
           <p className="mt-3">
             Para dúvidas sobre esta política, entre em contato:{" "}
-            <a href="mailto:contato@pagrecovery.com" className="font-medium text-[var(--accent)] hover:underline">
-              contato@pagrecovery.com
+            <a href={`mailto:${b.contactEmail}`} className="font-medium text-[var(--accent)] hover:underline">
+              {b.contactEmail}
             </a>
           </p>
         </section>

@@ -18,7 +18,7 @@ export function StopPropagation({
   return (
     <div
       className={className}
-      onClick={(e) => e.preventDefault()}
+      onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
       {children}

@@ -66,6 +66,17 @@ import type {
   WebhookEventRecord,
   WhitelabelProfileInput,
   WhitelabelProfileRecord,
+  OptOutRecord,
+  OptOutInput,
+  FrequencyLogRecord,
+  FrequencyLogInput,
+  FrequencyCheck,
+  MessageTemplateRecord,
+  MessageTemplateInput,
+  ABTestRecord,
+  ABTestInput,
+  ABTestAssignmentRecord,
+  RecoveryFunnelSnapshot,
 } from "@/server/recovery/types";
 import { RecoveryStorage } from "@/server/recovery/services/storage";
 
@@ -661,13 +672,33 @@ export class SupabaseStorageService implements RecoveryStorage {
       return undefined;
     }
 
-    const { data } = await this.supabase
+    // Try exact match on the normalized phone value first
+    const { data: exactMatch } = await this.supabase
       .from("recovery_leads")
       .select("*, agent:agents(*)")
+      .eq("phone", normalizedPhone)
       .not("status", "in", '("RECOVERED","LOST")')
-      .order("updated_at", { ascending: false });
+      .order("updated_at", { ascending: false })
+      .limit(1);
 
-    const lead = ((data as DatabaseLeadRow[] | null) || []).find((item) => {
+    const exactLead = ((exactMatch as DatabaseLeadRow[] | null) || [])[0];
+    if (exactLead) {
+      return mapLead(exactLead);
+    }
+
+    // Fallback: fuzzy match with LIKE on last digits (handles formatting differences)
+    const lastDigits = normalizedPhone.replace(/\D/g, "").slice(-8);
+    if (lastDigits.length < 8) return undefined;
+
+    const { data: fuzzyMatch } = await this.supabase
+      .from("recovery_leads")
+      .select("*, agent:agents(*)")
+      .like("phone", `%${sanitizeFilterValue(lastDigits)}`)
+      .not("status", "in", '("RECOVERED","LOST")')
+      .order("updated_at", { ascending: false })
+      .limit(10);
+
+    const lead = ((fuzzyMatch as DatabaseLeadRow[] | null) || []).find((item) => {
       return normalizePhone(item.phone) === normalizedPhone;
     });
 
@@ -733,6 +764,20 @@ export class SupabaseStorageService implements RecoveryStorage {
   async getActiveAgents(): Promise<AgentRecord[]> {
     const { data } = await this.supabase.from("agents").select("*").eq("active", true).order("created_at", { ascending: true });
     return (data || []).map(mapAgent);
+  }
+
+  /**
+   * Resolve an agent's database ID from their display name.
+   * Used for seller-scoped queries that filter by assigned_agent_id.
+   * Returns undefined when no agent matches.
+   */
+  private async resolveAgentIdByName(agentName: string): Promise<string | undefined> {
+    const { data } = await this.supabase
+      .from("agents")
+      .select("id")
+      .ilike("name", agentName.trim().toLowerCase())
+      .maybeSingle();
+    return data?.id ?? undefined;
   }
 
   async assignAgentRoundRobin(): Promise<AgentRecord | undefined> {
@@ -1416,7 +1461,56 @@ export class SupabaseStorageService implements RecoveryStorage {
     }
   }
 
-  async getAnalytics(): Promise<RecoveryAnalytics> {
+  async getAnalytics(agentName?: string): Promise<RecoveryAnalytics> {
+    // When scoped to a seller, filter through recovery_leads → payments
+    if (agentName) {
+      const agentId = await this.resolveAgentIdByName(agentName);
+      if (!agentId) {
+        return {
+          total_failed_payments: 0,
+          recovered_payments: 0,
+          recovery_rate: 0,
+          recovered_revenue: 0,
+          average_recovery_time_hours: 0,
+          active_recoveries: 0,
+        };
+      }
+
+      const { data: leads } = await this.supabase
+        .from("recovery_leads")
+        .select("payment:payments(amount, first_failure_at, recovered_at)")
+        .eq("assigned_agent_id", agentId);
+      const { count: activeRecoveries } = await this.supabase
+        .from("recovery_leads")
+        .select("*", { count: "exact", head: true })
+        .eq("assigned_agent_id", agentId)
+        .not("status", "in", '("RECOVERED","LOST")');
+
+      const paymentList: PaymentAnalyticsData[] = ((leads as { payment: PaymentAnalyticsData | PaymentAnalyticsData[] | null }[] | null) || [])
+        .map((l) => {
+          const p = Array.isArray(l.payment) ? l.payment[0] : l.payment;
+          return p ?? null;
+        })
+        .filter((p): p is PaymentAnalyticsData => p !== null && p.first_failure_at !== null);
+
+      const failedPayments = paymentList.length;
+      const recoveredPayments = paymentList.filter(p => p.recovered_at);
+      const recoveredRevenue = recoveredPayments.reduce((sum: number, p: PaymentAnalyticsData) => sum + Number(p.amount), 0);
+      const totalRecoveryHours = recoveredPayments.reduce((sum: number, p: PaymentAnalyticsData) => {
+        if (!p.first_failure_at || !p.recovered_at) return sum;
+        return sum + (new Date(p.recovered_at).getTime() - new Date(p.first_failure_at).getTime()) / 3_600_000;
+      }, 0);
+
+      return {
+        total_failed_payments: failedPayments,
+        recovered_payments: recoveredPayments.length,
+        recovery_rate: failedPayments ? Number(((recoveredPayments.length / failedPayments) * 100).toFixed(2)) : 0,
+        recovered_revenue: Number(recoveredRevenue.toFixed(2)),
+        average_recovery_time_hours: recoveredPayments.length ? Number((totalRecoveryHours / recoveredPayments.length).toFixed(2)) : 0,
+        active_recoveries: activeRecoveries || 0,
+      };
+    }
+
     const { data: payments } = await this.supabase.from("payments").select("amount, first_failure_at, recovered_at").not("first_failure_at", "is", null);
     const { count: activeRecoveries } = await this.supabase.from("recovery_leads").select("*", { count: "exact", head: true }).not("status", "in", '("RECOVERED","LOST")');
 
@@ -1459,11 +1553,20 @@ export class SupabaseStorageService implements RecoveryStorage {
     return ((data as DatabaseSystemLogRow[] | null) || []).map(mapSystemLog);
   }
 
-  async getFollowUpContacts(): Promise<FollowUpContact[]> {
-    const { data: leads } = await this.supabase
+  async getFollowUpContacts(agentName?: string): Promise<FollowUpContact[]> {
+    let query = this.supabase
       .from("recovery_leads")
       .select("*, payment:payments(*), agent:agents(*)")
-      .order("updated_at", { ascending: false });
+      .order("updated_at", { ascending: false })
+      .limit(2000);
+
+    if (agentName) {
+      const agentId = await this.resolveAgentIdByName(agentName);
+      if (!agentId) return [];
+      query = query.eq("assigned_agent_id", agentId);
+    }
+
+    const { data: leads } = await query;
 
     return ((leads as DatabaseLeadRow[] | null) || []).map((lead) => {
       const payment = unwrapRelation(lead.payment);
@@ -1488,11 +1591,20 @@ export class SupabaseStorageService implements RecoveryStorage {
     });
   }
 
-  async getInboxConversations(): Promise<InboxConversation[]> {
-    const { data: conversations } = await this.supabase
+  async getInboxConversations(agentName?: string): Promise<InboxConversation[]> {
+    let query = this.supabase
       .from("conversations")
       .select("*, agent:agents(*)")
-      .order("last_message_at", { ascending: false });
+      .order("last_message_at", { ascending: false })
+      .limit(1000);
+
+    if (agentName) {
+      const agentId = await this.resolveAgentIdByName(agentName);
+      if (!agentId) return [];
+      query = query.eq("assigned_agent_id", agentId);
+    }
+
+    const { data: conversations } = await query;
 
     const conversationRows = (conversations as DatabaseConversationRow[] | null) || [];
     const conversationIds = conversationRows.map((conversation) => conversation.id);
@@ -1949,6 +2061,7 @@ export class SupabaseStorageService implements RecoveryStorage {
     customerId?: string;
     campaignId?: string;
     status?: string;
+    sellerKey?: string;
     limit?: number;
     offset?: number;
   }): Promise<CallRecord[]> {
@@ -1961,6 +2074,7 @@ export class SupabaseStorageService implements RecoveryStorage {
     if (options?.customerId) query = query.eq("customer_id", options.customerId);
     if (options?.campaignId) query = query.eq("campaign_id", options.campaignId);
     if (options?.status) query = query.eq("status", options.status);
+    if (options?.sellerKey) query = query.eq("seller_key", options.sellerKey);
     if (options?.limit) query = query.limit(options.limit);
     if (options?.offset) query = query.range(options.offset, options.offset + (options.limit ?? 50) - 1);
 
@@ -2438,6 +2552,455 @@ export class SupabaseStorageService implements RecoveryStorage {
       .limit(200);
     if (error || !data) return [];
     return (data as DatabaseDemoCallLeadRow[]).map(mapDemoCallLead);
+  }
+
+  /* ── Opt-out / Blacklist ── */
+
+  async createOptOut(input: OptOutInput): Promise<OptOutRecord> {
+    const row: Record<string, unknown> = {
+      channel: input.channel,
+      contact_value: input.contactValue,
+      reason: input.reason ?? "unspecified",
+      source: input.source ?? "api",
+      opted_out_at: new Date().toISOString(),
+    };
+    if (input.sellerKey !== undefined) row.seller_key = input.sellerKey;
+    if (input.metadata !== undefined) row.metadata = input.metadata;
+
+    const { data, error } = await this.supabase
+      .from("contact_opt_outs")
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create opt-out: ${error?.message ?? "unknown"}`);
+    }
+    return mapOptOut(data);
+  }
+
+  async removeOptOut(channel: string, contactValue: string): Promise<void> {
+    await this.supabase
+      .from("contact_opt_outs")
+      .delete()
+      .eq("channel", channel)
+      .eq("contact_value", contactValue);
+  }
+
+  async isOptedOut(channel: string, contactValue: string): Promise<boolean> {
+    const { data, error } = await this.supabase
+      .from("contact_opt_outs")
+      .select("id")
+      .eq("contact_value", contactValue)
+      .in("channel", [channel, "all"])
+      .limit(1);
+
+    if (error || !data) return false;
+    return data.length > 0;
+  }
+
+  async listOptOuts(options?: { contactValue?: string; channel?: string; limit?: number }): Promise<OptOutRecord[]> {
+    let query = this.supabase
+      .from("contact_opt_outs")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (options?.contactValue) query = query.eq("contact_value", options.contactValue);
+    if (options?.channel) query = query.eq("channel", options.channel);
+    query = query.limit(options?.limit ?? 100);
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(mapOptOut);
+  }
+
+  /* ── Frequency Capping ── */
+
+  async logContactFrequency(input: FrequencyLogInput): Promise<FrequencyLogRecord> {
+    const row: Record<string, unknown> = {
+      contact_value: input.contactValue,
+      channel: input.channel,
+      direction: input.direction ?? "outbound",
+      sent_at: new Date().toISOString(),
+    };
+    if (input.messageId !== undefined) row.message_id = input.messageId;
+    if (input.callId !== undefined) row.call_id = input.callId;
+    if (input.sellerKey !== undefined) row.seller_key = input.sellerKey;
+
+    const { data, error } = await this.supabase
+      .from("contact_frequency_log")
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to log contact frequency: ${error?.message ?? "unknown"}`);
+    }
+    return mapFrequencyLog(data);
+  }
+
+  async checkFrequencyLimit(contactValue: string, sellerKey?: string): Promise<FrequencyCheck> {
+    const now = new Date();
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Get seller limits
+    let maxPerDay = 2;
+    let maxPerWeek = 5;
+    if (sellerKey) {
+      const { data: config } = await this.supabase
+        .from("seller_admin_controls")
+        .select("max_contacts_per_lead_per_day, max_contacts_per_lead_per_week")
+        .eq("seller_key", sellerKey)
+        .maybeSingle();
+      if (config) {
+        maxPerDay = Number(config.max_contacts_per_lead_per_day) || 2;
+        maxPerWeek = Number(config.max_contacts_per_lead_per_week) || 5;
+      }
+    }
+
+    // Count contacts today
+    const { count: contactsToday } = await this.supabase
+      .from("contact_frequency_log")
+      .select("id", { count: "exact", head: true })
+      .eq("contact_value", contactValue)
+      .gte("sent_at", todayStart);
+
+    // Count contacts this week
+    const { count: contactsThisWeek } = await this.supabase
+      .from("contact_frequency_log")
+      .select("id", { count: "exact", head: true })
+      .eq("contact_value", contactValue)
+      .gte("sent_at", weekStart);
+
+    const todayCount = contactsToday ?? 0;
+    const weekCount = contactsThisWeek ?? 0;
+
+    let allowed = true;
+    let reason: string | undefined;
+    if (todayCount >= maxPerDay) {
+      allowed = false;
+      reason = `Daily limit reached (${todayCount}/${maxPerDay})`;
+    } else if (weekCount >= maxPerWeek) {
+      allowed = false;
+      reason = `Weekly limit reached (${weekCount}/${maxPerWeek})`;
+    }
+
+    return {
+      allowed,
+      reason,
+      contactsToday: todayCount,
+      contactsThisWeek: weekCount,
+      maxPerDay,
+      maxPerWeek,
+    };
+  }
+
+  async getContactFrequencyLog(contactValue: string, options?: { since?: string; channel?: string; limit?: number }): Promise<FrequencyLogRecord[]> {
+    let query = this.supabase
+      .from("contact_frequency_log")
+      .select("*")
+      .eq("contact_value", contactValue)
+      .order("sent_at", { ascending: false });
+
+    if (options?.since) query = query.gte("sent_at", options.since);
+    if (options?.channel) query = query.eq("channel", options.channel);
+    query = query.limit(options?.limit ?? 100);
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(mapFrequencyLog);
+  }
+
+  /* ── Message Templates ── */
+
+  async listMessageTemplates(options?: { category?: string; vertical?: string; channel?: string; sellerKey?: string; active?: boolean }): Promise<MessageTemplateRecord[]> {
+    let query = this.supabase
+      .from("message_templates")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (options?.category) query = query.eq("category", options.category);
+    if (options?.vertical) query = query.eq("vertical", options.vertical);
+    if (options?.channel) query = query.eq("channel", options.channel);
+    if (options?.sellerKey) query = query.eq("seller_key", options.sellerKey);
+    if (options?.active !== undefined) query = query.eq("active", options.active);
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(mapMessageTemplate);
+  }
+
+  async getMessageTemplate(idOrSlug: string): Promise<MessageTemplateRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("message_templates")
+      .select("*")
+      .or(`id.eq.${sanitizeFilterValue(idOrSlug)},slug.eq.${sanitizeFilterValue(idOrSlug)}`)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapMessageTemplate(data);
+  }
+
+  async createMessageTemplate(input: MessageTemplateInput): Promise<MessageTemplateRecord> {
+    const row: Record<string, unknown> = {
+      name: input.name,
+      slug: input.slug ?? input.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+      body_whatsapp: input.bodyWhatsapp,
+    };
+    if (input.category !== undefined) row.category = input.category;
+    if (input.vertical !== undefined) row.vertical = input.vertical;
+    if (input.channel !== undefined) row.channel = input.channel;
+    if (input.subject !== undefined) row.subject = input.subject;
+    if (input.bodySms !== undefined) row.body_sms = input.bodySms;
+    if (input.bodyEmailHtml !== undefined) row.body_email_html = input.bodyEmailHtml;
+    if (input.bodyEmailText !== undefined) row.body_email_text = input.bodyEmailText;
+    if (input.variables !== undefined) row.variables = input.variables;
+    if (input.active !== undefined) row.active = input.active;
+    if (input.sellerKey !== undefined) row.seller_key = input.sellerKey;
+
+    const { data, error } = await this.supabase
+      .from("message_templates")
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create message template: ${error?.message ?? "unknown"}`);
+    }
+    return mapMessageTemplate(data);
+  }
+
+  async updateMessageTemplate(id: string, input: Partial<MessageTemplateInput>): Promise<MessageTemplateRecord> {
+    const row: Record<string, unknown> = {};
+    if (input.name !== undefined) row.name = input.name;
+    if (input.slug !== undefined) row.slug = input.slug;
+    if (input.category !== undefined) row.category = input.category;
+    if (input.vertical !== undefined) row.vertical = input.vertical;
+    if (input.channel !== undefined) row.channel = input.channel;
+    if (input.subject !== undefined) row.subject = input.subject;
+    if (input.bodyWhatsapp !== undefined) row.body_whatsapp = input.bodyWhatsapp;
+    if (input.bodySms !== undefined) row.body_sms = input.bodySms;
+    if (input.bodyEmailHtml !== undefined) row.body_email_html = input.bodyEmailHtml;
+    if (input.bodyEmailText !== undefined) row.body_email_text = input.bodyEmailText;
+    if (input.variables !== undefined) row.variables = input.variables;
+    if (input.active !== undefined) row.active = input.active;
+    if (input.sellerKey !== undefined) row.seller_key = input.sellerKey;
+
+    const { data, error } = await this.supabase
+      .from("message_templates")
+      .update(row)
+      .eq("id", id)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to update message template: ${error?.message ?? "unknown"}`);
+    }
+    return mapMessageTemplate(data);
+  }
+
+  async incrementTemplateUsage(id: string, converted?: boolean): Promise<void> {
+    const { data: current, error: readError } = await this.supabase
+      .from("message_templates")
+      .select("usage_count, conversion_count")
+      .eq("id", id)
+      .single();
+
+    if (readError || !current) {
+      throw new Error(`Failed to read template for increment: ${readError?.message ?? "unknown"}`);
+    }
+
+    const updates: Record<string, unknown> = {
+      usage_count: (Number(current.usage_count) || 0) + 1,
+    };
+    if (converted) {
+      updates.conversion_count = (Number(current.conversion_count) || 0) + 1;
+    }
+
+    const { error } = await this.supabase
+      .from("message_templates")
+      .update(updates)
+      .eq("id", id);
+
+    if (error) {
+      throw new Error(`Failed to increment template usage: ${error.message}`);
+    }
+  }
+
+  /* ── A/B Testing ── */
+
+  async createABTest(input: ABTestInput): Promise<ABTestRecord> {
+    const row: Record<string, unknown> = {
+      name: input.name,
+      template_a_id: input.templateAId,
+      template_b_id: input.templateBId,
+      status: "draft",
+    };
+    if (input.channel !== undefined) row.channel = input.channel;
+    if (input.sellerKey !== undefined) row.seller_key = input.sellerKey;
+
+    const { data, error } = await this.supabase
+      .from("ab_tests")
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create A/B test: ${error?.message ?? "unknown"}`);
+    }
+    return mapABTest(data);
+  }
+
+  async getABTest(id: string): Promise<ABTestRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("ab_tests")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapABTest(data);
+  }
+
+  async listABTests(options?: { status?: string; sellerKey?: string }): Promise<ABTestRecord[]> {
+    let query = this.supabase
+      .from("ab_tests")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (options?.status) query = query.eq("status", options.status);
+    if (options?.sellerKey) query = query.eq("seller_key", options.sellerKey);
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(mapABTest);
+  }
+
+  async updateABTest(id: string, input: Partial<ABTestRecord>): Promise<ABTestRecord> {
+    const row: Record<string, unknown> = {};
+    if (input.name !== undefined) row.name = input.name;
+    if (input.status !== undefined) row.status = input.status;
+    if (input.templateAId !== undefined) row.template_a_id = input.templateAId;
+    if (input.templateBId !== undefined) row.template_b_id = input.templateBId;
+    if (input.channel !== undefined) row.channel = input.channel;
+    if (input.sellerKey !== undefined) row.seller_key = input.sellerKey;
+    if (input.totalSentA !== undefined) row.total_sent_a = input.totalSentA;
+    if (input.totalSentB !== undefined) row.total_sent_b = input.totalSentB;
+    if (input.totalDeliveredA !== undefined) row.total_delivered_a = input.totalDeliveredA;
+    if (input.totalDeliveredB !== undefined) row.total_delivered_b = input.totalDeliveredB;
+    if (input.totalClickedA !== undefined) row.total_clicked_a = input.totalClickedA;
+    if (input.totalClickedB !== undefined) row.total_clicked_b = input.totalClickedB;
+    if (input.totalConvertedA !== undefined) row.total_converted_a = input.totalConvertedA;
+    if (input.totalConvertedB !== undefined) row.total_converted_b = input.totalConvertedB;
+    if (input.winner !== undefined) row.winner = input.winner;
+    if (input.confidencePct !== undefined) row.confidence_pct = input.confidencePct;
+    if (input.startedAt !== undefined) row.started_at = input.startedAt;
+    if (input.completedAt !== undefined) row.completed_at = input.completedAt;
+
+    const { data, error } = await this.supabase
+      .from("ab_tests")
+      .update(row)
+      .eq("id", id)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to update A/B test: ${error?.message ?? "unknown"}`);
+    }
+    return mapABTest(data);
+  }
+
+  async createABTestAssignment(input: { abTestId: string; contactValue: string; variant: "a" | "b"; messageId?: string }): Promise<ABTestAssignmentRecord> {
+    const row: Record<string, unknown> = {
+      ab_test_id: input.abTestId,
+      contact_value: input.contactValue,
+      variant: input.variant,
+    };
+    if (input.messageId !== undefined) row.message_id = input.messageId;
+
+    const { data, error } = await this.supabase
+      .from("ab_test_assignments")
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to create A/B test assignment: ${error?.message ?? "unknown"}`);
+    }
+    return mapABTestAssignment(data);
+  }
+
+  async getABTestAssignment(abTestId: string, contactValue: string): Promise<ABTestAssignmentRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("ab_test_assignments")
+      .select("*")
+      .eq("ab_test_id", abTestId)
+      .eq("contact_value", contactValue)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapABTestAssignment(data);
+  }
+
+  async updateABTestAssignment(id: string, input: Partial<{ delivered: boolean; clicked: boolean; converted: boolean }>): Promise<void> {
+    const row: Record<string, unknown> = {};
+    if (input.delivered !== undefined) row.delivered = input.delivered;
+    if (input.clicked !== undefined) row.clicked = input.clicked;
+    if (input.converted !== undefined) row.converted = input.converted;
+
+    const { error } = await this.supabase
+      .from("ab_test_assignments")
+      .update(row)
+      .eq("id", id);
+
+    if (error) {
+      throw new Error(`Failed to update A/B test assignment: ${error.message}`);
+    }
+  }
+
+  /* ── Recovery Funnel ── */
+
+  async upsertFunnelSnapshot(input: Omit<RecoveryFunnelSnapshot, "id" | "createdAt">): Promise<RecoveryFunnelSnapshot> {
+    const row: Record<string, unknown> = {
+      snapshot_date: input.snapshotDate,
+      channel: input.channel,
+      total_sent: input.totalSent,
+      total_delivered: input.totalDelivered,
+      total_read: input.totalRead,
+      total_clicked: input.totalClicked,
+      total_converted: input.totalConverted,
+      total_opted_out: input.totalOptedOut,
+      total_revenue_recovered: input.totalRevenueRecovered,
+    };
+    if (input.sellerKey !== undefined) row.seller_key = input.sellerKey;
+
+    const { data, error } = await this.supabase
+      .from("recovery_funnel_snapshots")
+      .upsert(row, { onConflict: "snapshot_date,seller_key,channel" })
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Failed to upsert funnel snapshot: ${error?.message ?? "unknown"}`);
+    }
+    return mapFunnelSnapshot(data);
+  }
+
+  async getFunnelSnapshots(options: { startDate: string; endDate: string; sellerKey?: string; channel?: string }): Promise<RecoveryFunnelSnapshot[]> {
+    let query = this.supabase
+      .from("recovery_funnel_snapshots")
+      .select("*")
+      .gte("snapshot_date", options.startDate)
+      .lte("snapshot_date", options.endDate)
+      .order("snapshot_date", { ascending: true });
+
+    if (options.sellerKey) query = query.eq("seller_key", options.sellerKey);
+    if (options.channel) query = query.eq("channel", options.channel);
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(mapFunnelSnapshot);
   }
 }
 
@@ -3295,4 +3858,119 @@ function mapCalendarJobTitle(jobType: string) {
     default:
       return jobType;
   }
+}
+
+/* ── New mappers: opt-out, frequency, templates, A/B, funnel ── */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
+function mapOptOut(data: any): OptOutRecord {
+  return {
+    id: String(data.id),
+    channel: data.channel,
+    contactValue: String(data.contact_value),
+    reason: String(data.reason ?? "unspecified"),
+    optedOutAt: toIsoStringOrNow(data.opted_out_at),
+    source: data.source ?? "api",
+    sellerKey: data.seller_key ? String(data.seller_key) : undefined,
+    metadata: (data.metadata && typeof data.metadata === "object") ? data.metadata : {},
+    createdAt: toIsoStringOrNow(data.created_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
+function mapFrequencyLog(data: any): FrequencyLogRecord {
+  return {
+    id: String(data.id),
+    contactValue: String(data.contact_value),
+    channel: String(data.channel),
+    direction: String(data.direction ?? "outbound"),
+    sentAt: toIsoStringOrNow(data.sent_at),
+    messageId: data.message_id ? String(data.message_id) : undefined,
+    callId: data.call_id ? String(data.call_id) : undefined,
+    sellerKey: data.seller_key ? String(data.seller_key) : undefined,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
+function mapMessageTemplate(data: any): MessageTemplateRecord {
+  return {
+    id: String(data.id),
+    name: String(data.name),
+    slug: String(data.slug ?? ""),
+    category: data.category ?? "recovery",
+    vertical: data.vertical ?? "general",
+    channel: String(data.channel ?? "whatsapp"),
+    subject: data.subject ? String(data.subject) : undefined,
+    bodyWhatsapp: String(data.body_whatsapp ?? ""),
+    bodySms: data.body_sms ? String(data.body_sms) : undefined,
+    bodyEmailHtml: data.body_email_html ? String(data.body_email_html) : undefined,
+    bodyEmailText: data.body_email_text ? String(data.body_email_text) : undefined,
+    variables: Array.isArray(data.variables) ? data.variables : [],
+    active: Boolean(data.active ?? true),
+    usageCount: Number(data.usage_count ?? 0),
+    conversionCount: Number(data.conversion_count ?? 0),
+    sellerKey: data.seller_key ? String(data.seller_key) : undefined,
+    createdAt: toIsoStringOrNow(data.created_at),
+    updatedAt: toIsoStringOrNow(data.updated_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
+function mapABTest(data: any): ABTestRecord {
+  return {
+    id: String(data.id),
+    name: String(data.name),
+    status: data.status ?? "draft",
+    templateAId: String(data.template_a_id),
+    templateBId: String(data.template_b_id),
+    channel: String(data.channel ?? "whatsapp"),
+    sellerKey: data.seller_key ? String(data.seller_key) : undefined,
+    totalSentA: Number(data.total_sent_a ?? 0),
+    totalSentB: Number(data.total_sent_b ?? 0),
+    totalDeliveredA: Number(data.total_delivered_a ?? 0),
+    totalDeliveredB: Number(data.total_delivered_b ?? 0),
+    totalClickedA: Number(data.total_clicked_a ?? 0),
+    totalClickedB: Number(data.total_clicked_b ?? 0),
+    totalConvertedA: Number(data.total_converted_a ?? 0),
+    totalConvertedB: Number(data.total_converted_b ?? 0),
+    winner: data.winner ?? undefined,
+    confidencePct: data.confidence_pct != null ? Number(data.confidence_pct) : undefined,
+    startedAt: data.started_at ? new Date(data.started_at).toISOString() : undefined,
+    completedAt: data.completed_at ? new Date(data.completed_at).toISOString() : undefined,
+    createdAt: toIsoStringOrNow(data.created_at),
+    updatedAt: toIsoStringOrNow(data.updated_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
+function mapABTestAssignment(data: any): ABTestAssignmentRecord {
+  return {
+    id: String(data.id),
+    abTestId: String(data.ab_test_id),
+    contactValue: String(data.contact_value),
+    variant: data.variant,
+    messageId: data.message_id ? String(data.message_id) : undefined,
+    delivered: Boolean(data.delivered ?? false),
+    clicked: Boolean(data.clicked ?? false),
+    converted: Boolean(data.converted ?? false),
+    createdAt: toIsoStringOrNow(data.created_at),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase row mapper
+function mapFunnelSnapshot(data: any): RecoveryFunnelSnapshot {
+  return {
+    id: String(data.id),
+    snapshotDate: String(data.snapshot_date),
+    sellerKey: data.seller_key ? String(data.seller_key) : undefined,
+    channel: String(data.channel),
+    totalSent: Number(data.total_sent ?? 0),
+    totalDelivered: Number(data.total_delivered ?? 0),
+    totalRead: Number(data.total_read ?? 0),
+    totalClicked: Number(data.total_clicked ?? 0),
+    totalConverted: Number(data.total_converted ?? 0),
+    totalOptedOut: Number(data.total_opted_out ?? 0),
+    totalRevenueRecovered: Number(data.total_revenue_recovered ?? 0),
+    createdAt: toIsoStringOrNow(data.created_at),
+  };
 }

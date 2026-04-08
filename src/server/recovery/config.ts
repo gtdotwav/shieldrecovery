@@ -2,6 +2,9 @@ import path from "node:path";
 
 import { platformBrand } from "@/lib/platform";
 import type { ConnectionSettingsRecord } from "@/server/recovery/types";
+import { validateRequiredEnvVars } from "@/server/env-check";
+
+validateRequiredEnvVars();
 
 const resolvedDefaultBaseUrl =
   process.env.NEXT_PUBLIC_APP_URL ??

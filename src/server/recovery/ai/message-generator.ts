@@ -198,7 +198,7 @@ const TEMPLATES: MessageTemplate[] = [
       "Geramos um novo link seguro para que você possa finalizar sua compra:\n" +
       "{link}\n\n" +
       "Se precisar de ajuda, basta responder este e-mail.\n\n" +
-      `Atenciosamente,\nEquipe ${platformBrand.name}`,
+      "Atenciosamente,\nEquipe {brand}",
   },
   {
     id: "email_followup",
@@ -210,7 +210,7 @@ const TEMPLATES: MessageTemplate[] = [
       "de {value}.\n\n" +
       "O link para finalização continua disponível:\n{link}\n\n" +
       "Estamos aqui para ajudar.\n\n" +
-      `Atenciosamente,\nEquipe ${platformBrand.name}`,
+      "Atenciosamente,\nEquipe {brand}",
     condition: (ctx) => ctx.attemptNumber >= 2,
   },
   {
@@ -218,7 +218,7 @@ const TEMPLATES: MessageTemplate[] = [
     channel: "sms",
     tone: "casual",
     template:
-      `${platformBrand.name}: {name}, seu pagamento de {value} não foi processado. ` +
+      "{brand}: {name}, seu pagamento de {value} não foi processado. " +
       "Finalize aqui: {link}",
   },
 ];
@@ -314,11 +314,13 @@ function interpolate(template: string, ctx: MessageContext): string {
 
   const product = ctx.productName ? ` de ${ctx.productName}` : "";
   const link = ctx.paymentLink ?? "";
+  const brand = ctx.sellerBrandName || platformBrand.name;
   const base = template
     .replace(/\{name\}/g, ctx.customerName || "cliente")
     .replace(/\{value\}/g, value)
     .replace(/\{product\}/g, product)
-    .replace(/\{link\}/g, link);
+    .replace(/\{link\}/g, link)
+    .replace(/\{brand\}/g, brand);
 
   return base;
 }
@@ -393,7 +395,7 @@ function buildRecoveryPrompt(ctx: MessageContext) {
     "- NAO repita informacoes. Cada frase deve trazer algo novo.",
     "- NAO inclua o codigo Pix nem o link de pagamento no corpo da mensagem (eles sao adicionados automaticamente abaixo do texto).",
     "- Quando mencionar o link ou Pix, diga 'aqui embaixo' (nunca 'logo abaixo' ou 'abaixo').",
-    `- Use apenas o link seguro da ${platformBrand.name} quando houver link disponivel.`,
+    `- Use apenas o link seguro da ${ctx.sellerBrandName || platformBrand.name} quando houver link disponivel.`,
     ...linkRule,
     "- NAO use markdown, aspas, emojis, exclamacoes excessivas nem texto tecnico.",
     "- NAO use placeholders como [link] ou [link de pagamento].",

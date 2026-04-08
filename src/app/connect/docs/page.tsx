@@ -13,10 +13,10 @@ import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 
 export const metadata = {
-  title: "Documentação da API",
+  title: "Documentacao da API",
 };
 
-const BASE_DOMAIN = "https://pagrecovery.com";
+const BASE_DOMAIN = process.env.NEXT_PUBLIC_APP_URL || "https://pagrecovery.com";
 
 export default async function ConnectDocsPage() {
   const session = await requireAuthenticatedSession(["admin", "seller"]);
@@ -39,7 +39,7 @@ export default async function ConnectDocsPage() {
       action={
         <Link
           href="/connect"
-          className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] dark:border-white/10 bg-white dark:bg-[#1a1a1a] px-3.5 py-1.5 text-xs font-semibold text-gray-900 dark:text-gray-100 transition-colors hover:bg-gray-50 dark:hover:bg-[#222]"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Voltar
@@ -49,15 +49,15 @@ export default async function ConnectDocsPage() {
       {/* Header */}
       <PlatformSurface className="p-5 sm:p-6">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-green-600">
-          Documentação da API
+          Documentacao da API
         </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#111827] sm:text-[1.95rem]">
-          Integre seu gateway com a PagRecovery.
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-gray-900 dark:text-white sm:text-[1.95rem]">
+          Integre seu gateway com a {platformBrand.name}.
         </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6b7280]">
-          A PagRecovery recebe webhooks de pagamento do seu gateway e cuida de
-          todo o processo de recuperação — contato com o cliente, follow-up
-          automático via WhatsApp e relatórios. Você só precisa apontar os
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+          A {platformBrand.name} recebe webhooks de pagamento do seu gateway e cuida de
+          todo o processo de recuperacao — contato com o cliente, follow-up
+          automatico via WhatsApp e relatorios. Voce so precisa apontar os
           webhooks para a URL abaixo.
         </p>
       </PlatformSurface>
@@ -65,22 +65,22 @@ export default async function ConnectDocsPage() {
       {/* Quick start */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <SectionTitle number="1" title="Sua URL de webhook" />
-        <p className="mt-3 text-sm leading-6 text-[#6b7280]">
+        <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
           Configure seu gateway para enviar webhooks de pagamento para esta URL.
           Todos os eventos chegam aqui e a plataforma decide automaticamente
-          quando iniciar a recuperação.
+          quando iniciar a recuperacao.
         </p>
-        <div className="mt-4 rounded-2xl border border-black/[0.06] bg-[#f8f8fa] px-4 py-4">
-          <p className="break-all font-mono text-sm leading-7 text-[#1a1a2e]">
+        <div className="mt-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-gray-50 dark:bg-[#111] px-4 py-4">
+          <p className="break-all font-mono text-sm leading-7 text-gray-900 dark:text-gray-100">
             {webhookUrl}
           </p>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <CopyButton value={webhookUrl} />
         </div>
-        <div className="mt-4 rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-3 text-sm leading-6 text-[#6b7280]">
-          Método: <span className="font-medium text-[#1a1a2e]">POST</span> | Content-Type:{" "}
-          <span className="font-medium text-[#1a1a2e]">application/json</span> | Sem autenticação necessária — basta enviar o JSON.
+        <div className="mt-4 rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-gray-50 dark:bg-[#111] px-4 py-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
+          Metodo: <span className="font-medium text-gray-900 dark:text-gray-100">POST</span> | Content-Type:{" "}
+          <span className="font-medium text-gray-900 dark:text-gray-100">application/json</span> | Sem autenticacao necessaria — basta enviar o JSON.
         </div>
       </PlatformSurface>
 
@@ -91,17 +91,17 @@ export default async function ConnectDocsPage() {
           <StepCard
             step="1"
             title="Webhook recebido"
-            description="Seu gateway envia um evento de pagamento (falha, recusa ou expiração) para a URL acima."
+            description="Seu gateway envia um evento de pagamento (falha, recusa ou expiracao) para a URL acima."
           />
           <StepCard
             step="2"
-            title="Recuperação automática"
-            description="A PagRecovery identifica o cliente, cria um lead e inicia contato via WhatsApp com link de pagamento."
+            title="Recuperacao automatica"
+            description={`A ${platformBrand.name} identifica o cliente, cria um lead e inicia contato via WhatsApp com link de pagamento.`}
           />
           <StepCard
             step="3"
             title="Follow-up inteligente"
-            description="A IA faz follow-up automático, oferece métodos alternativos e acompanha até a conversão ou fechamento."
+            description="A IA faz follow-up automatico, oferece metodos alternativos e acompanha ate a conversao ou fechamento."
           />
         </div>
       </PlatformSurface>
@@ -109,23 +109,23 @@ export default async function ConnectDocsPage() {
       {/* Eventos suportados */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <SectionTitle number="3" title="Eventos suportados" />
-        <p className="mt-3 text-sm leading-6 text-[#6b7280]">
-          O endpoint aceita qualquer evento de pagamento. A recuperação é
+        <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
+          O endpoint aceita qualquer evento de pagamento. A recuperacao e
           disparada automaticamente para os eventos marcados abaixo.
         </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/[0.06] text-left">
-                <th className="pb-3 pr-4 font-semibold text-[#111827]">event_type</th>
-                <th className="pb-3 pr-4 font-semibold text-[#111827]">Descrição</th>
-                <th className="pb-3 font-semibold text-[#111827]">Ação</th>
+              <tr className="border-b border-black/[0.06] dark:border-white/[0.06] text-left">
+                <th className="pb-3 pr-4 font-semibold text-gray-900 dark:text-white">event_type</th>
+                <th className="pb-3 pr-4 font-semibold text-gray-900 dark:text-white">Descricao</th>
+                <th className="pb-3 font-semibold text-gray-900 dark:text-white">Acao</th>
               </tr>
             </thead>
-            <tbody className="text-[#6b7280]">
-              <EventRow type="payment_failed" desc="Pagamento falhou" action="Inicia recuperação" recoverable />
-              <EventRow type="payment_refused" desc="Pagamento recusado pelo emissor" action="Inicia recuperação" recoverable />
-              <EventRow type="payment_expired" desc="Pagamento expirou sem conclusão" action="Inicia recuperação" recoverable />
+            <tbody className="text-gray-500 dark:text-gray-400">
+              <EventRow type="payment_failed" desc="Pagamento falhou" action="Inicia recuperacao" recoverable />
+              <EventRow type="payment_refused" desc="Pagamento recusado pelo emissor" action="Inicia recuperacao" recoverable />
+              <EventRow type="payment_expired" desc="Pagamento expirou sem conclusao" action="Inicia recuperacao" recoverable />
               <EventRow type="payment_succeeded" desc="Pagamento aprovado" action="Marca lead como recuperado" />
               <EventRow type="payment_created" desc="Pagamento criado" action="Registra no sistema" />
               <EventRow type="payment_pending" desc="Aguardando pagamento" action="Registra no sistema" />
@@ -135,41 +135,41 @@ export default async function ConnectDocsPage() {
             </tbody>
           </table>
         </div>
-        <div className="mt-4 rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-3 text-sm leading-6 text-[#6b7280]">
-          O campo <Code>event_type</Code> é opcional. Se não enviado, o sistema infere pelo campo <Code>status</Code> do pagamento.
-          Valores como <Code>failed</Code>, <Code>refused</Code>, <Code>declined</Code>, <Code>expired</Code> são reconhecidos automaticamente.
+        <div className="mt-4 rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-gray-50 dark:bg-[#111] px-4 py-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
+          O campo <Code>event_type</Code> e opcional. Se nao enviado, o sistema infere pelo campo <Code>status</Code> do pagamento.
+          Valores como <Code>failed</Code>, <Code>refused</Code>, <Code>declined</Code>, <Code>expired</Code> sao reconhecidos automaticamente.
         </div>
       </PlatformSurface>
 
       {/* Payload completo */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <SectionTitle number="4" title="Payload do webhook" />
-        <p className="mt-3 text-sm leading-6 text-[#6b7280]">
-          Envie um <Code>POST</Code> com o JSON abaixo. Campos marcados com * são obrigatórios.
+        <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
+          Envie um <Code>POST</Code> com o JSON abaixo. Campos marcados com * sao obrigatorios.
         </p>
 
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/[0.06] text-left">
-                <th className="pb-3 pr-4 font-semibold text-[#111827]">Campo</th>
-                <th className="pb-3 pr-4 font-semibold text-[#111827]">Tipo</th>
-                <th className="pb-3 font-semibold text-[#111827]">Descrição</th>
+              <tr className="border-b border-black/[0.06] dark:border-white/[0.06] text-left">
+                <th className="pb-3 pr-4 font-semibold text-gray-900 dark:text-white">Campo</th>
+                <th className="pb-3 pr-4 font-semibold text-gray-900 dark:text-white">Tipo</th>
+                <th className="pb-3 font-semibold text-gray-900 dark:text-white">Descricao</th>
               </tr>
             </thead>
-            <tbody className="text-[#6b7280]">
+            <tbody className="text-gray-500 dark:text-gray-400">
               <FieldRow field="event_type" type="string" desc="Tipo do evento (ex: payment_failed). Opcional — inferido pelo status." />
-              <FieldRow field="payment.id *" type="string" desc="ID único da transação no seu gateway" />
-              <FieldRow field="payment.order_id" type="string" desc="ID do pedido (referência interna)" />
+              <FieldRow field="payment.id *" type="string" desc="ID unico da transacao no seu gateway" />
+              <FieldRow field="payment.order_id" type="string" desc="ID do pedido (referencia interna)" />
               <FieldRow field="payment.amount *" type="number" desc="Valor em centavos (19900 = R$ 199,00)" />
-              <FieldRow field="payment.currency" type="string" desc="Moeda (padrão: BRL)" />
+              <FieldRow field="payment.currency" type="string" desc="Moeda (padrao: BRL)" />
               <FieldRow field="payment.method *" type="string" desc="pix | credit_card | boleto" />
               <FieldRow field="payment.status *" type="string" desc="failed | refused | expired | paid | pending" />
-              <FieldRow field="payment.failure_code" type="string" desc="Código do erro (ex: insufficient_funds, card_declined)" />
+              <FieldRow field="payment.failure_code" type="string" desc="Codigo do erro (ex: insufficient_funds, card_declined)" />
               <FieldRow field="customer.name *" type="string" desc="Nome completo do cliente" />
               <FieldRow field="customer.email" type="string" desc="Email do cliente" />
               <FieldRow field="customer.phone *" type="string" desc="WhatsApp com DDI (5511999998888)" />
-              <FieldRow field="customer.cpf" type="string" desc="CPF do cliente (somente números)" />
+              <FieldRow field="customer.cpf" type="string" desc="CPF do cliente (somente numeros)" />
               <FieldRow field="metadata.product" type="string" desc="Nome do produto ou plano" />
             </tbody>
           </table>
@@ -182,7 +182,7 @@ export default async function ConnectDocsPage() {
           <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-green-600">
             Exemplo PIX
           </p>
-          <h3 className="mt-2 text-[1.05rem] font-semibold text-[#111827]">Pagamento PIX que falhou</h3>
+          <h3 className="mt-2 text-[1.05rem] font-semibold text-gray-900 dark:text-white">Pagamento PIX que falhou</h3>
           <CodeBlock>{`POST ${webhookUrl}
 Content-Type: application/json
 
@@ -208,9 +208,9 @@ Content-Type: application/json
 
         <PlatformSurface className="p-5">
           <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-green-600">
-            Exemplo Cartão
+            Exemplo Cartao
           </p>
-          <h3 className="mt-2 text-[1.05rem] font-semibold text-[#111827]">Cartão recusado</h3>
+          <h3 className="mt-2 text-[1.05rem] font-semibold text-gray-900 dark:text-white">Cartao recusado</h3>
           <CodeBlock>{`POST ${webhookUrl}
 Content-Type: application/json
 
@@ -240,12 +240,12 @@ Content-Type: application/json
       {/* Resposta */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <SectionTitle number="5" title="Resposta do webhook" />
-        <p className="mt-3 text-sm leading-6 text-[#6b7280]">
+        <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
           O endpoint sempre retorna <Code>200 OK</Code> com um JSON indicando o resultado.
         </p>
         <div className="mt-4 grid gap-5 lg:grid-cols-2">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Sucesso (evento novo)</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Sucesso (evento novo)</p>
             <CodeBlock>{`{
   "ok": true,
   "accepted": true,
@@ -256,7 +256,7 @@ Content-Type: application/json
 }`}</CodeBlock>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Duplicado (já recebido)</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Duplicado (ja recebido)</p>
             <CodeBlock>{`{
   "ok": true,
   "duplicate": true,
@@ -268,11 +268,11 @@ Content-Type: application/json
         </div>
       </PlatformSurface>
 
-      {/* Teste rápido */}
+      {/* Teste rapido */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
-        <SectionTitle number="6" title="Teste rápido com cURL" />
-        <p className="mt-3 text-sm leading-6 text-[#6b7280]">
-          Cole este comando no terminal para testar a integração imediatamente.
+        <SectionTitle number="6" title="Teste rapido com cURL" />
+        <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
+          Cole este comando no terminal para testar a integracao imediatamente.
         </p>
         <CodeBlock>{`curl -X POST ${webhookUrl} \\
   -H "Content-Type: application/json" \\
@@ -284,7 +284,7 @@ Content-Type: application/json
       "status": "failed"
     },
     "customer": {
-      "name": "Teste PagRecovery",
+      "name": "Teste ${platformBrand.name}",
       "phone": "5511999990000",
       "cpf": "00000000000"
     }
@@ -294,23 +294,23 @@ Content-Type: application/json
       {/* Compatibilidade */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <SectionTitle number="7" title="Compatibilidade de gateways" />
-        <p className="mt-3 text-sm leading-6 text-[#6b7280]">
-          O normalizer da PagRecovery é flexível e reconhece payloads de diversos gateways
-          brasileiros. Os campos são mapeados automaticamente:
+        <p className="mt-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
+          O normalizer da {platformBrand.name} e flexivel e reconhece payloads de diversos gateways
+          brasileiros. Os campos sao mapeados automaticamente:
         </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/[0.06] text-left">
-                <th className="pb-3 pr-4 font-semibold text-[#111827]">Seu campo</th>
-                <th className="pb-3 font-semibold text-[#111827]">Alternativas aceitas</th>
+              <tr className="border-b border-black/[0.06] dark:border-white/[0.06] text-left">
+                <th className="pb-3 pr-4 font-semibold text-gray-900 dark:text-white">Seu campo</th>
+                <th className="pb-3 font-semibold text-gray-900 dark:text-white">Alternativas aceitas</th>
               </tr>
             </thead>
-            <tbody className="text-[#6b7280]">
+            <tbody className="text-gray-500 dark:text-gray-400">
               <MappingRow field="payment.id" alternatives="id, payment_id, transaction_id, transactionId, secureId" />
               <MappingRow field="payment.amount" alternatives="amount, total_amount, paid_amount, paidAmount" />
               <MappingRow field="payment.method" alternatives="method, paymentMethod, payment_method, method_id" />
-              <MappingRow field="payment.status" alternatives="status (em qualquer nível do JSON)" />
+              <MappingRow field="payment.status" alternatives="status (em qualquer nivel do JSON)" />
               <MappingRow field="customer.name" alternatives="name, customer_name, buyer_name" />
               <MappingRow field="customer.email" alternatives="email, buyer_email" />
               <MappingRow field="customer.phone" alternatives="phone, mobile, mobilePhone, buyer_phone" />
@@ -319,23 +319,23 @@ Content-Type: application/json
             </tbody>
           </table>
         </div>
-        <div className="mt-4 rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-3 text-sm leading-6 text-[#6b7280]">
+        <div className="mt-4 rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-gray-50 dark:bg-[#111] px-4 py-3 text-sm leading-6 text-gray-500 dark:text-gray-400">
           Se o seu gateway envia o payload em um formato diferente, o sistema tenta extrair
           os dados de objetos aninhados como <Code>data</Code>, <Code>payment</Code>,{" "}
           <Code>customer</Code>, <Code>buyer</Code> e <Code>metadata</Code>.
         </div>
       </PlatformSurface>
 
-      {/* O que a PagRecovery faz */}
+      {/* O que a plataforma faz */}
       <PlatformSurface className="mt-5 p-5 sm:p-6">
-        <SectionTitle number="8" title="O que a PagRecovery faz por você" />
+        <SectionTitle number="8" title={`O que a ${platformBrand.name} faz por voce`} />
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <FeatureItem title="Contato automático" desc="Envia mensagem no WhatsApp do cliente em segundos após a falha." />
-          <FeatureItem title="Link de pagamento" desc="Gera link PIX ou cartão para o cliente pagar na hora." />
-          <FeatureItem title="Follow-up com IA" desc="A IA faz follow-up inteligente respeitando horário e contexto." />
-          <FeatureItem title="Múltiplos métodos" desc="Se PIX falhou, oferece cartão. Se cartão falhou, oferece PIX." />
-          <FeatureItem title="Deduplicação" desc="Webhooks duplicados são ignorados automaticamente — pode reenviar sem medo." />
-          <FeatureItem title="Relatórios em tempo real" desc="Acompanhe taxas de recuperação, leads ativos e conversões no dashboard." />
+          <FeatureItem title="Contato automatico" desc="Envia mensagem no WhatsApp do cliente em segundos apos a falha." />
+          <FeatureItem title="Link de pagamento" desc="Gera link PIX ou cartao para o cliente pagar na hora." />
+          <FeatureItem title="Follow-up com IA" desc="A IA faz follow-up inteligente respeitando horario e contexto." />
+          <FeatureItem title="Multiplos metodos" desc="Se PIX falhou, oferece cartao. Se cartao falhou, oferece PIX." />
+          <FeatureItem title="Deduplicacao" desc="Webhooks duplicados sao ignorados automaticamente — pode reenviar sem medo." />
+          <FeatureItem title="Relatorios em tempo real" desc="Acompanhe taxas de recuperacao, leads ativos e conversoes no dashboard." />
         </div>
       </PlatformSurface>
 
@@ -343,8 +343,8 @@ Content-Type: application/json
       <PlatformSurface className="mt-5 p-5 sm:p-6">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#111827]">Precisa de ajuda com a integração?</p>
-            <p className="mt-1 text-sm text-[#6b7280]">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">Precisa de ajuda com a integracao?</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Se o seu gateway tem um formato diferente, entre em contato que adaptamos o normalizer.
             </p>
           </div>
@@ -352,7 +352,7 @@ Content-Type: application/json
             href="/connect"
             className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700"
           >
-            Voltar às integrações
+            Voltar as integracoes
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -361,7 +361,7 @@ Content-Type: application/json
   );
 }
 
-/* ── Helper components ── */
+/* -- Helper components -- */
 
 function SectionTitle({ number, title }: { number: string; title: string }) {
   return (
@@ -369,7 +369,7 @@ function SectionTitle({ number, title }: { number: string; title: string }) {
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
         {number}
       </span>
-      <h2 className="text-[1.15rem] font-semibold tracking-tight text-[#111827]">{title}</h2>
+      <h2 className="text-[1.15rem] font-semibold tracking-tight text-gray-900 dark:text-white">{title}</h2>
     </div>
   );
 }
@@ -384,17 +384,17 @@ function StepCard({
   description: string;
 }) {
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] p-4">
+    <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-gray-50 dark:bg-[#111] p-4">
       <p className="text-xs font-bold text-green-600">Passo {step}</p>
-      <p className="mt-1 text-sm font-semibold text-[#111827]">{title}</p>
-      <p className="mt-1.5 text-sm leading-6 text-[#6b7280]">{description}</p>
+      <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{title}</p>
+      <p className="mt-1.5 text-sm leading-6 text-gray-500 dark:text-gray-400">{description}</p>
     </div>
   );
 }
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded bg-[#f0f0f3] px-1.5 py-0.5 text-[#1a1a2e]">
+    <code className="rounded bg-gray-100 dark:bg-[#222] px-1.5 py-0.5 text-gray-900 dark:text-gray-100">
       {children}
     </code>
   );
@@ -402,7 +402,7 @@ function Code({ children }: { children: React.ReactNode }) {
 
 function CodeBlock({ children }: { children: string }) {
   return (
-    <div className="mt-3 rounded-2xl border border-black/[0.06] bg-[#1a1a2e] p-4 text-sm leading-6">
+    <div className="mt-3 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-[#1a1a2e] p-4 text-sm leading-6">
       <pre className="overflow-x-auto text-[#c8ccd4]">{children}</pre>
     </div>
   );
@@ -420,12 +420,12 @@ function EventRow({
   recoverable?: boolean;
 }) {
   return (
-    <tr className="border-b border-black/[0.04]">
-      <td className="py-2.5 pr-4 font-mono text-xs text-[#1a1a2e]">{type}</td>
+    <tr className="border-b border-black/[0.04] dark:border-white/[0.04]">
+      <td className="py-2.5 pr-4 font-mono text-xs text-gray-900 dark:text-gray-100">{type}</td>
       <td className="py-2.5 pr-4">{desc}</td>
       <td className="py-2.5">
         {recoverable ? (
-          <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+          <span className="rounded-full bg-green-50 dark:bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-700 dark:text-green-400">
             {action}
           </span>
         ) : (
@@ -448,12 +448,12 @@ function FieldRow({
   const required = field.includes("*");
   const cleanField = field.replace(" *", "");
   return (
-    <tr className="border-b border-black/[0.04]">
+    <tr className="border-b border-black/[0.04] dark:border-white/[0.04]">
       <td className="py-2.5 pr-4">
-        <span className="font-mono text-xs text-[#1a1a2e]">{cleanField}</span>
+        <span className="font-mono text-xs text-gray-900 dark:text-gray-100">{cleanField}</span>
         {required ? <span className="ml-1 text-xs text-red-500">*</span> : null}
       </td>
-      <td className="py-2.5 pr-4 font-mono text-xs text-[#9ca3af]">{type}</td>
+      <td className="py-2.5 pr-4 font-mono text-xs text-gray-400 dark:text-gray-500">{type}</td>
       <td className="py-2.5 text-sm">{desc}</td>
     </tr>
   );
@@ -467,18 +467,18 @@ function MappingRow({
   alternatives: string;
 }) {
   return (
-    <tr className="border-b border-black/[0.04]">
-      <td className="py-2.5 pr-4 font-mono text-xs font-medium text-[#1a1a2e]">{field}</td>
-      <td className="py-2.5 font-mono text-xs text-[#9ca3af]">{alternatives}</td>
+    <tr className="border-b border-black/[0.04] dark:border-white/[0.04]">
+      <td className="py-2.5 pr-4 font-mono text-xs font-medium text-gray-900 dark:text-gray-100">{field}</td>
+      <td className="py-2.5 font-mono text-xs text-gray-400 dark:text-gray-500">{alternatives}</td>
     </tr>
   );
 }
 
 function FeatureItem({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="rounded-xl border border-black/[0.06] bg-[#fbfbfc] px-4 py-3">
-      <p className="text-sm font-semibold text-[#111827]">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-[#6b7280]">{desc}</p>
+    <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-gray-50 dark:bg-[#111] px-4 py-3">
+      <p className="text-sm font-semibold text-gray-900 dark:text-white">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">{desc}</p>
     </div>
   );
 }

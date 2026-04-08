@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import { appEnv } from "@/server/recovery/config";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { getStorageService } from "@/server/recovery/services/storage";
@@ -46,12 +45,6 @@ export async function handleHealthCheck(request: Request) {
     storage_mode: storageMode,
     database_configured: runtime.databaseConfigured,
     counts,
-    webhooks: {
-      [platformBrand.gateway.slug]: `${baseUrl}${buildGatewayWebhookPath()}`,
-      whatsapp: `${baseUrl}/api/webhooks/whatsapp`,
-      import: `${baseUrl}/api/import`,
-      worker: `${baseUrl}/api/worker/run`,
-    },
     integrations: {
       pagouai: appEnv.pagouAiConfigured,
       supabase: runtime.databaseConfigured,
@@ -62,10 +55,6 @@ export async function handleHealthCheck(request: Request) {
     },
     automation: {
       worker_enabled: runtime.workerConfigured,
-      worker_executor_configured: runtime.workerExecutorConfigured,
-      cron_secret_configured: runtime.workerCronConfigured,
-      worker_batch_size: appEnv.workerBatchSize,
-      worker_concurrency: appEnv.workerConcurrency,
     },
   });
 }

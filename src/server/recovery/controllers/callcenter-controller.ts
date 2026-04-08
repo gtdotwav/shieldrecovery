@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 
@@ -38,7 +39,27 @@ const createCampaignSchema = z.object({
 
 /* ── Webhook — receives events from the callcenter frontend ── */
 
+function verifyCallcenterAuth(request: Request): boolean {
+  const secret = process.env.CALLCENTER_WEBHOOK_SECRET?.trim() || process.env.CRON_SECRET?.trim();
+  if (!secret) return true; // skip in dev when not configured
+
+  const authHeader = request.headers.get("authorization") ?? "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token) return false;
+
+  const bufA = Buffer.from(token.padEnd(64, "\0"));
+  const bufB = Buffer.from(secret.padEnd(64, "\0"));
+  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
+
 export async function handleCallcenterWebhook(request: Request) {
+  if (!verifyCallcenterAuth(request)) {
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized." },
+      { status: 401 },
+    );
+  }
+
   let body: Record<string, unknown>;
 
   try {
@@ -117,12 +138,23 @@ export async function handleCallcenterWebhook(request: Request) {
         await storage.updateCall(call.id, update);
         await storage.createCallEvent(call.id, "ended", body);
 
-        // Update lead status if outcome is "recovered"
-        if (update.outcome === "recovered" && call.leadId) {
+        // Update lead status based on call outcome
+        if (call.leadId && update.outcome) {
           try {
-            await storage.updateLeadStatus({ leadId: call.leadId, status: "RECOVERED" });
+            if (update.outcome === "recovered") {
+              await storage.updateLeadStatus({ leadId: call.leadId, status: "RECOVERED" });
+            } else if (
+              update.outcome === "interested" ||
+              update.outcome === "callback_scheduled"
+            ) {
+              // Positive outcome — transition to WAITING_CUSTOMER
+              await storage.updateLeadStatus({ leadId: call.leadId, status: "WAITING_CUSTOMER" });
+            } else if (update.outcome === "no_interest") {
+              // Negative outcome — mark as LOST
+              await storage.updateLeadStatus({ leadId: call.leadId, status: "LOST" });
+            }
           } catch {
-            // Lead may not exist or already recovered
+            // Lead may not exist or already in target status
           }
         }
 

@@ -13,8 +13,9 @@ function getCorsOrigin(): string {
 
 const ALLOWED_ORIGINS = new Set([
   getCorsOrigin(),
-  "http://localhost:8081",
-  "http://localhost:19006",
+  ...(process.env.NODE_ENV !== "production"
+    ? ["http://localhost:8081", "http://localhost:19006"]
+    : []),
 ]);
 
 function corsHeaders(origin?: string | null): Record<string, string> {

@@ -5,16 +5,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowDown,
   ArrowRight,
-  BarChart3,
   Bot,
   CheckCircle2,
   Clock,
   DollarSign,
   Headphones,
-  Lock,
   MessageSquare,
   Phone,
-  ShieldCheck,
   TrendingUp,
   Zap,
 } from "lucide-react";
@@ -131,8 +128,8 @@ export default async function Home() {
 
             <Reveal direction="up" delay={400}>
               <p className="mt-5 max-w-[36rem] text-[0.92rem] leading-[1.7] text-gray-400 sm:mt-7 sm:text-[1.05rem] sm:leading-[1.8] lg:mx-0">
-                Recuperação autônoma de pagamentos falhados via WhatsApp e Call Center de IA.
-                Sem equipe, sem custo fixo — você só paga quando recuperamos.
+                Conecte seu gateway e comece a recuperar pagamentos perdidos
+                via WhatsApp e Call Center de IA. Sem equipe, sem custo fixo.
               </p>
             </Reveal>
 
@@ -174,51 +171,21 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ═══════════════════════ 2. TRUST BAR ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 pb-12 sm:px-8 sm:pb-20 lg:px-10">
-          <Reveal direction="up">
-            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 sm:gap-x-12">
-              <TrustBadge icon={ShieldCheck} text="LGPD Compliant" />
-              <TrustBadge icon={Lock} text="Dados criptografados" />
-              <TrustBadge icon={MessageSquare} text="WhatsApp Business" />
-              <TrustBadge icon={Headphones} text="Call Center IA" />
-              <TrustBadge icon={BarChart3} text="Analytics em tempo real" />
-            </div>
-          </Reveal>
-        </section>
-
-        <GlowDivider />
-
-        {/* ═══════════════════════ 3. COMO FUNCIONA ═══════════════════════ */}
+        {/* ═══════════════════════ 2. COMO FUNCIONA ═══════════════════════ */}
         <section id="como-funciona" className="relative mx-auto max-w-[82rem] scroll-mt-8 px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
           <Reveal direction="up">
             <div className="text-center">
               <SectionEyebrow>Como funciona</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Da falha ao pagamento em 4 passos
+                Cada etapa no momento certo
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-7 text-gray-400">
-                Tudo acontece automaticamente. Você só acompanha no dashboard.
+                Do evento de falha ao pagamento recuperado — tudo acontece automaticamente.
               </p>
             </div>
           </Reveal>
 
-          <div className="mx-auto mt-10 grid max-w-[60rem] gap-3 sm:mt-14 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-            {[
-              { n: "01", icon: Zap, title: "Falha detectada", desc: "Webhook captura o evento em tempo real. A IA classifica valor, método e motivo." },
-              { n: "02", icon: MessageSquare, title: "WhatsApp enviado", desc: "Mensagem personalizada com link de pagamento em menos de 2 minutos." },
-              { n: "03", icon: Headphones, title: "Call Center IA", desc: "Sem resposta? Agente IA liga com voz natural, negocia e envia link na hora." },
-              { n: "04", icon: TrendingUp, title: "Pagamento recuperado", desc: "Cliente paga via PIX, cartão ou boleto. Dashboard atualiza em tempo real." },
-            ].map((s, i) => (
-              <Reveal key={s.n} direction="up" delay={i * 100}>
-                <TiltCard>
-                  <StepCard number={s.n} icon={s.icon} title={s.title} description={s.desc} />
-                </TiltCard>
-              </Reveal>
-            ))}
-          </div>
-
-          {/* Timeline compacta */}
+          {/* Timeline */}
           <Reveal direction="up" delay={400}>
             <div className="mx-auto mt-12 max-w-[56rem] overflow-x-auto sm:mt-16">
               <div
@@ -233,13 +200,13 @@ export default async function Home() {
                 </p>
                 <div className="flex items-center justify-between">
                   {[
-                    { time: "0s", label: "Falha" },
-                    { time: "30s", label: "IA analisa" },
+                    { time: "0s", label: "Falha detectada" },
+                    { time: "30s", label: "Análise" },
                     { time: "2min", label: "WhatsApp" },
                     { time: "4h", label: "Follow-up" },
-                    { time: "12h", label: "Ligação IA" },
-                    { time: "48h", label: "Escalonamento" },
-                    { time: "7d", label: "Soft close" },
+                    { time: "12h", label: "Ligação" },
+                    { time: "48h", label: "Reabordagem" },
+                    { time: "7d", label: "Encerramento" },
                   ].map((step, i, arr) => (
                     <div key={step.time} className="flex items-center">
                       <div className="text-center">
@@ -409,7 +376,6 @@ export default async function Home() {
 
                   <p className="mt-4 text-center text-[0.68rem] leading-5 text-gray-600">
                     Ao solicitar, você concorda em receber uma chamada de demonstração.
-                    Seus dados ficam seguros conforme LGPD.
                   </p>
                 </div>
               </div>
@@ -474,14 +440,6 @@ export default async function Home() {
             </Reveal>
           </div>
 
-          {/* Security strip */}
-          <Reveal direction="up" delay={300}>
-            <div className="mx-auto mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:gap-x-10">
-              <SecurityBadge icon={ShieldCheck} text="LGPD Compliant" />
-              <SecurityBadge icon={Lock} text="Criptografia AES-256" />
-              <SecurityBadge icon={CheckCircle2} text="Zero armazenamento de cartão" />
-            </div>
-          </Reveal>
         </section>
 
         <GlowDivider />
@@ -541,8 +499,8 @@ export default async function Home() {
                   Comece a recuperar receita hoje
                 </h2>
                 <p className="mx-auto mt-5 max-w-lg text-[1rem] leading-7 text-gray-400">
-                  Integração em minutos, sem equipe técnica. Acompanhe cada
-                  recuperação no dashboard em tempo real.
+                  Integração em minutos. Conecte, acompanhe e recupere —
+                  sem mudar sua operação.
                 </p>
                 <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
                   <MagneticButton>
@@ -575,13 +533,9 @@ export default async function Home() {
                   <p className="text-sm font-semibold text-gray-400">{b.name}</p>
                 </div>
                 <p className="mt-3 max-w-[18rem] text-[0.75rem] leading-[1.7] text-gray-500">
-                  Recuperação autônoma de pagamentos via IA, WhatsApp
-                  e Call Center inteligente. 24/7.
+                  Plugue seu gateway e recupere pagamentos perdidos
+                  via WhatsApp e Call Center de IA. 24/7.
                 </p>
-                <div className="mt-4 flex items-center gap-2">
-                  <ShieldCheck className="h-3.5 w-3.5" style={{ color: `rgba(${rgb},0.5)` }} />
-                  <span className="text-[0.6rem] text-gray-500">LGPD Compliant</span>
-                </div>
               </div>
 
               {/* Produto */}
@@ -600,7 +554,7 @@ export default async function Home() {
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400">Empresa</p>
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="/quiz">Solicitar acesso</FooterLink>
-                  <FooterLink href="mailto:contato@pagrecovery.com">Contato</FooterLink>
+                  <FooterLink href={`mailto:${b.contactEmail}`}>Contato</FooterLink>
                 </ul>
               </div>
 
@@ -620,10 +574,12 @@ export default async function Home() {
                 &copy; {new Date().getFullYear()} {b.name} Tecnologia. Todos os direitos reservados.
               </p>
               <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1.5 text-[0.52rem] text-gray-400">
-                  <Lock className="h-2.5 w-2.5" />
-                  Dados protegidos conforme LGPD (Lei 13.709/2018)
-                </span>
+                <Link href="/privacy" className="text-[0.52rem] text-gray-500 transition-colors hover:text-gray-400">
+                  Privacidade
+                </Link>
+                <Link href="/terms" className="text-[0.52rem] text-gray-500 transition-colors hover:text-gray-400">
+                  Termos
+                </Link>
               </div>
             </div>
           </div>
@@ -668,45 +624,6 @@ function HeroStat({ value, label }: { value: React.ReactNode; label: string }) {
       <p className="mt-0.5 font-mono text-[0.5rem] uppercase tracking-[0.15em] text-gray-500 sm:text-[0.55rem]">
         {label}
       </p>
-    </div>
-  );
-}
-
-function TrustBadge({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
-  return (
-    <div className="flex items-center gap-2 text-gray-400">
-      <Icon className="h-3.5 w-3.5 opacity-40" style={{ color: b.accent }} />
-      <span className="whitespace-nowrap text-[0.72rem] font-medium">
-        {text}
-      </span>
-    </div>
-  );
-}
-
-function StepCard({ number, icon: Icon, title, description }: { number: string; icon: LucideIcon; title: string; description: string }) {
-  return (
-    <div
-      className="card-hover-glow group rounded-xl px-5 py-6 backdrop-blur-sm"
-      style={{
-        border: "1px solid rgba(255,255,255,0.05)",
-        background: `${cardBg},0.4)`,
-        ["--card-glow-rgb" as string]: rgb,
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-lg"
-          style={{
-            border: `1px solid rgba(${rgb},0.12)`,
-            background: `rgba(${rgb},0.06)`,
-          }}
-        >
-          <Icon className="h-[18px] w-[18px]" style={{ color: b.accent }} />
-        </div>
-        <span className="font-mono text-[0.65rem] font-bold tracking-wider text-gray-500">{number}</span>
-      </div>
-      <h3 className="mt-4 text-[0.88rem] font-semibold text-gray-200">{title}</h3>
-      <p className="mt-2 text-[0.78rem] leading-[1.7] text-gray-400">{description}</p>
     </div>
   );
 }
@@ -766,15 +683,6 @@ function PricingCard({
         <span className={highlighted ? "" : "text-white"}>{price}</span>
       </p>
       <p className="mt-3 text-[0.75rem] leading-[1.7] text-gray-400">{description}</p>
-    </div>
-  );
-}
-
-function SecurityBadge({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <Icon className="h-3 w-3" style={{ color: `rgba(${rgb},0.4)` }} />
-      <span className="text-[0.68rem] text-gray-500">{text}</span>
     </div>
   );
 }

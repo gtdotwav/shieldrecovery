@@ -1490,25 +1490,25 @@ function TabFinanceiro({
         <PlatformMetricCard
           icon={Wallet}
           label="total recuperado"
-          value={fin ? formatCurrency(fin.totalGross / 100) : "—"}
+          value={fin ? formatCurrency(fin.totalGross) : "—"}
           subtitle={fin ? `${fin.splitCount} transacoes` : ""}
         />
         <PlatformMetricCard
           icon={Target}
           label="revenue plataforma"
-          value={fin ? formatCurrency(fin.totalFees / 100) : "—"}
+          value={fin ? formatCurrency(fin.totalFees) : "—"}
           subtitle="comissoes retidas"
         />
         <PlatformMetricCard
           icon={Layers}
           label="saldo pendente"
-          value={fin ? formatCurrency(fin.totalPendingBalance / 100) : "—"}
+          value={fin ? formatCurrency(fin.totalPendingBalance) : "—"}
           subtitle="aguardando periodo de hold"
         />
         <PlatformMetricCard
           icon={ArrowRight}
           label="disponivel para saque"
-          value={fin ? formatCurrency(fin.totalAvailableBalance / 100) : "—"}
+          value={fin ? formatCurrency(fin.totalAvailableBalance) : "—"}
           subtitle={fin ? `${fin.merchantCount} merchants` : ""}
         />
       </section>
@@ -1655,7 +1655,7 @@ function TabSaques({
                 >
                   <div>
                     <p className="text-sm font-semibold text-[var(--foreground)]">
-                      {formatCurrency(p.amount / 100)}
+                      {formatCurrency(p.amount)}
                     </p>
                     <p className="text-xs text-[var(--foreground-secondary)]">
                       {p.merchantId.slice(0, 8)} · PIX {p.pixKeyType}: {p.pixKey} · {p.holderName}
@@ -1710,7 +1710,7 @@ function TabSaques({
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-[var(--foreground)]">
-                        {formatCurrency(p.amount / 100)}
+                        {formatCurrency(p.amount)}
                       </p>
                       <p className="text-xs text-[var(--foreground-secondary)]">
                         {p.merchantId.slice(0, 8)} · PIX {p.pixKeyType}: {p.pixKey}
@@ -1777,7 +1777,7 @@ function TabSaques({
                 >
                   <div>
                     <p className="text-sm font-semibold text-[var(--foreground)]">
-                      {formatCurrency(p.amount / 100)}
+                      {formatCurrency(p.amount)}
                     </p>
                     <p className="text-xs text-[var(--foreground-secondary)]">
                       {p.merchantId.slice(0, 8)}

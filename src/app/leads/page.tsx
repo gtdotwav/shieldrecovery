@@ -24,7 +24,6 @@ import {
 } from "@/lib/stage";
 import { platformBrand } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -72,13 +71,9 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
     session.role === "seller"
       ? await getSellerIdentityByEmail(session.email)
       : null;
-  const contacts = (await service.getFollowUpContacts()).filter((contact) =>
-    canRoleAccessAgent(
-      session.role,
-      contact.assigned_agent,
-      sellerIdentity?.agentName,
-    ),
-  );
+  const sellerAgentName =
+    session.role === "seller" ? sellerIdentity?.agentName : undefined;
+  const contacts = await service.getFollowUpContacts(sellerAgentName);
 
   const searchedContacts = searchQuery
     ? contacts.filter((c) => matchesContactQuery(c, searchQuery))

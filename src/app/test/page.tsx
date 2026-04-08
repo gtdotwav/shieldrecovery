@@ -144,6 +144,7 @@ export default async function TestPage({ searchParams }: TestPageProps) {
                   preserva as conexões salvas.
                 </p>
                 <form action={resetOperationalDataAction} className="mt-4">
+                  <input type="hidden" name="confirm" value="true" />
                   <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
                     <RotateCcw className="h-4 w-4" />
                     Limpar base

@@ -9,7 +9,7 @@ import re
 import json
 from pathlib import Path
 
-SRC = Path("/Users/geander/Documents/shield recovery/src")
+SRC = Path(__file__).parent.parent / "src"
 CHANGES = []
 
 def log(msg: str):

@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 import type { CheckoutMethodType } from "../types";
 import type {
   PaymentInput,
@@ -118,6 +120,7 @@ export class PagnetProvider implements PaymentProvider {
 
   private publicKey: string;
   private secretKey: string;
+  private webhookSecret: string;
 
   constructor(
     slug: string,
@@ -128,6 +131,7 @@ export class PagnetProvider implements PaymentProvider {
     this.methodType = methodType;
     this.publicKey = (credentials.publicKey as string) ?? "";
     this.secretKey = (credentials.secretKey as string) ?? "";
+    this.webhookSecret = (credentials.webhookSecret as string) ?? "";
 
     if (!this.publicKey || !this.secretKey) {
       throw new Error(
@@ -173,21 +177,12 @@ export class PagnetProvider implements PaymentProvider {
         },
       ],
       customer: {
-        name: input.customerName || "Cliente Shield",
-        email: input.customerEmail || "cliente@shield.com",
-        phone: cleanPhone(input.customerPhone) || "21999999999",
+        name: input.customerName,
+        email: input.customerEmail,
+        phone: cleanPhone(input.customerPhone),
         birthdate: "1990-01-01",
         document: buildDocument(input.customerDocument),
-        address: {
-          street: "Av. Brigadeiro Faria Lima",
-          streetNumber: "4055",
-          complement: "",
-          zipCode: "04538133",
-          neighborhood: "Itaim Bibi",
-          city: "São Paulo",
-          state: "SP",
-          country: "BR",
-        },
+        address: buildAddress(input.metadata),
       },
     };
 
@@ -288,13 +283,69 @@ export class PagnetProvider implements PaymentProvider {
 
   async verifyWebhook(
     payload: unknown,
-    _headers: Record<string, string>,
+    headers: Record<string, string>,
   ): Promise<WebhookVerifyResult> {
     const body = payload as PagnetPostbackPayload;
 
-    // Validate postback structure
-    if (!body || body.type !== "transaction" || !body.data) {
+    // Validate postback structure strictly
+    if (!body || typeof body !== "object") {
+      console.warn("[PagNet webhook] Invalid payload: not an object");
       return { valid: false };
+    }
+
+    if (body.type !== "transaction" || !body.data) {
+      console.warn("[PagNet webhook] Invalid payload structure:", {
+        type: body.type,
+        hasData: !!body.data,
+      });
+      return { valid: false };
+    }
+
+    if (!body.data.id || !body.data.status) {
+      console.warn("[PagNet webhook] Missing required fields in data");
+      return { valid: false };
+    }
+
+    // HMAC signature verification (if webhook secret is configured)
+    if (this.webhookSecret) {
+      const signature =
+        headers["x-pagnet-signature"] ??
+        headers["X-Pagnet-Signature"] ??
+        headers["x-hub-signature"] ??
+        "";
+
+      if (!signature) {
+        console.warn(
+          "[PagNet webhook] Missing signature header — rejecting (webhookSecret is configured)",
+        );
+        return { valid: false };
+      }
+
+      const rawPayload =
+        typeof payload === "string" ? payload : JSON.stringify(payload);
+      const expectedSignature = createHmac("sha256", this.webhookSecret)
+        .update(rawPayload)
+        .digest("hex");
+
+      // Support "sha256=<hex>" format or raw hex
+      const providedHex = signature.startsWith("sha256=")
+        ? signature.slice(7)
+        : signature;
+
+      const expectedBuf = Buffer.from(expectedSignature, "hex");
+      const providedBuf = Buffer.from(providedHex, "hex");
+
+      if (
+        expectedBuf.length !== providedBuf.length ||
+        !timingSafeEqual(expectedBuf, providedBuf)
+      ) {
+        console.warn("[PagNet webhook] Signature mismatch — rejecting");
+        return { valid: false };
+      }
+    } else {
+      console.warn(
+        "[PagNet webhook] No webhookSecret configured — skipping signature verification",
+      );
     }
 
     const tx = body.data;
@@ -365,12 +416,56 @@ function futureDate(days: number): string {
 
 function buildDocument(doc?: string): { number: string; type: "cpf" | "cnpj" } {
   if (!doc) {
-    // PagNet requires a document — use placeholder for minimal integration
-    return { number: "00000000000", type: "cpf" };
+    throw new Error(
+      "customerDocument é obrigatório para pagamentos via PagNet",
+    );
   }
   const digits = doc.replace(/\D/g, "");
+  if (digits.length !== 11 && digits.length !== 14) {
+    throw new Error("customerDocument deve ser um CPF (11 dígitos) ou CNPJ (14 dígitos)");
+  }
   return {
     number: digits,
     type: digits.length > 11 ? "cnpj" : "cpf",
+  };
+}
+
+type PagnetAddress = {
+  street: string;
+  streetNumber: string;
+  complement: string;
+  zipCode: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  country: string;
+};
+
+const DEFAULT_ADDRESS: PagnetAddress = {
+  street: "Não informado",
+  streetNumber: "0",
+  complement: "",
+  zipCode: "00000000",
+  neighborhood: "Não informado",
+  city: "Não informado",
+  state: "SP",
+  country: "BR",
+};
+
+function buildAddress(metadata?: Record<string, unknown>): PagnetAddress {
+  if (!metadata?.address || typeof metadata.address !== "object") {
+    return DEFAULT_ADDRESS;
+  }
+
+  const addr = metadata.address as Record<string, unknown>;
+  return {
+    street: (addr.street as string) || DEFAULT_ADDRESS.street,
+    streetNumber: (addr.streetNumber as string) || DEFAULT_ADDRESS.streetNumber,
+    complement: (addr.complement as string) || "",
+    zipCode: String(addr.zipCode ?? "").replace(/\D/g, "") || DEFAULT_ADDRESS.zipCode,
+    neighborhood: (addr.neighborhood as string) || DEFAULT_ADDRESS.neighborhood,
+    city: (addr.city as string) || DEFAULT_ADDRESS.city,
+    state: (addr.state as string) || DEFAULT_ADDRESS.state,
+    country: (addr.country as string) || DEFAULT_ADDRESS.country,
   };
 }

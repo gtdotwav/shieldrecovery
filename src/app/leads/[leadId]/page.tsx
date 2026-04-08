@@ -28,7 +28,7 @@ import { ActionButton } from "@/components/ui/action-button";
 import { MessageBubble } from "@/components/ui/message-bubble";
 import { StageBadge } from "@/components/ui/stage-badge";
 import { TimeBadge } from "@/components/ui/time-badge";
-import { pickBestContact, formatPhone, hasPhone } from "@/lib/contact";
+import { pickBestContact, formatPhone, hasPhone, UNKNOWN_EMAIL } from "@/lib/contact";
 import { canRoleAccessAgent } from "@/server/auth/core";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import {
@@ -103,7 +103,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
     ? `https://wa.me/${lead.phone.replace(/\D/g, "")}`
     : undefined;
   const emailHref =
-    lead.email && lead.email !== "unknown@pagrecovery.local"
+    lead.email && lead.email !== UNKNOWN_EMAIL
       ? `mailto:${lead.email}`
       : undefined;
 

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { NOT_PROVIDED } from "@/lib/contact";
 import { platformBrand } from "@/lib/platform";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
@@ -175,8 +176,14 @@ function refreshOperationalViews() {
   revalidatePath("/api/followups/contacts");
 }
 
-export async function resetOperationalDataAction() {
+export async function resetOperationalDataAction(formData?: FormData) {
   await requireAuthenticatedSession(["admin"]);
+
+  const confirmed = formData?.get("confirm") === "true";
+  if (!confirmed) {
+    redirect("/test?status=error&message=Confirmação%20obrigatória%20para%20limpar%20dados");
+  }
+
   await getStorageService().clearOperationalData();
   refreshOperationalViews();
   redirect("/test?status=ok&message=Base%20operacional%20limpa");
@@ -389,7 +396,7 @@ export async function simulateInboundReplyAction() {
         contact.lead_status !== "RECOVERED" &&
         contact.lead_status !== "LOST" &&
         contact.phone &&
-        contact.phone !== "not_provided",
+        contact.phone !== NOT_PROVIDED,
     ) ?? null;
 
   if (!target) {

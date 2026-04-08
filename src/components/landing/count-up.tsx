@@ -5,7 +5,7 @@ import {
   useInView,
   useMotionValue,
   useSpring,
-} from "framer-motion";
+} from "motion/react";
 
 export function CountUp({
   end,

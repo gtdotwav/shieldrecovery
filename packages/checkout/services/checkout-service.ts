@@ -17,6 +17,7 @@ import { TrackingService } from "./tracking-service";
 
 export class CheckoutService {
   private tracking: TrackingService;
+  private processedWebhookIds = new Set<string>();
 
   constructor(
     private storage: CheckoutStorage,
@@ -253,11 +254,30 @@ export class CheckoutService {
       return { handled: false };
     }
 
+    // Idempotency: if we already processed this webhook, return 200 OK without re-processing
+    const idempotencyKey = `${providerSlug}:${result.providerPaymentId}:${result.status ?? "none"}`;
+    if (this.processedWebhookIds.has(idempotencyKey)) {
+      const session = await this.storage.getSessionByProviderPaymentId(
+        result.providerPaymentId,
+      );
+      return { handled: true, sessionId: session?.id };
+    }
+
     const session = await this.storage.getSessionByProviderPaymentId(
       result.providerPaymentId,
     );
     if (!session) {
       return { handled: false };
+    }
+
+    // Additional idempotency: if the session is already in the target state, skip
+    if (result.status === "approved" && session.status === "paid") {
+      this.processedWebhookIds.add(idempotencyKey);
+      return { handled: true, sessionId: session.id };
+    }
+    if (result.status === "failed" && session.status === "failed") {
+      this.processedWebhookIds.add(idempotencyKey);
+      return { handled: true, sessionId: session.id };
     }
 
     if (result.status === "approved" && session.status !== "paid") {
@@ -292,6 +312,20 @@ export class CheckoutService {
       });
     }
 
+    // Mark as processed for idempotency
+    this.processedWebhookIds.add(idempotencyKey);
+
+    // Cap the set size to prevent unbounded memory growth
+    if (this.processedWebhookIds.size > 10_000) {
+      const iter = this.processedWebhookIds.values();
+      for (let i = 0; i < 5_000; i++) {
+        const val = iter.next().value;
+        if (val !== undefined) {
+          this.processedWebhookIds.delete(val);
+        }
+      }
+    }
+
     return { handled: true, sessionId: session.id };
   }
 
@@ -308,5 +342,11 @@ export class CheckoutService {
     toDate?: string,
   ): Promise<CheckoutAnalytics> {
     return this.storage.getAnalytics(fromDate, toDate);
+  }
+
+  // ── Bulk expire old open sessions (cron-compatible) ────────────
+
+  async bulkExpireOpenSessions(): Promise<number> {
+    return this.storage.bulkExpireOpenSessions();
   }
 }

@@ -153,6 +153,7 @@ export type CreateSessionInput = {
   customerEmail: string;
   customerPhone: string;
   customerDocument?: string;
+  merchantId: string;
   source: CheckoutSessionSource;
   sourceReferenceId?: string;
   expiresInMinutes?: number;
