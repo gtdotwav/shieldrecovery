@@ -8,6 +8,7 @@ import {
   Send,
   TrendingUp,
   Users,
+  Wallet,
   Zap,
 } from "lucide-react";
 
@@ -30,9 +31,10 @@ export const metadata = {
 /* ── Showcase numbers ── */
 
 const RECOVERY_RATE = 19;
+const COMMISSION_RATE = 15;
 const MONTHLY_RECOVERED = 304_871.42;
-const DAILY_COMMISSION = 10_162.38;
-const MONTHLY_COMMISSION = DAILY_COMMISSION * 30;
+const MONTHLY_COMMISSION = 45_730.71;
+const DAILY_COMMISSION = 1_524.36;
 const TOTAL_FAILED = Math.round(MONTHLY_RECOVERED / (RECOVERY_RATE / 100));
 const AVG_RECOVERY_HOURS = 4.2;
 const ACTIVE_CASES = 243;
@@ -196,7 +198,13 @@ export default async function MarketingPage() {
   return (
     <PlatformAppPage currentPath="/marketing">
       {/* KPI cards */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <PlatformMetricCard
+          icon={Wallet}
+          label="comissão recebida"
+          value={fmtBRLFull(MONTHLY_COMMISSION)}
+          subtitle={`${fmtBRLFull(DAILY_COMMISSION)}/dia · ${COMMISSION_RATE}% do recuperado`}
+        />
         <PlatformMetricCard
           icon={CreditCard}
           label="em recuperação"
@@ -265,11 +273,11 @@ export default async function MarketingPage() {
                 </div>
               </div>
               <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/[0.04] p-5">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--accent)]">Comissão PagRecovery</p>
+                <p className="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--accent)]">Comissão PagRecovery ({COMMISSION_RATE}%)</p>
                 <p className="mt-3 text-[1.75rem] font-bold tracking-[-0.03em] text-[var(--accent)] tabular-nums">
-                  {fmtBRL(DAILY_COMMISSION)}<span className="text-base font-semibold opacity-70">/dia</span>
+                  {fmtBRLFull(MONTHLY_COMMISSION)}<span className="text-base font-semibold opacity-70">/mês</span>
                 </p>
-                <p className="mt-1 text-xs text-[var(--accent)]/60">≈ {fmtBRLFull(MONTHLY_COMMISSION)}/mês</p>
+                <p className="mt-1 text-xs text-[var(--accent)]/60">≈ {fmtBRLFull(DAILY_COMMISSION)}/dia</p>
                 <div className="mt-3 flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent)]/10 px-2 py-0.5 text-[0.65rem] font-semibold text-[var(--accent)]">
                     <CheckCircle2 className="h-3 w-3" />Recorrente
