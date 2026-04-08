@@ -321,7 +321,7 @@ export async function sendQuizLeadWhatsAppAction(formData: FormData) {
 }
 
 export async function saveSellerGatewayKeyAction(formData: FormData) {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  await requireAuthenticatedSession(["admin", "seller", "market"]);
 
   const sellerKey = String(formData.get("sellerKey") ?? "").trim();
   const gatewayApiKey = String(formData.get("gatewayApiKey") ?? "").trim();

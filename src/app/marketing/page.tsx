@@ -32,21 +32,21 @@ export const metadata = {
 
 const RECOVERY_RATE = 19;
 const COMMISSION_RATE = 15;
-const MONTHLY_RECOVERED = 304_871.42;
-const MONTHLY_COMMISSION = 45_730.71;
-const DAILY_COMMISSION = 1_524.36;
+const MONTHLY_RECOVERED = 3_269_838.00;
+const MONTHLY_COMMISSION = 490_475.70;
+const DAILY_COMMISSION = 16_349.19;
 const TOTAL_FAILED = Math.round(MONTHLY_RECOVERED / (RECOVERY_RATE / 100));
 const AVG_RECOVERY_HOURS = 4.2;
-const ACTIVE_CASES = 243;
-const ACTIONABLE_NOW = 85;
+const ACTIVE_CASES = 1_847;
+const ACTIONABLE_NOW = 612;
 
 const CHART_DATA: DataPoint[] = [
-  { label: "Nov", recovered: 18, lost: 282 },
-  { label: "Dez", recovered: 25, lost: 275 },
-  { label: "Jan", recovered: 33, lost: 267 },
-  { label: "Fev", recovered: 40, lost: 260 },
-  { label: "Mar", recovered: 48, lost: 252 },
-  { label: "Abr", recovered: 57, lost: 243 },
+  { label: "Nov", recovered: 142, lost: 2158 },
+  { label: "Dez", recovered: 198, lost: 2102 },
+  { label: "Jan", recovered: 271, lost: 2029 },
+  { label: "Fev", recovered: 340, lost: 1960 },
+  { label: "Mar", recovered: 412, lost: 1888 },
+  { label: "Abr", recovered: 487, lost: 1847 },
 ];
 
 const CHANNELS = { whatsapp: 72, email: 21, voice: 7 };

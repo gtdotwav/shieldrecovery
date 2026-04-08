@@ -62,7 +62,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function FinanceiroPage({ searchParams }: PageProps) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const params = (await searchParams) ?? {};
   const activeTab = params.tab ?? "resumo";
 

@@ -146,7 +146,7 @@ export async function saveDatabaseBootstrapAction(formData: FormData) {
 }
 
 export async function startWhatsAppQrSessionAction() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  await requireAuthenticatedSession(["admin", "seller", "market"]);
   try {
     await new MessagingService().startWhatsAppWebSession();
   } catch (error) {
@@ -159,7 +159,7 @@ export async function startWhatsAppQrSessionAction() {
 }
 
 export async function refreshWhatsAppQrSessionAction() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  await requireAuthenticatedSession(["admin", "seller", "market"]);
   try {
     await new MessagingService().refreshWhatsAppWebSession();
   } catch (error) {
@@ -172,7 +172,7 @@ export async function refreshWhatsAppQrSessionAction() {
 }
 
 export async function disconnectWhatsAppQrSessionAction() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  await requireAuthenticatedSession(["admin", "seller", "market"]);
   try {
     await new MessagingService().disconnectWhatsAppWebSession();
   } catch (error) {

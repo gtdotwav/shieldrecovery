@@ -20,7 +20,7 @@ const deleteCalendarNoteSchema = z.object({
 });
 
 export async function createCalendarNoteAction(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const service = getPaymentRecoveryService();
 
   const parsed = createCalendarNoteSchema.safeParse({
@@ -47,7 +47,7 @@ export async function createCalendarNoteAction(formData: FormData) {
 }
 
 export async function deleteCalendarNoteAction(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const service = getPaymentRecoveryService();
 
   const parsed = deleteCalendarNoteSchema.safeParse({

@@ -46,7 +46,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "CallCenter" };
 
 export default async function CallingPage() {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const isAdmin = session.role === "admin";
   const storage = getStorageService();
   const service = getPaymentRecoveryService();

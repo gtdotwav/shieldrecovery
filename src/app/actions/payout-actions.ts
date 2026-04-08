@@ -36,7 +36,7 @@ const requestPayoutSchema = z.object({
 });
 
 export async function requestPayoutAction(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
 
   const parsed = requestPayoutSchema.safeParse({
     amount: formData.get("amount"),
@@ -80,7 +80,7 @@ const createCheckoutLinkSchema = z.object({
 });
 
 export async function createCheckoutLinkAction(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
 
   const parsed = createCheckoutLinkSchema.safeParse({
     amount: formData.get("amount"),
@@ -119,7 +119,7 @@ export async function createCheckoutLinkAction(formData: FormData) {
 // ── Create PIX Account ───────────────────────────────────────────
 
 export async function createPixAccountAction(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
 
   const parsed = createPixSchema.safeParse({
     pixKeyType: formData.get("pixKeyType"),

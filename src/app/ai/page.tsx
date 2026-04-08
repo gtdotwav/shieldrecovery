@@ -52,7 +52,7 @@ export const metadata = {
 };
 
 export default async function AIPage() {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const recoveryService = getPaymentRecoveryService();
   const sellerIdentity =
     session.role === "seller"

@@ -46,7 +46,7 @@ type InboxPageProps = {
 };
 
 export default async function InboxPage({ searchParams }: InboxPageProps) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const params = await searchParams;
   const service = getPaymentRecoveryService();
   const sellerIdentity =

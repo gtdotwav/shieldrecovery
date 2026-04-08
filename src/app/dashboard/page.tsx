@@ -36,7 +36,7 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const service = getPaymentRecoveryService();
   const callStorage = getStorageService();
   const sellerIdentity =

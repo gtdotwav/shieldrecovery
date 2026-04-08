@@ -60,7 +60,7 @@ const laneOrder: RecoveryLeadStatus[] = [
 ];
 
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const params = (await searchParams) ?? {};
   const currentView = readViewMode(params.view);
   const currentScope = readScopeMode(params.scope);

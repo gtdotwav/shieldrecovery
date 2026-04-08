@@ -55,7 +55,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Como usar a plataforma no dia a dia.",
     icon: BookOpen,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/admin",
@@ -71,7 +71,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "O que precisa de ação agora.",
     icon: BarChart3,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/financeiro",
@@ -79,7 +79,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Saldo, comissões e saques.",
     icon: Wallet,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/connect",
@@ -87,7 +87,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "O que está ativo e o que falta.",
     icon: Settings,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/calendar",
@@ -95,7 +95,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Movimento, notas e automações por dia.",
     icon: CalendarDays,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/leads",
@@ -103,7 +103,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Qual caso mover agora.",
     icon: Users,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/inbox",
@@ -111,7 +111,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Quem precisa de resposta.",
     icon: MessageSquare,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/ai",
@@ -119,7 +119,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "IA e automações da operação.",
     icon: Bot,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/test",
@@ -135,7 +135,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Agente de voz IA para recuperação de clientes.",
     icon: PhoneCall,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/marketing",

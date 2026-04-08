@@ -76,7 +76,7 @@ const laneConfig: Array<{
 ];
 
 export default async function CalendarPage({ searchParams }: CalendarPageProps) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const params = (await searchParams) ?? {};
   const month = normalizeMonthParam(readSearchParam(params.month));
   const service = getPaymentRecoveryService();

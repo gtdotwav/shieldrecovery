@@ -236,7 +236,7 @@ export async function handleCallcenterWebhook(request: Request) {
 /* ── REST API — calls CRUD ── */
 
 export async function handleListCalls(request: Request) {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  await requireAuthenticatedSession(["admin", "seller", "market"]);
   const url = new URL(request.url);
   const storage = getStorageService();
 
@@ -252,7 +252,7 @@ export async function handleListCalls(request: Request) {
 }
 
 export async function handleGetCall(request: Request, callId: string) {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  await requireAuthenticatedSession(["admin", "seller", "market"]);
   const storage = getStorageService();
 
   const call = await storage.getCall(callId);
@@ -265,7 +265,7 @@ export async function handleGetCall(request: Request, callId: string) {
 }
 
 export async function handleCreateCall(request: Request) {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  await requireAuthenticatedSession(["admin", "seller", "market"]);
 
   let raw: unknown;
   try {
@@ -312,7 +312,7 @@ export async function handleCallAnalytics(_request: Request) {
 /* ── Campaigns ── */
 
 export async function handleListCampaigns(_request: Request) {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  await requireAuthenticatedSession(["admin", "seller", "market"]);
   const storage = getStorageService();
   const campaigns = await storage.listCallCampaigns();
 

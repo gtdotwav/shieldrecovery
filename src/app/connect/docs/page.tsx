@@ -19,7 +19,7 @@ export const metadata = {
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_APP_URL || "https://pagrecovery.com";
 
 export default async function ConnectDocsPage() {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const settingsService = getConnectionSettingsService();
   const runtimeSettings = await settingsService.getRuntimeSettings();
   const sellerIdentity =

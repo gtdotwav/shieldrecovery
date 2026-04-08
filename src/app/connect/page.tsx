@@ -72,7 +72,7 @@ type IntegrationStatus = {
 };
 
 export default async function ConnectPage({ searchParams }: ConnectPageProps) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const params = await searchParams;
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();

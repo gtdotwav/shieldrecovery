@@ -48,7 +48,7 @@ type ReadinessItem = {
 };
 
 export default async function OnboardingPage() {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();
   const settingsService = getConnectionSettingsService();

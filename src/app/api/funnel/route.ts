@@ -4,7 +4,7 @@ import { getFunnelService } from "@/server/recovery/services/funnel-service";
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAuthenticatedSession(["admin", "seller"]);
+    await requireAuthenticatedSession(["admin", "seller", "market"]);
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

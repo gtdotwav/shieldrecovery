@@ -55,7 +55,7 @@ type PageProps = {
 };
 
 export default async function LeadDetailPage({ params }: PageProps) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const { leadId } = await params;
   const service = getPaymentRecoveryService();
   const messaging = new MessagingService();

@@ -46,7 +46,7 @@ async function getAccessibleConversation(input: {
 }
 
 export async function transitionLeadStage(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const service = getPaymentRecoveryService();
   const leadId = String(formData.get("leadId") ?? "");
   const status = String(formData.get("status") ?? "") as RecoveryLeadStatus;
@@ -107,7 +107,7 @@ export async function transitionLeadStage(formData: FormData) {
 }
 
 export async function registerConversationReply(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const service = getPaymentRecoveryService();
   const conversationId = String(formData.get("conversationId") ?? "");
   const content = String(formData.get("content") ?? "");
@@ -139,7 +139,7 @@ export async function registerConversationReply(formData: FormData) {
 }
 
 export async function sendAiConversationReply(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const service = getPaymentRecoveryService();
   const conversationId = String(formData.get("conversationId") ?? "");
 
@@ -170,7 +170,7 @@ export async function sendAiConversationReply(formData: FormData) {
 }
 
 export async function changeConversationStatus(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const service = getPaymentRecoveryService();
   const conversationId = String(formData.get("conversationId") ?? "");
   const status = String(formData.get("status") ?? "") as ConversationStatus;
@@ -355,7 +355,7 @@ export async function markCallConverted(formData: FormData) {
 }
 
 export async function saveCallcenterSettings(formData: FormData) {
-  const session = await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
   const storage = getStorageService();
 
   let sellerKey: string;
