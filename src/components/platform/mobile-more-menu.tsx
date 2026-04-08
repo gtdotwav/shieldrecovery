@@ -6,14 +6,11 @@ import { Inbox, LogOut } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth-actions";
 import { cn } from "@/lib/utils";
-import type { LucideIcon } from "lucide-react";
 
-type PlatformRoute = {
+type MobileRoute = {
   href: string;
   label: string;
-  description: string;
-  icon: LucideIcon;
-  kind: "marketing" | "app";
+  icon: React.ReactNode;
   external?: boolean;
 };
 
@@ -21,7 +18,7 @@ export function MobileMoreMenu({
   routes,
   currentPath,
 }: {
-  routes: PlatformRoute[];
+  routes: MobileRoute[];
   currentPath: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -76,7 +73,7 @@ export function MobileMoreMenu({
                 className={itemClass}
                 onClick={() => setOpen(false)}
               >
-                <route.icon className="w-4 h-4" />
+                {route.icon}
                 {route.label}
               </a>
             ) : (
@@ -86,7 +83,7 @@ export function MobileMoreMenu({
                 className={itemClass}
                 onClick={() => setOpen(false)}
               >
-                <route.icon className="w-4 h-4" />
+                {route.icon}
                 {route.label}
               </Link>
             );

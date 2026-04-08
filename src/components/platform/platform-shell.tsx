@@ -376,7 +376,15 @@ export async function PlatformAppPage({
             </Link>
           );
         })}
-        <MobileMoreMenu routes={appRoutes.slice(4)} currentPath={currentPath} />
+        <MobileMoreMenu
+          routes={appRoutes.slice(4).map((r) => ({
+            href: r.href,
+            label: r.label,
+            icon: <r.icon className="w-4 h-4" />,
+            external: r.external,
+          }))}
+          currentPath={currentPath}
+        />
       </nav>
 
       {/* ─── Main area ─── */}
