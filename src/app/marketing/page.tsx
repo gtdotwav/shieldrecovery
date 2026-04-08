@@ -26,8 +26,8 @@ export const metadata = {
 /* ── Showcase numbers ── */
 
 const RECOVERY_RATE = 19;
-const MONTHLY_RECOVERED = 300_000;
-const DAILY_COMMISSION = 10_000;
+const MONTHLY_RECOVERED = 304_871.42;
+const DAILY_COMMISSION = 10_162.38;
 const MONTHLY_COMMISSION = DAILY_COMMISSION * 30;
 const TOTAL_FAILED = Math.round(MONTHLY_RECOVERED / (RECOVERY_RATE / 100));
 const AVG_RECOVERY_HOURS = 4.2;
