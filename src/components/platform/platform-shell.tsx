@@ -139,8 +139,8 @@ export const platformRoutes: PlatformRoute[] = [
   },
   {
     href: "/marketing",
-    label: "Marketing",
-    description: "Painel de resultados e estratégias de captação.",
+    label: "Painel",
+    description: "Painel de resultados e operação de recuperação.",
     icon: Megaphone,
     kind: "app",
     allowedRoles: ["admin", "market"],
