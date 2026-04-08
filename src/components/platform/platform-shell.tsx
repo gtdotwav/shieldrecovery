@@ -181,8 +181,18 @@ function getInitials(email: string) {
 
 function getRoleLabel(role: UserRole) {
   if (role === "admin") return "Admin";
-  if (role === "market") return "Marketing";
+  if (role === "market") return "PagRecovery";
   return "Seller";
+}
+
+function getDisplayName(email: string, role: UserRole) {
+  if (role === "market") return "PagRecovery";
+  return email.split("@")[0];
+}
+
+function getDisplayInitials(email: string, role: UserRole) {
+  if (role === "market") return "PR";
+  return getInitials(email);
 }
 
 /* ── Shield logo mark (3x3 dot grid) ── */
@@ -284,8 +294,9 @@ export async function PlatformAppPage({
     visibleRoutes.find((route) => route.kind === "app") ??
     visibleRoutes[0];
   const appRoutes = visibleRoutes.filter((route) => route.kind === "app");
-  const initials = getInitials(session.email);
+  const initials = getDisplayInitials(session.email, session.role);
   const roleLabel = getRoleLabel(session.role);
+  const displayName = getDisplayName(session.email, session.role);
 
   return (
     <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-300">
@@ -411,7 +422,7 @@ export async function PlatformAppPage({
           <div className="flex items-center gap-2">
             {action}
             <span className="text-sm text-gray-600 dark:text-gray-300 hidden sm:inline">
-              {session.email.split("@")[0]}
+              {displayName}
             </span>
             <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-xs md:text-sm font-semibold">
               {initials}
