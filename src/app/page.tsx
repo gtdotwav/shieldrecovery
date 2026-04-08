@@ -16,7 +16,6 @@ import {
   Zap,
 } from "lucide-react";
 
-import { AdminAccessButton } from "@/components/landing/admin-access";
 import { CountUp } from "@/components/landing/count-up";
 import { HeroHeading } from "@/components/landing/hero-heading";
 import { HeroParticles } from "@/components/landing/hero-particles";
@@ -84,10 +83,9 @@ export default async function Home() {
           priority
         />
         <div className="flex items-center gap-2 sm:gap-3">
-          <AdminAccessButton />
           <MagneticButton>
             <Link
-              href="/quiz"
+              href="/login"
               className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold text-white transition-all sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm"
               style={{
                 background: b.accent,
@@ -137,7 +135,7 @@ export default async function Home() {
               <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:gap-4 lg:justify-start">
                 <MagneticButton>
                   <Link
-                    href="/quiz"
+                    href="/login"
                     className="group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[0.85rem] font-semibold text-white transition-all hover:brightness-110 sm:gap-2.5 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
                     style={{
                       background: b.accent,
@@ -505,7 +503,7 @@ export default async function Home() {
                 <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
                   <MagneticButton>
                     <Link
-                      href="/quiz"
+                      href="/login"
                       className="group inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[0.85rem] font-semibold text-white transition-all hover:brightness-110 sm:gap-2.5 sm:px-8 sm:py-3.5 sm:text-[0.92rem]"
                       style={{
                         background: b.accent,
@@ -553,7 +551,7 @@ export default async function Home() {
               <div>
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.15em] text-gray-400">Empresa</p>
                 <ul className="mt-4 space-y-2.5">
-                  <FooterLink href="/quiz">Solicitar acesso</FooterLink>
+                  <FooterLink href="/login">Solicitar acesso</FooterLink>
                   <FooterLink href={`mailto:${b.contactEmail}`}>Contato</FooterLink>
                 </ul>
               </div>

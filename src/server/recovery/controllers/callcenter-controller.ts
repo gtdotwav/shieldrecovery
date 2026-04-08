@@ -41,7 +41,7 @@ const createCampaignSchema = z.object({
 
 function verifyCallcenterAuth(request: Request): boolean {
   const secret = process.env.CALLCENTER_WEBHOOK_SECRET?.trim() || process.env.CRON_SECRET?.trim();
-  if (!secret) return true; // skip in dev when not configured
+  if (!secret) return false; // deny access when no secret is configured
 
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "").trim();

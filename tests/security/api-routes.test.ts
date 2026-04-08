@@ -148,44 +148,6 @@ describe("CORS Configuration", () => {
   });
 });
 
-describe("Quick Access Security", () => {
-  const originalEnv = process.env;
-
-  afterEach(() => {
-    process.env = originalEnv;
-    vi.resetModules();
-  });
-
-  it("should not contain hardcoded passwords in source code", async () => {
-    const { readFileSync } = await import("node:fs");
-    const { join } = await import("node:path");
-
-    const source = readFileSync(
-      join(process.cwd(), "src/app/actions/quiz-actions.ts"),
-      "utf-8",
-    );
-
-    // Must NOT contain the old hardcoded passwords
-    expect(source).not.toContain('"adminreco"');
-    expect(source).not.toContain('"sellerreco"');
-    expect(source).not.toMatch(/const\s+\w+_PASS\s*=\s*"[^"]+"/);
-  });
-
-  it("should reject when env vars are not configured", async () => {
-    process.env = { ...originalEnv };
-    delete process.env.QUICK_ACCESS_ADMIN_PASS;
-    delete process.env.QUICK_ACCESS_SELLER_PASS;
-
-    const { quickAccessAction } = await import("@/app/actions/quiz-actions");
-
-    const formData = new FormData();
-    formData.set("password", "anypassword");
-
-    const result = await quickAccessAction(null, formData);
-    expect(result.error).toBeDefined();
-    expect(result.error).toContain("não configurado");
-  });
-});
 
 describe("Security Headers", () => {
   it("should have security headers configured in next.config", async () => {
