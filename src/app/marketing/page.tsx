@@ -206,6 +206,7 @@ export default function MarketingPage() {
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState<"dashboard" | "highlights" | "audience" | "strategy">("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Load scenarios on mount
   useEffect(() => {
@@ -306,8 +307,6 @@ export default function MarketingPage() {
     (active?.channels.email || 0) +
     (active?.channels.voice || 0) +
     (active?.channels.sms || 0);
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-300">
