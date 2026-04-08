@@ -171,25 +171,13 @@ export function isAuthConfigured() {
   );
 }
 
-async function constantTimeEqual(a: string, b: string): Promise<boolean> {
+function constantTimeEqual(a: string, b: string): boolean {
   const enc = new TextEncoder();
-  const keyData = crypto.getRandomValues(new Uint8Array(32));
-  const key = await crypto.subtle.importKey(
-    "raw",
-    keyData,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const [macA, macB] = await Promise.all([
-    crypto.subtle.sign("HMAC", key, enc.encode(a)),
-    crypto.subtle.sign("HMAC", key, enc.encode(b)),
-  ]);
-  const bytesA = new Uint8Array(macA);
-  const bytesB = new Uint8Array(macB);
-  if (bytesA.length !== bytesB.length) return false;
+  const bufA = enc.encode(a);
+  const bufB = enc.encode(b);
+  if (bufA.length !== bufB.length) return false;
   let diff = 0;
-  for (let i = 0; i < bytesA.length; i++) diff |= bytesA[i] ^ bytesB[i];
+  for (let i = 0; i < bufA.length; i++) diff |= bufA[i] ^ bufB[i];
   return diff === 0;
 }
 
@@ -204,13 +192,13 @@ export async function authenticateCredentials(input: {
   const password = input.password.trim();
 
   for (const set of getAllCredentialSets()) {
-    if (set.adminEmail && set.adminPassword && email === set.adminEmail && await constantTimeEqual(password, set.adminPassword)) {
+    if (set.adminEmail && set.adminPassword && email === set.adminEmail && constantTimeEqual(password, set.adminPassword)) {
       return { email, role: "admin" as const };
     }
-    if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && await constantTimeEqual(password, set.sellerPassword)) {
+    if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && constantTimeEqual(password, set.sellerPassword)) {
       return { email, role: "seller" as const };
     }
-    if (set.marketEmail && set.marketPassword && email === set.marketEmail && await constantTimeEqual(password, set.marketPassword)) {
+    if (set.marketEmail && set.marketPassword && email === set.marketEmail && constantTimeEqual(password, set.marketPassword)) {
       return { email, role: "market" as const };
     }
   }
