@@ -93,7 +93,7 @@ export class AutonomousRecoveryAgent {
   private tickStartedAt = 0;
 
   /** Maximum wall-clock time (ms) before bailing out of the tick. */
-  private static readonly TICK_TIMEOUT_MS = 45_000;
+  private static readonly TICK_TIMEOUT_MS = 40_000;
 
   /** Returns true if we're approaching the Vercel timeout and should bail. */
   private shouldBail(): boolean {
@@ -164,8 +164,10 @@ export class AutonomousRecoveryAgent {
 
     const durationMs = Date.now() - startedAt;
 
-    // Log the run
-    await this.logAgentRun(runId, startedAt, durationMs, counters);
+    // Only log if we have time left (avoid 504 from slow DB insert)
+    if (Date.now() - startedAt < 50_000) {
+      await this.logAgentRun(runId, startedAt, durationMs, counters);
+    }
 
     return {
       ok: true,
@@ -193,7 +195,9 @@ export class AutonomousRecoveryAgent {
           c.lead_status !== "LOST",
       );
 
-      for (const contact of activeContacts.slice(0, 8)) {
+      for (const contact of activeContacts.slice(0, 3)) {
+        if (this.shouldBail()) break;
+
         try {
           const lead = await this.storage.findLeadByLeadId(contact.lead_id);
           if (!lead) continue;
@@ -230,11 +234,16 @@ export class AutonomousRecoveryAgent {
 
           const context = this.buildConversationContext(bundle, messages);
 
-          const decision = await analyzeInboundMessage({
-            context,
-            inboundContent: latestInbound.content,
-            apiKey,
-          });
+          const decision = await Promise.race([
+            analyzeInboundMessage({
+              context,
+              inboundContent: latestInbound.content,
+              apiKey,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("AI call timeout")), 12_000),
+            ),
+          ]);
 
           // Execute the decision
           if (decision.action === "reply" && decision.message) {
@@ -301,7 +310,9 @@ export class AutonomousRecoveryAgent {
     try {
       const dueSteps = await this.getDueCadenceSteps();
 
-      for (const step of dueSteps.slice(0, 8)) {
+      for (const step of dueSteps.slice(0, 3)) {
+        if (this.shouldBail()) break;
+
         try {
           const lead = await this.storage.findLeadByLeadId(step.leadId);
           if (!lead) {
@@ -359,16 +370,21 @@ export class AutonomousRecoveryAgent {
           const context = this.buildConversationContext(bundle, messages);
           const insights = await this.getLeadInsights(lead.leadId);
 
-          const decision = await generateAgentFollowUp({
-            context: {
-              ...context,
-              cadenceStep: step.stepNumber,
-              insightsFromHistory: insights.map((i) => i.content),
-            },
-            strategy: step.strategy as Parameters<typeof generateAgentFollowUp>[0]["strategy"],
-            channel: step.channel,
-            apiKey,
-          });
+          const decision = await Promise.race([
+            generateAgentFollowUp({
+              context: {
+                ...context,
+                cadenceStep: step.stepNumber,
+                insightsFromHistory: insights.map((i) => i.content),
+              },
+              strategy: step.strategy as Parameters<typeof generateAgentFollowUp>[0]["strategy"],
+              channel: step.channel,
+              apiKey,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("AI call timeout")), 12_000),
+            ),
+          ]);
 
           if (decision.action === "reply" || decision.action === "offer_alternative") {
             await this.recovery.sendAiConversationReply({
@@ -417,7 +433,9 @@ export class AutonomousRecoveryAgent {
           c.lead_status === "WAITING_CUSTOMER",
       );
 
-      for (const contact of activeLeads.slice(0, 10)) {
+      for (const contact of activeLeads.slice(0, 5)) {
+        if (this.shouldBail()) break;
+
         try {
           // Check if seller has automations enabled before scheduling cadence
           const automationPolicy =
@@ -564,7 +582,9 @@ export class AutonomousRecoveryAgent {
           c.lead_status !== "LOST",
       );
 
-      for (const contact of activeContacts.slice(0, 15)) {
+      for (const contact of activeContacts.slice(0, 10)) {
+        if (this.shouldBail()) break;
+
         try {
           const lead = await this.storage.findLeadByLeadId(contact.lead_id);
           if (!lead) continue;
@@ -635,7 +655,9 @@ export class AutonomousRecoveryAgent {
       // Use cached contacts instead of hitting the DB again
       const contacts = this.cachedContacts;
 
-      for (const contact of contacts) {
+      for (const contact of contacts.slice(0, 20)) {
+        if (this.shouldBail()) break;
+
         if (
           contact.lead_status === "RECOVERED" ||
           contact.lead_status === "LOST"
@@ -682,7 +704,9 @@ export class AutonomousRecoveryAgent {
       const contacts = this.cachedContacts;
       const runtime = await getConnectionSettingsService().getRuntimeSettings();
 
-      for (const contact of contacts) {
+      for (const contact of contacts.slice(0, 20)) {
+        if (this.shouldBail()) break;
+
         if (
           contact.lead_status === "RECOVERED" ||
           contact.lead_status === "LOST"
