@@ -21,21 +21,23 @@ export function validateRequiredEnvVars(): void {
     );
   }
 
-  if (_warned) return;
-  _warned = true;
+  // Optional vars: log at debug level only (doesn't appear in Vercel production logs).
+  // Using console.warn flooded logs because each 504 kills the process, forcing
+  // cold starts where _warned resets.
+  if (!_warned) {
+    _warned = true;
+    const recommended = [
+      "WHATSAPP_ACCESS_TOKEN",
+      "WHATSAPP_PHONE_NUMBER_ID",
+      "SENDGRID_API_KEY",
+      "WHATSAPP_APP_SECRET",
+    ] as const;
 
-  const recommended = [
-    "WHATSAPP_ACCESS_TOKEN",
-    "WHATSAPP_PHONE_NUMBER_ID",
-    "SENDGRID_API_KEY",
-    "WHATSAPP_APP_SECRET",
-  ] as const;
-
-  const missingRecommended = recommended.filter((key) => !process.env[key]?.trim());
-  if (missingRecommended.length > 0) {
-    console.warn(
-      `[env-check] Optional but recommended environment variables not set: ${missingRecommended.join(", ")}. ` +
-        "Some features (messaging, email, webhook verification) may not work.",
-    );
+    const missingRecommended = recommended.filter((key) => !process.env[key]?.trim());
+    if (missingRecommended.length > 0) {
+      console.debug(
+        `[env-check] Optional vars not set: ${missingRecommended.join(", ")}`,
+      );
+    }
   }
 }

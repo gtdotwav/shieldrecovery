@@ -92,21 +92,58 @@ export class AutonomousRecoveryAgent {
   /** Timestamp when the current tick started — used for timeout bail. */
   private tickStartedAt = 0;
 
-  /** Maximum wall-clock time (ms) before bailing out of the tick. */
-  private static readonly TICK_TIMEOUT_MS = 40_000;
+  /** Soft bail: stop starting new work after this many ms. */
+  private static readonly SOFT_BAIL_MS = 30_000;
 
-  /** Returns true if we're approaching the Vercel timeout and should bail. */
+  /** Hard bail: Promise.race forces return before Vercel kills us. */
+  private static readonly HARD_BAIL_MS = 50_000;
+
+  /** Returns true if we're approaching the timeout and should stop new work. */
   private shouldBail(): boolean {
-    return Date.now() - this.tickStartedAt > AutonomousRecoveryAgent.TICK_TIMEOUT_MS;
+    return Date.now() - this.tickStartedAt > AutonomousRecoveryAgent.SOFT_BAIL_MS;
+  }
+
+  /** Seconds remaining before hard bail. */
+  private remainingMs(): number {
+    return Math.max(0, AutonomousRecoveryAgent.HARD_BAIL_MS - (Date.now() - this.tickStartedAt));
   }
 
   async tick(): Promise<AgentRunResult> {
-    // Reset errors from previous tick to prevent stale error accumulation
     this.errors.length = 0;
+    this.tickStartedAt = Date.now();
 
+    const emptyResult: AgentRunResult = {
+      ok: true,
+      runId: "hard-bail",
+      durationMs: Date.now() - this.tickStartedAt,
+      inboundProcessed: 0,
+      cadencesExecuted: 0,
+      cadencesScheduled: 0,
+      callsScheduled: 0,
+      scoresRefreshed: 0,
+      escalations: 0,
+      leadsClosed: 0,
+      transcriptionsProcessed: 0,
+      insightsExtracted: 0,
+      errors: ["Tick force-bailed at hard timeout"],
+    };
+
+    // Hard safety net: no matter what hangs inside, we WILL return before
+    // the Vercel maxDuration (55s). This prevents 504s definitively.
+    return Promise.race([
+      this._executeTick(),
+      new Promise<AgentRunResult>((resolve) =>
+        setTimeout(() => {
+          emptyResult.durationMs = Date.now() - this.tickStartedAt;
+          resolve(emptyResult);
+        }, AutonomousRecoveryAgent.HARD_BAIL_MS),
+      ),
+    ]);
+  }
+
+  private async _executeTick(): Promise<AgentRunResult> {
     const runId = randomUUID();
-    const startedAt = Date.now();
-    this.tickStartedAt = startedAt;
+    const startedAt = this.tickStartedAt;
     const counters = {
       inboundProcessed: 0,
       cadencesExecuted: 0,
@@ -120,42 +157,61 @@ export class AutonomousRecoveryAgent {
     };
 
     try {
-      const runtime = await getConnectionSettingsService().getRuntimeSettings();
-      const apiKey = await this.getAIApiKey();
+      // Wrap initial DB queries in their own timeout — these are the most
+      // common source of hangs since they run before any bail check.
+      const setupTimeout = 10_000;
+      const [runtime, apiKey] = await Promise.race([
+        Promise.all([
+          getConnectionSettingsService().getRuntimeSettings(),
+          this.getAIApiKey(),
+        ]),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Setup queries timeout")), setupTimeout),
+        ),
+      ]);
 
-      // Cache contacts once for the entire tick to avoid 5 separate DB calls
-      this.cachedContacts = await this.recovery.getFollowUpContacts();
+      if (this.shouldBail()) throw new Error("timeout_bail");
 
-      // 1. Process inbound messages that haven't been responded to
+      // Cache contacts once for the entire tick — also with timeout
+      this.cachedContacts = await Promise.race([
+        this.recovery.getFollowUpContacts(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("getFollowUpContacts timeout")), 8_000),
+        ),
+      ]);
+
+      if (this.shouldBail()) throw new Error("timeout_bail");
+
+      // 1. Process inbound messages
       counters.inboundProcessed = await this.processInboundMessages(apiKey, runtime);
-      if (this.shouldBail()) { this.errors.push("Tick bailed early after processInboundMessages"); throw new Error("timeout_bail"); }
+      if (this.shouldBail()) throw new Error("timeout_bail");
 
       // 2. Execute due cadence steps
       counters.cadencesExecuted = await this.executeDueCadenceSteps(apiKey, runtime);
-      if (this.shouldBail()) { this.errors.push("Tick bailed early after executeDueCadenceSteps"); throw new Error("timeout_bail"); }
+      if (this.shouldBail()) throw new Error("timeout_bail");
 
       // 3. Schedule cadences for new leads without one
       counters.cadencesScheduled = await this.scheduleMissingCadences();
-      if (this.shouldBail()) { this.errors.push("Tick bailed early after scheduleMissingCadences"); throw new Error("timeout_bail"); }
+      if (this.shouldBail()) throw new Error("timeout_bail");
 
       // 4. Process call transcriptions
       const transcResult = await this.processCallTranscriptions(apiKey);
       counters.transcriptionsProcessed = transcResult.processed;
       counters.insightsExtracted = transcResult.insights;
-      if (this.shouldBail()) { this.errors.push("Tick bailed early after processCallTranscriptions"); throw new Error("timeout_bail"); }
+      if (this.shouldBail()) throw new Error("timeout_bail");
 
       // 5. Refresh recovery scores
       counters.scoresRefreshed = await this.refreshRecoveryScores();
+      if (this.shouldBail()) throw new Error("timeout_bail");
 
       // 6. Escalate leads that need human
       counters.escalations = await this.escalateToHuman();
+      if (this.shouldBail()) throw new Error("timeout_bail");
 
       // 7. Close exhausted leads
       counters.leadsClosed = await this.closeExhaustedLeads();
     } catch (error) {
-      if (error instanceof Error && error.message === "timeout_bail") {
-        // Already logged above — don't double-log
-      } else {
+      if (!(error instanceof Error && error.message === "timeout_bail")) {
         this.errors.push(
           error instanceof Error ? error.message : "Unknown agent tick error",
         );
@@ -164,8 +220,8 @@ export class AutonomousRecoveryAgent {
 
     const durationMs = Date.now() - startedAt;
 
-    // Only log if we have time left (avoid 504 from slow DB insert)
-    if (Date.now() - startedAt < 50_000) {
+    // Only log if we have at least 8s remaining (avoid 504 from slow DB write)
+    if (this.remainingMs() > 8_000) {
       await this.logAgentRun(runId, startedAt, durationMs, counters);
     }
 
