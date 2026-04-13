@@ -42,10 +42,27 @@ export function apiOk<T>(data: T, status = 200, request?: Request) {
   return NextResponse.json(data, { status, headers: corsHeaders(origin) });
 }
 
-/** JSON error response with CORS headers. */
-export function apiError(message: string, status = 400, request?: Request) {
+/** JSON error response with CORS headers and standardized format. */
+export function apiError(message: string, status = 400, request?: Request, code?: string) {
   const origin = request?.headers?.get("origin");
-  return NextResponse.json({ error: message }, { status, headers: corsHeaders(origin) });
+  const errorCode = code ?? deriveErrorCode(status, message);
+  return NextResponse.json(
+    { error: { code: errorCode, message } },
+    { status, headers: corsHeaders(origin) },
+  );
+}
+
+function deriveErrorCode(status: number, message: string): string {
+  if (status === 400) return "BAD_REQUEST";
+  if (status === 401) return "UNAUTHORIZED";
+  if (status === 403) return "FORBIDDEN";
+  if (status === 404) return "NOT_FOUND";
+  if (status === 409) return "CONFLICT";
+  if (status === 413) return "PAYLOAD_TOO_LARGE";
+  if (status === 429) return "RATE_LIMITED";
+  if (status === 503) return "SERVICE_UNAVAILABLE";
+  if (status >= 500) return "INTERNAL_ERROR";
+  return "ERROR";
 }
 
 /** Type-guard: true if the value is a NextResponse (auth failed). */

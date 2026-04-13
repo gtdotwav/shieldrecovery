@@ -75,14 +75,25 @@ export function buildRetryJobs(input: {
   payment: PaymentRecord;
   attempt: PaymentAttemptRecord;
 }): QueueJobRecord[] {
+  const delay = computeExponentialBackoff(input.attempt.attemptNumber);
   return [
-    createJob("payment-retry-jobs", "payment-link-generated", Date.now(), {
+    createJob("payment-retry-jobs", "payment-link-generated", Date.now() + delay, {
       paymentId: input.payment.id,
       gatewayPaymentId: input.payment.gatewayPaymentId,
       attemptNumber: input.attempt.attemptNumber,
       paymentLink: input.attempt.paymentLink,
     }),
   ];
+}
+
+const RETRY_BASE_DELAY_MS = 60_000; // 60 seconds
+const RETRY_MAX_DELAY_MS = 3_600_000; // 1 hour
+
+/**
+ * Exponential backoff: min(baseDelay * 2^attempt, maxDelay)
+ */
+export function computeExponentialBackoff(attempt: number): number {
+  return Math.min(RETRY_BASE_DELAY_MS * Math.pow(2, attempt), RETRY_MAX_DELAY_MS);
 }
 
 function createJob(

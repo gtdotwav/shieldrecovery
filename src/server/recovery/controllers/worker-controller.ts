@@ -2,9 +2,70 @@ import { NextResponse } from "next/server";
 
 import { appEnv } from "@/server/recovery/config";
 import { getRecoveryWorkerService } from "@/server/recovery/services/recovery-worker-service";
+import { getStorageService } from "@/server/recovery/services/storage";
+
+const STALE_JOB_THRESHOLD_MINUTES = 10;
+
+/**
+ * Reset jobs stuck in "processing" state for longer than the threshold.
+ * Increments attempts and moves them back to "pending"/"scheduled".
+ */
+async function resetStaleJobs(): Promise<number> {
+  const storage = getStorageService();
+  if (storage.mode !== "supabase") return 0;
+
+  try {
+    // Access the supabase client through the storage service
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+    );
+
+    const cutoff = new Date(
+      Date.now() - STALE_JOB_THRESHOLD_MINUTES * 60_000,
+    ).toISOString();
+
+    const { data: staleJobs, error: fetchError } = await supabase
+      .from("queue_jobs")
+      .select("id, attempts")
+      .eq("status", "processing")
+      .lt("updated_at", cutoff);
+
+    if (fetchError || !staleJobs?.length) return 0;
+
+    let resetCount = 0;
+    for (const job of staleJobs) {
+      const newAttempts = Math.max(0, (job.attempts ?? 1) - 1);
+      const { error: updateError } = await supabase
+        .from("queue_jobs")
+        .update({
+          status: newAttempts > 0 ? "scheduled" : "failed",
+          attempts: newAttempts,
+          error: "Reset: job stuck in processing state",
+        })
+        .eq("id", job.id)
+        .eq("status", "processing");
+
+      if (!updateError) resetCount++;
+    }
+
+    if (resetCount > 0) {
+      console.warn(`[handleRunWorker] Reset ${resetCount} stale jobs stuck in processing`);
+    }
+
+    return resetCount;
+  } catch (error) {
+    console.error("[handleRunWorker] Failed to reset stale jobs:", error instanceof Error ? error.message : error);
+    return 0;
+  }
+}
 
 export async function handleRunWorker(request: Request) {
   try {
+    // Reset stale jobs before processing new ones
+    await resetStaleJobs();
+
     const { searchParams } = new URL(request.url);
     const limitParam = Number(searchParams.get("limit") ?? String(appEnv.workerBatchSize));
     const concurrencyParam = Number(
@@ -26,6 +87,9 @@ export async function handleRunWorker(request: Request) {
     return NextResponse.json(summary, { status: 200 });
   } catch (error) {
     console.error("[handleRunWorker]", error instanceof Error ? error.message : error);
-    return NextResponse.json({ ok: false, error: "Worker run failed." }, { status: 500 });
+    return NextResponse.json(
+      { error: { code: "WORKER_RUN_FAILED", message: "Worker run failed." } },
+      { status: 500 },
+    );
   }
 }

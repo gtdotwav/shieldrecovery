@@ -133,6 +133,8 @@ export type MessageMetadata = {
     | "human_handoff"
     | "friction"
     | "irrelevant";
+  customerName?: string;
+  productName?: string;
   product?: string;
   paymentMethod?: string;
   paymentStatus?: string;

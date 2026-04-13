@@ -16,6 +16,7 @@ const publicRoutePrefixes = [
   "/api/cron/",
   "/api/auth/token",
   "/api/calls/demo",
+  "/api/health",
   "/webhooks/",
 ];
 
@@ -95,7 +96,7 @@ const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/ai", roles: ["admin", "seller", "market"] },
   { prefix: "/leads", roles: ["admin", "seller", "market"] },
   { prefix: "/api/settings/connections", roles: ["admin"] },
-  { prefix: "/api/health", roles: ["admin"] },
+  // /api/health is now a public route (no auth required)
   { prefix: "/api/import", roles: ["admin"] },
   { prefix: "/api/payments/retry", roles: ["admin"] },
   { prefix: "/api/analytics/recovery", roles: ["admin"] },
@@ -300,7 +301,12 @@ export async function verifySessionToken(token?: string | null) {
       return null;
     }
 
-    return { email: payload.sub, role: payload.role, expiresAt: payload.exp };
+    // Sliding session: flag refresh when past 50% of the 7-day TTL (> 3.5 days old)
+    const sessionCreatedAt = payload.exp - SESSION_TTL_SECONDS * 1000;
+    const halfTtlMs = (SESSION_TTL_SECONDS * 1000) / 2;
+    const needsRefresh = Date.now() > sessionCreatedAt + halfTtlMs;
+
+    return { email: payload.sub, role: payload.role, expiresAt: payload.exp, needsRefresh };
   } catch {
     return null;
   }

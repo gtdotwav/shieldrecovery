@@ -25,6 +25,14 @@ import type {
   StrategyPerformance,
 } from "./types";
 
+const TOKEN_BUDGET_LIMIT = 8000;
+const TOKEN_BUDGET_KEEP_MESSAGES = 3;
+
+type ConversationMessage = {
+  role: string;
+  content: string;
+};
+
 /**
  * AI Recovery Orchestrator
  *
@@ -38,6 +46,43 @@ import type {
  * the service layer.
  */
 export class AIRecoveryOrchestrator {
+  /**
+   * Estimate token count from text (rough heuristic: chars / 4).
+   */
+  static estimateTokenCount(text: string): number {
+    return Math.ceil(text.length / 4);
+  }
+
+  /**
+   * Guard against oversized AI prompts by truncating conversation history.
+   * Keeps the system prompt + last N messages when estimated tokens exceed the budget.
+   * Returns the (possibly truncated) messages and whether truncation occurred.
+   */
+  static applyTokenBudgetGuard(input: {
+    systemPrompt: string;
+    messages: ConversationMessage[];
+  }): { systemPrompt: string; messages: ConversationMessage[]; truncated: boolean } {
+    const totalText = input.systemPrompt + input.messages.map((m) => m.content).join("");
+    const estimatedTokens = AIRecoveryOrchestrator.estimateTokenCount(totalText);
+
+    if (estimatedTokens <= TOKEN_BUDGET_LIMIT) {
+      return { systemPrompt: input.systemPrompt, messages: input.messages, truncated: false };
+    }
+
+    console.warn(
+      `[AIOrchestrator] Token budget exceeded: ~${estimatedTokens} estimated tokens (limit: ${TOKEN_BUDGET_LIMIT}). ` +
+      `Truncating conversation from ${input.messages.length} to last ${TOKEN_BUDGET_KEEP_MESSAGES} messages.`,
+    );
+
+    const truncatedMessages = input.messages.slice(-TOKEN_BUDGET_KEEP_MESSAGES);
+
+    return {
+      systemPrompt: input.systemPrompt,
+      messages: truncatedMessages,
+      truncated: true,
+    };
+  }
+
   decideRecoveryPlan(context: RecoveryDecisionContext): RecoveryDecision {
     const classification = classifyRecovery(context.contact);
     const strategy = matchStrategy(context.contact.payment_status);

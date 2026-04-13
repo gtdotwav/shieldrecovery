@@ -367,6 +367,31 @@ export class MessagingService {
       };
     }
 
+    // Validate template parameters when metadata contains recovery/ai template fields
+    if (input.metadata) {
+      const templateParams: Array<{ key: string; value: unknown }> = [
+        { key: "customerName", value: input.metadata.customerName },
+        { key: "productName", value: input.metadata.productName },
+        { key: "paymentUrl", value: input.metadata.paymentUrl },
+        { key: "retryLink", value: input.metadata.retryLink },
+        { key: "pixCode", value: input.metadata.pixCode },
+      ];
+
+      for (let i = 0; i < templateParams.length; i++) {
+        const param = templateParams[i];
+        if (param.value !== undefined && param.value !== null) {
+          const strValue = String(param.value).trim();
+          if (!strValue) {
+            console.warn(
+              `[messaging] Template parameter "${param.key}" (index ${i}) is empty for conversation ${input.conversation.id}. Using "N/A" fallback.`,
+            );
+            // Patch the metadata value with fallback
+            (input.metadata as Record<string, unknown>)[param.key] = "N/A";
+          }
+        }
+      }
+    }
+
     // Opt-out & frequency guard
     let complianceCheckFailed = false;
     try {

@@ -99,6 +99,40 @@ interface PaymentAnalyticsData {
   recovered_at: string | null;
 }
 
+/**
+ * Retry wrapper for Supabase operations that may fail transiently.
+ * Retries once with 1s delay on network/timeout errors.
+ * Does NOT retry on 4xx status codes (client errors).
+ */
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  label = "supabase_operation",
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    const isTransient =
+      error instanceof TypeError || // network error (fetch)
+      (error instanceof Error &&
+        (error.message.includes("timeout") ||
+          error.message.includes("ECONNRESET") ||
+          error.message.includes("ECONNREFUSED") ||
+          error.message.includes("fetch failed") ||
+          error.message.includes("network")));
+
+    // Don't retry on 4xx / non-transient errors
+    if (!isTransient) throw error;
+
+    console.warn(
+      `[withRetry] Transient error in ${label}, retrying in 1s:`,
+      error instanceof Error ? error.message : error,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return operation();
+  }
+}
+
 type DatabaseAgentRow = {
   id: string;
   name: string;
@@ -1051,13 +1085,17 @@ export class SupabaseStorageService implements RecoveryStorage {
     const runUntil = input?.runUntil ?? new Date().toISOString();
     const selectionWindow = Math.min(Math.max(limit * 4, limit), 500);
 
-    const { data, error } = await this.supabase
-      .from("queue_jobs")
-      .select("*")
-      .eq("status", "scheduled")
-      .lte("run_at", runUntil)
-      .order("run_at", { ascending: true })
-      .limit(selectionWindow);
+    const { data, error } = await withRetry(
+      async () =>
+        this.supabase
+          .from("queue_jobs")
+          .select("*")
+          .eq("status", "scheduled")
+          .lte("run_at", runUntil)
+          .order("run_at", { ascending: true })
+          .limit(selectionWindow),
+      "claimDueQueueJobs",
+    );
 
     if (error || !data?.length) {
       return [];
@@ -1096,13 +1134,17 @@ export class SupabaseStorageService implements RecoveryStorage {
   }
 
   async completeQueueJob(jobId: string): Promise<void> {
-    await this.supabase
-      .from("queue_jobs")
-      .update({
-        status: "processed",
-        error: null,
-      })
-      .eq("id", jobId);
+    await withRetry(
+      async () =>
+        this.supabase
+          .from("queue_jobs")
+          .update({
+            status: "processed",
+            error: null,
+          })
+          .eq("id", jobId),
+      "completeQueueJob",
+    );
   }
 
   async rescheduleQueueJobFailure(input: {
@@ -1125,12 +1167,16 @@ export class SupabaseStorageService implements RecoveryStorage {
             error: input.error,
           };
 
-    const { data, error } = await this.supabase
-      .from("queue_jobs")
-      .update(update)
-      .eq("id", input.jobId)
-      .select("*")
-      .maybeSingle();
+    const { data, error } = await withRetry(
+      async () =>
+        this.supabase
+          .from("queue_jobs")
+          .update(update)
+          .eq("id", input.jobId)
+          .select("*")
+          .maybeSingle(),
+      "rescheduleQueueJobFailure",
+    );
 
     if (error || !data) return undefined;
     return mapQueueJob(data);

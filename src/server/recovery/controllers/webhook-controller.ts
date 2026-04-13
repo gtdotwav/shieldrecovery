@@ -5,19 +5,48 @@ import { HttpError } from "@/server/recovery/utils/http-error";
 import { createStructuredLog } from "@/server/recovery/utils/structured-logger";
 import { getStorageService } from "@/server/recovery/services/storage";
 
+const MAX_PAYLOAD_BYTES = 1_048_576; // 1 MB
+
+function checkPayloadSize(request: Request): NextResponse | null {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_PAYLOAD_BYTES) {
+    return NextResponse.json(
+      { error: { code: "PAYLOAD_TOO_LARGE", message: "Payload too large" } },
+      { status: 413 },
+    );
+  }
+  return null;
+}
+
+function checkRawBodySize(rawBody: string): NextResponse | null {
+  if (new TextEncoder().encode(rawBody).byteLength > MAX_PAYLOAD_BYTES) {
+    return NextResponse.json(
+      { error: { code: "PAYLOAD_TOO_LARGE", message: "Payload too large" } },
+      { status: 413 },
+    );
+  }
+  return null;
+}
+
 export async function handleShieldGatewayWebhook(
   request: Request,
   options?: { sellerKey?: string | null },
 ) {
+  const sizeCheck = checkPayloadSize(request);
+  if (sizeCheck) return sizeCheck;
+
   let rawBody: string;
   try {
     rawBody = await request.text();
   } catch {
     return NextResponse.json(
-      { ok: false, error: "Failed to read request body." },
+      { error: { code: "BAD_REQUEST", message: "Failed to read request body." } },
       { status: 400 },
     );
   }
+
+  const bodySizeCheck = checkRawBodySize(rawBody);
+  if (bodySizeCheck) return bodySizeCheck;
   const service = getPaymentRecoveryService();
 
   try {
@@ -52,8 +81,10 @@ export async function handleShieldGatewayWebhook(
 
     return NextResponse.json(
       {
-        ok: false,
-        error: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
+        error: {
+          code: statusCode >= 500 ? "WEBHOOK_PROCESSING_ERROR" : "WEBHOOK_REJECTED",
+          message: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
+        },
       },
       { status: statusCode },
     );
@@ -79,7 +110,10 @@ export async function handleShieldGatewayHealth(
     );
   } catch (error) {
     console.error("[handleHealthCheck]", error instanceof Error ? error.message : error);
-    return NextResponse.json({ ok: false, error: "Health check failed." }, { status: 500 });
+    return NextResponse.json(
+      { error: { code: "HEALTH_CHECK_FAILED", message: "Health check failed." } },
+      { status: 500 },
+    );
   }
 }
 
@@ -87,16 +121,22 @@ export async function handlePagouAiWebhook(
   request: Request,
   options?: { sellerKey?: string | null },
 ) {
+  const sizeCheck = checkPayloadSize(request);
+  if (sizeCheck) return sizeCheck;
+
   let rawBody: string;
 
   try {
     rawBody = await request.text();
   } catch {
     return NextResponse.json(
-      { ok: false, error: "Failed to read request body." },
+      { error: { code: "BAD_REQUEST", message: "Failed to read request body." } },
       { status: 400 },
     );
   }
+
+  const bodySizeCheck = checkRawBodySize(rawBody);
+  if (bodySizeCheck) return bodySizeCheck;
 
   const service = getPaymentRecoveryService();
 
@@ -132,8 +172,10 @@ export async function handlePagouAiWebhook(
 
     return NextResponse.json(
       {
-        ok: false,
-        error: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
+        error: {
+          code: statusCode >= 500 ? "WEBHOOK_PROCESSING_ERROR" : "WEBHOOK_REJECTED",
+          message: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
+        },
       },
       { status: statusCode },
     );
@@ -165,16 +207,22 @@ export async function handleBuckPayWebhook(
   request: Request,
   options?: { sellerKey?: string | null },
 ) {
+  const sizeCheck = checkPayloadSize(request);
+  if (sizeCheck) return sizeCheck;
+
   let rawBody: string;
 
   try {
     rawBody = await request.text();
   } catch {
     return NextResponse.json(
-      { ok: false, error: "Failed to read request body." },
+      { error: { code: "BAD_REQUEST", message: "Failed to read request body." } },
       { status: 400 },
     );
   }
+
+  const bodySizeCheck = checkRawBodySize(rawBody);
+  if (bodySizeCheck) return bodySizeCheck;
 
   const service = getPaymentRecoveryService();
 
@@ -210,8 +258,10 @@ export async function handleBuckPayWebhook(
 
     return NextResponse.json(
       {
-        ok: false,
-        error: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
+        error: {
+          code: statusCode >= 500 ? "WEBHOOK_PROCESSING_ERROR" : "WEBHOOK_REJECTED",
+          message: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
+        },
       },
       { status: statusCode },
     );

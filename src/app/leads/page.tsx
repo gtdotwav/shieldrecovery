@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ArrowRight, CircleAlert, Phone, Search, UsersRound } from "lucide-react";
 
 import { transitionLeadStage } from "@/app/actions/recovery-actions";
@@ -24,6 +25,7 @@ import {
 } from "@/lib/stage";
 import { platformBrand } from "@/lib/platform";
 import { cn } from "@/lib/utils";
+import { DebouncedSearch } from "@/components/ui/debounced-search";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -157,20 +159,26 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
 
             <div className="flex flex-col items-start gap-2 lg:items-end">
               <ScopeSwitcher currentView={currentView} currentScope={currentScope} />
-              <form className="w-full lg:max-w-xs">
-                <input type="hidden" name="view" value={currentView} />
-                <input type="hidden" name="scope" value={currentScope} />
-                <label className="relative block">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
-                  <input
-                    type="search"
-                    name="q"
+              <div className="w-full lg:max-w-xs">
+                <Suspense fallback={
+                  <label className="relative block">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                    <input
+                      type="search"
+                      defaultValue={searchQuery}
+                      placeholder="Buscar por nome, email ou telefone"
+                      className="w-full rounded-lg border border-black/[0.08] bg-white px-10 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[var(--accent)] dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white"
+                      readOnly
+                    />
+                  </label>
+                }>
+                  <DebouncedSearch
                     defaultValue={searchQuery}
-                    placeholder="Buscar por nome, email ou telefone"
-                    className="w-full rounded-lg border border-black/[0.08] bg-white px-10 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[var(--accent)] dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white"
+                    debounceMs={300}
+                    preserveParams={["view", "scope"]}
                   />
-                </label>
-              </form>
+                </Suspense>
+              </div>
             </div>
           </div>
 

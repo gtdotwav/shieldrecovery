@@ -13,8 +13,43 @@ const sellerSchema = z.object({
   active: z.boolean().optional(),
 });
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 100;
+
 export function OPTIONS() {
   return corsOptions();
+}
+
+/**
+ * GET /api/admin/sellers
+ * Query params: page (default 1), limit (default 50, max 100)
+ * Returns: { sellers: SellerUserRecord[], page, limit, total }
+ */
+export async function GET(request: Request) {
+  const auth = await requireApiAuth(request, ["admin"]);
+  if (isErrorResponse(auth)) return auth;
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const pageParam = Number(searchParams.get("page") ?? DEFAULT_PAGE);
+    const limitParam = Number(searchParams.get("limit") ?? DEFAULT_LIMIT);
+
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : DEFAULT_PAGE;
+    const limit = Number.isFinite(limitParam) && limitParam > 0
+      ? Math.min(Math.floor(limitParam), MAX_LIMIT)
+      : DEFAULT_LIMIT;
+
+    const allSellers = await getStorageService().listSellerUsers();
+    const total = allSellers.length;
+    const offset = (page - 1) * limit;
+    const sellers = allSellers.slice(offset, offset + limit);
+
+    return apiOk({ sellers, page, limit, total });
+  } catch (error) {
+    console.error("[GET /api/admin/sellers]", error instanceof Error ? error.message : error);
+    return apiError("Failed to list sellers.", 500);
+  }
 }
 
 /**
