@@ -119,6 +119,10 @@ const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/health", roles: ["admin"] },
 ];
 
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 function encoder() {
   return new TextEncoder();
 }
@@ -129,11 +133,17 @@ function toBase64Url(bytes: Uint8Array) {
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function fromBase64Url(value: string) {
-  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
-  const binary = atob(`${normalized}${padding}`);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+function fromBase64Url(value: string): Uint8Array<ArrayBuffer> | null {
+  try {
+    const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
+    const binary = atob(`${normalized}${padding}`);
+    const arr = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+    return arr;
+  } catch {
+    return null;
+  }
 }
 
 async function importSigningKey(secret: string) {
@@ -188,22 +198,43 @@ export async function authenticateCredentials(input: {
   const { secret } = getAuthConfig();
   if (!secret) return null;
 
-  const email = input.email.trim().toLowerCase();
+  const email = normalizeEmail(input.email);
   const password = input.password.trim();
 
+  // Always evaluate ALL credential sets with constant-time comparisons
+  // for both email and password to prevent timing-based enumeration.
+  let matched: { email: string; role: "admin" | "seller" | "market" } | null = null;
+
   for (const set of getAllCredentialSets()) {
-    if (set.adminEmail && set.adminPassword && email === set.adminEmail && constantTimeEqual(password, set.adminPassword)) {
-      return { email, role: "admin" as const };
+    // Admin check — always run both comparisons
+    if (set.adminEmail && set.adminPassword) {
+      const emailMatch = constantTimeEqual(email, set.adminEmail);
+      const passMatch = constantTimeEqual(password, set.adminPassword);
+      if (emailMatch && passMatch) {
+        matched = { email, role: "admin" as const };
+      }
     }
-    if (set.sellerEmail && set.sellerPassword && email === set.sellerEmail && constantTimeEqual(password, set.sellerPassword)) {
-      return { email, role: "seller" as const };
+
+    // Seller check
+    if (set.sellerEmail && set.sellerPassword) {
+      const emailMatch = constantTimeEqual(email, set.sellerEmail);
+      const passMatch = constantTimeEqual(password, set.sellerPassword);
+      if (emailMatch && passMatch) {
+        matched = { email, role: "seller" as const };
+      }
     }
-    if (set.marketEmail && set.marketPassword && email === set.marketEmail && constantTimeEqual(password, set.marketPassword)) {
-      return { email, role: "market" as const };
+
+    // Market check
+    if (set.marketEmail && set.marketPassword) {
+      const emailMatch = constantTimeEqual(email, set.marketEmail);
+      const passMatch = constantTimeEqual(password, set.marketPassword);
+      if (emailMatch && passMatch) {
+        matched = { email, role: "market" as const };
+      }
     }
   }
 
-  return null;
+  return matched;
 }
 
 export async function createSessionToken(email: string, role: UserRole) {
@@ -213,7 +244,7 @@ export async function createSessionToken(email: string, role: UserRole) {
   }
 
   const payload: SessionPayload = {
-    sub: email.trim().toLowerCase(),
+    sub: normalizeEmail(email),
     role,
     exp: Date.now() + SESSION_TTL_SECONDS * 1000,
   };
@@ -240,11 +271,15 @@ export async function verifySessionToken(token?: string | null) {
   }
 
   try {
+    const sigBytes = fromBase64Url(signature);
+    const payloadBytes = fromBase64Url(payloadBase64);
+    if (!sigBytes || !payloadBytes) return null;
+
     const key = await importSigningKey(secret);
     const isValid = await crypto.subtle.verify(
       "HMAC",
       key,
-      fromBase64Url(signature),
+      sigBytes,
       encoder().encode(payloadBase64),
     );
 
@@ -253,7 +288,7 @@ export async function verifySessionToken(token?: string | null) {
     }
 
     const payload = JSON.parse(
-      new TextDecoder().decode(fromBase64Url(payloadBase64)),
+      new TextDecoder().decode(payloadBytes),
     ) as SessionPayload;
 
     if (

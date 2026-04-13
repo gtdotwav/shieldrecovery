@@ -525,7 +525,8 @@ export class AIRecoveryOrchestrator {
     ]);
 
     const classifications = classifyAll(contacts);
-    const activity = await this.buildActivityFeed();
+    // Reuse cached contacts instead of fetching again inside buildActivityFeed
+    const activity = this.buildActivityFeedFromContacts(contacts);
 
     const metrics: AIOverviewMetrics = {
       recoveryRate: analytics.recovery_rate,
@@ -636,9 +637,7 @@ export class AIRecoveryOrchestrator {
     return matchStrategy(contact.payment_status);
   }
 
-  private async buildActivityFeed(): Promise<AIActivityEntry[]> {
-    const service = getPaymentRecoveryService();
-    const contacts = await service.getFollowUpContacts();
+  private buildActivityFeedFromContacts(contacts: FollowUpContact[]): AIActivityEntry[] {
     const entries: AIActivityEntry[] = [];
 
     for (const contact of contacts.slice(0, 20)) {

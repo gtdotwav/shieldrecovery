@@ -26,13 +26,15 @@ export async function handleWhatsAppWebhookVerification(request: Request) {
 }
 
 function verifyWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
-  const appSecret = process.env.WHATSAPP_APP_SECRET?.trim();
+  const appSecret = (
+    process.env.WHATSAPP_APP_SECRET ??
+    process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ??
+    ""
+  ).trim();
+
   if (!appSecret) {
-    if (process.env.NODE_ENV === "production") {
-      return false;
-    }
-    console.warn("[WhatsApp] Skipping webhook signature verification — WHATSAPP_APP_SECRET not configured (dev mode)");
-    return true;
+    console.error("[WhatsApp] Webhook signature verification failed — no secret configured (WHATSAPP_APP_SECRET or WHATSAPP_WEBHOOK_VERIFY_TOKEN)");
+    return false;
   }
 
   if (!signatureHeader) {

@@ -75,8 +75,9 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
     session.role === "seller" ? sellerIdentity?.agentName : undefined;
   const contacts = await service.getFollowUpContacts(sellerAgentName);
 
-  const searchedContacts = searchQuery
-    ? contacts.filter((c) => matchesContactQuery(c, searchQuery))
+  const normalizedQuery = searchQuery ? searchQuery.toLowerCase() : "";
+  const searchedContacts = normalizedQuery
+    ? contacts.filter((c) => matchesContactQuery(c, normalizedQuery))
     : contacts;
 
   const sortedContacts = [...searchedContacts].sort(compareLeads);
@@ -606,7 +607,7 @@ function LeadAction({
       <ActionButton
         className={cn(
           "rounded-lg text-xs font-medium transition-colors",
-          compact ? "px-2.75 py-1.5" : "px-3.25 py-1.5",
+          compact ? "px-3 py-1.5" : "px-3.5 py-1.5",
           isPrimary
             ? "glass-button-primary text-[0.72rem] uppercase tracking-[0.14em]"
             : "border border-[var(--accent)]/18 bg-gray-50 dark:bg-white/[0.02] text-[var(--accent)] hover:bg-[var(--accent)]/8 text-[0.72rem] uppercase tracking-[0.14em]",
@@ -643,9 +644,8 @@ function readSearchQuery(value: SearchParamValue): string {
   return typeof selected === "string" ? selected.trim() : "";
 }
 
-function matchesContactQuery(contact: FollowUpContact, query: string): boolean {
-  if (!query) return true;
-  const needle = query.toLowerCase();
+function matchesContactQuery(contact: FollowUpContact, normalizedQuery: string): boolean {
+  if (!normalizedQuery) return true;
   const haystack = [
     contact.customer_name,
     contact.email,
@@ -654,7 +654,7 @@ function matchesContactQuery(contact: FollowUpContact, query: string): boolean {
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
-  return haystack.includes(needle);
+  return haystack.includes(normalizedQuery);
 }
 
 function readViewMode(value: SearchParamValue): ViewMode {

@@ -63,9 +63,17 @@ export function verifyShieldGatewaySignature(input: {
   const providedBuffer = Buffer.from(provided, "hex");
   const expectedBuffer = Buffer.from(expected, "hex");
 
+  // Pad shorter buffer to match the longer one so length differences
+  // are not leaked via early-exit timing.
+  const maxLen = Math.max(providedBuffer.length, expectedBuffer.length);
+  const paddedProvided = Buffer.alloc(maxLen);
+  const paddedExpected = Buffer.alloc(maxLen);
+  providedBuffer.copy(paddedProvided);
+  expectedBuffer.copy(paddedExpected);
+
   if (
     providedBuffer.length !== expectedBuffer.length ||
-    !timingSafeEqual(providedBuffer, expectedBuffer)
+    !timingSafeEqual(paddedProvided, paddedExpected)
   ) {
     throw new HttpError(401, "Invalid webhook signature.");
   }

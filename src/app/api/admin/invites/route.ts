@@ -4,10 +4,10 @@ import { apiError, apiOk, corsOptions, isErrorResponse } from "@/server/recovery
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
 const inviteSchema = z.object({
-  email: z.string().email("email is required."),
-  suggestedDisplayName: z.string().optional(),
-  agentName: z.string().optional(),
-  note: z.string().optional(),
+  email: z.string().email("email is required.").min(1).max(255),
+  suggestedDisplayName: z.string().min(1).max(255).optional(),
+  agentName: z.string().min(1).max(255).optional(),
+  note: z.string().min(1).max(255).optional(),
   expiresInDays: z.number().int().min(1).optional(),
 });
 

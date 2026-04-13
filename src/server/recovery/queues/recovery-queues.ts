@@ -47,6 +47,13 @@ export function buildRecoveryWorkflowJobs(input: {
       taskType: "ai_follow_up",
       assignedAgent: input.lead.assignedAgentName,
     }),
+    // After max agent-task attempts, escalate for manual review
+    createJob("recovery-jobs", "escalation-review", now + 72 * 60 * 60_000, {
+      leadId: input.lead.leadId,
+      taskType: "manual_review_escalation",
+      reason: "Agent follow-up attempts exhausted — requires manual review.",
+      assignedAgent: input.lead.assignedAgentName,
+    }),
   ];
 }
 

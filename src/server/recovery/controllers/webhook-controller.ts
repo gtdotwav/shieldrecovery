@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { buildGatewayWebhookPath } from "@/lib/platform";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import { HttpError } from "@/server/recovery/utils/http-error";
 import { createStructuredLog } from "@/server/recovery/utils/structured-logger";
@@ -33,15 +32,17 @@ export async function handleShieldGatewayWebhook(
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
-    const message =
+    const internalMessage =
       error instanceof Error ? error.message : "Unexpected webhook failure.";
+
+    console.error("[handleShieldGatewayWebhook]", internalMessage, error instanceof HttpError ? error.details : undefined);
 
     await getStorageService().addLog(
       createStructuredLog({
         eventType:
           error instanceof HttpError ? "webhook_rejected" : "processing_error",
         level: statusCode >= 500 ? "error" : "warn",
-        message,
+        message: internalMessage,
         context: {
           statusCode,
           sellerKey: options?.sellerKey ?? null,
@@ -52,8 +53,7 @@ export async function handleShieldGatewayWebhook(
     return NextResponse.json(
       {
         ok: false,
-        error: message,
-        details: error instanceof HttpError ? error.details ?? null : null,
+        error: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
       },
       { status: statusCode },
     );
@@ -68,14 +68,12 @@ export async function handleShieldGatewayHealth(
     const service = getPaymentRecoveryService();
     const sellerKey = options?.sellerKey ?? null;
     const origin = new URL(request.url).origin;
+    const gateway = (await service.getHealthSummary(origin)).service;
 
     return NextResponse.json(
       {
-        ...(await service.getHealthSummary(origin)),
-        webhook_url: sellerKey
-          ? await service.getGatewayWebhookUrlForSeller(sellerKey)
-          : `${origin}${buildGatewayWebhookPath()}`,
-        seller_key: sellerKey,
+        ok: true,
+        gateway,
       },
       { status: 200 },
     );
@@ -111,8 +109,10 @@ export async function handlePagouAiWebhook(
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
-    const message =
+    const internalMessage =
       error instanceof Error ? error.message : "Unexpected Pagou.ai webhook failure.";
+
+    console.error("[handlePagouAiWebhook]", internalMessage);
 
     await getStorageService()
       .addLog(
@@ -120,7 +120,7 @@ export async function handlePagouAiWebhook(
           eventType:
             error instanceof HttpError ? "webhook_rejected" : "processing_error",
           level: statusCode >= 500 ? "error" : "warn",
-          message,
+          message: internalMessage,
           context: {
             statusCode,
             sellerKey: options?.sellerKey ?? null,
@@ -133,8 +133,7 @@ export async function handlePagouAiWebhook(
     return NextResponse.json(
       {
         ok: false,
-        error: message,
-        details: error instanceof HttpError ? error.details ?? null : null,
+        error: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
       },
       { status: statusCode },
     );
@@ -188,8 +187,10 @@ export async function handleBuckPayWebhook(
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
-    const message =
+    const internalMessage =
       error instanceof Error ? error.message : "Unexpected BuckPay webhook failure.";
+
+    console.error("[handleBuckPayWebhook]", internalMessage);
 
     await getStorageService()
       .addLog(
@@ -197,7 +198,7 @@ export async function handleBuckPayWebhook(
           eventType:
             error instanceof HttpError ? "webhook_rejected" : "processing_error",
           level: statusCode >= 500 ? "error" : "warn",
-          message,
+          message: internalMessage,
           context: {
             statusCode,
             sellerKey: options?.sellerKey ?? null,
@@ -210,8 +211,7 @@ export async function handleBuckPayWebhook(
     return NextResponse.json(
       {
         ok: false,
-        error: message,
-        details: error instanceof HttpError ? error.details ?? null : null,
+        error: statusCode >= 500 ? "Internal webhook processing error." : internalMessage,
       },
       { status: statusCode },
     );

@@ -5,6 +5,17 @@ import { appEnv } from "@/server/recovery/config";
 
 export const dynamic = "force-dynamic";
 
+export function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
+}
+
 function normalizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   // Already has country code 55
@@ -55,7 +66,7 @@ export async function POST(request: NextRequest) {
     const unlimitedPhones = new Set(
       unlimitedRaw.split(",").map((p) => p.trim()).filter(Boolean),
     );
-    unlimitedPhones.add("+5521999036887");
+    unlimitedPhones.add(process.env.DEMO_CALL_OWNER_PHONE || "+5521999036887");
 
     const isUnlimited = unlimitedPhones.has(phone);
 
@@ -91,7 +102,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Build a short demo call via VAPI directly (max 120 seconds)
-    const firstName = name.split(/\s+/)[0] || "visitante";
+    const firstName = (name.split(/\s+/)[0] || "visitante")
+      .replace(/[^a-zA-Z\u00C0-\u017F\s]/g, "")
+      .slice(0, 50);
     const brandName = platformBrand.name;
 
     const systemPrompt = [

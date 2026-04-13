@@ -1,29 +1,42 @@
 import { authenticatePlatformUser, registerSellerLogin } from "@/server/auth/identities";
-import { createSessionToken, isAuthConfigured } from "@/server/auth/core";
+import { createSessionToken, isAuthConfigured, normalizeEmail } from "@/server/auth/core";
 import { apiError, apiOk, corsOptions } from "@/server/recovery/utils/api-response";
 
 export function OPTIONS(request: Request) {
   return corsOptions(request);
 }
 
-/* ── Simple in-memory rate limiter ── */
+/* ── Simple in-memory rate limiter ──
+ * NOTE: This Map resets on Vercel cold starts, so it only provides
+ * per-isolate protection. A persistent store (Redis / KV) would be
+ * needed for cross-isolate rate limiting. The shorter window (30s)
+ * makes the per-isolate limiter more effective against burst attacks.
+ */
 
-const RATE_WINDOW_MS = 60_000; // 1 minute
+const RATE_WINDOW_MS = 30_000; // 30 seconds — shorter window is more effective per-isolate
 const MAX_ATTEMPTS = 5;
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
+
+function recordAttempt(ip: string): void {
+  const now = Date.now();
+  const entry = attempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    attempts.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+  } else {
+    entry.count++;
+  }
+}
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const entry = attempts.get(ip);
 
   if (!entry || now > entry.resetAt) {
-    attempts.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
     return false;
   }
 
-  entry.count++;
-  return entry.count > MAX_ATTEMPTS;
+  return entry.count >= MAX_ATTEMPTS;
 }
 
 // Periodically clean up stale entries (every 5 min)
@@ -57,7 +70,7 @@ export async function POST(request: Request) {
   const ip = getClientIp(request);
 
   if (isRateLimited(ip)) {
-    return apiError("Muitas tentativas. Tente novamente em 1 minuto.", 429, request);
+    return apiError("Muitas tentativas. Tente novamente em alguns segundos.", 429, request);
   }
 
   if (!isAuthConfigured()) {
@@ -71,16 +84,18 @@ export async function POST(request: Request) {
     return apiError("Invalid JSON body.", 400, request);
   }
 
-  const email = body.email?.trim().toLowerCase() ?? "";
+  const email = normalizeEmail(body.email ?? "");
   const password = body.password?.trim() ?? "";
 
   if (!email || !password) {
+    recordAttempt(ip);
     return apiError("Email and password are required.", 400, request);
   }
 
   const identity = await authenticatePlatformUser({ email, password });
 
   if (!identity) {
+    recordAttempt(ip);
     return apiError("Invalid credentials.", 401, request);
   }
 

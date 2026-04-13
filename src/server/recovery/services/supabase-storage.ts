@@ -13,6 +13,19 @@ function sanitizeFilterValue(value: string | null | undefined): string {
   return value.replace(/[^a-zA-Z0-9\-_\.@]/g, "");
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validate and sanitize a value expected to be a UUID.
+ * Returns the sanitized value if it matches UUID format, empty string otherwise.
+ */
+function sanitizeUuidFilterValue(value: string | null | undefined): string {
+  const sanitized = sanitizeFilterValue(value);
+  if (!sanitized) return "";
+  if (!UUID_REGEX.test(sanitized)) return "";
+  return sanitized;
+}
+
 import { buildGatewayWebhookPath, platformBrand } from "@/lib/platform";
 import { appEnv, createDefaultConnectionSettings } from "@/server/recovery/config";
 import type {
@@ -382,21 +395,30 @@ export class SupabaseStorageService implements RecoveryStorage {
     eventType: string;
     source?: string;
     payload: unknown;
-  }): Promise<WebhookEventRecord> {
+  }): Promise<WebhookEventRecord & { alreadyExisted?: boolean }> {
+    // Atomic upsert on webhook_id to prevent race-condition duplicates.
+    // If a row with the same webhook_id already exists the insert is
+    // skipped (ignoreDuplicates) and we return the existing row.
     const { data, error } = await this.supabase
       .from("webhook_events")
-      .insert({
-        webhook_id: input.webhookId,
-        event_id: input.eventId,
-        event_type: input.eventType,
-        source: input.source ?? platformBrand.gateway.slug,
-        payload: input.payload,
-      })
+      .upsert(
+        {
+          webhook_id: input.webhookId,
+          event_id: input.eventId,
+          event_type: input.eventType,
+          source: input.source ?? platformBrand.gateway.slug,
+          payload: input.payload,
+        },
+        { onConflict: "webhook_id", ignoreDuplicates: true },
+      )
       .select()
       .single();
 
     if (error) throw new Error(`Failed to create webhook event: ${error.message}`);
-    return mapWebhookEvent(data);
+
+    const record = mapWebhookEvent(data);
+    const ageMs = Date.now() - new Date(record.createdAt).getTime();
+    return { ...record, alreadyExisted: ageMs > 5_000 };
   }
 
   async listWebhookEvents(limit = 100): Promise<WebhookEventRecord[]> {
@@ -616,7 +638,7 @@ export class SupabaseStorageService implements RecoveryStorage {
     orderId?: string;
   }): Promise<PaymentRecord | undefined> {
     const conditions = [];
-    if (input.paymentId) conditions.push(`id.eq.${sanitizeFilterValue(input.paymentId)}`);
+    if (input.paymentId) conditions.push(`id.eq.${sanitizeUuidFilterValue(input.paymentId)}`);
     if (input.gatewayPaymentId) conditions.push(`gateway_payment_id.eq.${sanitizeFilterValue(input.gatewayPaymentId)}`);
     if (input.orderId) conditions.push(`order_id.eq.${sanitizeFilterValue(input.orderId)}`);
 
@@ -1347,14 +1369,18 @@ export class SupabaseStorageService implements RecoveryStorage {
   }
 
   async addLog(log: SystemLogRecord): Promise<void> {
-    await this.supabase.from("system_logs").insert({
-      id: log.id,
-      event_type: log.eventType,
-      level: log.level,
-      message: log.message,
-      context: log.context,
-      created_at: new Date(log.createdAt).toISOString(),
-    });
+    try {
+      await this.supabase.from("system_logs").insert({
+        id: log.id,
+        event_type: log.eventType,
+        level: log.level,
+        message: log.message,
+        context: log.context,
+        created_at: new Date(log.createdAt).toISOString(),
+      });
+    } catch (e) {
+      console.error("Failed to write log:", e);
+    }
   }
 
   async getCalendarSnapshot(input: {
@@ -2735,7 +2761,7 @@ export class SupabaseStorageService implements RecoveryStorage {
     const { data, error } = await this.supabase
       .from("message_templates")
       .select("*")
-      .or(`id.eq.${sanitizeFilterValue(idOrSlug)},slug.eq.${sanitizeFilterValue(idOrSlug)}`)
+      .or(`id.eq.${UUID_REGEX.test(idOrSlug) ? sanitizeUuidFilterValue(idOrSlug) : "00000000-0000-0000-0000-000000000000"},slug.eq.${sanitizeFilterValue(idOrSlug)}`)
       .maybeSingle();
 
     if (error || !data) return undefined;

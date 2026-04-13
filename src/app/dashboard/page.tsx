@@ -29,7 +29,7 @@ import { getPaymentRecoveryService } from "@/server/recovery/services/payment-re
 import { getStorageService } from "@/server/recovery/services/storage";
 import type { FollowUpContact } from "@/server/recovery/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export const metadata = {
   title: "Recuperação",
@@ -403,7 +403,9 @@ function buildChartData(
   for (const contact of contacts) {
     const refDate = contact.updated_at || contact.created_at;
     if (!refDate) continue;
-    const label = months[new Date(refDate).getMonth()];
+    const d = new Date(refDate);
+    const month = isNaN(d.getTime()) ? new Date().getMonth() : d.getMonth();
+    const label = months[month];
 
     if (contact.lead_status === "RECOVERED") {
       recoveredByMonth.set(label, (recoveredByMonth.get(label) || 0) + 1);
