@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { platformBrand } from "@/lib/platform";
 
 interface Particle {
@@ -21,6 +21,15 @@ export function HeroParticles({ className = "" }: { className?: string }) {
   const particlesRef = useRef<Particle[]>([]);
   const rafRef = useRef(0);
   const timeRef = useRef(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check screen width on mount and resize
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const init = useCallback(() => {
     const canvas = canvasRef.current;
@@ -31,10 +40,7 @@ export function HeroParticles({ className = "" }: { className?: string }) {
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
 
-    const isMobile = rect.width < 768;
-    const count = isMobile
-      ? Math.min(14, Math.floor((rect.width * rect.height) / 30000))
-      : Math.min(30, Math.floor((rect.width * rect.height) / 18000));
+    const count = Math.min(15, Math.floor((rect.width * rect.height) / 25000));
 
     particlesRef.current = Array.from({ length: count }, () => ({
       x: Math.random() * rect.width,
@@ -50,6 +56,8 @@ export function HeroParticles({ className = "" }: { className?: string }) {
   }, []);
 
   useEffect(() => {
+    if (isMobile) return;
+
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
@@ -60,13 +68,12 @@ export function HeroParticles({ className = "" }: { className?: string }) {
     if (!ctx) return;
 
     const [r, g, bv] = platformBrand.accentRgb.split(",").map(Number);
-    const isMobile = window.innerWidth < 768;
-    const connectionDist = isMobile ? 0 : 120;
+    const connectionDist = 90;
     const connectionDistSq = connectionDist * connectionDist;
 
     init();
 
-    // Throttled mouse handler — update at most every 32ms (~30fps)
+    // Throttled mouse handler
     let lastMouseTime = 0;
     const handleMouse = (e: MouseEvent) => {
       const now = e.timeStamp;
@@ -104,7 +111,7 @@ export function HeroParticles({ className = "" }: { className?: string }) {
         const dx = mouse.x - p.x;
         const dy = mouse.y - p.y;
         const distSq = dx * dx + dy * dy;
-        if (distSq < 25600 && distSq > 0) { // 160^2
+        if (distSq < 25600 && distSq > 0) {
           const dist = Math.sqrt(distSq);
           const force = ((160 - dist) / 160) * 0.015;
           p.vx -= (dx / dist) * force;
@@ -136,13 +143,12 @@ export function HeroParticles({ className = "" }: { className?: string }) {
         ctx!.fill();
       }
 
-      // Draw connections (desktop only, every 3rd frame for perf)
-      if (connectionDist > 0 && t % 3 === 0) {
+      // Draw connections (every 3rd frame for perf)
+      if (t % 3 === 0) {
         ctx!.lineWidth = 0.5;
         for (let i = 0; i < particles.length; i++) {
           for (let j = i + 1; j < particles.length; j++) {
             const dx = particles[i].x - particles[j].x;
-            // Early exit: skip if single axis already exceeds distance
             if (dx > connectionDist || dx < -connectionDist) continue;
             const dy = particles[i].y - particles[j].y;
             if (dy > connectionDist || dy < -connectionDist) continue;
@@ -171,7 +177,10 @@ export function HeroParticles({ className = "" }: { className?: string }) {
       window.removeEventListener("mouseleave", handleLeave);
       window.removeEventListener("resize", init);
     };
-  }, [init]);
+  }, [init, isMobile]);
+
+  // Don't render canvas on mobile
+  if (isMobile) return null;
 
   return (
     <canvas

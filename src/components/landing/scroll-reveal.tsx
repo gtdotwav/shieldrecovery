@@ -22,16 +22,24 @@ const directionVariants: Record<string, Variants> = {
   },
 };
 
+const speedDurations: Record<string, number> = {
+  fast: 0.3,
+  normal: 0.6,
+  slow: 0.8,
+};
+
 export function Reveal({
   children,
   delay = 0,
   className = "",
   direction = "up",
+  speed = "normal",
 }: {
   children: ReactNode;
   delay?: number;
   className?: string;
   direction?: "up" | "left" | "right" | "scale";
+  speed?: "fast" | "normal" | "slow";
 }) {
   return (
     <motion.div
@@ -41,7 +49,7 @@ export function Reveal({
       viewport={{ once: true, margin: "-40px" }}
       variants={directionVariants[direction]}
       transition={{
-        duration: 0.6,
+        duration: speedDurations[speed],
         delay: delay / 1000,
         ease: [0.16, 1, 0.3, 1],
       }}
