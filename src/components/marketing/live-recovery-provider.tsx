@@ -54,8 +54,8 @@ export function LiveRecoveryProvider({
     showDelta: false,
   });
 
-  const tickRef = useRef<ReturnType<typeof setTimeout>>();
-  const fadeRef = useRef<ReturnType<typeof setTimeout>>();
+  const tickRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const fadeRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     function tick() {
