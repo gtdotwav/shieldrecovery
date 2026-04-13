@@ -11,8 +11,8 @@ export function HeroHeading() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
-  const plainWords = ["Transforme", "pagamentos"];
-  const gradientWords = ["perdidos", "em", "receita"];
+  const plainWords = ["Recupere", "pagamentos"];
+  const gradientWords = ["falhados", "automaticamente"];
 
   const wordAnim = (i: number) => ({
     hidden: { opacity: 0, y: 24 },
@@ -30,7 +30,7 @@ export function HeroHeading() {
   return (
     <h1
       ref={ref}
-      className="mt-6 text-balance text-[2rem] font-bold leading-[1.1] tracking-[-0.03em] sm:mt-10 sm:text-[3rem] lg:text-[4.2rem]"
+      className="mt-6 text-balance text-[2rem] font-extrabold leading-[1.1] tracking-[-0.03em] sm:mt-10 sm:text-[3rem] lg:text-[4.2rem]"
       style={{ color: "#f0f0f0", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}
     >
       {plainWords.map((word, i) => (

@@ -31,7 +31,8 @@ export const metadata: Metadata = {
     default: `${platformBrand.name} | ${platformBrand.shortDescription}`,
     template: `%s | ${platformBrand.name}`,
   },
-  description: platformBrand.longDescription,
+  description:
+    "Recupere pagamentos falhados com IA em menos de 2 minutos. Recuperacao autonoma 24/7 via WhatsApp, Email e Voz. Sem custo fixo — pague apenas por resultado.",
   keywords: [
     "recuperação de pagamentos",
     "pagamentos falhos",
@@ -51,8 +52,9 @@ export const metadata: Metadata = {
     type: "website",
     url: baseUrl,
     siteName: platformBrand.name,
-    title: `${platformBrand.name} | ${platformBrand.shortDescription}`,
-    description: platformBrand.longDescription,
+    title: `${platformBrand.name} — Recupere pagamentos falhados automaticamente`,
+    description:
+      "Recupere pagamentos falhados com IA em menos de 2 minutos. Recuperacao autonoma 24/7 via WhatsApp, Email e Voz. Sem custo fixo — pague apenas por resultado.",
     locale: "pt_BR",
     images: [
       {
@@ -65,8 +67,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${platformBrand.name} | ${platformBrand.shortDescription}`,
-    description: platformBrand.longDescription,
+    title: `${platformBrand.name} — Recupere pagamentos falhados automaticamente`,
+    description:
+      "Recupere pagamentos falhados com IA em menos de 2 minutos. Recuperacao autonoma 24/7 via WhatsApp, Email e Voz. Sem custo fixo — pague apenas por resultado.",
     images: [`${baseUrl}/og-image.png`],
   },
   robots: {
@@ -97,16 +100,17 @@ try {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: platformBrand.name,
-  description: platformBrand.longDescription,
-  url: baseUrl,
+  name: "PagRecovery",
   applicationCategory: "BusinessApplication",
-  operatingSystem: "Web",
+  description:
+    "Plataforma de recuperacao autonoma de pagamentos falhados via IA",
+  url: "https://pagrecovery.com",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "BRL",
-    description: "Teste grátis",
+    description:
+      "Sem custo fixo. Comissao apenas sobre pagamentos recuperados.",
   },
   publisher: {
     "@type": "Organization",
@@ -146,13 +150,13 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${plexMono.variable} bg-background text-foreground antialiased`}
       >
         <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg dark:focus:bg-gray-900 dark:focus:text-white"
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black focus:rounded"
         >
-          Pular para o conteúdo
+          Pular para conteudo
         </a>
         <ToastProvider>
-          {children}
+          <div id="main">{children}</div>
         </ToastProvider>
       </body>
     </html>
