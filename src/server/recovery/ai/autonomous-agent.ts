@@ -31,6 +31,7 @@ import { getVapiService } from "@/server/recovery/services/vapi-service";
 import type {
   ConversationRecord,
   CustomerRecord,
+  FollowUpContact,
   MessageRecord,
   PaymentRecord,
   RecoveryLeadRecord,
@@ -85,12 +86,27 @@ export class AutonomousRecoveryAgent {
   private readonly orchestrator = getAIOrchestrator();
   private readonly errors: string[] = [];
 
+  /** Cached contacts for the current tick — avoids repeated DB calls. */
+  private cachedContacts: FollowUpContact[] = [];
+
+  /** Timestamp when the current tick started — used for timeout bail. */
+  private tickStartedAt = 0;
+
+  /** Maximum wall-clock time (ms) before bailing out of the tick. */
+  private static readonly TICK_TIMEOUT_MS = 45_000;
+
+  /** Returns true if we're approaching the Vercel timeout and should bail. */
+  private shouldBail(): boolean {
+    return Date.now() - this.tickStartedAt > AutonomousRecoveryAgent.TICK_TIMEOUT_MS;
+  }
+
   async tick(): Promise<AgentRunResult> {
     // Reset errors from previous tick to prevent stale error accumulation
     this.errors.length = 0;
 
     const runId = randomUUID();
     const startedAt = Date.now();
+    this.tickStartedAt = startedAt;
     const counters = {
       inboundProcessed: 0,
       cadencesExecuted: 0,
@@ -107,19 +123,26 @@ export class AutonomousRecoveryAgent {
       const runtime = await getConnectionSettingsService().getRuntimeSettings();
       const apiKey = await this.getAIApiKey();
 
+      // Cache contacts once for the entire tick to avoid 5 separate DB calls
+      this.cachedContacts = await this.recovery.getFollowUpContacts();
+
       // 1. Process inbound messages that haven't been responded to
       counters.inboundProcessed = await this.processInboundMessages(apiKey, runtime);
+      if (this.shouldBail()) { this.errors.push("Tick bailed early after processInboundMessages"); throw new Error("timeout_bail"); }
 
       // 2. Execute due cadence steps
       counters.cadencesExecuted = await this.executeDueCadenceSteps(apiKey, runtime);
+      if (this.shouldBail()) { this.errors.push("Tick bailed early after executeDueCadenceSteps"); throw new Error("timeout_bail"); }
 
       // 3. Schedule cadences for new leads without one
       counters.cadencesScheduled = await this.scheduleMissingCadences();
+      if (this.shouldBail()) { this.errors.push("Tick bailed early after scheduleMissingCadences"); throw new Error("timeout_bail"); }
 
       // 4. Process call transcriptions
       const transcResult = await this.processCallTranscriptions(apiKey);
       counters.transcriptionsProcessed = transcResult.processed;
       counters.insightsExtracted = transcResult.insights;
+      if (this.shouldBail()) { this.errors.push("Tick bailed early after processCallTranscriptions"); throw new Error("timeout_bail"); }
 
       // 5. Refresh recovery scores
       counters.scoresRefreshed = await this.refreshRecoveryScores();
@@ -130,9 +153,13 @@ export class AutonomousRecoveryAgent {
       // 7. Close exhausted leads
       counters.leadsClosed = await this.closeExhaustedLeads();
     } catch (error) {
-      this.errors.push(
-        error instanceof Error ? error.message : "Unknown agent tick error",
-      );
+      if (error instanceof Error && error.message === "timeout_bail") {
+        // Already logged above — don't double-log
+      } else {
+        this.errors.push(
+          error instanceof Error ? error.message : "Unknown agent tick error",
+        );
+      }
     }
 
     const durationMs = Date.now() - startedAt;
@@ -158,15 +185,15 @@ export class AutonomousRecoveryAgent {
     let processed = 0;
 
     try {
-      // Find conversations with unread inbound messages
-      const contacts = await this.recovery.getFollowUpContacts();
+      // Use cached contacts instead of hitting the DB again
+      const contacts = this.cachedContacts;
       const activeContacts = contacts.filter(
         (c) =>
           c.lead_status !== "RECOVERED" &&
           c.lead_status !== "LOST",
       );
 
-      for (const contact of activeContacts.slice(0, 20)) {
+      for (const contact of activeContacts.slice(0, 8)) {
         try {
           const lead = await this.storage.findLeadByLeadId(contact.lead_id);
           if (!lead) continue;
@@ -274,7 +301,7 @@ export class AutonomousRecoveryAgent {
     try {
       const dueSteps = await this.getDueCadenceSteps();
 
-      for (const step of dueSteps.slice(0, 15)) {
+      for (const step of dueSteps.slice(0, 8)) {
         try {
           const lead = await this.storage.findLeadByLeadId(step.leadId);
           if (!lead) {
@@ -382,14 +409,15 @@ export class AutonomousRecoveryAgent {
     let scheduled = 0;
 
     try {
-      const contacts = await this.recovery.getFollowUpContacts();
+      // Use cached contacts instead of hitting the DB again
+      const contacts = this.cachedContacts;
       const activeLeads = contacts.filter(
         (c) =>
           c.lead_status === "CONTACTING" ||
           c.lead_status === "WAITING_CUSTOMER",
       );
 
-      for (const contact of activeLeads.slice(0, 20)) {
+      for (const contact of activeLeads.slice(0, 10)) {
         try {
           // Check if seller has automations enabled before scheduling cadence
           const automationPolicy =
@@ -528,14 +556,15 @@ export class AutonomousRecoveryAgent {
     let refreshed = 0;
 
     try {
-      const contacts = await this.recovery.getFollowUpContacts();
+      // Use cached contacts instead of hitting the DB again
+      const contacts = this.cachedContacts;
       const activeContacts = contacts.filter(
         (c) =>
           c.lead_status !== "RECOVERED" &&
           c.lead_status !== "LOST",
       );
 
-      for (const contact of activeContacts.slice(0, 30)) {
+      for (const contact of activeContacts.slice(0, 15)) {
         try {
           const lead = await this.storage.findLeadByLeadId(contact.lead_id);
           if (!lead) continue;
@@ -603,7 +632,8 @@ export class AutonomousRecoveryAgent {
     let escalated = 0;
 
     try {
-      const contacts = await this.recovery.getFollowUpContacts();
+      // Use cached contacts instead of hitting the DB again
+      const contacts = this.cachedContacts;
 
       for (const contact of contacts) {
         if (
@@ -648,7 +678,8 @@ export class AutonomousRecoveryAgent {
     let closed = 0;
 
     try {
-      const contacts = await this.recovery.getFollowUpContacts();
+      // Use cached contacts instead of hitting the DB again
+      const contacts = this.cachedContacts;
       const runtime = await getConnectionSettingsService().getRuntimeSettings();
 
       for (const contact of contacts) {
@@ -787,24 +818,30 @@ export class AutonomousRecoveryAgent {
   }
 
   private async storeInsight(insight: TranscriptionInsight): Promise<void> {
-    const supabase = this.getSupabaseClient();
-    if (!supabase) return;
+    try {
+      const supabase = this.getSupabaseClient();
+      if (!supabase) return;
 
-    await supabase.from("recovery_insights").insert({
-      id: randomUUID(),
-      lead_id: insight.leadId ?? null,
-      call_id: insight.callId || null,
-      source: insight.source,
-      insight_type: insight.insightType,
-      content: insight.content,
-      customer_sentiment: insight.customerSentiment ?? null,
-      objections: insight.objections,
-      commitments: insight.commitments,
-      preferred_channel: insight.preferredChannel ?? null,
-      preferred_time: insight.preferredTime ?? null,
-      payment_intent_strength: insight.paymentIntentStrength ?? null,
-      metadata: insight.metadata,
-    });
+      await supabase.from("recovery_insights").insert({
+        id: randomUUID(),
+        lead_id: insight.leadId ?? null,
+        call_id: insight.callId || null,
+        source: insight.source,
+        insight_type: insight.insightType,
+        content: insight.content,
+        customer_sentiment: insight.customerSentiment ?? null,
+        objections: insight.objections,
+        commitments: insight.commitments,
+        preferred_channel: insight.preferredChannel ?? null,
+        preferred_time: insight.preferredTime ?? null,
+        payment_intent_strength: insight.paymentIntentStrength ?? null,
+        metadata: insight.metadata,
+      });
+    } catch (error) {
+      console.warn(
+        `[agent] Failed to store insight (table may not exist): ${error instanceof Error ? error.message : "unknown"}`,
+      );
+    }
   }
 
   private async getLeadInsights(leadId: string): Promise<TranscriptionInsight[]> {
@@ -840,40 +877,50 @@ export class AutonomousRecoveryAgent {
     durationMs: number,
     counters: Record<string, number>,
   ): Promise<void> {
-    const supabase = this.getSupabaseClient();
-    if (!supabase) return;
+    try {
+      const supabase = this.getSupabaseClient();
+      if (supabase) {
+        await supabase.from("agent_runs").insert({
+          id: runId,
+          started_at: new Date(startedAt).toISOString(),
+          completed_at: new Date().toISOString(),
+          duration_ms: durationMs,
+          inbound_processed: counters.inboundProcessed,
+          cadences_executed: counters.cadencesExecuted,
+          cadences_scheduled: counters.cadencesScheduled,
+          calls_scheduled: counters.callsScheduled,
+          scores_refreshed: counters.scoresRefreshed,
+          escalations: counters.escalations,
+          leads_closed: counters.leadsClosed,
+          transcriptions_processed: counters.transcriptionsProcessed,
+          insights_extracted: counters.insightsExtracted,
+          errors: this.errors,
+          metadata: {},
+        });
+      }
+    } catch (error) {
+      console.warn(
+        `[agent] Failed to log agent run to agent_runs table (may not exist): ${error instanceof Error ? error.message : "unknown"}`,
+      );
+    }
 
-    await supabase.from("agent_runs").insert({
-      id: runId,
-      started_at: new Date(startedAt).toISOString(),
-      completed_at: new Date().toISOString(),
-      duration_ms: durationMs,
-      inbound_processed: counters.inboundProcessed,
-      cadences_executed: counters.cadencesExecuted,
-      cadences_scheduled: counters.cadencesScheduled,
-      calls_scheduled: counters.callsScheduled,
-      scores_refreshed: counters.scoresRefreshed,
-      escalations: counters.escalations,
-      leads_closed: counters.leadsClosed,
-      transcriptions_processed: counters.transcriptionsProcessed,
-      insights_extracted: counters.insightsExtracted,
-      errors: this.errors,
-      metadata: {},
-    });
-
-    await this.storage.addLog(
-      createStructuredLog({
-        eventType: "worker_job_processed",
-        level: this.errors.length ? "warn" : "info",
-        message: `Agent tick completed in ${durationMs}ms`,
-        context: {
-          runId,
-          durationMs,
-          ...counters,
-          errorCount: this.errors.length,
-        },
-      }),
-    );
+    try {
+      await this.storage.addLog(
+        createStructuredLog({
+          eventType: "worker_job_processed",
+          level: this.errors.length ? "warn" : "info",
+          message: `Agent tick completed in ${durationMs}ms`,
+          context: {
+            runId,
+            durationMs,
+            ...counters,
+            errorCount: this.errors.length,
+          },
+        }),
+      );
+    } catch {
+      // Structured log failure should not crash the tick
+    }
   }
 
   /* ── Lead / conversation helpers ── */

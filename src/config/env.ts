@@ -38,8 +38,10 @@ function validateEnv(): void {
   }
 }
 
-// Validate on import
-validateEnv();
+// NOTE: Do NOT call validateEnv() at module scope. In Vercel Edge
+// middleware, env vars may not be fully loaded when this module is first
+// imported, which would crash the entire app. Validation is already
+// handled by src/server/env-check.ts (called from recovery/config.ts).
 
 /** Typed access to validated environment. */
 export const env = {

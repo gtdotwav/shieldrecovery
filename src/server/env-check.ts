@@ -3,6 +3,8 @@
  * Call once at module scope (e.g. in config.ts) so missing vars are
  * surfaced immediately rather than at first request time.
  */
+let _warned = false;
+
 export function validateRequiredEnvVars(): void {
   const required = [
     "NEXT_PUBLIC_SUPABASE_URL",
@@ -18,6 +20,9 @@ export function validateRequiredEnvVars(): void {
         "The application cannot start without these.",
     );
   }
+
+  if (_warned) return;
+  _warned = true;
 
   const recommended = [
     "WHATSAPP_ACCESS_TOKEN",
