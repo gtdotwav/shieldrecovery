@@ -90,10 +90,16 @@ const RETRY_BASE_DELAY_MS = 60_000; // 60 seconds
 const RETRY_MAX_DELAY_MS = 3_600_000; // 1 hour
 
 /**
- * Exponential backoff: min(baseDelay * 2^attempt, maxDelay)
+ * Exponential backoff with jitter to prevent thundering herd:
+ *   delay = min(baseDelay * 2^attempt, maxDelay) + random(0, baseDelay * 0.5)
  */
 export function computeExponentialBackoff(attempt: number): number {
-  return Math.min(RETRY_BASE_DELAY_MS * Math.pow(2, attempt), RETRY_MAX_DELAY_MS);
+  const exponential = Math.min(
+    RETRY_BASE_DELAY_MS * Math.pow(2, attempt),
+    RETRY_MAX_DELAY_MS,
+  );
+  const jitter = Math.floor(Math.random() * RETRY_BASE_DELAY_MS * 0.5);
+  return exponential + jitter;
 }
 
 function createJob(

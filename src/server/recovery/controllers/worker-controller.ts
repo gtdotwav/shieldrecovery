@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { appEnv } from "@/server/recovery/config";
+import { logger } from "@/server/recovery/utils/logger";
 import { getRecoveryWorkerService } from "@/server/recovery/services/recovery-worker-service";
 import { getStorageService } from "@/server/recovery/services/storage";
 
@@ -51,12 +52,18 @@ async function resetStaleJobs(): Promise<number> {
     }
 
     if (resetCount > 0) {
-      console.warn(`[handleRunWorker] Reset ${resetCount} stale jobs stuck in processing`);
+      logger.warn("Reset stale jobs stuck in processing", {
+        handler: "handleRunWorker",
+        resetCount,
+      });
     }
 
     return resetCount;
   } catch (error) {
-    console.error("[handleRunWorker] Failed to reset stale jobs:", error instanceof Error ? error.message : error);
+    logger.error("Failed to reset stale jobs", {
+      handler: "handleRunWorker",
+      error: error instanceof Error ? error.message : String(error),
+    });
     return 0;
   }
 }
@@ -86,7 +93,10 @@ export async function handleRunWorker(request: Request) {
 
     return NextResponse.json(summary, { status: 200 });
   } catch (error) {
-    console.error("[handleRunWorker]", error instanceof Error ? error.message : error);
+    logger.error("Worker run failed", {
+      handler: "handleRunWorker",
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: { code: "WORKER_RUN_FAILED", message: "Worker run failed." } },
       { status: 500 },

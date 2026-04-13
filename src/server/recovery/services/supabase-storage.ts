@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { logger } from "@/server/recovery/utils/logger";
 
 /**
  * Sanitize a value for use in PostgREST filter strings (.or(), .filter()).
@@ -123,10 +124,11 @@ async function withRetry<T>(
     // Don't retry on 4xx / non-transient errors
     if (!isTransient) throw error;
 
-    console.warn(
-      `[withRetry] Transient error in ${label}, retrying in 1s:`,
-      error instanceof Error ? error.message : error,
-    );
+    logger.warn("Transient error, retrying in 1s", {
+      component: "withRetry",
+      label,
+      error: error instanceof Error ? error.message : String(error),
+    });
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
     return operation();

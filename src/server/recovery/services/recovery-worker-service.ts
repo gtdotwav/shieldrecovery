@@ -770,15 +770,17 @@ function readPayloadOptionalString(job: QueueJobRecord, key: string) {
 }
 
 function retryDelayMinutesForAttempt(attempts: number) {
+  let base: number;
   if (attempts >= 3) {
-    return 5;
+    base = 5;
+  } else if (attempts === 2) {
+    base = 15;
+  } else {
+    base = 60;
   }
-
-  if (attempts === 2) {
-    return 15;
-  }
-
-  return 60;
+  // Add random jitter (0-25% of base) to prevent thundering herd
+  const jitter = Math.random() * base * 0.25;
+  return base + jitter;
 }
 
 function isUsablePhone(phone?: string | null) {

@@ -8,6 +8,7 @@ export function validateRequiredEnvVars(): void {
     "NEXT_PUBLIC_SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",
     "PLATFORM_AUTH_SECRET",
+    "CRON_SECRET",
   ] as const;
 
   const missing = required.filter((key) => !process.env[key]?.trim());

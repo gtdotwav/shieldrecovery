@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStorageService } from "@/server/recovery/services/storage";
+import { corsOptions } from "@/server/recovery/utils/api-response";
 import { platformBrand } from "@/lib/platform";
 import { appEnv } from "@/server/recovery/config";
 
 export const dynamic = "force-dynamic";
 
-export function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
+export function OPTIONS(request: NextRequest) {
+  return corsOptions(request);
 }
 
 function normalizePhone(raw: string): string {

@@ -1,6 +1,7 @@
 import { authenticatePlatformUser, registerSellerLogin } from "@/server/auth/identities";
 import { createSessionToken, isAuthConfigured, normalizeEmail } from "@/server/auth/core";
 import { apiError, apiOk, corsOptions } from "@/server/recovery/utils/api-response";
+import { logger } from "@/server/recovery/utils/logger";
 
 export function OPTIONS(request: Request) {
   return corsOptions(request);
@@ -70,6 +71,14 @@ export async function POST(request: Request) {
   const ip = getClientIp(request);
 
   if (isRateLimited(ip)) {
+    const entry = attempts.get(ip);
+    logger.warn("Auth rate limit exceeded", {
+      endpoint: "/api/auth/token",
+      ip,
+      currentCount: entry?.count ?? 0,
+      limit: MAX_ATTEMPTS,
+      windowMs: RATE_WINDOW_MS,
+    });
     return apiError("Muitas tentativas. Tente novamente em alguns segundos.", 429, request);
   }
 

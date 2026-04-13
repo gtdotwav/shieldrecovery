@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NOT_PROVIDED } from "@/lib/contact";
 import { hoursSince } from "@/lib/format";
 import type { FollowUpContact } from "@/server/recovery/types";
+import { logger } from "@/server/recovery/utils/logger";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 
@@ -69,10 +70,13 @@ export class AIRecoveryOrchestrator {
       return { systemPrompt: input.systemPrompt, messages: input.messages, truncated: false };
     }
 
-    console.warn(
-      `[AIOrchestrator] Token budget exceeded: ~${estimatedTokens} estimated tokens (limit: ${TOKEN_BUDGET_LIMIT}). ` +
-      `Truncating conversation from ${input.messages.length} to last ${TOKEN_BUDGET_KEEP_MESSAGES} messages.`,
-    );
+    logger.warn("Token budget exceeded, truncating conversation", {
+      component: "AIOrchestrator",
+      estimatedTokens,
+      limit: TOKEN_BUDGET_LIMIT,
+      originalMessages: input.messages.length,
+      keptMessages: TOKEN_BUDGET_KEEP_MESSAGES,
+    });
 
     const truncatedMessages = input.messages.slice(-TOKEN_BUDGET_KEEP_MESSAGES);
 

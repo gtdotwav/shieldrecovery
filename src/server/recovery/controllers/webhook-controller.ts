@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
 import { HttpError } from "@/server/recovery/utils/http-error";
+import { logger } from "@/server/recovery/utils/logger";
 import { createStructuredLog } from "@/server/recovery/utils/structured-logger";
 import { getStorageService } from "@/server/recovery/services/storage";
 
@@ -64,7 +65,13 @@ export async function handleShieldGatewayWebhook(
     const internalMessage =
       error instanceof Error ? error.message : "Unexpected webhook failure.";
 
-    console.error("[handleShieldGatewayWebhook]", internalMessage, error instanceof HttpError ? error.details : undefined);
+    logger.error("Shield Gateway webhook failed", {
+      handler: "handleShieldGatewayWebhook",
+      statusCode,
+      sellerKey: options?.sellerKey ?? null,
+      details: error instanceof HttpError ? error.details : undefined,
+      message: internalMessage,
+    });
 
     await getStorageService().addLog(
       createStructuredLog({
@@ -109,7 +116,10 @@ export async function handleShieldGatewayHealth(
       { status: 200 },
     );
   } catch (error) {
-    console.error("[handleHealthCheck]", error instanceof Error ? error.message : error);
+    logger.error("Health check failed", {
+      handler: "handleHealthCheck",
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: { code: "HEALTH_CHECK_FAILED", message: "Health check failed." } },
       { status: 500 },
@@ -152,7 +162,12 @@ export async function handlePagouAiWebhook(
     const internalMessage =
       error instanceof Error ? error.message : "Unexpected Pagou.ai webhook failure.";
 
-    console.error("[handlePagouAiWebhook]", internalMessage);
+    logger.error("PagouAi webhook failed", {
+      handler: "handlePagouAiWebhook",
+      statusCode,
+      sellerKey: options?.sellerKey ?? null,
+      message: internalMessage,
+    });
 
     await getStorageService()
       .addLog(
@@ -238,7 +253,12 @@ export async function handleBuckPayWebhook(
     const internalMessage =
       error instanceof Error ? error.message : "Unexpected BuckPay webhook failure.";
 
-    console.error("[handleBuckPayWebhook]", internalMessage);
+    logger.error("BuckPay webhook failed", {
+      handler: "handleBuckPayWebhook",
+      statusCode,
+      sellerKey: options?.sellerKey ?? null,
+      message: internalMessage,
+    });
 
     await getStorageService()
       .addLog(
