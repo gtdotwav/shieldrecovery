@@ -165,6 +165,96 @@ export async function notifyNewLead(customerName: string, amount: number) {
   );
 }
 
+// ── Seller-key-based notifications ───────────────────────────────
+// These resolve the seller email from seller_admin_controls, then
+// find all push tokens for that email.
+
+async function resolveSellerEmail(sellerKey: string): Promise<string | null> {
+  const db = getPushDb();
+  const { data } = await db
+    .from("seller_admin_controls")
+    .select("seller_email")
+    .eq("seller_key", sellerKey)
+    .single();
+  if (data?.seller_email) return data.seller_email;
+
+  // Fallback: check seller_users by agent_name
+  const { data: user } = await db
+    .from("seller_users")
+    .select("email")
+    .eq("agent_name", sellerKey)
+    .limit(1)
+    .single();
+  return user?.email ?? null;
+}
+
+/**
+ * Send push notification to all devices registered for a given seller key.
+ * Resolves sellerKey → email → push tokens, then sends via Expo.
+ */
+export async function sendPushToSeller(
+  sellerKey: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>,
+) {
+  const email = await resolveSellerEmail(sellerKey);
+  if (!email) return;
+  const tokens = await getActiveTokensForUser(email);
+  if (tokens.length === 0) return;
+  return sendPushNotification(tokens, title, body, data);
+}
+
+/** Push "Pagamento recuperado!" scoped to a seller. */
+export async function notifyRecoveryForSeller(
+  sellerKey: string,
+  customerName: string,
+  amount: number,
+) {
+  const amountFormatted = (amount / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+
+  return sendPushToSeller(
+    sellerKey,
+    "Pagamento recuperado!",
+    `${customerName} pagou ${amountFormatted}`,
+    { type: "recovery", sellerKey },
+  );
+}
+
+/** Push "Saque processado!" scoped to a seller. */
+export async function notifyPayoutForSeller(
+  sellerKey: string,
+  amount: number,
+) {
+  const amountFormatted = (amount / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+
+  return sendPushToSeller(
+    sellerKey,
+    "Saque processado!",
+    `Seu saque de ${amountFormatted} foi concluido.`,
+    { type: "payout", sellerKey },
+  );
+}
+
+/** Push "Novo lead!" scoped to a seller. */
+export async function notifyNewLeadForSeller(
+  sellerKey: string,
+  customerName: string,
+) {
+  return sendPushToSeller(
+    sellerKey,
+    "Novo lead!",
+    `${customerName} entrou na fila de recuperacao.`,
+    { type: "lead", sellerKey },
+  );
+}
+
 // ── Token management (direct Supabase) ──────────────────────────
 
 async function getActiveTokensForUser(userEmail: string): Promise<string[]> {

@@ -2,6 +2,7 @@ import { requireApiAuth } from "@/server/auth/request";
 import { apiOk, apiError, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
 import { getSellerPayouts, requestSellerPayout } from "@/server/checkout";
 import { resolveCheckoutOverrides } from "@/server/checkout-overrides";
+import { notifyPayoutCompleted } from "@/server/push-notifications";
 
 export function OPTIONS() {
   return corsOptions();
@@ -52,6 +53,12 @@ export async function POST(request: Request) {
     }
 
     const result = await requestSellerPayout(amount, pixAccountId, overrides);
+
+    // Push notification for payout request
+    notifyPayoutCompleted(auth.email, amount).catch((err) =>
+      console.error("[push] payout notify error:", err),
+    );
+
     return apiOk(result);
   } catch (err) {
     console.error("[mobile/payouts POST]", err);

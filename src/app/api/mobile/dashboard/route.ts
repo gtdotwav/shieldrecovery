@@ -1,3 +1,5 @@
+import { canRoleAccessAgent } from "@/server/auth/core";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireApiAuth } from "@/server/auth/request";
 import { apiOk, apiError, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
@@ -8,7 +10,7 @@ export function OPTIONS() {
 
 /**
  * GET /api/mobile/dashboard
- * Mobile-optimized dashboard metrics.
+ * Mobile-optimized dashboard metrics, scoped to the authenticated seller.
  */
 export async function GET(request: Request) {
   const auth = await requireApiAuth(request, ["admin", "seller"]);
@@ -16,10 +18,19 @@ export async function GET(request: Request) {
 
   try {
     const service = getPaymentRecoveryService();
-    const [analytics, contacts] = await Promise.all([
-      service.getRecoveryAnalytics(),
-      service.getFollowUpContacts(),
-    ]);
+    const sellerIdentity =
+      auth.role === "seller"
+        ? await getSellerIdentityByEmail(auth.email)
+        : null;
+
+    let contacts = await service.getFollowUpContacts();
+
+    // Scope to seller's leads
+    if (auth.role === "seller") {
+      contacts = contacts.filter((c) =>
+        canRoleAccessAgent(auth.role, c.assigned_agent, sellerIdentity?.agentName),
+      );
+    }
 
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -38,10 +49,6 @@ export async function GET(request: Request) {
       (c) => c.updated_at && new Date(c.updated_at) >= weekStart,
     );
 
-    const totalRecoveredAmount = recovered.reduce(
-      (sum, c) => sum + (c.payment_value || 0),
-      0,
-    );
     const todayRecoveredAmount = todayRecovered.reduce(
       (sum, c) => sum + (c.payment_value || 0),
       0,
@@ -54,30 +61,39 @@ export async function GET(request: Request) {
     const totalLeads = contacts.length || 1;
     const conversionRate = (recovered.length / totalLeads) * 100;
 
-    const leadsByStatus = {
+    // Pipeline breakdown — map WAITING_CUSTOMER → WAITING_RESPONSE for the mobile app
+    const pipeline = {
       NEW_RECOVERY: 0,
       CONTACTING: 0,
-      WAITING_CUSTOMER: 0,
+      WAITING_RESPONSE: 0,
       RECOVERED: 0,
       LOST: 0,
     };
     for (const c of contacts) {
-      const status = c.lead_status as keyof typeof leadsByStatus;
-      if (status in leadsByStatus) {
-        leadsByStatus[status]++;
+      if (c.lead_status === "WAITING_CUSTOMER") {
+        pipeline.WAITING_RESPONSE++;
+      } else {
+        const status = c.lead_status as keyof typeof pipeline;
+        if (status in pipeline) {
+          pipeline[status]++;
+        }
       }
     }
 
     return apiOk({
-      totalRecovered: recovered.length,
-      totalRecoveredAmount,
-      conversionRate,
-      activeLeads: active.length,
-      leadsByStatus,
-      todayRecovered: todayRecovered.length,
-      todayRecoveredAmount,
-      weekRecovered: weekRecovered.length,
-      weekRecoveredAmount,
+      total_recovered_today: todayRecoveredAmount,
+      total_recovered_week: weekRecoveredAmount,
+      conversion_rate: conversionRate,
+      active_leads: active.length,
+      pipeline,
+      // Extra fields for richer display
+      today_count: todayRecovered.length,
+      week_count: weekRecovered.length,
+      total_recovered_count: recovered.length,
+      total_recovered_amount: recovered.reduce(
+        (sum, c) => sum + (c.payment_value || 0),
+        0,
+      ),
     });
   } catch (err) {
     console.error("[mobile/dashboard]", err);
