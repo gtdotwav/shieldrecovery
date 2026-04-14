@@ -64,15 +64,16 @@ export function CfoChatPanel() {
       {/* Mobile: fullscreen overlay */}
       <div
         className={`
-          fixed z-[60] inset-0
-          md:inset-auto md:bottom-22 md:right-6
-          md:w-[420px] md:max-h-[min(75vh,640px)]
+          fixed z-[60]
+          top-0 left-0 right-0 bottom-0
+          md:top-auto md:left-auto md:bottom-22 md:right-6
+          md:w-[420px]
           cfo-slide-up
         `}
       >
         <div
           className={`
-            flex flex-col h-full
+            flex flex-col w-full h-full
             md:h-[min(75vh,640px)] md:rounded-2xl
             border-0 md:border md:border-[var(--border)]
             bg-[var(--surface)] md:bg-[var(--surface)]/98
