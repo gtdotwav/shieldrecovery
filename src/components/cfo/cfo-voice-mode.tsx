@@ -140,7 +140,7 @@ export function CfoVoiceMode() {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        // Send dynamic config override with seller data + system prompt
+        // Send dynamic config override with seller data + system prompt + dynamic variables
         // This MUST be the first message, before conversation_initiation_metadata arrives
         const override: Record<string, unknown> = {
           type: "conversation_initiation_client_data",
@@ -149,6 +149,9 @@ export function CfoVoiceMode() {
               prompt: { prompt: voiceConfig.systemPrompt },
               first_message: voiceConfig.firstMessage,
             },
+          },
+          dynamic_variables: {
+            seller_key: voiceConfig.sellerKey || "",
           },
         };
         ws.send(JSON.stringify(override));

@@ -47,12 +47,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const metrica = (body.metrica || body.metric || "snapshot_completo") as MetricaType;
+    const sellerKey = body.seller_key || "";
 
     const service = getCfoAgentService();
 
-    // Voice tool calls don't have session context — get global snapshot
-    // The seller context is already in the agent's system prompt via conversation_config_override
-    const snapshot = await service.getFinancialSnapshot();
+    // Scope data to seller when seller_key is provided via ElevenLabs dynamic variable
+    const ctx = sellerKey ? { email: "", role: "seller", sellerAgentName: sellerKey, sellerKey } : undefined;
+    const snapshot = await service.getFinancialSnapshot(ctx);
 
     switch (metrica) {
       case "resumo_diario":

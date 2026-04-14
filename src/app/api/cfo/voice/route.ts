@@ -37,6 +37,7 @@ export async function POST(_req: NextRequest) {
       wsUrl: result.wsUrl,
       systemPrompt: result.systemPrompt,
       firstMessage: result.firstMessage,
+      sellerKey: ctx.sellerKey || "",
     });
   } catch (error) {
     console.error("[cfo/voice] Error:", error);

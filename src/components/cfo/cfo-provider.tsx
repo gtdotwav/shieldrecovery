@@ -19,6 +19,7 @@ type VoiceConfig = {
   wsUrl: string;
   systemPrompt: string;
   firstMessage: string;
+  sellerKey: string;
 };
 
 type CfoContextValue = {
@@ -126,6 +127,7 @@ export function CfoProvider({ children }: { children: ReactNode }) {
           wsUrl: data.wsUrl,
           systemPrompt: data.systemPrompt,
           firstMessage: data.firstMessage,
+          sellerKey: data.sellerKey || "",
         });
         setVoiceMode(true);
       } else {
