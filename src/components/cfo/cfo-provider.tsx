@@ -129,10 +129,12 @@ export function CfoProvider({ children }: { children: ReactNode }) {
         });
         setVoiceMode(true);
       } else {
-        setMessages(prev => [...prev, { role: "assistant", content: "Modo reuniao indisponivel. Configure ELEVENLABS_API_KEY.", timestamp: new Date().toISOString() }]);
+        const errMsg = data.error || `Erro ${res.status}`;
+        setMessages(prev => [...prev, { role: "assistant", content: `Modo reunião indisponível: ${errMsg}`, timestamp: new Date().toISOString() }]);
       }
-    } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Erro ao iniciar modo reuniao.", timestamp: new Date().toISOString() }]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      setMessages(prev => [...prev, { role: "assistant", content: `Erro ao iniciar modo reunião: ${msg}`, timestamp: new Date().toISOString() }]);
     }
   }, []);
 

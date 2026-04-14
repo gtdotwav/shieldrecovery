@@ -324,9 +324,12 @@ export class CfoAgentService {
     systemPrompt: string;
     firstMessage: string;
   } | null> {
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    const agentId = process.env.ELEVENLABS_AGENT_ID;
-    if (!apiKey || !agentId) return null;
+    const apiKey = appEnv.elevenLabsApiKey;
+    const agentId = appEnv.elevenLabsAgentId;
+    if (!apiKey || !agentId) {
+      console.error(`[cfo-voice] Missing env: apiKey=${!!apiKey}, agentId=${!!agentId}`);
+      return null;
+    }
 
     // 1. Get signed WebSocket URL from ElevenLabs
     const response = await fetch(

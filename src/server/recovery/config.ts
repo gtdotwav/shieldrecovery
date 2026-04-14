@@ -49,6 +49,8 @@ const pagouAiPublicKey =
   "";
 const experimentalPagesEnabled =
   (process.env.SHIELD_ENABLE_EXPERIMENTAL_UI ?? "").toLowerCase() === "true";
+const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY ?? process.env.ELEVEN_LABS_KEY ?? "";
+const elevenLabsAgentId = process.env.ELEVENLABS_AGENT_ID ?? "";
 
 export function createDefaultConnectionSettings(): ConnectionSettingsRecord {
   return {
@@ -117,6 +119,9 @@ export const appEnv = {
   pagouAiConfigured: Boolean(pagouAiSecretKey),
   pagouAiCardConfigured: Boolean(pagouAiSecretKey && pagouAiPublicKey),
   experimentalPagesEnabled,
+  elevenLabsApiKey,
+  elevenLabsAgentId,
+  elevenLabsConfigured: Boolean(elevenLabsApiKey && elevenLabsAgentId),
   webhookSecret:
     process.env.SHIELD_GATEWAY_WEBHOOK_SECRET ?? "",
   webhookToleranceSeconds: Number(process.env.WEBHOOK_TOLERANCE_SECONDS ?? 300),
