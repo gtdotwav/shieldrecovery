@@ -51,6 +51,7 @@ const experimentalPagesEnabled =
   (process.env.SHIELD_ENABLE_EXPERIMENTAL_UI ?? "").toLowerCase() === "true";
 const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY ?? process.env.ELEVEN_LABS_KEY ?? "";
 const elevenLabsAgentId = process.env.ELEVENLABS_AGENT_ID ?? "";
+const elevenLabsToolSecret = process.env.ELEVENLABS_TOOL_SECRET ?? "";
 
 export function createDefaultConnectionSettings(): ConnectionSettingsRecord {
   return {
@@ -122,6 +123,7 @@ export const appEnv = {
   elevenLabsApiKey,
   elevenLabsAgentId,
   elevenLabsConfigured: Boolean(elevenLabsApiKey && elevenLabsAgentId),
+  elevenLabsToolSecret,
   webhookSecret:
     process.env.SHIELD_GATEWAY_WEBHOOK_SECRET ?? "",
   webhookToleranceSeconds: Number(process.env.WEBHOOK_TOLERANCE_SECONDS ?? 300),

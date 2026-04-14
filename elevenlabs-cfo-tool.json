@@ -1,0 +1,31 @@
+{
+  "type": "webhook",
+  "name": "buscar_dados_financeiros",
+  "description": "Busca dados financeiros em tempo real da operacao do seller na PagRecovery. Use esta ferramenta SEMPRE que o usuario perguntar sobre numeros, metricas, receita, recuperacoes, inadimplencia, canais, fluxo de caixa ou qualquer dado operacional. Nunca invente numeros — sempre consulte esta ferramenta primeiro.",
+  "webhook": {
+    "url": "https://pagrecovery.com/api/cfo/voice-tool",
+    "secret": "e76de1887786651caeb84874fe2c99049f33f46c6233a4dbd6336fe05ae74d8f"
+  },
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "metrica": {
+        "type": "string",
+        "enum": [
+          "resumo_diario",
+          "fluxo_caixa",
+          "inadimplencia",
+          "performance_canais",
+          "previsao_semana",
+          "acoes_urgentes",
+          "comparacao_mensal",
+          "snapshot_completo"
+        ],
+        "description": "Tipo de metrica financeira a consultar. Use snapshot_completo quando precisar de visao geral ou quando o usuario pedir recapitulacao."
+      }
+    },
+    "required": [
+      "metrica"
+    ]
+  }
+}
