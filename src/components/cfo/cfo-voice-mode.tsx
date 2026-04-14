@@ -6,6 +6,17 @@ import { useCfo } from "./cfo-provider";
 
 type VoiceState = "connecting" | "listening" | "speaking" | "error";
 
+/* ── Helpers ── */
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 export function CfoVoiceMode() {
   const { voiceConfig, stopVoice } = useCfo();
   const [state, setState] = useState<VoiceState>("connecting");
@@ -21,6 +32,10 @@ export function CfoVoiceMode() {
   const isPlayingRef = useRef(false);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const sampleRateRef = useRef(16000);
+  const mutedRef = useRef(false);
+
+  // Keep mutedRef in sync
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -50,7 +65,7 @@ export function CfoVoiceMode() {
   /* ── Audio playback queue ── */
   const playNextInQueue = useCallback(async () => {
     const ctx = audioContextRef.current;
-    if (!ctx || audioQueueRef.current.length === 0) {
+    if (!ctx || ctx.state === "closed" || audioQueueRef.current.length === 0) {
       isPlayingRef.current = false;
       setState(prev => prev === "speaking" ? "listening" : prev);
       return;
@@ -94,19 +109,19 @@ export function CfoVoiceMode() {
     processorRef.current = processor;
 
     processor.onaudioprocess = (e) => {
-      if (ws.readyState !== WebSocket.OPEN || muted) return;
+      if (ws.readyState !== WebSocket.OPEN || mutedRef.current) return;
       const inputData = e.inputBuffer.getChannelData(0);
       const pcm16 = new Int16Array(inputData.length);
       for (let i = 0; i < inputData.length; i++) {
         pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
       }
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+      const base64 = arrayBufferToBase64(pcm16.buffer);
       ws.send(JSON.stringify({ user_audio_chunk: base64 }));
     };
 
     source.connect(processor);
     processor.connect(audioContext.destination);
-  }, [muted]);
+  }, []);
 
   /* ── WebSocket connection ── */
   const connect = useCallback(async () => {
@@ -115,8 +130,9 @@ export function CfoVoiceMode() {
     setState("connecting");
 
     try {
+      // Request mic first
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
       });
       streamRef.current = stream;
 
@@ -124,17 +140,9 @@ export function CfoVoiceMode() {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        // Send conversation initiation with dynamic prompt + first message override
-        ws.send(JSON.stringify({
-          type: "conversation_initiation_client_data",
-          conversation_config_override: {
-            agent: {
-              prompt: { prompt: voiceConfig.systemPrompt },
-              first_message: voiceConfig.firstMessage,
-            },
-          },
-        }));
-        startAudioCapture(stream, ws);
+        // Don't send config override — agent is configured in ElevenLabs dashboard.
+        // Don't start audio capture yet — wait for conversation_initiation_metadata.
+        setState("connecting");
       };
 
       ws.onmessage = (event) => {
@@ -143,13 +151,14 @@ export function CfoVoiceMode() {
 
           switch (data.type) {
             case "conversation_initiation_metadata":
-              // Connection established, agent will start speaking first message
+              // Connection fully established — now start sending audio
               setState("listening");
               if (data.conversation_initiation_metadata_event?.agent_output_audio_format) {
                 const fmt = data.conversation_initiation_metadata_event.agent_output_audio_format;
                 const match = fmt.match(/pcm_(\d+)/);
                 if (match) sampleRateRef.current = parseInt(match[1], 10);
               }
+              startAudioCapture(stream, ws);
               break;
 
             case "audio":
@@ -171,7 +180,6 @@ export function CfoVoiceMode() {
               break;
 
             case "interruption":
-              // User interrupted the agent — clear audio queue
               audioQueueRef.current = [];
               isPlayingRef.current = false;
               setState("listening");
@@ -184,7 +192,6 @@ export function CfoVoiceMode() {
               break;
 
             case "agent_response_correction":
-              // Update last agent transcript if corrected
               if (data.agent_response_correction_event?.corrected_agent_response) {
                 setTranscript(prev => {
                   const copy = [...prev];
@@ -202,21 +209,23 @@ export function CfoVoiceMode() {
         } catch { /* ignore parse errors */ }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (e) => {
+        console.error("[cfo-voice] WebSocket error:", e);
         setError("Erro na conexão de voz. Verifique sua internet.");
         setState("error");
       };
 
       ws.onclose = (e) => {
+        console.warn(`[cfo-voice] WebSocket closed: code=${e.code} reason=${e.reason}`);
         if (e.code !== 1000) {
-          setError("Conexão encerrada inesperadamente.");
+          setError(`Conexão encerrada (código ${e.code}${e.reason ? `: ${e.reason}` : ""}). Tente novamente.`);
           setState("error");
         }
       };
     } catch (err) {
       const msg = err instanceof Error && err.name === "NotAllowedError"
         ? "Permissão de microfone negada. Habilite nas configurações do navegador."
-        : "Erro ao acessar microfone.";
+        : `Erro ao acessar microfone: ${err instanceof Error ? err.message : "desconhecido"}`;
       setError(msg);
       setState("error");
       cleanup();
