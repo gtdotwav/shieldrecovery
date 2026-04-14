@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getAuthenticatedSession } from "@/server/auth/session";
 import { getCfoAgentService } from "@/server/recovery/services/cfo-agent-service";
 import { getSellerIdentityByEmail } from "@/server/auth/identities";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireAuthenticatedSession(["admin", "seller", "market"]);
+    const session = await getAuthenticatedSession();
+    if (!session) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = req.nextUrl;
     const limit = Number(searchParams.get("limit")) || 10;
 
@@ -25,14 +27,16 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ ok: true, insights, unreadCount });
   } catch (error) {
-    if (error instanceof Response) throw error;
+    console.error("[cfo/insights] Error:", error);
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
 
 export async function PATCH(req: NextRequest) {
   try {
-    await requireAuthenticatedSession(["admin", "seller", "market"]);
+    const session = await getAuthenticatedSession();
+    if (!session) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+
     const body = await req.json();
     const { insightId } = body as { insightId: string };
 
@@ -45,7 +49,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    if (error instanceof Response) throw error;
+    console.error("[cfo/insights] Error:", error);
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }

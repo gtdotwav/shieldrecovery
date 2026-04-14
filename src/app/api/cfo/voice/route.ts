@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getAuthenticatedSession } from "@/server/auth/session";
-import { getCfoAgentService } from "@/server/recovery/services/cfo-agent-service";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
+import { getCfoAgentService, type CfoSellerContext } from "@/server/recovery/services/cfo-agent-service";
 
 export async function POST(_req: NextRequest) {
   try {
@@ -10,8 +11,19 @@ export async function POST(_req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
+    // Resolve seller context
+    const ctx: CfoSellerContext = { email: session.email, role: session.role };
+    if (session.role === "seller") {
+      const identity = await getSellerIdentityByEmail(session.email);
+      if (identity) {
+        ctx.sellerAgentName = identity.agentName;
+        ctx.sellerDisplayName = identity.displayName;
+        ctx.sellerKey = identity.agentName;
+      }
+    }
+
     const service = getCfoAgentService();
-    const result = await service.generateVoiceSessionUrl();
+    const result = await service.generateVoiceSessionUrl(ctx);
 
     if (!result) {
       return NextResponse.json(
