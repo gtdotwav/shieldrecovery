@@ -21,16 +21,16 @@ export function CfoQuickChips() {
   const { sendChip, isLoading } = useCfo();
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-2.5 md:gap-2">
       {chips.map(chip => (
         <button
           key={chip.id}
           onClick={() => sendChip(chip.id, chip.label)}
           disabled={isLoading}
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--background)] text-left transition-all hover:border-[var(--accent)]/30 hover:bg-[var(--accent)]/5 active:scale-[0.98] disabled:opacity-50"
+          className="flex items-center gap-3 md:gap-2.5 px-4 md:px-3 py-3.5 md:py-2.5 rounded-xl border border-[var(--border)] bg-[var(--background)] text-left transition-all hover:border-[var(--accent)]/30 hover:bg-[var(--accent)]/5 active:scale-[0.98] active:bg-[var(--accent)]/10 disabled:opacity-50"
         >
-          <chip.icon className="w-4 h-4 text-[var(--accent)] shrink-0" />
-          <span className="text-xs font-medium text-[var(--foreground)] leading-tight">{chip.label}</span>
+          <chip.icon className="w-5 h-5 md:w-4 md:h-4 text-[var(--accent)] shrink-0" />
+          <span className="text-sm md:text-xs font-medium text-[var(--foreground)] leading-tight">{chip.label}</span>
         </button>
       ))}
     </div>

@@ -18,7 +18,7 @@ export function CfoFab() {
         shadow-lg shadow-[var(--accent)]/25
         transition-all duration-300 ease-out
         hover:scale-110 active:scale-95
-        ${isOpen ? "rotate-45 opacity-80" : "cfo-pulse"}
+        ${isOpen ? "md:rotate-45 md:opacity-80 max-md:hidden" : "cfo-pulse"}
       `}
     >
       <Sparkles className="w-6 h-6" />

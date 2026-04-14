@@ -21,6 +21,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
+  viewportFit: "cover",
 };
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pagrecovery.com";

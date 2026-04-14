@@ -140,8 +140,18 @@ export function CfoVoiceMode() {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        // Don't send config override — agent is configured in ElevenLabs dashboard.
-        // Don't start audio capture yet — wait for conversation_initiation_metadata.
+        // Send dynamic config override with seller data + system prompt
+        // This MUST be the first message, before conversation_initiation_metadata arrives
+        const override: Record<string, unknown> = {
+          type: "conversation_initiation_client_data",
+          conversation_config_override: {
+            agent: {
+              prompt: { prompt: voiceConfig.systemPrompt },
+              first_message: voiceConfig.firstMessage,
+            },
+          },
+        };
+        ws.send(JSON.stringify(override));
         setState("connecting");
       };
 
@@ -263,11 +273,11 @@ export function CfoVoiceMode() {
       ) : (
         <>
           {/* Voice visualization */}
-          <div className="relative w-32 h-32 flex items-center justify-center">
+          <div className="relative w-40 h-40 md:w-32 md:h-32 flex items-center justify-center">
             <div className={`absolute inset-0 rounded-full bg-[var(--accent)]/10 transition-opacity duration-300 ${state === "speaking" ? "animate-ping opacity-100" : "opacity-0"}`} />
             <div className={`absolute inset-2 rounded-full bg-[var(--accent)]/15 transition-opacity ${state !== "connecting" ? "cfo-pulse opacity-100" : "opacity-30"}`} />
-            <div className="relative w-20 h-20 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
-              <div className="flex items-end gap-[3px] h-10">
+            <div className="relative w-24 h-24 md:w-20 md:h-20 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
+              <div className="flex items-end gap-1 md:gap-[3px] h-12 md:h-10">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
@@ -287,17 +297,17 @@ export function CfoVoiceMode() {
           </div>
 
           <div className="text-center">
-            <p className="text-sm font-medium text-[var(--foreground)]">{statusText[state]}</p>
-            <p className="text-xs text-[var(--muted)] mt-1">
+            <p className="text-base md:text-sm font-medium text-[var(--foreground)]">{statusText[state]}</p>
+            <p className="text-sm md:text-xs text-[var(--muted)] mt-1">
               {muted ? "Microfone desativado" : "Modo Reunião ativo"}
             </p>
           </div>
 
           {/* Transcript */}
           {transcript.length > 0 && (
-            <div className="w-full max-h-40 overflow-y-auto px-2 space-y-2">
+            <div className="w-full flex-1 max-h-48 md:max-h-40 overflow-y-auto px-2 space-y-2">
               {transcript.map((t, i) => (
-                <div key={i} className={`text-xs ${t.role === "user" ? "text-[var(--muted)] text-right" : "text-[var(--foreground)]"}`}>
+                <div key={i} className={`text-sm md:text-xs ${t.role === "user" ? "text-[var(--muted)] text-right" : "text-[var(--foreground)]"}`}>
                   <span className="font-medium">{t.role === "user" ? "Você" : "CFO"}:</span> {t.text}
                 </div>
               ))}
@@ -306,24 +316,24 @@ export function CfoVoiceMode() {
           )}
 
           {/* Controls */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6 md:gap-4 pb-4 md:pb-0">
             <button
               onClick={toggleMute}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+              className={`w-14 h-14 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-colors ${
                 !muted
                   ? "bg-[var(--accent)]/20 text-[var(--accent)]"
                   : "bg-red-500/20 text-red-400"
               }`}
               title={muted ? "Ativar microfone" : "Desativar microfone"}
             >
-              {!muted ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              {!muted ? <Mic className="w-6 h-6 md:w-5 md:h-5" /> : <MicOff className="w-6 h-6 md:w-5 md:h-5" />}
             </button>
             <button
               onClick={handleEnd}
-              className="w-14 h-14 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
+              className="w-16 h-16 md:w-14 md:h-14 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 active:bg-red-700 transition-colors shadow-lg"
               title="Encerrar reunião"
             >
-              <PhoneOff className="w-5 h-5" />
+              <PhoneOff className="w-6 h-6 md:w-5 md:h-5" />
             </button>
           </div>
         </>

@@ -441,6 +441,7 @@ PERSONALIDADE:
 - Chame o usuário de "você"${ctx?.sellerDisplayName ? ` ou "${ctx.sellerDisplayName}"` : ""}
 - Quando apresentar números, arredonde para facilitar a compreensão oral
 - Use pausas naturais e organize as informações em blocos curtos
+- NUNCA use stage directions entre colchetes como [Com paciência], [pausado], [Com confiança] — essas marcações são lidas em voz alta e soam artificiais. Apenas fale naturalmente.
 
 DADOS ATUAIS DA OPERAÇÃO:
 - Pagamentos recuperados: ${snapshot.recovery.recovered} de ${snapshot.recovery.totalFailed} (taxa de ${snapshot.recovery.recoveryRate.toFixed(1)}%)
