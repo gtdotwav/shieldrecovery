@@ -93,11 +93,11 @@ export default async function Home() {
       {/* ═══ Navigation ═══ */}
       <nav
         className="relative z-30 mx-auto flex max-w-[82rem] items-center justify-between px-4 py-3 sm:px-8 sm:py-5 lg:px-10"
-        aria-label="Navegacao principal"
+        aria-label="Navegação principal"
       >
         <Image
           src={b.logo}
-          alt={`${b.name} — plataforma de recuperacao de pagamentos`}
+          alt={`${b.name} — plataforma de recuperação de pagamentos`}
           width={176}
           height={176}
           sizes="(min-width: 640px) 176px, 96px"
@@ -116,7 +116,7 @@ export default async function Home() {
                 boxShadow: `0 12px 32px ${b.accentGlow}`,
               }}
             >
-              <span className="hidden sm:inline">Comecar gratuitamente</span>
+              <span className="hidden sm:inline">Começar gratuitamente</span>
               <span className="sm:hidden">Acessar</span>
               <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Link>
@@ -177,7 +177,7 @@ export default async function Home() {
                       ~<CountUp end={40} suffix="%" duration={2200} />
                     </>
                   }
-                  label="Taxa de recuperacao (vs 5% do mercado)"
+                  label="Taxa de recuperação (vs 5% do mercado)"
                 />
                 <div
                   className="hidden h-8 w-px sm:block"
@@ -202,7 +202,7 @@ export default async function Home() {
                       boxShadow: `0 12px 32px ${b.accentGlow}`,
                     }}
                   >
-                    Comecar gratuitamente
+                    Começar gratuitamente
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </MagneticButton>
@@ -264,14 +264,14 @@ export default async function Home() {
                 step: "03",
                 title: "Link enviado",
                 description:
-                  "Checkout otimizado com PIX, cartao e boleto.",
+                  "Checkout otimizado com PIX, cartão e boleto.",
               },
               {
                 icon: CreditCard,
                 step: "04",
                 title: "Pagamento recuperado",
                 description:
-                  "Dinheiro de volta, relatorio atualizado em tempo real.",
+                  "Dinheiro de volta, relatório atualizado em tempo real.",
               },
             ].map((item, i) => (
               <Reveal key={item.step} direction="up" delay={i * 120}>
@@ -357,9 +357,9 @@ export default async function Home() {
         >
           <Reveal direction="up">
             <div className="text-center">
-              <SectionEyebrow>Modelo de negocio</SectionEyebrow>
+              <SectionEyebrow>Modelo de negócio</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Voce so paga quando recuperamos
+                Você só paga quando recuperamos
               </h2>
               <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-[var(--text-secondary)]">
                 Modelo 100% baseado em performance. Sem taxa fixa, sem contrato.
@@ -370,9 +370,9 @@ export default async function Home() {
           <div className="mx-auto mt-14 grid max-w-[56rem] gap-4 sm:grid-cols-3">
             <Reveal direction="up" delay={0}>
               <PricingCard
-                title="Integracao"
+                title="Integração"
                 price="R$0"
-                description="Setup, configuracao e onboarding gratuitos."
+                description="Setup, configuração e onboarding gratuitos."
                 icon={Zap}
               />
             </Reveal>
@@ -387,7 +387,7 @@ export default async function Home() {
             <Reveal direction="up" delay={240}>
               <PricingCard
                 title="Recovery fee"
-                price="% sobre recuperacao"
+                price="% sobre recuperação"
                 description="Percentual definido no onboarding com base no seu volume. Sem resultado, sem custo."
                 icon={DollarSign}
                 highlighted
@@ -407,7 +407,7 @@ export default async function Home() {
                 }}
               >
                 <strong className="text-white">Exemplo:</strong> recuperamos
-                R$10.000 → sua comissao e R$1.500 (15%)
+                R$10.000 → sua comissão é R$1.500 (15%)
               </p>
             </div>
           </Reveal>
@@ -424,7 +424,7 @@ export default async function Home() {
                     boxShadow: `0 12px 32px ${b.accentGlow}`,
                   }}
                 >
-                  Comecar gratuitamente
+                  Começar gratuitamente
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </MagneticButton>
@@ -447,7 +447,7 @@ export default async function Home() {
             <div className="text-center">
               <SectionEyebrow>Perguntas frequentes</SectionEyebrow>
               <h2 className="mt-4 text-balance text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] lg:text-[2.2rem]">
-                Tire suas duvidas
+                Tire suas dúvidas
               </h2>
             </div>
           </Reveal>
@@ -485,7 +485,7 @@ export default async function Home() {
                 <div>
                   <SectionEyebrow>Teste ao vivo</SectionEyebrow>
                   <h2 className="mt-4 max-w-[18ch] text-[1.5rem] font-bold tracking-[-0.03em] text-white sm:text-[1.75rem] sm:leading-[1.15] lg:text-[2.2rem]">
-                    Receba uma ligacao da nossa IA agora
+                    Receba uma ligação da nossa IA agora
                   </h2>
                   <p className="mt-5 max-w-md text-sm leading-7 text-[var(--text-secondary)]">
                     A mesma tecnologia que recupera pagamentos dos seus clientes.
@@ -497,12 +497,12 @@ export default async function Home() {
                       {
                         icon: Phone,
                         title: "Chamada real em segundos",
-                        desc: "Preencha o formulario e receba uma ligacao instantaneamente.",
+                        desc: "Preencha o formulário e receba uma ligação instantaneamente.",
                       },
                       {
                         icon: Bot,
                         title: "Voz natural e conversacional",
-                        desc: "A IA conversa, responde duvidas e negocia como um humano.",
+                        desc: "A IA conversa, responde dúvidas e negocia como um humano.",
                       },
                       {
                         icon: MessageSquare,
@@ -564,7 +564,7 @@ export default async function Home() {
                           Teste o Call Center IA
                         </p>
                         <p className="text-xs text-[var(--text-tertiary)]">
-                          Chamada gratuita de demonstracao
+                          Chamada gratuita de demonstração
                         </p>
                       </div>
                     </div>
@@ -573,7 +573,7 @@ export default async function Home() {
                   </div>
 
                   <p className="mt-4 text-center text-xs leading-5 text-[var(--text-muted)]">
-                    Ao solicitar, voce concorda em receber uma chamada de demonstracao.
+                    Ao solicitar, você concorda em receber uma chamada de demonstração.
                   </p>
                 </div>
               </div>
@@ -622,8 +622,8 @@ export default async function Home() {
                   Comece a recuperar receita hoje
                 </h2>
                 <p className="mx-auto mt-5 max-w-lg text-base leading-7 text-[var(--text-secondary)]">
-                  Integracao em minutos. Conecte, acompanhe e recupere — sem mudar
-                  sua operacao.
+                  Integração em minutos. Conecte, acompanhe e recupere — sem mudar
+                  sua operação.
                 </p>
                 <div className="mt-7 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
                   <MagneticButton>
@@ -635,7 +635,7 @@ export default async function Home() {
                         boxShadow: `0 12px 32px ${b.accentGlow}`,
                       }}
                     >
-                      Comecar gratuitamente
+                      Começar gratuitamente
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   </MagneticButton>
@@ -677,7 +677,7 @@ export default async function Home() {
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="#como-funciona">Como funciona</FooterLink>
                   <FooterLink href="#calculadora">Calculadora</FooterLink>
-                  <FooterLink href="#precos">Precos</FooterLink>
+                  <FooterLink href="#precos">Preços</FooterLink>
                   <FooterLink href="#demo-call">Demo Call Center</FooterLink>
                 </ul>
               </div>
@@ -702,7 +702,7 @@ export default async function Home() {
                 </p>
                 <ul className="mt-4 space-y-2.5">
                   <FooterLink href="/privacy">
-                    Politica de Privacidade
+                    Política de Privacidade
                   </FooterLink>
                   <FooterLink href="/terms">Termos de Uso</FooterLink>
                 </ul>
