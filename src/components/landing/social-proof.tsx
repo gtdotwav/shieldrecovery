@@ -42,8 +42,8 @@ function Stars() {
 
 export function SocialProof() {
   return (
-    <section className="relative z-10 mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
-      <p className="text-center text-sm text-gray-500 sm:text-base">
+    <section className="relative z-10 mx-auto max-w-[82rem] px-4 py-20 sm:px-8 sm:py-28 lg:px-10">
+      <p className="text-center text-sm text-gray-400 sm:text-base">
         Mais de{" "}
         <span className="font-semibold text-gray-300">200 empresas</span>{" "}
         já recuperam pagamentos com{" "}
@@ -58,7 +58,7 @@ export function SocialProof() {
             key={t.name}
             className="rounded-xl border p-5 sm:p-6"
             style={{
-              borderColor: "rgba(255,255,255,0.04)",
+              borderColor: "rgba(255,255,255,0.06)",
               background: `rgba(${b.slug === "pagrecovery" ? "6,20,15" : "13,13,13"},0.5)`,
             }}
           >
@@ -68,7 +68,7 @@ export function SocialProof() {
             </p>
             <div className="mt-4 border-t border-white/[0.04] pt-4">
               <p className="text-sm font-semibold text-gray-200">{t.name}</p>
-              <p className="text-xs text-gray-500">{t.role}</p>
+              <p className="text-xs text-gray-400">{t.role}</p>
             </div>
           </div>
         ))}

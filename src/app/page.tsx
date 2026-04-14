@@ -219,9 +219,7 @@ export default async function Home() {
         </section>
 
         {/* ═══════════════════════ 2. TRUST BADGES ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 py-20 sm:px-8 md:py-28 lg:px-10">
-          <TrustBadges />
-        </section>
+        <TrustBadges />
 
         <GlowDivider />
 
@@ -316,16 +314,12 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ 4. COMPARISON TABLE ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 py-20 sm:px-8 md:py-28 lg:px-10">
-          <ComparisonTable />
-        </section>
+        <ComparisonTable />
 
         <GlowDivider />
 
         {/* ═══════════════════════ 5. SOCIAL PROOF ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 py-20 sm:px-8 md:py-28 lg:px-10">
-          <SocialProof />
-        </section>
+        <SocialProof />
 
         <GlowDivider />
 
@@ -344,9 +338,7 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ 8. ONBOARDING STEPS ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 py-20 sm:px-8 md:py-28 lg:px-10">
-          <OnboardingSteps />
-        </section>
+        <OnboardingSteps />
 
         <GlowDivider />
 
@@ -435,9 +427,7 @@ export default async function Home() {
         <GlowDivider />
 
         {/* ═══════════════════════ 10. SECURITY ═══════════════════════ */}
-        <section className="relative mx-auto max-w-[82rem] px-4 py-20 sm:px-8 md:py-28 lg:px-10">
-          <SecuritySection />
-        </section>
+        <SecuritySection />
 
         <GlowDivider />
 

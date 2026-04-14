@@ -25,15 +25,15 @@ const steps = [
 
 export function OnboardingSteps() {
   return (
-    <section className="relative z-10 mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+    <section className="relative z-10 mx-auto max-w-[82rem] px-4 py-20 sm:px-8 sm:py-28 lg:px-10">
       <div className="text-center">
         <p
-          className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.2em] opacity-70 sm:tracking-[0.3em]"
+          className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em]"
           style={{ color: b.accent }}
         >
           Onboarding
         </p>
-        <h2 className="mt-3 text-balance text-2xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:mt-4 sm:text-[1.75rem] lg:text-[2.2rem]">
+        <h2 className="mt-3 text-balance text-2xl font-bold tracking-[-0.03em] text-white sm:mt-4 sm:text-[1.75rem] lg:text-[2.2rem]">
           Comece em 3 passos
         </h2>
       </div>
@@ -79,7 +79,7 @@ export function OnboardingSteps() {
               <h3 className="mt-4 text-sm font-semibold text-gray-200">
                 {step.title}
               </h3>
-              <p className="mt-1.5 max-w-[14rem] text-sm leading-relaxed text-gray-500 pb-8 sm:pb-0">
+              <p className="mt-1.5 max-w-[14rem] text-sm leading-relaxed text-gray-400 pb-8 sm:pb-0">
                 {step.description}
               </p>
             </div>

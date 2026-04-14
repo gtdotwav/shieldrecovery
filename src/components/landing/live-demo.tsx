@@ -41,15 +41,15 @@ export function LiveDemo() {
       {/* Header */}
       <div className="mb-8 text-center sm:mb-14">
         <p
-          className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.2em] opacity-70 sm:tracking-[0.3em]"
+          className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em]"
           style={{ color: b.accent }}
         >
           Como funciona
         </p>
-        <h2 className="mt-3 text-balance text-2xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:mt-4 sm:text-[1.75rem] lg:text-[2.2rem]">
+        <h2 className="mt-3 text-balance text-2xl font-bold tracking-[-0.03em] text-white sm:mt-4 sm:text-[1.75rem] lg:text-[2.2rem]">
           Veja a plataforma em ação
         </h2>
-        <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-gray-400 dark:text-gray-500 sm:mt-4 sm:text-[0.95rem] sm:leading-7">
+        <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-gray-400 sm:mt-4 sm:text-[0.95rem] sm:leading-7">
           Recuperação automática, dashboard em tempo real e checkout integrado
           — tudo em uma plataforma.
         </p>

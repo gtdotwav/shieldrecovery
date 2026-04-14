@@ -31,15 +31,15 @@ export function TrustBadges() {
               key={badge.label}
               className="flex items-center gap-2 rounded-full border px-4 py-2 sm:px-5 sm:py-2.5"
               style={{
-                borderColor: `rgba(${rgb},0.1)`,
-                background: `rgba(${rgb},0.03)`,
+                borderColor: `rgba(${rgb},0.12)`,
+                background: `rgba(${rgb},0.05)`,
               }}
             >
               <Icon
                 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4"
-                style={{ color: `rgba(${rgb},0.5)` }}
+                style={{ color: `rgba(${rgb},0.7)` }}
               />
-              <span className="text-xs font-medium text-gray-400 sm:text-sm">
+              <span className="text-xs font-medium text-gray-300 sm:text-sm">
                 {badge.label}
               </span>
             </div>

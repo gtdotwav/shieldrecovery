@@ -41,15 +41,15 @@ const rows = [
 
 export function ComparisonTable() {
   return (
-    <section className="relative z-10 mx-auto max-w-[82rem] px-4 py-16 sm:px-8 sm:py-24 lg:px-10">
+    <section className="relative z-10 mx-auto max-w-[82rem] px-4 py-20 sm:px-8 sm:py-28 lg:px-10">
       <div className="text-center">
         <p
-          className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.2em] opacity-70 sm:tracking-[0.3em]"
+          className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.3em]"
           style={{ color: b.accent }}
         >
           Comparativo
         </p>
-        <h2 className="mt-3 text-balance text-2xl font-bold tracking-[-0.03em] text-gray-900 dark:text-white sm:mt-4 sm:text-[1.75rem] lg:text-[2.2rem]">
+        <h2 className="mt-3 text-balance text-2xl font-bold tracking-[-0.03em] text-white sm:mt-4 sm:text-[1.75rem] lg:text-[2.2rem]">
           Sem automação vs Com {b.name}
         </h2>
       </div>
@@ -90,7 +90,7 @@ export function ComparisonTable() {
                 <td className="border-b border-white/[0.04] px-4 py-3.5 font-medium text-gray-300">
                   {row.aspect}
                 </td>
-                <td className="border-b border-white/[0.04] px-4 py-3.5 text-gray-500">
+                <td className="border-b border-white/[0.04] px-4 py-3.5 text-gray-400">
                   <div className="flex items-center gap-2">
                     <X className="h-3.5 w-3.5 shrink-0 text-red-400/50" />
                     {row.without}
