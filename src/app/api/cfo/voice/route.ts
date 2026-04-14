@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getAuthenticatedSession } from "@/server/auth/session";
 import { getCfoAgentService } from "@/server/recovery/services/cfo-agent-service";
 
 export async function POST(_req: NextRequest) {
   try {
-    await requireAuthenticatedSession(["admin", "seller"]);
+    const session = await getAuthenticatedSession();
+    if (!session) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
 
     const service = getCfoAgentService();
     const result = await service.generateVoiceSessionUrl();
@@ -24,7 +27,10 @@ export async function POST(_req: NextRequest) {
       firstMessage: result.firstMessage,
     });
   } catch (error) {
-    if (error instanceof Response) throw error;
-    return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
+    console.error("[cfo/voice] Error:", error);
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : "Internal error" },
+      { status: 500 },
+    );
   }
 }

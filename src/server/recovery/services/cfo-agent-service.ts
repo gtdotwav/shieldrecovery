@@ -328,26 +328,37 @@ export class CfoAgentService {
     const agentId = process.env.ELEVENLABS_AGENT_ID;
     if (!apiKey || !agentId) return null;
 
-    try {
-      const response = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
-        { method: "GET", headers: { "xi-api-key": apiKey } },
-      );
+    // 1. Get signed WebSocket URL from ElevenLabs
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
+      { method: "GET", headers: { "xi-api-key": apiKey } },
+    );
 
-      if (!response.ok) return null;
-      const data = await response.json();
-
-      // Build dynamic context for the voice agent
-      const snapshot = await this.getFinancialSnapshot(sellerAgentName);
-      const systemPrompt = this.buildVoiceSystemPrompt(snapshot);
-      const firstMessage =
-        "Oi! Sou seu CFO autônomo e estou aqui para nossa reunião. " +
-        "Gostaria de recapitular a última conversa ou tem algum assunto específico para começarmos?";
-
-      return { wsUrl: data.signed_url, systemPrompt, firstMessage };
-    } catch {
-      return null;
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`ElevenLabs API ${response.status}: ${body}`);
     }
+
+    const data = await response.json();
+    if (!data.signed_url) {
+      throw new Error("ElevenLabs returned no signed_url");
+    }
+
+    // 2. Build dynamic context — gracefully degrade if snapshot fails
+    let systemPrompt: string;
+    try {
+      const snapshot = await this.getFinancialSnapshot(sellerAgentName);
+      systemPrompt = this.buildVoiceSystemPrompt(snapshot);
+    } catch {
+      systemPrompt = `Você é o CFO Autônomo da PagRecovery — um diretor financeiro virtual.
+Fale em português brasileiro, de forma natural e direta. Os dados financeiros detalhados não estão disponíveis neste momento, mas você pode conversar sobre gestão, estratégia e responder perguntas gerais.`;
+    }
+
+    const firstMessage =
+      "Oi! Sou seu CFO autônomo e estou aqui para nossa reunião. " +
+      "Gostaria de recapitular a última conversa ou tem algum assunto específico para começarmos?";
+
+    return { wsUrl: data.signed_url, systemPrompt, firstMessage };
   }
 
   // System prompt tailored for voice conversations
