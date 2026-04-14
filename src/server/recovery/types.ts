@@ -1315,3 +1315,636 @@ export type MultiChannelSequenceStep = {
   templateSlug?: string;
   condition: "always" | "if_not_delivered" | "if_not_read";
 };
+
+/* ── Cart Abandonment ── */
+
+export const CART_ABANDONMENT_STATUSES = ["detected", "contacting", "recovered", "lost"] as const;
+export type CartAbandonmentStatus = (typeof CART_ABANDONMENT_STATUSES)[number];
+
+export type CartItem = {
+  productId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  imageUrl?: string;
+};
+
+export type CartAbandonmentRecord = {
+  id: string;
+  sellerKey: string;
+  sessionId: string;
+  customerId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  cartItems: CartItem[];
+  cartTotal: number;
+  currency: string;
+  checkoutUrl?: string;
+  abandonedAt: string;
+  status: CartAbandonmentStatus;
+  recoveredAt?: string;
+  recoveredValue?: number;
+  contactAttempts: number;
+  lastContactAt?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CartAbandonmentInput = {
+  sellerKey: string;
+  sessionId: string;
+  customerId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  cartItems: CartItem[];
+  cartTotal: number;
+  currency?: string;
+  checkoutUrl?: string;
+  metadata?: Record<string, unknown>;
+};
+
+/* ── Recurring Billing / Subscriptions ── */
+
+export const SUBSCRIPTION_STATUSES = ["active", "past_due", "canceled", "paused", "trial"] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
+export const BILLING_INTERVALS = ["daily", "weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual"] as const;
+export type BillingInterval = (typeof BILLING_INTERVALS)[number];
+
+export const DUNNING_STEP_TYPES = ["whatsapp", "email", "sms", "voice", "payment_retry"] as const;
+export type DunningStepType = (typeof DUNNING_STEP_TYPES)[number];
+
+export type SubscriptionRecord = {
+  id: string;
+  sellerKey: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  planName: string;
+  planAmount: number;
+  currency: string;
+  interval: BillingInterval;
+  status: SubscriptionStatus;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  nextBillingAt: string;
+  trialEndsAt?: string;
+  canceledAt?: string;
+  pausedAt?: string;
+  failedPaymentsCount: number;
+  totalPaid: number;
+  totalPeriods: number;
+  paymentMethod?: string;
+  gatewaySubscriptionId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SubscriptionInput = {
+  sellerKey: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  planName: string;
+  planAmount: number;
+  currency?: string;
+  interval: BillingInterval;
+  trialDays?: number;
+  paymentMethod?: string;
+  gatewaySubscriptionId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type DunningRuleRecord = {
+  id: string;
+  sellerKey: string;
+  name: string;
+  steps: DunningStep[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DunningStep = {
+  stepNumber: number;
+  delayHours: number;
+  type: DunningStepType;
+  templateSlug?: string;
+  retryPayment: boolean;
+};
+
+export type SubscriptionInvoiceRecord = {
+  id: string;
+  subscriptionId: string;
+  sellerKey: string;
+  amount: number;
+  currency: string;
+  status: "pending" | "paid" | "failed" | "refunded";
+  dueAt: string;
+  paidAt?: string;
+  failedAt?: string;
+  paymentMethod?: string;
+  gatewayPaymentId?: string;
+  dunningStep: number;
+  retryCount: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
+/* ── Upsell / Cross-sell ── */
+
+export const UPSELL_STATUSES = ["pending", "offered", "accepted", "declined", "expired"] as const;
+export type UpsellStatus = (typeof UPSELL_STATUSES)[number];
+
+export const UPSELL_TRIGGERS = ["post_payment", "post_recovery", "cart_abandonment", "reactivation", "manual"] as const;
+export type UpsellTrigger = (typeof UPSELL_TRIGGERS)[number];
+
+export type UpsellOfferRecord = {
+  id: string;
+  sellerKey: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  trigger: UpsellTrigger;
+  triggerEventId?: string;
+  originalProductName?: string;
+  originalProductValue?: number;
+  offerProductName: string;
+  offerProductValue: number;
+  discountPct?: number;
+  finalValue: number;
+  checkoutUrl?: string;
+  status: UpsellStatus;
+  offeredAt?: string;
+  respondedAt?: string;
+  channel?: string;
+  messageId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpsellRuleRecord = {
+  id: string;
+  sellerKey: string;
+  name: string;
+  trigger: UpsellTrigger;
+  sourceProductPattern?: string;
+  offerProductName: string;
+  offerProductValue: number;
+  discountPct: number;
+  delayMinutes: number;
+  channel: string;
+  templateSlug?: string;
+  maxOffersPerCustomer: number;
+  active: boolean;
+  totalOffered: number;
+  totalAccepted: number;
+  totalRevenue: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpsellRuleInput = {
+  sellerKey: string;
+  name: string;
+  trigger: UpsellTrigger;
+  sourceProductPattern?: string;
+  offerProductName: string;
+  offerProductValue: number;
+  discountPct?: number;
+  delayMinutes?: number;
+  channel?: string;
+  templateSlug?: string;
+  maxOffersPerCustomer?: number;
+  active?: boolean;
+};
+
+/* ── Base Reactivation ── */
+
+export const REACTIVATION_CAMPAIGN_STATUSES = ["draft", "scheduled", "active", "paused", "completed"] as const;
+export type ReactivationCampaignStatus = (typeof REACTIVATION_CAMPAIGN_STATUSES)[number];
+
+export type ReactivationCampaignRecord = {
+  id: string;
+  sellerKey: string;
+  name: string;
+  description?: string;
+  status: ReactivationCampaignStatus;
+  inactiveDaysThreshold: number;
+  targetSegment?: string;
+  offerDescription?: string;
+  discountPct?: number;
+  channels: string[];
+  templateSlugs: Record<string, string>;
+  totalTargeted: number;
+  totalContacted: number;
+  totalReactivated: number;
+  totalRevenue: number;
+  scheduledAt?: string;
+  startedAt?: string;
+  completedAt?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReactivationCampaignInput = {
+  sellerKey: string;
+  name: string;
+  description?: string;
+  inactiveDaysThreshold: number;
+  targetSegment?: string;
+  offerDescription?: string;
+  discountPct?: number;
+  channels?: string[];
+  templateSlugs?: Record<string, string>;
+  scheduledAt?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type ReactivationContactRecord = {
+  id: string;
+  campaignId: string;
+  customerId: string;
+  customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  lastPurchaseAt: string;
+  lastPurchaseValue: number;
+  totalHistoricalValue: number;
+  status: "pending" | "contacted" | "reactivated" | "declined" | "unresponsive";
+  contactedAt?: string;
+  reactivatedAt?: string;
+  reactivatedValue?: number;
+  channel?: string;
+  messageId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
+/* ── Commerce AI (Conversational Sales) ── */
+
+export const COMMERCE_SESSION_STATUSES = ["browsing", "interested", "negotiating", "checkout", "purchased", "abandoned"] as const;
+export type CommerceSessionStatus = (typeof COMMERCE_SESSION_STATUSES)[number];
+
+export type CommerceCatalogItem = {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+  category?: string;
+  available: boolean;
+};
+
+export type CommerceSelectedItem = {
+  catalogItemId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+};
+
+export type CommerceSessionRecord = {
+  id: string;
+  sellerKey: string;
+  customerId?: string;
+  customerName?: string;
+  customerPhone: string;
+  customerEmail?: string;
+  status: CommerceSessionStatus;
+  catalogItems: CommerceCatalogItem[];
+  selectedItems: CommerceSelectedItem[];
+  cartTotal: number;
+  discountApplied?: number;
+  finalTotal: number;
+  checkoutUrl?: string;
+  checkoutSessionId?: string;
+  conversationId?: string;
+  aiMessagesCount: number;
+  purchasedAt?: string;
+  purchasedValue?: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CommerceCatalogRecord = {
+  id: string;
+  sellerKey: string;
+  name: string;
+  items: CommerceCatalogItem[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* ── Preventive Billing ── */
+
+export type PreventiveRuleRecord = {
+  id: string;
+  sellerKey: string;
+  name: string;
+  daysBeforeDue: number[];
+  channels: string[];
+  templateSlugs: Record<string, string>;
+  includePaymentLink: boolean;
+  active: boolean;
+  totalSent: number;
+  totalPaidBeforeDue: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PreventiveRuleInput = {
+  sellerKey: string;
+  name: string;
+  daysBeforeDue: number[];
+  channels?: string[];
+  templateSlugs?: Record<string, string>;
+  includePaymentLink?: boolean;
+  active?: boolean;
+};
+
+export type PreventiveReminderRecord = {
+  id: string;
+  ruleId: string;
+  sellerKey: string;
+  customerId: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  invoiceId?: string;
+  amount: number;
+  dueAt: string;
+  reminderType: "pre_due" | "due_day" | "post_due";
+  daysFromDue: number;
+  channel: string;
+  status: "scheduled" | "sent" | "paid_before_due" | "failed";
+  sentAt?: string;
+  paidAt?: string;
+  messageId?: string;
+  createdAt: string;
+};
+
+/* ── Negativation / Protest ── */
+
+export const NEGATIVATION_STATUSES = ["pending", "pending_notice", "waiting_period", "ready_to_register", "registered", "paid", "removed", "disputed"] as const;
+export type NegativationStatus = (typeof NEGATIVATION_STATUSES)[number];
+
+export type NegativationRecord = {
+  id: string;
+  sellerKey: string;
+  customerId: string;
+  customerName: string;
+  customerDocument: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  debtAmount: number;
+  originalDueAt: string;
+  registeredAt?: string;
+  removedAt?: string;
+  paidAt?: string;
+  bureau: "serasa" | "spc" | "boa_vista" | "cartorio";
+  status: NegativationStatus;
+  protocolNumber?: string;
+  extrajudicialNoticeId?: string;
+  recoveryLeadId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NegativationInput = {
+  sellerKey: string;
+  customerId: string;
+  customerName: string;
+  customerDocument: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  debtAmount: number;
+  originalDueAt: string;
+  bureau?: "serasa" | "spc" | "boa_vista" | "cartorio";
+  recoveryLeadId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type ExtrajudicialNoticeRecord = {
+  id: string;
+  sellerKey: string;
+  customerId: string;
+  customerName: string;
+  customerDocument: string;
+  customerAddress?: string;
+  debtAmount: number;
+  debtDescription: string;
+  originalDueAt: string;
+  status: "draft" | "sent" | "delivered" | "acknowledged" | "expired";
+  sentAt?: string;
+  deliveredAt?: string;
+  acknowledgedAt?: string;
+  expiresAt?: string;
+  deliveryMethod: "digital" | "postal" | "registered_mail";
+  trackingCode?: string;
+  negativationId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* ── Payment Score ── */
+
+export type PaymentScoreFactor = {
+  name: string;
+  weight: number;
+  value: number;
+  impact: "positive" | "negative" | "neutral";
+};
+
+export type PaymentScoreRecord = {
+  id: string;
+  customerId: string;
+  customerDocument?: string;
+  customerEmail: string;
+  customerPhone?: string;
+  score: number;
+  riskLevel: "very_low" | "low" | "medium" | "high" | "very_high";
+  totalTransactions: number;
+  successfulTransactions: number;
+  failedTransactions: number;
+  recoveredTransactions: number;
+  averagePaymentTimeHours: number;
+  totalSpent: number;
+  averageTicket: number;
+  preferredPaymentMethod?: string;
+  lastTransactionAt?: string;
+  firstTransactionAt?: string;
+  chargebackCount: number;
+  refundCount: number;
+  factors: PaymentScoreFactor[];
+  metadata: Record<string, unknown>;
+  calculatedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PaymentScoreQuery = {
+  customerId?: string;
+  customerEmail?: string;
+  customerDocument?: string;
+};
+
+/* ── Reconciliation ── */
+
+export type ReconciliationEntry = {
+  chargeId?: string;
+  paymentId?: string;
+  amount: number;
+  gatewayFee: number;
+  platformFee: number;
+  netAmount: number;
+  status: "matched" | "charge_only" | "payment_only" | "amount_mismatch";
+  chargeDate?: string;
+  paymentDate?: string;
+};
+
+export type ReconciliationReportRecord = {
+  id: string;
+  sellerKey: string;
+  periodStart: string;
+  periodEnd: string;
+  totalChargesSent: number;
+  totalPaymentsReceived: number;
+  totalGatewayFees: number;
+  totalPlatformFees: number;
+  netRevenue: number;
+  matchedCount: number;
+  unmatchedCharges: number;
+  unmatchedPayments: number;
+  discrepancyAmount: number;
+  status: "processing" | "completed" | "has_discrepancies";
+  entries: ReconciliationEntry[];
+  metadata: Record<string, unknown>;
+  generatedAt: string;
+  createdAt: string;
+};
+
+/* ── Outbound Sales AI ── */
+
+export const OUTBOUND_CAMPAIGN_STATUSES = ["draft", "active", "paused", "completed"] as const;
+export type OutboundCampaignStatus = (typeof OUTBOUND_CAMPAIGN_STATUSES)[number];
+
+export type OutboundSalesCampaignRecord = {
+  id: string;
+  sellerKey: string;
+  name: string;
+  description?: string;
+  status: OutboundCampaignStatus;
+  productName: string;
+  productValue: number;
+  discountPct?: number;
+  channels: string[];
+  voiceTone?: VoiceTone;
+  voiceGender?: VoiceGender;
+  targetSegment?: string;
+  scriptPrompt: string;
+  maxContactsPerDay: number;
+  totalContacted: number;
+  totalInterested: number;
+  totalSold: number;
+  totalRevenue: number;
+  startedAt?: string;
+  completedAt?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OutboundSalesContactRecord = {
+  id: string;
+  campaignId: string;
+  customerId?: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  status: "pending" | "contacted" | "interested" | "sold" | "declined" | "no_answer";
+  contactedAt?: string;
+  channel?: string;
+  callId?: string;
+  messageId?: string;
+  checkoutUrl?: string;
+  purchasedAt?: string;
+  purchasedValue?: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
+/* ── Accountant White-label ── */
+
+export type AccountantProfileRecord = {
+  id: string;
+  name: string;
+  companyName: string;
+  document: string;
+  email: string;
+  phone: string;
+  sellerKey: string;
+  commissionPct: number;
+  totalClients: number;
+  activeClients: number;
+  totalRecoveredRevenue: number;
+  totalCommissionEarned: number;
+  active: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AccountantClientRecord = {
+  id: string;
+  accountantId: string;
+  clientName: string;
+  clientDocument: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  sellerKey: string;
+  active: boolean;
+  totalDebt: number;
+  recoveredDebt: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* ── Anticipation ── */
+
+export const ANTICIPATION_STATUSES = ["pending", "approved", "disbursed", "settled", "rejected"] as const;
+export type AnticipationStatus = (typeof ANTICIPATION_STATUSES)[number];
+
+export type AnticipationRequestRecord = {
+  id: string;
+  sellerKey: string;
+  requestedAmount: number;
+  approvedAmount?: number;
+  feeAmount: number;
+  netAmount: number;
+  spreadPct: number;
+  receivablesCount: number;
+  status: AnticipationStatus;
+  requestedAt: string;
+  approvedAt?: string;
+  disbursedAt?: string;
+  settledAt?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+  receivableIds: string[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
