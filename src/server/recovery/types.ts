@@ -1948,3 +1948,119 @@ export type AnticipationRequestRecord = {
   createdAt: string;
   updatedAt: string;
 };
+
+/* ── CFO Autonomous Agent ── */
+
+export type CfoMessageRole = "user" | "assistant" | "system";
+
+export type CfoChartPayload = {
+  type: "bar" | "line" | "donut" | "metric_cards";
+  title?: string;
+  labels: string[];
+  datasets: Array<{ label: string; data: number[]; color?: string }>;
+};
+
+export type CfoMessage = {
+  role: CfoMessageRole;
+  content: string;
+  timestamp: string;
+  chipId?: string;
+  chartData?: CfoChartPayload;
+};
+
+export type CfoConversationRecord = {
+  id: string;
+  userEmail: string;
+  userRole: string;
+  title?: string;
+  messages: CfoMessage[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const CFO_INSIGHT_CATEGORIES = [
+  "cash_flow", "delinquency", "recovery", "forecast",
+  "anomaly", "opportunity", "performance",
+] as const;
+export type CfoInsightCategory = (typeof CFO_INSIGHT_CATEGORIES)[number];
+
+export const CFO_INSIGHT_SEVERITIES = ["info", "warning", "critical", "positive"] as const;
+export type CfoInsightSeverity = (typeof CFO_INSIGHT_SEVERITIES)[number];
+
+export type CfoInsightRecord = {
+  id: string;
+  sellerKey?: string;
+  category: CfoInsightCategory;
+  severity: CfoInsightSeverity;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  read: boolean;
+  readAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+};
+
+export type FinancialSnapshot = {
+  recovery: {
+    totalFailed: number;
+    recovered: number;
+    recoveryRate: number;
+    recoveredRevenue: number;
+    avgRecoveryTimeHours: number;
+    activeRecoveries: number;
+  };
+  activeLeads: number;
+  cashFlow: {
+    inbound: number;
+    outbound: number;
+    net: number;
+    projectedWeek: number;
+  };
+  subscriptions: {
+    active: number;
+    pastDue: number;
+    mrr: number;
+    churnRate: number;
+  };
+  cartAbandonment: {
+    detected: number;
+    recovered: number;
+    rate: number;
+    recoveredValue: number;
+  };
+  upsell: {
+    offered: number;
+    accepted: number;
+    conversionRate: number;
+    revenue: number;
+  };
+  delinquency: {
+    total: number;
+    totalValue: number;
+    byAge: Record<string, number>;
+  };
+  channels: {
+    whatsapp: number;
+    email: number;
+    voice: number;
+    sms: number;
+  };
+  inbox: {
+    open: number;
+    pending: number;
+    unread: number;
+  };
+};
+
+export const CFO_QUICK_CHIPS = [
+  { id: "daily_summary", label: "Resumo do dia", icon: "bar-chart" },
+  { id: "cash_health", label: "Saúde do caixa", icon: "heart-pulse" },
+  { id: "recovery_performance", label: "O que recuperamos?", icon: "trending-up" },
+  { id: "week_forecast", label: "Previsão da semana", icon: "calendar" },
+  { id: "delinquency", label: "Inadimplência atual", icon: "alert-triangle" },
+  { id: "urgent_actions", label: "Top ações urgentes", icon: "zap" },
+  { id: "channel_performance", label: "Performance por canal", icon: "layers" },
+  { id: "month_comparison", label: "Comparar com mês passado", icon: "git-compare-arrows" },
+] as const;
+export type CfoChipId = (typeof CFO_QUICK_CHIPS)[number]["id"];

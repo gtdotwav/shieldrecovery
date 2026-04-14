@@ -34,6 +34,9 @@ import { logoutAction } from "@/app/actions/auth-actions";
 import { PlatformLogo } from "@/components/platform/platform-logo";
 import { MobileMoreMenu } from "@/components/platform/mobile-more-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { CfoProvider } from "@/components/cfo/cfo-provider";
+import { CfoFab } from "@/components/cfo/cfo-fab";
+import { CfoChatPanel } from "@/components/cfo/cfo-chat-panel";
 import { requireAuthenticatedSession } from "@/server/auth/session";
 import { appEnv } from "@/server/recovery/config";
 import { cn } from "@/lib/utils";
@@ -534,6 +537,12 @@ export async function PlatformAppPage({
           {children}
         </main>
       </div>
+
+      {/* CFO Autonomo */}
+      <CfoProvider>
+        <CfoFab />
+        <CfoChatPanel />
+      </CfoProvider>
     </div>
   );
 }
