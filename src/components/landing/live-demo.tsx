@@ -95,7 +95,7 @@ export function LiveDemo() {
 
           {/* Tab content */}
           <div className="relative min-h-[20rem] sm:min-h-[24rem]">
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
               {activeTab === "recovery" && (
                 <motion.div
                   key="recovery"

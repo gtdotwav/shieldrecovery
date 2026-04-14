@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, type Variants } from "motion/react";
-import type { ReactNode } from "react";
+import { motion, useInView, type Variants } from "motion/react";
+import { useRef, type ReactNode } from "react";
 
 const directionVariants: Record<string, Variants> = {
   up: {
@@ -41,12 +41,14 @@ export function Reveal({
   direction?: "up" | "left" | "right" | "scale";
   speed?: "fast" | "normal" | "slow";
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-40px" });
+
   return (
     <motion.div
+      ref={ref}
       className={className}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-40px" }}
+      animate={inView ? "visible" : "hidden"}
       variants={directionVariants[direction]}
       transition={{
         duration: speedDurations[speed],

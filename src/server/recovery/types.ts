@@ -356,7 +356,20 @@ export type SystemLogRecord = {
     | "worker_job_failed"
     | "duplicate_webhook"
     | "callcenter_checkout"
-    | "opt_out_processed";
+    | "opt_out_processed"
+    | "anticipation_requested"
+    | "anticipation_approved"
+    | "anticipation_disbursed"
+    | "reactivation_campaign_started"
+    | "reconciliation_completed"
+    | "payment_scores_refreshed"
+    | "extrajudicial_notice_sent"
+    | "negativation_registered"
+    | "negativation_queue_processed"
+    | "upsell"
+    | "commerce"
+    | "outbound_sales"
+    | "unsupported";
   level: "info" | "warn" | "error";
   message: string;
   context: Record<string, unknown>;

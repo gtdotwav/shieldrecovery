@@ -37,7 +37,6 @@ export function HeroHeading() {
         <motion.span
           key={word}
           variants={wordAnim(i)}
-          initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           className="inline-block mr-[0.28em]"
         >
@@ -50,7 +49,6 @@ export function HeroHeading() {
           <motion.span
             key={word}
             variants={wordAnim(plainWords.length + i)}
-            initial="hidden"
             animate={isInView ? "visible" : "hidden"}
             className="inline-block mr-[0.28em] last:mr-0 shimmer-text bg-clip-text text-transparent"
             style={{
@@ -64,7 +62,6 @@ export function HeroHeading() {
         ))}
         <motion.span
           className="absolute -bottom-1.5 left-0 h-[2px] w-full"
-          initial={{ scaleX: 0 }}
           animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
           transition={{
             duration: 0.9,
