@@ -318,24 +318,67 @@ export class CfoAgentService {
     await db.from("cfo_insights").update({ read: true, read_at: new Date().toISOString() }).eq("id", id);
   }
 
-  // Generate ElevenLabs voice session URL
-  async generateVoiceSessionUrl(): Promise<{ wsUrl: string } | null> {
+  // Generate ElevenLabs voice session URL + dynamic config for the agent
+  async generateVoiceSessionUrl(sellerAgentName?: string): Promise<{
+    wsUrl: string;
+    systemPrompt: string;
+    firstMessage: string;
+  } | null> {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     const agentId = process.env.ELEVENLABS_AGENT_ID;
     if (!apiKey || !agentId) return null;
 
     try {
-      const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`, {
-        method: "GET",
-        headers: { "xi-api-key": apiKey },
-      });
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
+        { method: "GET", headers: { "xi-api-key": apiKey } },
+      );
 
       if (!response.ok) return null;
       const data = await response.json();
-      return { wsUrl: data.signed_url };
+
+      // Build dynamic context for the voice agent
+      const snapshot = await this.getFinancialSnapshot(sellerAgentName);
+      const systemPrompt = this.buildVoiceSystemPrompt(snapshot);
+      const firstMessage =
+        "Oi! Sou seu CFO autônomo e estou aqui para nossa reunião. " +
+        "Gostaria de recapitular a última conversa ou tem algum assunto específico para começarmos?";
+
+      return { wsUrl: data.signed_url, systemPrompt, firstMessage };
     } catch {
       return null;
     }
+  }
+
+  // System prompt tailored for voice conversations
+  private buildVoiceSystemPrompt(snapshot: FinancialSnapshot): string {
+    return `Você é o CFO Autônomo da PagRecovery — um diretor financeiro virtual que conduz reuniões de gestão com o dono do negócio.
+
+PERSONALIDADE:
+- Fale de forma natural e fluida, como um CFO real em uma reunião
+- Seja direto mas amigável, use linguagem coloquial brasileira
+- Chame o usuário de "você" e mantenha tom profissional mas acessível
+- Quando apresentar números, arredonde para facilitar a compreensão oral
+- Use pausas naturais e organize as informações em blocos curtos
+
+DADOS ATUAIS DA OPERAÇÃO:
+- Pagamentos recuperados: ${snapshot.recovery.recovered} de ${snapshot.recovery.totalFailed} (taxa de ${snapshot.recovery.recoveryRate.toFixed(1)}%)
+- Receita recuperada: R$ ${(snapshot.recovery.recoveredRevenue / 100).toFixed(2)}
+- Recuperações em andamento: ${snapshot.recovery.activeRecoveries}
+- Tempo médio de recuperação: ${snapshot.recovery.avgRecoveryTimeHours.toFixed(1)} horas
+- Leads ativos: ${snapshot.activeLeads}
+- Inadimplência total: ${snapshot.delinquency.total} leads, R$ ${(snapshot.delinquency.totalValue / 100).toFixed(2)} em risco
+- Inadimplência por idade: 0-7 dias: ${snapshot.delinquency.byAge["0-7d"] || 0}, 8-15 dias: ${snapshot.delinquency.byAge["8-15d"] || 0}, 16-30 dias: ${snapshot.delinquency.byAge["16-30d"] || 0}, 30+ dias: ${snapshot.delinquency.byAge["30d+"] || 0}
+- Canais: WhatsApp ${snapshot.channels.whatsapp}, Email ${snapshot.channels.email}, Voz ${snapshot.channels.voice}
+- Fluxo de caixa líquido: R$ ${(snapshot.cashFlow.net / 100).toFixed(2)}
+
+REGRAS:
+- Sempre use dados reais, nunca invente números
+- Quando perguntado sobre algo que não tem dados, diga honestamente
+- Sugira ações específicas e acionáveis
+- Valores em reais, arredondados para facilitar compreensão oral
+- Mantenha respostas concisas — é uma conversa, não um relatório
+- Se o usuário pedir para recapitular, faça um resumo executivo rápido dos números principais`;
   }
 
   // Build system prompt with financial context

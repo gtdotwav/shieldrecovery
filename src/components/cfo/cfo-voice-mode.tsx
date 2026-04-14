@@ -4,18 +4,23 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Mic, MicOff, PhoneOff } from "lucide-react";
 import { useCfo } from "./cfo-provider";
 
+type VoiceState = "connecting" | "listening" | "speaking" | "error";
+
 export function CfoVoiceMode() {
-  const { voiceWsUrl, stopVoice } = useCfo();
-  const [isConnected, setIsConnected] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const { voiceConfig, stopVoice } = useCfo();
+  const [state, setState] = useState<VoiceState>("connecting");
   const [transcript, setTranscript] = useState<Array<{ role: string; text: string }>>([]);
   const [error, setError] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
+
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const audioQueueRef = useRef<ArrayBuffer[]>([]);
+  const isPlayingRef = useRef(false);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const sampleRateRef = useRef(16000);
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,7 +35,7 @@ export function CfoVoiceMode() {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
-    if (audioContextRef.current) {
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
       audioContextRef.current.close().catch(() => {});
       audioContextRef.current = null;
     }
@@ -38,11 +43,49 @@ export function CfoVoiceMode() {
       wsRef.current.close();
       wsRef.current = null;
     }
-    setIsConnected(false);
-    setIsListening(false);
-    setIsSpeaking(false);
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
   }, []);
 
+  /* ── Audio playback queue ── */
+  const playNextInQueue = useCallback(async () => {
+    const ctx = audioContextRef.current;
+    if (!ctx || audioQueueRef.current.length === 0) {
+      isPlayingRef.current = false;
+      setState(prev => prev === "speaking" ? "listening" : prev);
+      return;
+    }
+    isPlayingRef.current = true;
+    setState("speaking");
+
+    const pcmBuffer = audioQueueRef.current.shift()!;
+    const int16 = new Int16Array(pcmBuffer);
+    const float32 = new Float32Array(int16.length);
+    for (let i = 0; i < int16.length; i++) {
+      float32[i] = int16[i] / 32768;
+    }
+
+    const audioBuffer = ctx.createBuffer(1, float32.length, sampleRateRef.current);
+    audioBuffer.getChannelData(0).set(float32);
+
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    source.onended = () => playNextInQueue();
+    source.start();
+  }, []);
+
+  const enqueueAudio = useCallback((base64: string) => {
+    try {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      audioQueueRef.current.push(bytes.buffer);
+      if (!isPlayingRef.current) playNextInQueue();
+    } catch { /* ignore decode errors */ }
+  }, [playNextInQueue]);
+
+  /* ── Mic capture → WebSocket ── */
   const startAudioCapture = useCallback((stream: MediaStream, ws: WebSocket) => {
     const audioContext = new AudioContext({ sampleRate: 16000 });
     audioContextRef.current = audioContext;
@@ -51,84 +94,134 @@ export function CfoVoiceMode() {
     processorRef.current = processor;
 
     processor.onaudioprocess = (e) => {
-      if (ws.readyState === WebSocket.OPEN) {
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcm16 = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-          pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-        }
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
-        ws.send(JSON.stringify({ user_audio_chunk: base64 }));
+      if (ws.readyState !== WebSocket.OPEN || muted) return;
+      const inputData = e.inputBuffer.getChannelData(0);
+      const pcm16 = new Int16Array(inputData.length);
+      for (let i = 0; i < inputData.length; i++) {
+        pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
       }
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+      ws.send(JSON.stringify({ user_audio_chunk: base64 }));
     };
 
     source.connect(processor);
     processor.connect(audioContext.destination);
-  }, []);
+  }, [muted]);
 
-  const playAudioChunk = useCallback(async (base64Audio: string) => {
-    try {
-      if (!audioContextRef.current) return;
-      const binary = atob(base64Audio);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      // Assume 16-bit PCM at 16kHz mono
-      const float32 = new Float32Array(bytes.length / 2);
-      const view = new DataView(bytes.buffer);
-      for (let i = 0; i < float32.length; i++) {
-        float32[i] = view.getInt16(i * 2, true) / 32768;
-      }
-      const buffer = audioContextRef.current.createBuffer(1, float32.length, 16000);
-      buffer.getChannelData(0).set(float32);
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContextRef.current.destination);
-      source.start();
-    } catch { /* ignore playback errors */ }
-  }, []);
-
+  /* ── WebSocket connection ── */
   const connect = useCallback(async () => {
-    if (!voiceWsUrl) return;
+    if (!voiceConfig) return;
     setError(null);
+    setState("connecting");
 
     try {
-      // Request microphone
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      });
       streamRef.current = stream;
 
-      // Create WebSocket
-      const ws = new WebSocket(voiceWsUrl);
+      const ws = new WebSocket(voiceConfig.wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        setIsConnected(true);
-        setIsListening(true);
+        // Send conversation initiation with dynamic prompt + first message override
+        ws.send(JSON.stringify({
+          type: "conversation_initiation_client_data",
+          conversation_config_override: {
+            agent: {
+              prompt: { prompt: voiceConfig.systemPrompt },
+              first_message: voiceConfig.firstMessage,
+            },
+          },
+        }));
         startAudioCapture(stream, ws);
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === "audio") {
-            setIsSpeaking(true);
-            playAudioChunk(data.audio);
-          } else if (data.type === "audio_end") {
-            setIsSpeaking(false);
-          } else if (data.type === "transcript" || data.type === "user_transcript") {
-            if (data.text?.trim()) {
-              setTranscript(prev => [...prev, { role: data.role || (data.type === "user_transcript" ? "user" : "agent"), text: data.text }]);
-            }
+
+          switch (data.type) {
+            case "conversation_initiation_metadata":
+              // Connection established, agent will start speaking first message
+              setState("listening");
+              if (data.conversation_initiation_metadata_event?.agent_output_audio_format) {
+                const fmt = data.conversation_initiation_metadata_event.agent_output_audio_format;
+                const match = fmt.match(/pcm_(\d+)/);
+                if (match) sampleRateRef.current = parseInt(match[1], 10);
+              }
+              break;
+
+            case "audio":
+              if (data.audio_event?.audio_base_64) {
+                enqueueAudio(data.audio_event.audio_base_64);
+              }
+              break;
+
+            case "agent_response":
+              if (data.agent_response_event?.agent_response?.trim()) {
+                setTranscript(prev => [...prev, { role: "agent", text: data.agent_response_event.agent_response }]);
+              }
+              break;
+
+            case "user_transcript":
+              if (data.user_transcription_event?.user_transcript?.trim()) {
+                setTranscript(prev => [...prev, { role: "user", text: data.user_transcription_event.user_transcript }]);
+              }
+              break;
+
+            case "interruption":
+              // User interrupted the agent — clear audio queue
+              audioQueueRef.current = [];
+              isPlayingRef.current = false;
+              setState("listening");
+              break;
+
+            case "ping":
+              if (data.ping_event?.event_id != null) {
+                ws.send(JSON.stringify({ type: "pong", event_id: data.ping_event.event_id }));
+              }
+              break;
+
+            case "agent_response_correction":
+              // Update last agent transcript if corrected
+              if (data.agent_response_correction_event?.corrected_agent_response) {
+                setTranscript(prev => {
+                  const copy = [...prev];
+                  for (let i = copy.length - 1; i >= 0; i--) {
+                    if (copy[i].role === "agent") {
+                      copy[i] = { role: "agent", text: data.agent_response_correction_event.corrected_agent_response };
+                      break;
+                    }
+                  }
+                  return copy;
+                });
+              }
+              break;
           }
         } catch { /* ignore parse errors */ }
       };
 
-      ws.onerror = () => setError("Erro na conexao de voz.");
-      ws.onclose = () => { setIsConnected(false); setIsListening(false); };
-    } catch {
-      setError("Permissao de microfone negada.");
+      ws.onerror = () => {
+        setError("Erro na conexão de voz. Verifique sua internet.");
+        setState("error");
+      };
+
+      ws.onclose = (e) => {
+        if (e.code !== 1000) {
+          setError("Conexão encerrada inesperadamente.");
+          setState("error");
+        }
+      };
+    } catch (err) {
+      const msg = err instanceof Error && err.name === "NotAllowedError"
+        ? "Permissão de microfone negada. Habilite nas configurações do navegador."
+        : "Erro ao acessar microfone.";
+      setError(msg);
+      setState("error");
       cleanup();
     }
-  }, [voiceWsUrl, cleanup, startAudioCapture, playAudioChunk]);
+  }, [voiceConfig, cleanup, startAudioCapture, enqueueAudio]);
 
   useEffect(() => {
     connect();
@@ -140,19 +233,30 @@ export function CfoVoiceMode() {
     stopVoice();
   };
 
+  const toggleMute = () => setMuted(prev => !prev);
+
+  const statusText = {
+    connecting: "Conectando ao CFO...",
+    listening: "Ouvindo você...",
+    speaking: "CFO está falando...",
+    error: "Erro na conexão",
+  };
+
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 py-4">
-      {error ? (
-        <div className="text-center">
+      {state === "error" ? (
+        <div className="text-center px-4">
           <p className="text-sm text-red-400">{error}</p>
-          <button onClick={handleEnd} className="mt-3 text-xs text-[var(--accent)]">Voltar ao chat</button>
+          <button onClick={handleEnd} className="mt-4 px-4 py-2 text-xs rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20 transition-colors">
+            Voltar ao chat
+          </button>
         </div>
       ) : (
         <>
           {/* Voice visualization */}
           <div className="relative w-32 h-32 flex items-center justify-center">
-            <div className={`absolute inset-0 rounded-full bg-[var(--accent)]/10 ${isSpeaking ? "animate-ping" : ""}`} />
-            <div className={`absolute inset-2 rounded-full bg-[var(--accent)]/15 ${isListening ? "cfo-pulse" : ""}`} />
+            <div className={`absolute inset-0 rounded-full bg-[var(--accent)]/10 transition-opacity duration-300 ${state === "speaking" ? "animate-ping opacity-100" : "opacity-0"}`} />
+            <div className={`absolute inset-2 rounded-full bg-[var(--accent)]/15 transition-opacity ${state !== "connecting" ? "cfo-pulse opacity-100" : "opacity-30"}`} />
             <div className="relative w-20 h-20 rounded-full bg-[var(--accent)]/20 flex items-center justify-center">
               <div className="flex items-end gap-[3px] h-10">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -160,7 +264,11 @@ export function CfoVoiceMode() {
                     key={i}
                     className="w-1.5 rounded-full bg-[var(--accent)] transition-all duration-150"
                     style={{
-                      height: isSpeaking ? `${20 + Math.random() * 60}%` : isListening ? `${15 + Math.random() * 30}%` : "15%",
+                      height: state === "speaking"
+                        ? `${20 + Math.random() * 60}%`
+                        : state === "listening" && !muted
+                          ? `${15 + Math.random() * 30}%`
+                          : "15%",
                       animationDelay: `${i * 100}ms`,
                     }}
                   />
@@ -170,10 +278,10 @@ export function CfoVoiceMode() {
           </div>
 
           <div className="text-center">
-            <p className="text-sm font-medium text-[var(--foreground)]">
-              {!isConnected ? "Conectando..." : isSpeaking ? "CFO esta falando..." : "Ouvindo..."}
+            <p className="text-sm font-medium text-[var(--foreground)]">{statusText[state]}</p>
+            <p className="text-xs text-[var(--muted)] mt-1">
+              {muted ? "Microfone desativado" : "Modo Reunião ativo"}
             </p>
-            <p className="text-xs text-[var(--muted)] mt-1">Modo Reuniao ativo</p>
           </div>
 
           {/* Transcript */}
@@ -181,7 +289,7 @@ export function CfoVoiceMode() {
             <div className="w-full max-h-40 overflow-y-auto px-2 space-y-2">
               {transcript.map((t, i) => (
                 <div key={i} className={`text-xs ${t.role === "user" ? "text-[var(--muted)] text-right" : "text-[var(--foreground)]"}`}>
-                  <span className="font-medium">{t.role === "user" ? "Voce" : "CFO"}:</span> {t.text}
+                  <span className="font-medium">{t.role === "user" ? "Você" : "CFO"}:</span> {t.text}
                 </div>
               ))}
               <div ref={transcriptEndRef} />
@@ -191,16 +299,20 @@ export function CfoVoiceMode() {
           {/* Controls */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setIsListening(!isListening)}
+              onClick={toggleMute}
               className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                isListening ? "bg-[var(--accent)]/20 text-[var(--accent)]" : "bg-gray-200 dark:bg-gray-700 text-[var(--muted)]"
+                !muted
+                  ? "bg-[var(--accent)]/20 text-[var(--accent)]"
+                  : "bg-red-500/20 text-red-400"
               }`}
+              title={muted ? "Ativar microfone" : "Desativar microfone"}
             >
-              {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              {!muted ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
             </button>
             <button
               onClick={handleEnd}
-              className="w-12 h-12 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+              className="w-14 h-14 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
+              title="Encerrar reunião"
             >
               <PhoneOff className="w-5 h-5" />
             </button>

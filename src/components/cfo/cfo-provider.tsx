@@ -15,6 +15,12 @@ type CfoMessage = {
   };
 };
 
+type VoiceConfig = {
+  wsUrl: string;
+  systemPrompt: string;
+  firstMessage: string;
+};
+
 type CfoContextValue = {
   isOpen: boolean;
   toggle: () => void;
@@ -27,7 +33,7 @@ type CfoContextValue = {
   sendChip: (chipId: string, label: string) => Promise<void>;
   startVoice: () => Promise<void>;
   stopVoice: () => void;
-  voiceWsUrl: string | null;
+  voiceConfig: VoiceConfig | null;
 };
 
 const CfoContext = createContext<CfoContextValue | null>(null);
@@ -44,7 +50,7 @@ export function CfoProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [voiceMode, setVoiceMode] = useState(false);
-  const [voiceWsUrl, setVoiceWsUrl] = useState<string | null>(null);
+  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null);
   const conversationIdRef = useRef<string | null>(null);
 
   // Poll for unread insights every 60s
@@ -64,7 +70,7 @@ export function CfoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggle = useCallback(() => setIsOpen(prev => !prev), []);
-  const close = useCallback(() => { setIsOpen(false); setVoiceMode(false); }, []);
+  const close = useCallback(() => { setIsOpen(false); setVoiceMode(false); setVoiceConfig(null); }, []);
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: CfoMessage = { role: "user", content: text, timestamp: new Date().toISOString() };
@@ -116,7 +122,11 @@ export function CfoProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/cfo/voice", { method: "POST" });
       const data = await res.json();
       if (data.ok && data.wsUrl) {
-        setVoiceWsUrl(data.wsUrl);
+        setVoiceConfig({
+          wsUrl: data.wsUrl,
+          systemPrompt: data.systemPrompt,
+          firstMessage: data.firstMessage,
+        });
         setVoiceMode(true);
       } else {
         setMessages(prev => [...prev, { role: "assistant", content: "Modo reuniao indisponivel. Configure ELEVENLABS_API_KEY.", timestamp: new Date().toISOString() }]);
@@ -128,11 +138,11 @@ export function CfoProvider({ children }: { children: ReactNode }) {
 
   const stopVoice = useCallback(() => {
     setVoiceMode(false);
-    setVoiceWsUrl(null);
+    setVoiceConfig(null);
   }, []);
 
   return (
-    <CfoContext.Provider value={{ isOpen, toggle, close, messages, isLoading, unreadCount, voiceMode, sendMessage, sendChip, startVoice, stopVoice, voiceWsUrl }}>
+    <CfoContext.Provider value={{ isOpen, toggle, close, messages, isLoading, unreadCount, voiceMode, sendMessage, sendChip, startVoice, stopVoice, voiceConfig }}>
       {children}
     </CfoContext.Provider>
   );

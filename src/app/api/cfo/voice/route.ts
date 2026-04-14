@@ -17,7 +17,12 @@ export async function POST(_req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({
+      ok: true,
+      wsUrl: result.wsUrl,
+      systemPrompt: result.systemPrompt,
+      firstMessage: result.firstMessage,
+    });
   } catch (error) {
     if (error instanceof Response) throw error;
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
