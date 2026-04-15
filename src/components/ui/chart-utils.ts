@@ -24,35 +24,69 @@ export function yOf(val: number, maxY: number, pt: number, ih: number) {
   return pt + ih - (val / Math.max(maxY, 1)) * ih;
 }
 
-/* Catmull-Rom spline */
+/**
+ * Monotone cubic Hermite spline (Fritsch-Carlson).
+ * Smooth curves that NEVER overshoot between data points —
+ * no tangling, no loops, no wild oscillation.
+ */
 export function spline(pts: { x: number; y: number }[]): string {
-  if (pts.length < 2) return pts.length ? `M${pts[0].x},${pts[0].y}` : "";
-  if (pts.length === 2) return `M${pts[0].x},${pts[0].y} L${pts[1].x},${pts[1].y}`;
+  const n = pts.length;
+  if (n === 0) return "";
+  if (n === 1) return `M${pts[0].x},${pts[0].y}`;
+  if (n === 2) return `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} L${pts[1].x.toFixed(1)},${pts[1].y.toFixed(1)}`;
 
-  const alpha = 0.5;
+  // 1. Compute slopes between consecutive points
+  const dx: number[] = [];
+  const dy: number[] = [];
+  const m: number[] = []; // tangent at each point
+  for (let i = 0; i < n - 1; i++) {
+    dx[i] = pts[i + 1].x - pts[i].x;
+    dy[i] = pts[i + 1].y - pts[i].y;
+  }
+
+  // 2. Initial tangents via finite differences
+  m[0] = dy[0] / (dx[0] || 1);
+  for (let i = 1; i < n - 1; i++) {
+    const s0 = dy[i - 1] / (dx[i - 1] || 1);
+    const s1 = dy[i] / (dx[i] || 1);
+    // If slopes change sign → flat tangent (monotonicity)
+    if (s0 * s1 <= 0) {
+      m[i] = 0;
+    } else {
+      m[i] = (s0 + s1) / 2;
+    }
+  }
+  m[n - 1] = dy[n - 2] / (dx[n - 2] || 1);
+
+  // 3. Fritsch-Carlson monotonicity adjustment
+  for (let i = 0; i < n - 1; i++) {
+    const s = dy[i] / (dx[i] || 1);
+    if (Math.abs(s) < 1e-10) {
+      // Flat segment → flat tangents
+      m[i] = 0;
+      m[i + 1] = 0;
+    } else {
+      const a = m[i] / s;
+      const b = m[i + 1] / s;
+      // Clamp to monotone region (circle check)
+      const h = Math.hypot(a, b);
+      if (h > 3) {
+        const t = 3 / h;
+        m[i] = t * a * s;
+        m[i + 1] = t * b * s;
+      }
+    }
+  }
+
+  // 4. Build cubic Bézier path
   let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
-
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[Math.max(i - 1, 0)];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[Math.min(i + 2, pts.length - 1)];
-
-    const d0 = Math.hypot(p1.x - p0.x, p1.y - p0.y) ** alpha;
-    const d1 = Math.hypot(p2.x - p1.x, p2.y - p1.y) ** alpha;
-    const d2 = Math.hypot(p3.x - p2.x, p3.y - p2.y) ** alpha;
-
-    const c1x = (d1 * d1 * p0.x - d0 * d0 * p2.x + (2 * d0 * d0 + 3 * d0 * d1 + d1 * d1) * p1.x) / (3 * d0 * (d0 + d1));
-    const c1y = (d1 * d1 * p0.y - d0 * d0 * p2.y + (2 * d0 * d0 + 3 * d0 * d1 + d1 * d1) * p1.y) / (3 * d0 * (d0 + d1));
-    const c2x = (d1 * d1 * p3.x - d2 * d2 * p1.x + (2 * d2 * d2 + 3 * d2 * d1 + d1 * d1) * p2.x) / (3 * d2 * (d2 + d1));
-    const c2y = (d1 * d1 * p3.y - d2 * d2 * p1.y + (2 * d2 * d2 + 3 * d2 * d1 + d1 * d1) * p2.y) / (3 * d2 * (d2 + d1));
-
-    const x1 = Number.isFinite(c1x) ? c1x : p1.x;
-    const y1 = Number.isFinite(c1y) ? c1y : p1.y;
-    const x2 = Number.isFinite(c2x) ? c2x : p2.x;
-    const y2 = Number.isFinite(c2y) ? c2y : p2.y;
-
-    d += ` C${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const seg = dx[i] / 3;
+    const c1x = pts[i].x + seg;
+    const c1y = pts[i].y + m[i] * seg;
+    const c2x = pts[i + 1].x - seg;
+    const c2y = pts[i + 1].y - m[i + 1] * seg;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${pts[i + 1].x.toFixed(1)},${pts[i + 1].y.toFixed(1)}`;
   }
   return d;
 }
