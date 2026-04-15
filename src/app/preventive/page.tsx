@@ -18,15 +18,37 @@ import {
   PlatformSectionIntro,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getPreventiveBillingService } from "@/server/recovery/services/preventive-billing-service";
 
 export const metadata = { title: "Preventiva" };
 export const revalidate = 30;
 
 export default async function PreventivePage() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
 
-  // TODO: fetch from preventive service when available
+  const sellerIdentity =
+    session.role === "seller"
+      ? await getSellerIdentityByEmail(session.email)
+      : null;
+  const sellerKey =
+    session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
+  let analytics = {
+    totalSent: 0,
+    paidBeforeDue: 0,
+    reductionRate: 0,
+    byChannel: { whatsapp: 0, email: 0, sms: 0 },
+    activeRules: 0,
+  };
+  try {
+    const service = getPreventiveBillingService();
+    analytics = await service.getPreventiveAnalytics(sellerKey);
+  } catch {
+    /* tables may not exist */
+  }
+
   return (
     <PlatformAppPage currentPath="/preventive">
       {/* KPI cards */}
@@ -34,19 +56,19 @@ export default async function PreventivePage() {
         <PlatformMetricCard
           icon={Send}
           label="lembretes enviados"
-          value="0"
+          value={String(analytics.totalSent)}
           subtitle="no período ativo"
         />
         <PlatformMetricCard
           icon={CheckCircle2}
           label="pagos antes do vencimento"
-          value="0"
+          value={String(analytics.paidBeforeDue)}
           subtitle="por ação preventiva"
         />
         <PlatformMetricCard
           icon={TrendingUp}
           label="taxa de prevenção"
-          value="0%"
+          value={`${(analytics.reductionRate * 100).toFixed(0)}%`}
           subtitle="evitaram inadimplência"
         />
         <PlatformMetricCard
@@ -147,9 +169,9 @@ export default async function PreventivePage() {
               Efetividade por canal
             </p>
             <div className="mt-4 space-y-2.5">
-              <ChannelEfficiency label="WhatsApp" rate="—" sent={0} />
-              <ChannelEfficiency label="E-mail" rate="—" sent={0} />
-              <ChannelEfficiency label="SMS" rate="—" sent={0} />
+              <ChannelEfficiency label="WhatsApp" rate="—" sent={analytics.byChannel.whatsapp} />
+              <ChannelEfficiency label="E-mail" rate="—" sent={analytics.byChannel.email} />
+              <ChannelEfficiency label="SMS" rate="—" sent={analytics.byChannel.sms} />
             </div>
           </PlatformSurface>
 

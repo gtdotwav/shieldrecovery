@@ -8,6 +8,7 @@ import { platformBrand } from "@/lib/platform";
 import { retrievePagouTransaction } from "@/server/pagouai/client";
 import { createCheckoutSession } from "@/server/checkout";
 import { getStorageService } from "@/server/recovery/services/storage";
+import { getTrackingService } from "@/server/recovery/services/tracking-service";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,11 @@ type RetryPaymentPageProps = {
     provider?: string;
     transactionId?: string;
     method?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
   }>;
 };
 
@@ -28,7 +34,22 @@ export default async function RetryPaymentPage({
   searchParams,
 }: RetryPaymentPageProps) {
   const { gatewayPaymentId } = await params;
-  const { provider, transactionId, method } = await searchParams;
+  const { provider, transactionId, method, utm_source, utm_medium, utm_campaign, utm_content, utm_term } = await searchParams;
+
+  // Record tracking event if UTM params present (fire and forget)
+  const hasUtm = utm_source || utm_medium || utm_campaign;
+  if (hasUtm) {
+    try {
+      const trackingService = getTrackingService();
+      trackingService.recordEvent({
+        sellerKey: "recovery",
+        eventType: "checkout_start",
+        utm: { utm_source, utm_medium, utm_campaign, utm_content, utm_term },
+        landingPage: `/retry/${gatewayPaymentId}`,
+        internalSource: "direct",
+      }).catch(() => {});
+    } catch { /* tracking not critical */ }
+  }
 
   if (
     provider === platformBrand.gateway.slug &&
@@ -65,6 +86,7 @@ export default async function RetryPaymentPage({
           gatewayPaymentId: payment.gatewayPaymentId,
           orderId: payment.orderId,
           retryRedirect: true,
+          ...(hasUtm && { utm: { utm_source, utm_medium, utm_campaign, utm_content, utm_term } }),
         },
       });
 

@@ -105,6 +105,7 @@ const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/api/leads", roles: ["admin", "seller", "market"] },
   { prefix: "/api/inbox", roles: ["admin", "seller", "market"] },
   { prefix: "/api/dashboard", roles: ["admin"] },
+  { prefix: "/api/keys", roles: ["admin"] },
   { prefix: "/api/admin", roles: ["admin"] },
   { prefix: "/api/mobile", roles: ["admin", "seller", "market"] },
   { prefix: "/api/push", roles: ["admin", "seller", "market"] },

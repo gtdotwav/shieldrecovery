@@ -17,6 +17,7 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getPaymentScoreService } from "@/server/recovery/services/payment-score-service";
 
 export const metadata = { title: "Payment Score" };
 export const revalidate = 30;
@@ -24,7 +25,13 @@ export const revalidate = 30;
 export default async function PaymentScorePage() {
   await requireAuthenticatedSession(["admin"]);
 
-  // TODO: fetch from payment score service when available
+  let distribution = { veryLow: 0, low: 0, medium: 0, high: 0, veryHigh: 0, averageScore: 0, totalScored: 0 };
+  try {
+    const service = getPaymentScoreService();
+    distribution = await service.getScoreDistribution();
+  } catch { /* tables may not exist yet */ }
+  const total = distribution.totalScored || 1;
+
   return (
     <PlatformAppPage currentPath="/payment-score">
       {/* KPI cards */}
@@ -32,25 +39,25 @@ export default async function PaymentScorePage() {
         <PlatformMetricCard
           icon={Users}
           label="scores calculados"
-          value="0"
+          value={String(distribution.totalScored)}
           subtitle="clientes na base"
         />
         <PlatformMetricCard
           icon={Gauge}
           label="score médio"
-          value="—"
+          value={distribution.averageScore > 0 ? String(distribution.averageScore) : "—"}
           subtitle="da base ativa"
         />
         <PlatformMetricCard
           icon={ShieldCheck}
           label="baixo risco"
-          value="0"
+          value={String(distribution.veryLow)}
           subtitle="score acima de 800"
         />
         <PlatformMetricCard
           icon={AlertTriangle}
           label="alto risco"
-          value="0"
+          value={String(distribution.high + distribution.veryHigh)}
           subtitle="score abaixo de 400"
         />
       </section>
@@ -66,11 +73,11 @@ export default async function PaymentScorePage() {
               description="Visão geral da saúde de pagamento da base de clientes."
             />
             <div className="mt-4 space-y-2.5">
-              <ScoreBand label="Excelente" range="900 - 1000" count={0} color="bg-emerald-500" percentage={0} />
-              <ScoreBand label="Bom" range="700 - 899" count={0} color="bg-green-500" percentage={0} />
-              <ScoreBand label="Regular" range="500 - 699" count={0} color="bg-amber-500" percentage={0} />
-              <ScoreBand label="Baixo" range="300 - 499" count={0} color="bg-orange-500" percentage={0} />
-              <ScoreBand label="Crítico" range="0 - 299" count={0} color="bg-red-500" percentage={0} />
+              <ScoreBand label="Excelente" range="900 - 1000" count={distribution.veryLow} color="bg-emerald-500" percentage={Math.round((distribution.veryLow / total) * 100)} />
+              <ScoreBand label="Bom" range="700 - 899" count={distribution.low} color="bg-green-500" percentage={Math.round((distribution.low / total) * 100)} />
+              <ScoreBand label="Regular" range="500 - 699" count={distribution.medium} color="bg-amber-500" percentage={Math.round((distribution.medium / total) * 100)} />
+              <ScoreBand label="Baixo" range="300 - 499" count={distribution.high} color="bg-orange-500" percentage={Math.round((distribution.high / total) * 100)} />
+              <ScoreBand label="Crítico" range="0 - 299" count={distribution.veryHigh} color="bg-red-500" percentage={Math.round((distribution.veryHigh / total) * 100)} />
             </div>
           </PlatformSurface>
 
@@ -113,9 +120,9 @@ export default async function PaymentScorePage() {
               Motor de score
             </p>
             <div className="mt-4 space-y-2.5">
-              <StatusLine label="Score Engine" status="pendente" />
+              <StatusLine label="Score Engine" status={distribution.totalScored > 0 ? "ativo" : "pendente"} />
               <StatusLine label="Modelo ML" status="pendente" />
-              <StatusLine label="Dados históricos" status="pendente" />
+              <StatusLine label="Dados históricos" status={distribution.totalScored > 0 ? "ativo" : "pendente"} />
               <StatusLine label="API de consulta" status="pendente" />
             </div>
           </PlatformSurface>

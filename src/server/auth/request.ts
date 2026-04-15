@@ -7,6 +7,12 @@ import {
   isAuthConfigured,
   verifySessionToken,
 } from "@/server/auth/core";
+import {
+  type ApiKeySession,
+  checkApiKeyRateLimit,
+  isApiKeyFormat,
+  verifyApiKey,
+} from "@/server/auth/api-keys";
 
 function readCookieValue(cookieHeader: string | null, name: string) {
   if (!cookieHeader) {
@@ -32,6 +38,42 @@ export function resolveToken(request: Request): string | null {
   return readCookieValue(request.headers.get("cookie"), getSessionCookieName());
 }
 
+export type ApiSession = {
+  email: string;
+  role: UserRole;
+  expiresAt: number;
+  apiKeyId?: string;
+  sellerKey?: string | null;
+};
+
+/**
+ * Resolve authentication from either a session token or an API key.
+ * API keys (sk_live_*, sk_test_*) are verified against the database.
+ * Session tokens are verified via HMAC signature.
+ */
+async function resolveAuth(request: Request): Promise<ApiSession | null> {
+  const token = resolveToken(request);
+  if (!token) return null;
+
+  // API key path
+  if (isApiKeyFormat(token)) {
+    const keySession = await verifyApiKey(token);
+    if (!keySession) return null;
+    return {
+      email: keySession.email,
+      role: keySession.role,
+      expiresAt: keySession.expiresAt,
+      apiKeyId: keySession.apiKeyId,
+      sellerKey: keySession.sellerKey,
+    };
+  }
+
+  // Session token path
+  const session = await verifySessionToken(token);
+  if (!session) return null;
+  return session;
+}
+
 export async function ensureAuthenticatedRequest(request: Request) {
   if (!isAuthConfigured()) {
     return NextResponse.json(
@@ -40,8 +82,19 @@ export async function ensureAuthenticatedRequest(request: Request) {
     );
   }
 
+  // Check API key rate limit before full verification
   const token = resolveToken(request);
-  const session = await verifySessionToken(token);
+  if (token && isApiKeyFormat(token)) {
+    const limited = await checkApiKeyRateLimit(token);
+    if (limited) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMITED", message: "API key rate limit exceeded." } },
+        { status: 429 },
+      );
+    }
+  }
+
+  const session = await resolveAuth(request);
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -56,8 +109,6 @@ export async function ensureAuthenticatedRequest(request: Request) {
 
   return null;
 }
-
-export type ApiSession = { email: string; role: UserRole; expiresAt: number };
 
 /**
  * Require authentication for API route handlers.
@@ -74,8 +125,19 @@ export async function requireApiAuth(
     );
   }
 
+  // Check API key rate limit before full verification
   const token = resolveToken(request);
-  const session = await verifySessionToken(token);
+  if (token && isApiKeyFormat(token)) {
+    const limited = await checkApiKeyRateLimit(token);
+    if (limited) {
+      return NextResponse.json(
+        { error: { code: "RATE_LIMITED", message: "API key rate limit exceeded." } },
+        { status: 429 },
+      );
+    }
+  }
+
+  const session = await resolveAuth(request);
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

@@ -17,14 +17,24 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
+import { getCartAbandonmentService } from "@/server/recovery/services/cart-abandonment-service";
 
 export const metadata = { title: "Carrinho Abandonado" };
 export const revalidate = 30;
 
 export default async function CartRecoveryPage() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
 
-  // TODO: fetch from cart recovery service when available
+  const sellerIdentity = session.role === "seller" ? await getSellerIdentityByEmail(session.email) : null;
+  const sellerKey = session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
+  let analytics = { total: 0, recovered: 0, pending: 0, contacted: 0, expired: 0, recoveryRate: 0, totalRevenueLost: 0, totalRevenueRecovered: 0 };
+  try {
+    const service = getCartAbandonmentService();
+    analytics = await service.getAbandonmentAnalytics(sellerKey);
+  } catch { /* tables may not exist */ }
+
   return (
     <PlatformAppPage currentPath="/cart-recovery">
       {/* KPI cards */}
@@ -32,25 +42,25 @@ export default async function CartRecoveryPage() {
         <PlatformMetricCard
           icon={ShoppingCart}
           label="carrinhos detectados"
-          value="0"
+          value={String(analytics.total)}
           subtitle="nos últimos 30 dias"
         />
         <PlatformMetricCard
           icon={Package}
           label="recuperados"
-          value="0"
-          subtitle="R$ 0,00 em receita"
+          value={String(analytics.recovered)}
+          subtitle={`R$ ${analytics.totalRevenueRecovered.toFixed(2)} em receita`}
         />
         <PlatformMetricCard
           icon={TrendingUp}
           label="taxa de recuperação"
-          value="0%"
+          value={`${(analytics.recoveryRate * 100).toFixed(0)}%`}
           subtitle="média do período"
         />
         <PlatformMetricCard
           icon={DollarSign}
           label="receita recuperada"
-          value="R$ 0"
+          value={`R$ ${analytics.totalRevenueRecovered.toFixed(2)}`}
           subtitle="valor total convertido"
         />
       </section>
@@ -103,8 +113,8 @@ export default async function CartRecoveryPage() {
             <div className="mt-4 space-y-2.5">
               <SidebarMetric icon={Eye} label="Visualizaram checkout" value="0" />
               <SidebarMetric icon={CreditCard} label="Iniciaram pagamento" value="0" />
-              <SidebarMetric icon={Clock} label="Abandonaram" value="0" />
-              <SidebarMetric icon={User} label="Contatáveis" value="0" />
+              <SidebarMetric icon={Clock} label="Abandonaram" value={String(analytics.pending + analytics.contacted)} />
+              <SidebarMetric icon={User} label="Contatáveis" value={String(analytics.contacted)} />
             </div>
           </PlatformSurface>
 

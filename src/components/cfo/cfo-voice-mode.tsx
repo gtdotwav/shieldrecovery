@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Mic, MicOff, PhoneOff } from "lucide-react";
+import { Mic, MicOff, PhoneOff, RotateCcw } from "lucide-react";
 import { useCfo } from "./cfo-provider";
 
 type VoiceState = "connecting" | "listening" | "speaking" | "error";
@@ -18,7 +18,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 export function CfoVoiceMode() {
-  const { voiceConfig, stopVoice } = useCfo();
+  const { voiceConfig, stopVoice, startVoice } = useCfo();
   const [state, setState] = useState<VoiceState>("connecting");
   const [transcript, setTranscript] = useState<Array<{ role: string; text: string }>>([]);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +33,8 @@ export function CfoVoiceMode() {
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const sampleRateRef = useRef(16000);
   const mutedRef = useRef(false);
+  const connectingRef = useRef(false); // Guard against StrictMode double-connect
+  const mountedRef = useRef(true);
 
   // Keep mutedRef in sync
   useEffect(() => { mutedRef.current = muted; }, [muted]);
@@ -42,6 +44,7 @@ export function CfoVoiceMode() {
   }, [transcript]);
 
   const cleanup = useCallback(() => {
+    connectingRef.current = false;
     if (processorRef.current) {
       processorRef.current.disconnect();
       processorRef.current = null;
@@ -126,6 +129,11 @@ export function CfoVoiceMode() {
   /* ── WebSocket connection ── */
   const connect = useCallback(async () => {
     if (!voiceConfig) return;
+
+    // Guard: prevent StrictMode double-connect (signed URL is single-use)
+    if (connectingRef.current || wsRef.current) return;
+    connectingRef.current = true;
+
     setError(null);
     setState("connecting");
 
@@ -134,6 +142,13 @@ export function CfoVoiceMode() {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
       });
+
+      // Check if we were unmounted during the mic permission dialog
+      if (!mountedRef.current) {
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
       streamRef.current = stream;
 
       const ws = new WebSocket(voiceConfig.wsUrl);
@@ -142,12 +157,13 @@ export function CfoVoiceMode() {
       ws.onopen = () => {
         // Send dynamic config override with seller data + system prompt + dynamic variables
         // This MUST be the first message, before conversation_initiation_metadata arrives
+        // Note: first_message override is NOT allowed by ElevenLabs client config —
+        // it must be set on the agent dashboard. We only override the prompt here.
         const override: Record<string, unknown> = {
           type: "conversation_initiation_client_data",
           conversation_config_override: {
             agent: {
               prompt: { prompt: voiceConfig.systemPrompt },
-              first_message: voiceConfig.firstMessage,
             },
           },
           dynamic_variables: {
@@ -155,7 +171,6 @@ export function CfoVoiceMode() {
           },
         };
         ws.send(JSON.stringify(override));
-        setState("connecting");
       };
 
       ws.onmessage = (event) => {
@@ -222,20 +237,23 @@ export function CfoVoiceMode() {
         } catch { /* ignore parse errors */ }
       };
 
-      ws.onerror = (e) => {
-        console.error("[cfo-voice] WebSocket error:", e);
-        setError("Erro na conexão de voz. Verifique sua internet.");
-        setState("error");
+      ws.onerror = () => {
+        // Cleanup resources on WebSocket error — onerror is always followed by onclose,
+        // but we clean up immediately to stop mic/audio leaking
+        cleanup();
       };
 
       ws.onclose = (e) => {
         console.warn(`[cfo-voice] WebSocket closed: code=${e.code} reason=${e.reason}`);
+        cleanup();
+        if (!mountedRef.current) return;
         if (e.code !== 1000) {
           setError(`Conexão encerrada (código ${e.code}${e.reason ? `: ${e.reason}` : ""}). Tente novamente.`);
           setState("error");
         }
       };
     } catch (err) {
+      connectingRef.current = false;
       const msg = err instanceof Error && err.name === "NotAllowedError"
         ? "Permissão de microfone negada. Habilite nas configurações do navegador."
         : `Erro ao acessar microfone: ${err instanceof Error ? err.message : "desconhecido"}`;
@@ -246,13 +264,25 @@ export function CfoVoiceMode() {
   }, [voiceConfig, cleanup, startAudioCapture, enqueueAudio]);
 
   useEffect(() => {
+    mountedRef.current = true;
     connect();
-    return cleanup;
+    return () => {
+      mountedRef.current = false;
+      cleanup();
+    };
   }, [connect, cleanup]);
 
   const handleEnd = () => {
     cleanup();
     stopVoice();
+  };
+
+  const handleRetry = async () => {
+    cleanup();
+    setError(null);
+    setState("connecting");
+    // Re-fetch a fresh signed URL then reconnect
+    await startVoice();
   };
 
   const toggleMute = () => setMuted(prev => !prev);
@@ -269,9 +299,15 @@ export function CfoVoiceMode() {
       {state === "error" ? (
         <div className="text-center px-4">
           <p className="text-sm text-red-400">{error}</p>
-          <button onClick={handleEnd} className="mt-4 px-4 py-2 text-xs rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20 transition-colors">
-            Voltar ao chat
-          </button>
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button onClick={handleRetry} className="inline-flex items-center gap-1.5 px-4 py-2 text-xs rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent)]/80 transition-colors">
+              <RotateCcw className="h-3.5 w-3.5" />
+              Tentar novamente
+            </button>
+            <button onClick={handleEnd} className="px-4 py-2 text-xs rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20 transition-colors">
+              Voltar ao chat
+            </button>
+          </div>
         </div>
       ) : (
         <>

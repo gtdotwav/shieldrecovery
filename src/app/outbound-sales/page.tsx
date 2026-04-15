@@ -19,14 +19,29 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
+import { getOutboundSalesService } from "@/server/recovery/services/outbound-sales-service";
+import type { SalesCampaign } from "@/server/recovery/services/outbound-sales-service";
 
 export const metadata = { title: "Outbound Sales" };
 export const revalidate = 30;
 
 export default async function OutboundSalesPage() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
 
-  // TODO: fetch from outbound service when available
+  const sellerIdentity = session.role === "seller" ? await getSellerIdentityByEmail(session.email) : null;
+  const sellerKey = session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
+  let campaigns: SalesCampaign[] = [];
+  let totalContacts = 0, totalConversions = 0;
+  try {
+    const service = getOutboundSalesService();
+    campaigns = await service.listCampaigns(sellerKey ? { sellerKey } : undefined);
+    totalContacts = campaigns.reduce((s, c) => s + c.contactsReached, 0);
+    totalConversions = campaigns.reduce((s, c) => s + c.contactsConverted, 0);
+  } catch { /* tables may not exist */ }
+  const activeCampaigns = campaigns.filter(c => c.status === "active").length;
+
   return (
     <PlatformAppPage currentPath="/outbound-sales">
       {/* KPI cards */}
@@ -34,19 +49,19 @@ export default async function OutboundSalesPage() {
         <PlatformMetricCard
           icon={Megaphone}
           label="campanhas ativas"
-          value="0"
+          value={String(activeCampaigns)}
           subtitle="em execução agora"
         />
         <PlatformMetricCard
           icon={Users}
           label="contatos feitos"
-          value="0"
+          value={String(totalContacts)}
           subtitle="abordagens realizadas"
         />
         <PlatformMetricCard
           icon={ShoppingBag}
           label="vendas"
-          value="0"
+          value={String(totalConversions)}
           subtitle="conversões de outbound"
         />
         <PlatformMetricCard
@@ -77,15 +92,35 @@ export default async function OutboundSalesPage() {
               </button>
             </div>
             <div className="mt-4">
-              <PlatformInset className="p-6 text-center">
-                <PhoneOutgoing className="mx-auto h-5 w-5 text-gray-400 dark:text-gray-500" />
-                <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
-                  Nenhuma campanha de outbound criada ainda.
-                </p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Crie uma campanha para abordar leads ativamente por WhatsApp ou voz.
-                </p>
-              </PlatformInset>
+              {campaigns.length > 0 ? (
+                <div className="space-y-2.5">
+                  {campaigns.map(c => (
+                    <div key={c.id} className="glass-inset rounded-xl px-4 py-3.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                            {c.product} · {c.channel} · {c.contactsReached}/{c.totalContacts} contatos
+                          </p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold ${c.status === "active" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
+                          {c.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <PlatformInset className="p-6 text-center">
+                  <PhoneOutgoing className="mx-auto h-5 w-5 text-gray-400 dark:text-gray-500" />
+                  <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
+                    Nenhuma campanha de outbound criada ainda.
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Crie uma campanha para abordar leads ativamente por WhatsApp ou voz.
+                  </p>
+                </PlatformInset>
+              )}
             </div>
           </PlatformSurface>
 

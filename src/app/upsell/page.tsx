@@ -16,15 +16,38 @@ import {
   PlatformSectionIntro,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getUpsellService } from "@/server/recovery/services/upsell-service";
 
 export const metadata = { title: "Upsell" };
 export const revalidate = 30;
 
 export default async function UpsellPage() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
 
-  // TODO: fetch from upsell service when available
+  const sellerIdentity =
+    session.role === "seller"
+      ? await getSellerIdentityByEmail(session.email)
+      : null;
+  const sellerKey =
+    session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
+  let analytics = {
+    totalOffered: 0,
+    totalAccepted: 0,
+    totalDeclined: 0,
+    totalExpired: 0,
+    conversionRate: 0,
+    estimatedRevenue: 0,
+  };
+  try {
+    const service = getUpsellService();
+    analytics = await service.getUpsellAnalytics(sellerKey);
+  } catch {
+    /* tables may not exist */
+  }
+
   return (
     <PlatformAppPage currentPath="/upsell">
       {/* KPI cards */}
@@ -32,25 +55,25 @@ export default async function UpsellPage() {
         <PlatformMetricCard
           icon={Send}
           label="ofertas enviadas"
-          value="0"
+          value={String(analytics.totalOffered)}
           subtitle="no período"
         />
         <PlatformMetricCard
           icon={ThumbsUp}
           label="aceitas"
-          value="0"
+          value={String(analytics.totalAccepted)}
           subtitle="conversões totais"
         />
         <PlatformMetricCard
           icon={TrendingUp}
           label="taxa de conversão"
-          value="0%"
+          value={`${(analytics.conversionRate * 100).toFixed(0)}%`}
           subtitle="ofertas aceitas / enviadas"
         />
         <PlatformMetricCard
           icon={DollarSign}
           label="receita adicional"
-          value="R$ 0"
+          value={`R$ ${(analytics.estimatedRevenue / 100).toFixed(2)}`}
           subtitle="gerada por upsell"
         />
       </section>

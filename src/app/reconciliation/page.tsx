@@ -17,6 +17,7 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getReconciliationService } from "@/server/recovery/services/reconciliation-service";
 
 export const metadata = { title: "Conciliação" };
 export const revalidate = 30;
@@ -24,7 +25,16 @@ export const revalidate = 30;
 export default async function ReconciliationPage() {
   await requireAuthenticatedSession(["admin"]);
 
-  // TODO: fetch from reconciliation service when available
+  let reports: Awaited<ReturnType<ReturnType<typeof getReconciliationService>["listReports"]>> = [];
+  let totalMatched = 0, totalDiscrepancies = 0, totalNetRevenue = 0;
+  try {
+    const service = getReconciliationService();
+    reports = await service.listReports();
+    totalMatched = reports.reduce((s, r) => s + r.matchedCount, 0);
+    totalDiscrepancies = reports.reduce((s, r) => s + r.discrepancyCount, 0);
+    totalNetRevenue = reports.reduce((s, r) => s + r.netRevenue, 0);
+  } catch { /* tables may not exist */ }
+
   return (
     <PlatformAppPage currentPath="/reconciliation">
       {/* KPI cards */}
@@ -32,25 +42,25 @@ export default async function ReconciliationPage() {
         <PlatformMetricCard
           icon={FileSpreadsheet}
           label="relatórios"
-          value="0"
+          value={String(reports.length)}
           subtitle="gerados no período"
         />
         <PlatformMetricCard
           icon={CheckCircle2}
           label="conciliados"
-          value="0"
+          value={String(totalMatched)}
           subtitle="transações batidas"
         />
         <PlatformMetricCard
           icon={AlertTriangle}
           label="discrepâncias"
-          value="0"
+          value={String(totalDiscrepancies)}
           subtitle="pendentes de resolução"
         />
         <PlatformMetricCard
           icon={DollarSign}
           label="valor líquido"
-          value="R$ 0"
+          value={`R$ ${totalNetRevenue.toFixed(2)}`}
           subtitle="conciliado no período"
         />
       </section>
@@ -116,9 +126,9 @@ export default async function ReconciliationPage() {
             </p>
             <div className="mt-4 space-y-2.5">
               <MetricLine label="Total transacionado" value="R$ 0" highlight />
-              <MetricLine label="Taxas de gateway" value="R$ 0" />
+              <MetricLine label="Taxas de gateway" value={`R$ ${reports.reduce((s, r) => s + r.totalGatewayFees, 0).toFixed(2)}`} />
               <MetricLine label="Estornos" value="R$ 0" />
-              <MetricLine label="Líquido recebido" value="R$ 0" />
+              <MetricLine label="Líquido recebido" value={`R$ ${totalNetRevenue.toFixed(2)}`} />
             </div>
           </PlatformSurface>
 

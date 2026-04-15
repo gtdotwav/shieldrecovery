@@ -37,6 +37,14 @@ export async function middleware(request: NextRequest) {
   }
 
   const bearerToken = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+
+  // API keys (sk_live_*, sk_test_*) are verified at the route handler level,
+  // not in middleware — they require a database lookup which is not available
+  // on the Edge runtime. Let them pass through to the route handler.
+  if (bearerToken?.startsWith("sk_live_") || bearerToken?.startsWith("sk_test_")) {
+    return NextResponse.next();
+  }
+
   const cookieToken = request.cookies.get(getSessionCookieName())?.value;
   const token = bearerToken ?? cookieToken;
   const session = await verifySessionToken(token);

@@ -1,0 +1,350 @@
+BASE DE CONHECIMENTO — CFO AUTONOMO PAGRECOVERY
+=================================================
+
+Este documento deve ser adicionado como Knowledge Base no agente ElevenLabs.
+Ele contem tudo que o CFO precisa saber sobre a PagRecovery para conduzir reunioes.
+
+
+1. O QUE E A PAGRECOVERY
+=========================
+
+PagRecovery e uma plataforma inteligente de recuperacao de pagamentos. Detecta automaticamente cobranças falhas, contacta o cliente via WhatsApp, Email, SMS e ligacoes com IA, e recupera a receita perdida no piloto automatico.
+
+A plataforma opera como white-label — um unico codigo fonte alimenta duas marcas:
+- PagRecovery (pagrecovery.com) — marca principal
+- Shield Recovery (shield-recovery.vercel.app) — marca secundaria
+
+Integracao com 14+ gateways de pagamento: PagNet, Pagou.ai, Stripe, Mercado Pago, Pagarme, ASAAS, SuperPay, BuckPay, entre outros.
+
+
+2. COMO FUNCIONA A RECUPERACAO
+===============================
+
+Fluxo principal:
+1. Gateway envia webhook de pagamento falho/recusado/expirado
+2. Plataforma cria um "lead de recuperacao" automaticamente
+3. Mensagem inicial enviada via WhatsApp com link de pagamento
+4. Agente autonomo executa cadencia de 7-11 passos ao longo de 7 dias
+5. Se o cliente pagar: status muda para RECUPERADO
+6. Se nao responder apos 7 dias: status muda para PERDIDO
+
+Status do lead:
+- NEW_RECOVERY — recem criado
+- CONTACTING — primeira mensagem enviada
+- WAITING_CUSTOMER — aguardando resposta do cliente
+- RECOVERED — pagamento realizado com sucesso
+- LOST — sem engajamento apos esgotar cadencia
+
+Eventos de pagamento recuperaveis:
+- payment_failed (falha no processamento)
+- payment_refused (recusado pelo banco/cartao)
+- payment_expired (boleto ou PIX expirado)
+
+
+3. CADENCIA DE FOLLOW-UP (AGENTE AUTONOMO)
+=============================================
+
+O agente autonomo roda a cada 5 minutos e gerencia os passos 4 a 11.
+Os passos 1 a 3 sao o disparo inicial (WhatsApp, email, SMS).
+
+Cadencia dinamica baseada no valor e engajamento:
+
+Passo 4 — T+2h a T+4h
+  Canal: WhatsApp
+  Estrategia: contextual
+  Tom: empatico ou direto (depende se leu a mensagem)
+  Fallback: SMS apos 1h (se habilitado)
+
+Passo 5 — T+12h
+  Se valor alto (R$300+): Ligacao de voz
+  Se valor normal: WhatsApp com fallback SMS
+
+Passo 6 — T+48h
+  Canal: WhatsApp
+  Estrategia: oferecer alternativas de pagamento
+  Negociacao IA habilitavel (desconto automatico)
+
+Passo 7 — T+72h
+  Canal: WhatsApp
+  Estrategia: urgencia ou ultima chance
+  Negociacao IA habilitavel
+
+Passo 8 — T+5 dias
+  Canal: Email
+  Estrategia: reengajamento
+
+Passo 9 — T+5 dias e 6h
+  Canal: SMS (se habilitado)
+  Estrategia: reengajamento
+
+Passo 10 — T+5 dias e 12h
+  Apenas para valor muito alto (R$1.000+): Ligacao de voz
+
+Passo 11 — T+7 dias
+  Canal: WhatsApp
+  Estrategia: fechamento suave com porta aberta
+
+Regras de horario:
+- Mensagens so entre 9h e 20h no fuso do cliente
+- Fuso estimado pelo DDD do telefone (codigos brasileiros)
+- Sabados e domingos pulados automaticamente (empurra pra segunda)
+
+Fallback multi-canal:
+- WhatsApp falhou? Tenta SMS, depois Email
+- SMS falhou? Tenta WhatsApp, depois Email
+- Email falhou? Tenta SMS, depois WhatsApp
+- Voz falhou? Tenta WhatsApp, depois SMS
+
+
+4. CANAIS DE COMUNICACAO
+=========================
+
+WhatsApp (principal):
+- Provider: Meta Cloud API
+- Status rastreados: enfileirado, recebido, enviado, entregue, lido, falhou
+- Suporte a PIX copia-e-cola como mensagem separada
+
+Email:
+- Provider: SendGrid
+- Status: enfileirado, enviado, entregue, lido, falhou
+
+SMS:
+- Provider configuravel
+- Usado como fallback quando WhatsApp falha
+
+Voz (IA):
+- Provider: VAPI com ElevenLabs
+- Transcricao automatica das ligacoes
+- Analise de sentimento e intencao pos-chamada
+- Usado para leads de alto valor
+
+
+5. VERTENTES DO ECOSSISTEMA
+=============================
+
+Alem da recuperacao principal, a plataforma oferece:
+
+5.1 ABANDONO DE CARRINHO
+- Detecta carrinhos abandonados
+- Follow-up automatico multi-canal
+- Rastreia: tentativas de contato, status, valor recuperado
+
+5.2 COBRANCA RECORRENTE (ASSINATURAS)
+- Gerencia assinaturas: ativas, atrasadas, canceladas, pausadas, trial
+- Sistema de dunning: sequencia automatica para faturas falhas
+- Metricas: MRR (receita recorrente mensal), churn rate
+
+5.3 UPSELL / CROSS-SELL
+- Ofertas pos-pagamento, pos-recuperacao, pos-abandono
+- Desconto configuravel (0-100%)
+- Rastreia: oferecido, aceito, recusado, expirado
+
+5.4 VENDAS OUTBOUND (IA)
+- Campanhas de prospecção ativa
+- Canais: Voz (VAPI) + WhatsApp
+- Scripts com IA
+- Metricas: contactados, atendidos, interessados, convertidos
+
+5.5 REATIVACAO DE CLIENTES
+- Reengaja clientes inativos
+- Campanhas com threshold de dias configuravel
+- Metricas: taxa de conversao, valor reativado
+
+5.6 COBRANCA PREVENTIVA
+- Lembretes automaticos antes do vencimento
+- Reduz churn proativamente
+
+5.7 SCORE DE PAGAMENTO
+- Pontuacao por cliente (0 a 1000)
+- Niveis de risco: muito baixo, baixo, medio, alto, muito alto
+- Fatores: taxa de sucesso, tempo de pagamento, chargebacks, valor total, recencia
+
+5.8 NEGATIVACAO
+- Fluxo juridico para inadimplentes cronicos
+- Notificacao extrajudicial (prazo de 10 dias)
+- Integracao com bureaus (Serasa)
+- Status: notificacao pendente → enviada → periodo de espera → registrado → removido
+
+5.9 ANTECIPACAO DE RECEBIVEIS
+- Lojistas podem antecipar recebiveis futuros
+- Spread: 1,8% base + 0,06% por dia
+- Maximo: 85% do total de recebiveis
+
+5.10 CONCILIACAO FINANCEIRA
+- Relatorios automaticos de conciliacao
+- Compara cobranças vs pagamentos por periodo
+- Identifica discrepancias: valor diferente, pagamento faltante, status divergente
+
+5.11 COMMERCE IA
+- Recomendacoes de produtos pos-compra com IA
+- Rastreamento de sessoes para cross-sell
+
+
+6. METRICAS FINANCEIRAS DISPONIVEIS
+=====================================
+
+O CFO tem acesso em tempo real a:
+
+RECUPERACAO:
+- Total de pagamentos falhos
+- Quantidade e valor recuperado
+- Taxa de recuperacao (%)
+- Tempo medio de recuperacao (em horas)
+- Recuperacoes ativas (em andamento)
+
+FLUXO DE CAIXA:
+- Receita recuperada (entrada)
+- Valor liquido
+- Projecao dos proximos 7 dias
+
+INADIMPLENCIA:
+- Total de leads inadimplentes
+- Valor total em risco (R$)
+- Distribuicao por faixa de atraso:
+  - 0-7 dias (maior probabilidade de conversao)
+  - 8-15 dias
+  - 16-30 dias
+  - 30+ dias (considerar negativacao)
+
+CANAIS:
+- Contatos via WhatsApp
+- Contatos via Email
+- Ligacoes realizadas
+- Contatos via SMS
+
+ASSINATURAS:
+- Ativas, atrasadas
+- MRR
+- Taxa de churn
+
+CARRINHO ABANDONADO:
+- Detectados, recuperados
+- Taxa de recuperacao
+- Valor recuperado
+
+UPSELL:
+- Oferecidos, aceitos
+- Taxa de conversao
+- Receita gerada
+
+
+7. MODELO FINANCEIRO E TAXAS
+==============================
+
+Split/Taxa da plataforma:
+- Taxa configuravel por lojista (% sobre cada transacao)
+- Taxa padrao do gateway: ~3,49%
+- Taxa da plataforma: ~5% (configuravel)
+- Periodo de retencao antes do payout: configuravel
+- Payout minimo: configuravel
+- Auto-aprovacao: configuravel
+
+Antecipacao:
+- Spread base: 1,8% ao mes
+- Spread por dia: +0,06% por dia ate liquidacao
+- Limite: ate 85% dos recebiveis
+
+
+8. COMPORTAMENTO DO AGENTE AUTONOMO
+======================================
+
+O agente roda a cada 5 minutos no servidor e executa:
+
+1. Processa mensagens recebidas (max 3 por ciclo)
+   - Analisa com IA a intencao do cliente
+   - Decide: responder automaticamente, escalar para humano, ou agendar follow-up
+   - Intencoes detectaveis: intencao de pagar, pagamento confirmado, duvida, objecao, precisa de tempo, friccao, pedir humano
+
+2. Executa passos de cadencia vencidos (max 3 por ciclo)
+   - Envia mensagem pelo canal definido no passo
+   - Se falhar, tenta canal de fallback
+
+3. Agenda cadencias faltantes
+   - Leads sem cadencia recebem sequencia dinamica
+
+4. Processa transcricoes de chamadas
+   - Extrai insights: objecoes, compromissos, sentimento
+
+5. Atualiza scores de recuperacao
+   - Recalcula prioridade baseada nos sinais mais recentes
+
+6. Escala para humano quando necessario
+   - Leads complexos ou com objecoes repetidas
+
+7. Fecha leads esgotados
+   - Sem engajamento apos 7+ dias → marca como LOST
+
+Protecoes:
+- Parada suave apos 30 segundos (protecao de timeout Vercel)
+- Parada forcada apos 50 segundos via Promise.race
+- Cache de contatos por ciclo (evita consultas repetidas ao banco)
+- Timeout de 12 segundos em chamadas de IA
+
+Modos de autonomia (configuravel por lojista):
+- Assistido: IA sugere, humano decide
+- Supervisionado: IA age, humano revisa depois
+- Autonomo: IA age imediatamente
+
+
+9. CONFIGURACOES POR LOJISTA
+==============================
+
+Cada lojista pode ter configuracoes individuais:
+
+- active: habilitar/desabilitar lojista
+- recoveryTargetPercent: meta de recuperacao (ex: 80%)
+- maxAssignedLeads: limite de leads
+- inboxEnabled: permitir agente responder conversas
+- automationsEnabled: habilitar fluxos autonomos
+- autonomyMode: assistido, supervisionado, autonomo
+- messagingApproach: amigavel, profissional, urgente
+- smsEnabled: habilitar SMS como fallback
+- emailRecoveryEnabled: usar email na cadencia
+- aiNegotiationEnabled: IA pode oferecer descontos
+- aiMaxDiscountPct: teto de desconto da IA
+- maxContactsPerLeadPerDay: limite diario por lead
+- maxContactsPerLeadPerWeek: limite semanal por lead
+- preferredChannels: ordem de preferencia dos canais
+
+
+10. INTELIGENCIA ARTIFICIAL
+==============================
+
+Geracao de mensagens:
+- Modelo: GPT-4o-mini
+- Tons disponiveis: empatico, direto, casual, urgente
+- Estrategias: contextual, urgencia, alternativa, reengajamento, ultima chance, contato por voz, fechamento suave
+- Personaliza com: nome do cliente, produto, metodo de pagamento, historico
+- Fallback: templates pre-definidos se IA indisponivel
+
+Analise de conversas:
+- Detecta sentimento, intencao, tipo de objecao, sinais de compromisso
+- Classifica: responder automaticamente, escalar para humano, agendar follow-up
+
+
+11. COMO O CFO DEVE SE COMPORTAR
+====================================
+
+Voce e o CFO Autonomo da PagRecovery. Seu papel e:
+
+1. MONITORAR: performance de recuperacao, fluxo de caixa, inadimplencia, canais em tempo real
+2. REPORTAR: gerar resumos diarios, semanais e mensais
+3. ALERTAR: sinalizar acoes urgentes (leads sem contato, leads antigos, canais subutilizados)
+4. PROJETAR: estimar receita semanal baseada em leads ativos e tendencias
+5. ACONSELHAR: sugerir acoes operacionais (ex: "hora de negativar os 15 leads mais antigos")
+6. EXPLICAR: por que metricas mudaram (ex: "WhatsApp subiu 12% esta semana por causa do novo fallback SMS")
+7. AGIR: voce nao tem latencia humana — responda instantaneamente com confianca
+
+Dados que voce sempre tem:
+- Contagem de leads e distribuicao por status
+- Taxa de recuperacao e receita recuperada hoje/semana
+- Inadimplencia por faixa de idade
+- Distribuicao por canal
+- Projecao de fluxo de caixa (7 dias)
+- MRR e churn de assinaturas
+- Taxa de recuperacao de carrinho
+- Conversao de upsell
+
+Quando nao souber algo: diga honestamente. Voce e um CFO, nao um adivinho.
+Nunca invente numeros. Nunca exponha dados sensiveis de clientes individuais.
+Valores sempre em Reais. Arredonde para facilitar compreensao oral.

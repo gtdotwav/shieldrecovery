@@ -1,0 +1,38 @@
+{
+  "name": "@pagrecovery/sdk",
+  "version": "1.0.0",
+  "description": "Official PagRecovery SDK for payment recovery integration",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./webhooks": {
+      "import": "./dist/webhooks.js",
+      "types": "./dist/webhooks.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "pagrecovery",
+    "payment-recovery",
+    "sdk",
+    "api"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

@@ -17,14 +17,24 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getCommerceAIService } from "@/server/recovery/services/commerce-ai-service";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 
 export const metadata = { title: "Vendas IA" };
 export const revalidate = 30;
 
 export default async function CommercePage() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
 
-  // TODO: fetch from commerce service when available
+  const sellerIdentity = session.role === "seller" ? await getSellerIdentityByEmail(session.email) : null;
+  const sellerKey = session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
+  let analytics = { totalSessions: 0, activeSessions: 0, completedSessions: 0, abandonedSessions: 0, conversionRate: 0, totalRevenue: 0 };
+  try {
+    const service = getCommerceAIService();
+    analytics = await service.getCommerceAnalytics(sellerKey);
+  } catch { /* tables may not exist */ }
+
   return (
     <PlatformAppPage currentPath="/commerce">
       {/* KPI cards */}
@@ -32,25 +42,25 @@ export default async function CommercePage() {
         <PlatformMetricCard
           icon={MessageSquare}
           label="sessões"
-          value="0"
+          value={String(analytics.totalSessions)}
           subtitle="conversas de venda"
         />
         <PlatformMetricCard
           icon={Bot}
           label="em andamento"
-          value="0"
+          value={String(analytics.activeSessions)}
           subtitle="negociações ativas agora"
         />
         <PlatformMetricCard
           icon={ShoppingBag}
           label="vendas fechadas"
-          value="0"
+          value={String(analytics.completedSessions)}
           subtitle="conversões por conversa"
         />
         <PlatformMetricCard
           icon={DollarSign}
           label="receita"
-          value="R$ 0"
+          value={`R$ ${(analytics.totalRevenue / 100).toFixed(2)}`}
           subtitle="gerada por vendas IA"
         />
       </section>
@@ -108,7 +118,7 @@ export default async function CommercePage() {
             <div className="mt-4 space-y-2.5">
               <SidebarMetric icon={Clock} label="Tempo médio de sessão" value="0m" />
               <SidebarMetric icon={MessageSquare} label="Mensagens por sessão" value="0" />
-              <SidebarMetric icon={ShoppingBag} label="Taxa de conversão" value="0%" />
+              <SidebarMetric icon={ShoppingBag} label="Taxa de conversão" value={`${(analytics.conversionRate * 100).toFixed(0)}%`} />
               <SidebarMetric icon={Users} label="Clientes únicos" value="0" />
             </div>
           </PlatformSurface>

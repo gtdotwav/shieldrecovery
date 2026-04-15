@@ -18,14 +18,30 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
+import { getReactivationService } from "@/server/recovery/services/reactivation-service";
+
+type ReactivationCampaignItem = Awaited<ReturnType<ReturnType<typeof getReactivationService>["listCampaigns"]>>[number];
 
 export const metadata = { title: "Reativação" };
 export const revalidate = 30;
 
 export default async function ReactivationPage() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
 
-  // TODO: fetch from reactivation service when available
+  const sellerIdentity = session.role === "seller" ? await getSellerIdentityByEmail(session.email) : null;
+  const sellerKey = session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
+  let campaigns: ReactivationCampaignItem[] = [];
+  try {
+    const service = getReactivationService();
+    campaigns = await service.listCampaigns(sellerKey);
+  } catch { /* tables may not exist */ }
+  const activeCampaigns = campaigns.filter(c => c.status === "active").length;
+  const totalContacted = campaigns.reduce((s, c) => s + c.contactedCount, 0);
+  const totalReactivated = campaigns.reduce((s, c) => s + c.reactivatedCount, 0);
+  const totalEligible = campaigns.reduce((s, c) => s + c.totalContacts, 0);
+
   return (
     <PlatformAppPage currentPath="/reactivation">
       {/* KPI cards */}
@@ -33,19 +49,19 @@ export default async function ReactivationPage() {
         <PlatformMetricCard
           icon={Megaphone}
           label="campanhas"
-          value="0"
+          value={String(activeCampaigns)}
           subtitle="de reativação ativas"
         />
         <PlatformMetricCard
           icon={Users}
           label="contatos inativos"
-          value="0"
+          value={String(totalEligible)}
           subtitle="elegíveis para reativação"
         />
         <PlatformMetricCard
           icon={UserCheck}
           label="reativados"
-          value="0"
+          value={String(totalReactivated)}
           subtitle="clientes que voltaram"
         />
         <PlatformMetricCard
@@ -67,15 +83,35 @@ export default async function ReactivationPage() {
               description="Campanhas automatizadas para trazer clientes inativos de volta."
             />
             <div className="mt-4">
-              <PlatformInset className="p-6 text-center">
-                <RefreshCcw className="mx-auto h-5 w-5 text-gray-400 dark:text-gray-500" />
-                <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
-                  Nenhuma campanha de reativação ativa.
-                </p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Crie uma campanha para reengajar clientes que pararam de comprar.
-                </p>
-              </PlatformInset>
+              {campaigns.length > 0 ? (
+                <div className="space-y-2.5">
+                  {campaigns.map(c => (
+                    <div key={c.id} className="glass-inset rounded-xl px-4 py-3.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</p>
+                          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                            {c.contactedCount}/{c.totalContacts} contatados · {c.reactivatedCount} reativados
+                          </p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold ${c.status === "active" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
+                          {c.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <PlatformInset className="p-6 text-center">
+                  <RefreshCcw className="mx-auto h-5 w-5 text-gray-400 dark:text-gray-500" />
+                  <p className="mt-3 text-sm font-medium text-gray-900 dark:text-white">
+                    Nenhuma campanha de reativação ativa.
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Crie uma campanha para reengajar clientes que pararam de comprar.
+                  </p>
+                </PlatformInset>
+              )}
             </div>
           </PlatformSurface>
 

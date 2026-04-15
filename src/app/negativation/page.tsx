@@ -17,6 +17,7 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getNegativationService } from "@/server/recovery/services/negativation-service";
 
 export const metadata = { title: "Negativação" };
 export const revalidate = 30;
@@ -24,7 +25,12 @@ export const revalidate = 30;
 export default async function NegativationPage() {
   await requireAuthenticatedSession(["admin"]);
 
-  // TODO: fetch from negativation service when available
+  let analytics = { total: 0, pendingNotice: 0, noticeSent: 0, waitingPeriod: 0, registered: 0, removed: 0, cancelled: 0, totalDebtAmount: 0, recoveredAfterNegativation: 0 };
+  try {
+    const service = getNegativationService();
+    analytics = await service.getNegativationAnalytics();
+  } catch { /* tables may not exist */ }
+
   return (
     <PlatformAppPage currentPath="/negativation">
       {/* KPI cards */}
@@ -32,19 +38,19 @@ export default async function NegativationPage() {
         <PlatformMetricCard
           icon={AlertTriangle}
           label="registradas"
-          value="0"
+          value={String(analytics.registered)}
           subtitle="negativações ativas"
         />
         <PlatformMetricCard
           icon={CheckCircle2}
           label="recuperadas pós-negativação"
-          value="0"
+          value={String(analytics.removed)}
           subtitle="pagas após registro"
         />
         <PlatformMetricCard
           icon={Send}
           label="notificações enviadas"
-          value="0"
+          value={String(analytics.noticeSent + analytics.waitingPeriod)}
           subtitle="avisos de negativação"
         />
         <PlatformMetricCard
@@ -106,10 +112,10 @@ export default async function NegativationPage() {
               Resumo de cobrança
             </p>
             <div className="mt-4 space-y-2.5">
-              <MetricLine icon={DollarSign} label="Valor total inadimplido" value="R$ 0" highlight />
+              <MetricLine icon={DollarSign} label="Valor total inadimplido" value={`R$ ${analytics.totalDebtAmount.toFixed(2)}`} highlight />
               <MetricLine icon={Clock} label="Média dias em atraso" value="—" />
               <MetricLine icon={CheckCircle2} label="Recuperado pós-registro" value="R$ 0" />
-              <MetricLine icon={Shield} label="Taxa de recuperação" value="0%" />
+              <MetricLine icon={Shield} label="Taxa de recuperação" value={analytics.total > 0 ? `${Math.round((analytics.removed / analytics.total) * 100)}%` : "0%"} />
             </div>
           </PlatformSurface>
 

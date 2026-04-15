@@ -18,6 +18,7 @@ import {
   PlatformSurface,
 } from "@/components/platform/platform-shell";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getAnticipationService } from "@/server/recovery/services/anticipation-service";
 
 export const metadata = { title: "Antecipação" };
 export const revalidate = 30;
@@ -25,7 +26,17 @@ export const revalidate = 30;
 export default async function AnticipationPage() {
   await requireAuthenticatedSession(["admin"]);
 
-  // TODO: fetch from anticipation service when available
+  let analytics = { totalRequests: 0, totalDisbursed: 0, totalSpreadCollected: 0, avgSpreadRate: 0, pendingRequests: 0, approvedNotDisbursed: 0, avgDaysToSettlement: 0 };
+  let receivables = { totalReceivable: 0, settledCount: 0, pendingCount: 0, avgDaysToSettlement: 15, maxAnticipationAmount: 0, estimatedSpreadRate: 0, sellerKey: "" };
+  let requests: Awaited<ReturnType<typeof import("@/server/recovery/services/anticipation-service").AnticipationService.prototype.listRequests>> = [];
+  try {
+    const service = getAnticipationService();
+    [analytics, requests] = await Promise.all([
+      service.getAnticipationAnalytics(),
+      service.listRequests(),
+    ]);
+  } catch { /* tables may not exist yet */ }
+
   return (
     <PlatformAppPage currentPath="/anticipation">
       {/* KPI cards */}
@@ -33,25 +44,25 @@ export default async function AnticipationPage() {
         <PlatformMetricCard
           icon={Banknote}
           label="disponível"
-          value="R$ 0"
+          value={`R$ ${analytics.totalDisbursed > 0 ? analytics.totalDisbursed.toFixed(2) : "0"}`}
           subtitle="para antecipação"
         />
         <PlatformMetricCard
           icon={TrendingUp}
           label="antecipado"
-          value="R$ 0"
+          value={`R$ ${analytics.totalDisbursed.toFixed(2)}`}
           subtitle="total antecipado"
         />
         <PlatformMetricCard
           icon={Percent}
           label="spread médio"
-          value="0%"
+          value={`${(analytics.avgSpreadRate * 100).toFixed(1)}%`}
           subtitle="taxa de antecipação"
         />
         <PlatformMetricCard
           icon={CheckCircle2}
           label="liquidado"
-          value="R$ 0"
+          value={`R$ ${analytics.totalSpreadCollected.toFixed(2)}`}
           subtitle="recebíveis já quitados"
         />
       </section>

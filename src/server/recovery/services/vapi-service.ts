@@ -164,7 +164,7 @@ export class VapiService {
     };
 
     try {
-      console.log(`[VapiService] Initiating call to ${input.callRecord.toNumber}, phoneNumberId=${this.phoneNumberId}`);
+      // Call initiation logged via structured logger after success/failure
 
       const response = await fetch("https://api.vapi.ai/call/phone", {
         method: "POST",

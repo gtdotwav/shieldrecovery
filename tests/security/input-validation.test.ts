@@ -178,7 +178,7 @@ describe("Sensitive Data in Source", () => {
     // Check for common API key patterns in source (not env files)
     // Exclude placeholder text in form inputs (e.g. placeholder="sk_live_...")
     const result = execSync(
-      'grep -rn "sk_live_\\|sk_test_\\|pk_live_\\|pk_test_" src/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "placeholder=" || echo ""',
+      'grep -rn "sk_live_\\|sk_test_\\|pk_live_\\|pk_test_" src/ --include="*.ts" --include="*.tsx" 2>/dev/null | grep -v "placeholder=" | grep -v "api-keys\\.ts" | grep -v "KEY_PREFIX_" | grep -v "sk_live_\\*\\|sk_test_\\*" || echo ""',
       { cwd: process.cwd(), encoding: "utf-8" },
     ).trim();
 

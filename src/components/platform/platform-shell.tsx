@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   Banknote,
   Bell,
+  Crosshair,
 } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth-actions";
@@ -244,6 +245,14 @@ export const platformRoutes: PlatformRoute[] = [
     label: "Preventiva",
     description: "Régua preventiva pré-vencimento.",
     icon: Bell,
+    kind: "app",
+    allowedRoles: ["admin", "seller"],
+  },
+  {
+    href: "/tracking",
+    label: "Tracking",
+    description: "Atribuição UTM, ROAS e rastreamento de conversões.",
+    icon: Crosshair,
     kind: "app",
     allowedRoles: ["admin", "seller"],
   },

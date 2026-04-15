@@ -323,6 +323,26 @@ const endpoints = [
     auth_required: true,
   },
 
+  // API Keys
+  {
+    path: "/api/keys",
+    method: "GET",
+    description: "List API keys (admin only)",
+    auth_required: true,
+  },
+  {
+    path: "/api/keys",
+    method: "POST",
+    description: "Create a new API key (admin only, raw key returned once)",
+    auth_required: true,
+  },
+  {
+    path: "/api/keys/:id",
+    method: "DELETE",
+    description: "Revoke an API key (admin only)",
+    auth_required: true,
+  },
+
   // Misc
   {
     path: "/api/ab-tests",

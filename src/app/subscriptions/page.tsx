@@ -16,15 +16,40 @@ import {
   PlatformSectionIntro,
   PlatformSurface,
 } from "@/components/platform/platform-shell";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getRecurringBillingService } from "@/server/recovery/services/recurring-billing-service";
 
 export const metadata = { title: "Recorrência" };
 export const revalidate = 30;
 
 export default async function SubscriptionsPage() {
-  await requireAuthenticatedSession(["admin", "seller"]);
+  const session = await requireAuthenticatedSession(["admin", "seller"]);
 
-  // TODO: fetch from subscriptions service when available
+  const sellerIdentity =
+    session.role === "seller"
+      ? await getSellerIdentityByEmail(session.email)
+      : null;
+  const sellerKey =
+    session.role === "seller" ? sellerIdentity?.agentName : undefined;
+
+  let analytics = {
+    totalActive: 0,
+    totalPaused: 0,
+    totalCanceled: 0,
+    mrr: 0,
+    churnRate: 0,
+    dunningSuccessRate: 0,
+    openInvoices: 0,
+    failedInvoices: 0,
+  };
+  try {
+    const service = getRecurringBillingService();
+    analytics = await service.getSubscriptionAnalytics(sellerKey);
+  } catch {
+    /* tables may not exist */
+  }
+
   return (
     <PlatformAppPage currentPath="/subscriptions">
       {/* KPI cards */}
@@ -32,25 +57,25 @@ export default async function SubscriptionsPage() {
         <PlatformMetricCard
           icon={Users}
           label="assinaturas ativas"
-          value="0"
+          value={String(analytics.totalActive)}
           subtitle="base atual"
         />
         <PlatformMetricCard
           icon={DollarSign}
           label="MRR"
-          value="R$ 0"
+          value={`R$ ${(analytics.mrr / 100).toFixed(2)}`}
           subtitle="receita recorrente mensal"
         />
         <PlatformMetricCard
           icon={TrendingDown}
           label="churn rate"
-          value="0%"
+          value={`${(analytics.churnRate * 100).toFixed(1)}%`}
           subtitle="cancelamentos no mês"
         />
         <PlatformMetricCard
           icon={AlertCircle}
           label="dunning em andamento"
-          value="0"
+          value={String(analytics.failedInvoices)}
           subtitle="cobranças com falha ativa"
         />
       </section>
@@ -103,8 +128,8 @@ export default async function SubscriptionsPage() {
             <div className="mt-4 space-y-2.5">
               <MetricLine label="Ticket médio" value="R$ 0" />
               <MetricLine label="Lifetime médio" value="0 meses" />
-              <MetricLine label="Renovações próximas" value="0" />
-              <MetricLine label="Em grace period" value="0" />
+              <MetricLine label="Renovações próximas" value={String(analytics.openInvoices)} />
+              <MetricLine label="Em grace period" value={String(analytics.totalPaused)} />
             </div>
           </PlatformSurface>
 
