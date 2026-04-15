@@ -155,22 +155,13 @@ export function CfoVoiceMode() {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        // Send dynamic config override with seller data + system prompt + dynamic variables
-        // This MUST be the first message, before conversation_initiation_metadata arrives
-        // Note: first_message override is NOT allowed by ElevenLabs client config —
-        // it must be set on the agent dashboard. We only override the prompt here.
-        const override: Record<string, unknown> = {
+        // Send dynamic variables with financial data for the agent template.
+        // The agent's system prompt on the ElevenLabs dashboard uses {{variable}}
+        // placeholders — no config overrides needed (they're blocked by security).
+        ws.send(JSON.stringify({
           type: "conversation_initiation_client_data",
-          conversation_config_override: {
-            agent: {
-              prompt: { prompt: voiceConfig.systemPrompt },
-            },
-          },
-          dynamic_variables: {
-            seller_key: voiceConfig.sellerKey || "",
-          },
-        };
-        ws.send(JSON.stringify(override));
+          dynamic_variables: voiceConfig.dynamicVariables,
+        }));
       };
 
       ws.onmessage = (event) => {

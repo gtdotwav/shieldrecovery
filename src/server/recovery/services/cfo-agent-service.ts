@@ -342,8 +342,7 @@ export class CfoAgentService {
 
   async generateVoiceSessionUrl(ctx?: CfoSellerContext): Promise<{
     wsUrl: string;
-    systemPrompt: string;
-    firstMessage: string;
+    dynamicVariables: Record<string, string>;
   } | null> {
     const apiKey = appEnv.elevenLabsApiKey;
     const agentId = appEnv.elevenLabsAgentId;
@@ -365,21 +364,39 @@ export class CfoAgentService {
     const data = await response.json();
     if (!data.signed_url) throw new Error("ElevenLabs returned no signed_url");
 
-    let systemPrompt: string;
+    // Build dynamic variables with financial data for the ElevenLabs agent template.
+    // The agent's system prompt on the dashboard uses {{variable}} placeholders.
+    const vars: Record<string, string> = {
+      seller_key: ctx?.sellerKey || "",
+      seller_name: ctx?.sellerDisplayName || "parceiro",
+      seller_role: ctx?.role === "admin" ? "administrador" : "lojista",
+    };
+
     try {
-      const snapshot = await this.getFinancialSnapshot(ctx);
-      systemPrompt = this.buildVoiceSystemPrompt(snapshot, ctx);
+      const s = await this.getFinancialSnapshot(ctx);
+      vars.recovered = String(s.recovery.recovered);
+      vars.total_failed = String(s.recovery.totalFailed);
+      vars.recovery_rate = `${s.recovery.recoveryRate.toFixed(1)}%`;
+      vars.recovered_revenue = `R$ ${(s.recovery.recoveredRevenue / 100).toFixed(2)}`;
+      vars.active_recoveries = String(s.recovery.activeRecoveries);
+      vars.avg_recovery_hours = `${s.recovery.avgRecoveryTimeHours.toFixed(1)}`;
+      vars.active_leads = String(s.activeLeads);
+      vars.delinquency_total = String(s.delinquency.total);
+      vars.delinquency_value = `R$ ${(s.delinquency.totalValue / 100).toFixed(2)}`;
+      vars.delinquency_0_7d = String(s.delinquency.byAge["0-7d"] || 0);
+      vars.delinquency_8_15d = String(s.delinquency.byAge["8-15d"] || 0);
+      vars.delinquency_16_30d = String(s.delinquency.byAge["16-30d"] || 0);
+      vars.delinquency_30d_plus = String(s.delinquency.byAge["30d+"] || 0);
+      vars.channel_whatsapp = String(s.channels.whatsapp);
+      vars.channel_email = String(s.channels.email);
+      vars.channel_voice = String(s.channels.voice);
+      vars.cash_flow_net = `R$ ${(s.cashFlow.net / 100).toFixed(2)}`;
+      vars.data_available = "true";
     } catch {
-      systemPrompt = `Você é o CFO Autônomo da PagRecovery — um diretor financeiro virtual.
-Fale em português brasileiro, de forma natural e direta. Os dados financeiros detalhados não estão disponíveis neste momento, mas você pode conversar sobre gestão, estratégia e responder perguntas gerais.`;
+      vars.data_available = "false";
     }
 
-    const sellerName = ctx?.sellerDisplayName || "parceiro";
-    const firstMessage =
-      `Oi${ctx?.sellerDisplayName ? `, ${ctx.sellerDisplayName}` : ""}! Sou seu CFO autônomo e estou aqui para nossa reunião. ` +
-      "Gostaria de recapitular como está a sua operação ou tem algum assunto específico para começarmos?";
-
-    return { wsUrl: data.signed_url, systemPrompt, firstMessage };
+    return { wsUrl: data.signed_url, dynamicVariables: vars };
   }
 
   /* ═══════════════════════════════════════════════════════

@@ -35,9 +35,7 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({
       ok: true,
       wsUrl: result.wsUrl,
-      systemPrompt: result.systemPrompt,
-      firstMessage: result.firstMessage,
-      sellerKey: ctx.sellerKey || "",
+      dynamicVariables: result.dynamicVariables,
     });
   } catch (error) {
     console.error("[cfo/voice] Error:", error);
