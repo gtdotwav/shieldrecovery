@@ -91,22 +91,16 @@ export class RecoveryWorkerService {
     }
 
     const results = new Array<WorkerJobRunResult>(jobs.length);
-    let cursor = 0;
+    const totalItems = jobs.length;
 
-    await Promise.all(
-      Array.from({ length: concurrency }, async () => {
-        while (true) {
-          const index = cursor;
-          cursor += 1;
-
-          if (index >= jobs.length) {
-            return;
-          }
-
-          results[index] = await this.processClaimedJob(jobs[index]);
+    const workers = Array.from({ length: concurrency }, (_, workerIdx) => {
+      return (async () => {
+        for (let i = workerIdx; i < totalItems; i += concurrency) {
+          results[i] = await this.processClaimedJob(jobs[i]);
         }
-      }),
-    );
+      })();
+    });
+    await Promise.all(workers);
 
     return results;
   }

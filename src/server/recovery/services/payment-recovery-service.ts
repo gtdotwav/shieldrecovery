@@ -2435,7 +2435,7 @@ export class PaymentRecoveryService {
               message: `Checkout session limit reached (${count}/${MAX_CHECKOUT_SESSIONS}) for payment ${payment.id}. Skipping new session creation.`,
               context: { paymentId: payment.id, existingSessions: count },
             }),
-          ).catch(() => {});
+          ).catch((err) => console.error("[payment-recovery] log error:", err));
           // Return a fallback link instead of creating yet another session
           const fallbackLink = `${baseUrl}/retry/${payment.gatewayPaymentId}?token=limit-reached`;
           return { paymentLink: fallbackLink };
@@ -2465,7 +2465,7 @@ export class PaymentRecoveryService {
               error: error instanceof Error ? error.message : String(error),
             },
           }),
-        ).catch(() => {});
+        ).catch((err) => console.error("[payment-recovery] log error:", err));
       }
     }
 
@@ -2515,7 +2515,7 @@ export class PaymentRecoveryService {
             error: error instanceof Error ? error.message : String(error),
           },
         }),
-      ).catch(() => {});
+      ).catch((err) => console.error("[payment-recovery] log error:", err));
       const paymentLink = `${baseUrl}/retry/${payment.gatewayPaymentId}?token=${randomUUID()}`;
 
       await this.storage.createPaymentAttempt({

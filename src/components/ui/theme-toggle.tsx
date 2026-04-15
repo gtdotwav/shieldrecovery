@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function ThemeToggle({ className }: { className?: string }) {
   const [dark, setDark] = useState(false);
@@ -10,12 +10,15 @@ export function ThemeToggle({ className }: { className?: string }) {
     setDark(document.documentElement.classList.contains("dark"));
   }, []);
 
-  function toggle() {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  }
+  const toggle = useCallback(() => {
+    setDark(prev => {
+      const next = !prev;
+      // Sync DOM and storage atomically
+      document.documentElement.classList.toggle("dark", next);
+      try { localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
+      return next;
+    });
+  }, []);
 
   return (
     <button

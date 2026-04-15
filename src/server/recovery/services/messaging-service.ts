@@ -194,7 +194,7 @@ export class MessagingService {
               error: error instanceof Error ? error.message : String(error),
             },
           }),
-        ).catch(() => {});
+        ).catch((err) => console.error("[messaging] log error:", err));
       }
     }
 
@@ -327,7 +327,7 @@ export class MessagingService {
         await fetch(webApiConfig.disconnectUrl, {
           method: "DELETE",
           headers: buildWhatsAppApiHeaders(settings.whatsappAccessToken),
-        }).catch(() => undefined);
+        }).catch((err) => console.error("[messaging] disconnect error:", err));
       } else {
         await fetch(webApiConfig.disconnectUrl, {
           method: "POST",
@@ -339,7 +339,7 @@ export class MessagingService {
             sessionId: settings.whatsappWebSessionId,
             sessionName: settings.whatsappWebSessionId,
           }),
-        }).catch(() => undefined);
+        }).catch((err) => console.error("[messaging] disconnect error:", err));
       }
     }
 
@@ -1035,7 +1035,7 @@ export class MessagingService {
                 error: error instanceof Error ? error.message : String(error),
               },
             }),
-          ).catch(() => {});
+          ).catch((err) => console.error("[messaging] log error:", err));
         }
       }
     }
@@ -1362,7 +1362,7 @@ export class MessagingService {
     });
 
     if (response.status === 404) {
-      await this.ensureEvolutionInstance(config).catch(() => undefined);
+      await this.ensureEvolutionInstance(config).catch((err) => console.error("[messaging] ensureEvolutionInstance error:", err));
       response = await fetch(config.startUrl, {
         method: "GET",
         headers: buildWhatsAppApiHeaders(config.accessToken),
@@ -1490,7 +1490,10 @@ export class MessagingService {
           ],
         },
       }),
-    }).catch(() => null);
+    }).catch((err) => {
+      console.error("[messaging] ensureEvolutionInstance webhook setup error:", err);
+      return null;
+    });
 
     if (!response || response.ok) {
       return "";

@@ -236,15 +236,22 @@ export class UpsellService {
 
       if (matching.length === 0) return null;
 
-      // Check existing offers to respect maxOffersPerCustomer
-      for (const rule of matching) {
-        const { count } = await this.supabase
-          .from("upsell_offers")
-          .select("id", { count: "exact", head: true })
-          .eq("rule_id", rule.id)
-          .eq("customer_id", input.customerId);
+      // Batch: get offer counts for all matching rule IDs in one query
+      const ruleIds = matching.map((r) => r.id);
+      const { data: offerCounts } = await this.supabase
+        .from("upsell_offers")
+        .select("rule_id")
+        .in("rule_id", ruleIds)
+        .eq("customer_id", input.customerId);
 
-        if ((count ?? 0) >= rule.maxOffersPerCustomer) continue;
+      const countMap = new Map<string, number>();
+      for (const row of offerCounts || []) {
+        countMap.set(row.rule_id, (countMap.get(row.rule_id) || 0) + 1);
+      }
+
+      // Find first eligible rule and create offer
+      for (const rule of matching) {
+        if ((countMap.get(rule.id) || 0) >= rule.maxOffersPerCustomer) continue;
 
         // Create offer
         const offerRow: UpsellOfferRow = {

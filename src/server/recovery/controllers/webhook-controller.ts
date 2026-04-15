@@ -84,7 +84,7 @@ export async function handleShieldGatewayWebhook(
           sellerKey: options?.sellerKey ?? null,
         },
       }),
-    ).catch(() => {});
+    ).catch((err) => console.error("[webhook-controller] log error:", err));
 
     return NextResponse.json(
       {
@@ -183,7 +183,7 @@ export async function handlePagouAiWebhook(
           },
         }),
       )
-      .catch(() => {});
+      .catch((err) => console.error("[webhook-controller] log error:", err));
 
     return NextResponse.json(
       {
@@ -274,7 +274,7 @@ export async function handleBuckPayWebhook(
           },
         }),
       )
-      .catch(() => {});
+      .catch((err) => console.error("[webhook-controller] log error:", err));
 
     return NextResponse.json(
       {

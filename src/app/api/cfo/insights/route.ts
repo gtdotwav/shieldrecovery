@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     if (!session) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = req.nextUrl;
-    const limit = Number(searchParams.get("limit")) || 10;
+    const limit = Math.min(Math.max(1, Number(searchParams.get("limit")) || 10), 100);
 
     const service = getCfoAgentService();
 

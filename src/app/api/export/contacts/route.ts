@@ -8,10 +8,16 @@ export const dynamic = "force-dynamic";
 
 function escapeCsvField(value: string): string {
   if (!value) return "";
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Prevent CSV injection (formula injection)
+  const formulaChars = ["=", "+", "-", "@", "\t", "\r"];
+  let safeValue = value;
+  if (formulaChars.some((c) => safeValue.startsWith(c))) {
+    safeValue = "'" + safeValue;
   }
-  return value;
+  if (safeValue.includes(",") || safeValue.includes('"') || safeValue.includes("\n")) {
+    return `"${safeValue.replace(/"/g, '""')}"`;
+  }
+  return safeValue;
 }
 
 function formatCsvCurrency(cents: number): string {

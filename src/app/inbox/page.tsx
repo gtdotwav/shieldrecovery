@@ -194,7 +194,10 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
             <h2 className="text-[0.65rem] font-medium uppercase tracking-[0.06em] text-gray-400 dark:text-gray-500">
               Fila
             </h2>
-            <span className="muted-pill flex h-5 min-w-5 items-center justify-center rounded-full text-[0.65rem] font-semibold">
+            <span
+              className="muted-pill flex h-5 min-w-5 items-center justify-center rounded-full text-[0.65rem] font-semibold"
+              aria-label={`${conversationCount} conversas`}
+            >
               {conversationCount}
             </span>
           </div>

@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getAuthenticatedSession } from "@/server/auth/session";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { getStorageService } from "@/server/recovery/services/storage";
 import type { MessageTemplateInput } from "@/server/recovery/types";
 
 export async function GET(request: NextRequest) {
-  try {
-    await requireAuthenticatedSession(["admin", "seller", "market"]);
-  } catch {
+  const session = await getAuthenticatedSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "admin" && session.role !== "seller" && session.role !== "market") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const storage = getStorageService();
@@ -15,16 +18,24 @@ export async function GET(request: NextRequest) {
   const category = url.searchParams.get("category") ?? undefined;
   const vertical = url.searchParams.get("vertical") ?? undefined;
   const channel = url.searchParams.get("channel") ?? undefined;
-  const sellerKey = url.searchParams.get("sellerKey") ?? undefined;
+  let effectiveSellerKey = url.searchParams.get("sellerKey") ?? undefined;
   const active = url.searchParams.has("active")
     ? url.searchParams.get("active") === "true"
     : undefined;
+
+  if (session.role === "seller") {
+    const identity = await getSellerIdentityByEmail(session.email);
+    if (!identity) {
+      return NextResponse.json({ error: "Seller not found" }, { status: 403 });
+    }
+    effectiveSellerKey = identity.agentName;
+  }
 
   const templates = await storage.listMessageTemplates({
     category,
     vertical,
     channel,
-    sellerKey,
+    sellerKey: effectiveSellerKey,
     active,
   });
 
@@ -32,10 +43,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    await requireAuthenticatedSession(["admin"]);
-  } catch {
+  const session = await getAuthenticatedSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const storage = getStorageService();

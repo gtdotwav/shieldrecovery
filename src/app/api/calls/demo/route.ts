@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
     const unlimitedPhones = new Set(
       unlimitedRaw.split(",").map((p) => p.trim()).filter(Boolean),
     );
-    unlimitedPhones.add(process.env.DEMO_CALL_OWNER_PHONE || "+5521999036887");
+    const ownerPhone = process.env.DEMO_CALL_OWNER_PHONE?.trim();
+    if (ownerPhone) unlimitedPhones.add(ownerPhone);
 
     const isUnlimited = unlimitedPhones.has(phone);
 

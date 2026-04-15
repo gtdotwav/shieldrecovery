@@ -61,7 +61,9 @@ export function CfoProvider({ children }: { children: ReactNode }) {
           const data = await res.json();
           setUnreadCount(data.unreadCount || 0);
         }
-      } catch { /* silent */ }
+      } catch (err) {
+        console.warn("[cfo] Failed to fetch insights:", err);
+      }
     };
     fetchInsights();
     const interval = setInterval(fetchInsights, 60_000);

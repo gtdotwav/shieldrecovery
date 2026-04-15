@@ -37,11 +37,12 @@ async function resetStaleJobs(): Promise<number> {
 
     let resetCount = 0;
     for (const job of staleJobs) {
-      const newAttempts = Math.max(0, (job.attempts ?? 1) - 1);
+      // Stale job didn't actually run — reschedule with same attempts, don't decrement
+      const newAttempts = job.attempts ?? 3;
       const { error: updateError } = await supabase
         .from("queue_jobs")
         .update({
-          status: newAttempts > 0 ? "scheduled" : "failed",
+          status: "scheduled",
           attempts: newAttempts,
           error: "Reset: job stuck in processing state",
         })

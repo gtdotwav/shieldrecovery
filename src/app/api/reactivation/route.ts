@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireAuthenticatedSession } from "@/server/auth/session";
+import { getAuthenticatedSession } from "@/server/auth/session";
+import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { getReactivationService } from "@/server/recovery/services/reactivation-service";
 import type { CreateCampaignInput } from "@/server/recovery/services/reactivation-service";
 
@@ -9,17 +10,27 @@ import type { CreateCampaignInput } from "@/server/recovery/services/reactivatio
  * Query: ?sellerKey=&status=&limit=
  */
 export async function GET(request: NextRequest) {
-  try {
-    await requireAuthenticatedSession(["admin", "seller"]);
-  } catch {
+  const session = await getAuthenticatedSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "admin" && session.role !== "seller") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const url = new URL(request.url);
-  const sellerKey = url.searchParams.get("sellerKey") ?? undefined;
+  let effectiveSellerKey = url.searchParams.get("sellerKey") ?? undefined;
+
+  if (session.role === "seller") {
+    const identity = await getSellerIdentityByEmail(session.email);
+    if (!identity) {
+      return NextResponse.json({ error: "Seller not found" }, { status: 403 });
+    }
+    effectiveSellerKey = identity.agentName;
+  }
 
   const service = getReactivationService();
-  const campaigns = await service.listCampaigns(sellerKey);
+  const campaigns = await service.listCampaigns(effectiveSellerKey);
 
   return NextResponse.json({ ok: true, data: campaigns });
 }
@@ -29,10 +40,12 @@ export async function GET(request: NextRequest) {
  * Body: campaign creation payload
  */
 export async function POST(request: NextRequest) {
-  try {
-    await requireAuthenticatedSession(["admin"]);
-  } catch {
+  const session = await getAuthenticatedSession();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   let body: CreateCampaignInput;

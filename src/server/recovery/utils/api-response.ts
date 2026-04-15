@@ -5,7 +5,11 @@ import type { ApiSession } from "@/server/auth/request";
 function getCorsOrigin(): string {
   const url = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (!url) {
-    console.warn("[CORS] NEXT_PUBLIC_APP_URL not set — defaulting to restricted origin");
+    if (process.env.NODE_ENV === "production") {
+      console.error("[CORS] NEXT_PUBLIC_APP_URL not set in production — using restrictive default");
+    } else {
+      console.warn("[CORS] NEXT_PUBLIC_APP_URL not set — using restrictive default");
+    }
     return "https://pagrecovery.com.br";
   }
   return url;

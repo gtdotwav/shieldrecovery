@@ -42,7 +42,7 @@ export function MobileMoreMenu({
       <button
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          "flex flex-col items-center gap-0.5 min-w-[3rem] min-h-[2.75rem] justify-center px-1.5 rounded-lg transition-colors",
+          "flex flex-col items-center gap-0.5 min-w-[2.75rem] min-h-[2.75rem] justify-center px-1.5 rounded-lg transition-colors",
           isActive
             ? "text-[var(--accent)]"
             : "text-gray-400 dark:text-gray-500",
@@ -51,7 +51,7 @@ export function MobileMoreMenu({
         aria-haspopup="true"
       >
         <Inbox className="w-5 h-5 shrink-0" />
-        <span className="text-[0.6rem] leading-tight">Mais</span>
+        <span className="text-[0.65rem] leading-tight">Mais</span>
       </button>
       {open && (
         <div className="absolute bottom-full right-0 mb-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg min-w-[160px] py-1 z-50">

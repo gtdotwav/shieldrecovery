@@ -62,9 +62,6 @@ export async function POST(request: Request) {
     return apiOk(result);
   } catch (err) {
     console.error("[mobile/payouts POST]", err);
-    return apiError(
-      err instanceof Error ? err.message : "Erro ao solicitar saque",
-      500,
-    );
+    return apiError("Internal error", 500);
   }
 }

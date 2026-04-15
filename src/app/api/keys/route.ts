@@ -17,11 +17,8 @@ export async function GET(request: Request) {
     const keys = await listApiKeys();
     return apiOk({ keys }, 200, request);
   } catch (err) {
-    return apiError(
-      err instanceof Error ? err.message : "Failed to list API keys.",
-      500,
-      request,
-    );
+    console.error("[keys GET]", err);
+    return apiError("Internal error", 500, request);
   }
 }
 
@@ -81,10 +78,7 @@ export async function POST(request: Request) {
       request,
     );
   } catch (err) {
-    return apiError(
-      err instanceof Error ? err.message : "Failed to create API key.",
-      500,
-      request,
-    );
+    console.error("[keys POST]", err);
+    return apiError("Internal error", 500, request);
   }
 }

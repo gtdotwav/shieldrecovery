@@ -99,7 +99,7 @@ function RecoveryPromptCard({ message }: { message: MessageRecord }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={metadata.pixQrCode}
-              alt="QR Code Pix"
+              alt="QR Code para pagamento via Pix"
               className="mt-2 h-64 w-64 max-w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-white object-contain p-2"
             />
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
