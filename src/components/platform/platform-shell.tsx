@@ -28,7 +28,9 @@ import {
   AlertTriangle,
   Banknote,
   Bell,
+  ContactRound,
   Crosshair,
+  HandCoins,
 } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth-actions";
@@ -241,6 +243,22 @@ export const platformRoutes: PlatformRoute[] = [
     allowedRoles: ["admin"],
   },
   {
+    href: "/admin/withdraw",
+    label: "Saques",
+    description: "Painel de saques PIX e saldo.",
+    icon: HandCoins,
+    kind: "app",
+    allowedRoles: ["admin"],
+  },
+  {
+    href: "/admin/crm",
+    label: "CRM PIX",
+    description: "Contatos e chaves PIX para saques.",
+    icon: ContactRound,
+    kind: "app",
+    allowedRoles: ["admin"],
+  },
+  {
     href: "/preventive",
     label: "Preventiva",
     description: "Régua preventiva pré-vencimento.",
@@ -292,6 +310,7 @@ function getInitials(email: string) {
 
 function getRoleLabel(role: UserRole) {
   if (role === "admin") return "Admin";
+  if (role === "partner") return "Parceiro";
   if (role === "market") return "PagRecovery";
   return "Seller";
 }

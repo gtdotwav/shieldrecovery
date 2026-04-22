@@ -17,9 +17,9 @@ export async function getAuthenticatedSession() {
   return verifySessionToken(token);
 }
 
-export async function setAuthenticatedSession(email: string, role: UserRole) {
+export async function setAuthenticatedSession(email: string, role: UserRole, partnerId?: string) {
   const store = await cookies();
-  const token = await createSessionToken(email, role);
+  const token = await createSessionToken(email, role, partnerId);
 
   store.set(getSessionCookieName(), token, {
     httpOnly: true,

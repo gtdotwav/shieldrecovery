@@ -49,3 +49,7 @@ next-env.d.ts
 
 # test artifacts
 test-write.txt
+
+# partner credentials (sensitive)
+docs/shield-credentials.json
+docs/*-credentials.json

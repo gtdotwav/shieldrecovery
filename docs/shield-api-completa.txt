@@ -1,0 +1,412 @@
+================================================================================
+  PAGRECOVERY — API COMPLETA PARA INTEGRAÇÃO (SHIELD)
+================================================================================
+
+Este documento consolida TODOS os endpoints que a Shield precisa para plugar
+sua base de sellers com a PagRecovery. São 3 camadas:
+
+  1. INGEST  — Shield envia pagamentos falhos para a PagRecovery
+  2. API v1  — Shield consulta dados de sellers, leads, chat, QR code
+  3. POSTBACK — PagRecovery envia atualizações em tempo real para a Shield
+
+Base URL: https://pagrecovery.com
+
+================================================================================
+  AUTENTICAÇÃO
+================================================================================
+
+Todas as chamadas usam API key no header:
+
+  Authorization: Bearer sk_live_XXXXXXXXXXXXX
+
+Cada seller pode ter sua própria API key (escopo restrito ao seller) ou
+você pode usar uma API key global (acesso a todos os sellers).
+
+================================================================================
+  1. INGEST — ENVIAR PAGAMENTOS FALHOS
+================================================================================
+
+  POST /api/partner/ingest
+  Content-Type: application/json
+  Authorization: Bearer sk_live_XXX
+
+Payload:
+
+  {
+    "event_type": "payment_failed",
+    "payment": {
+      "id": "pay_abc123",
+      "order_id": "order-456",
+      "amount": 9990,
+      "currency": "BRL",
+      "method": "pix",
+      "status": "failed"
+    },
+    "customer": {
+      "name": "João Silva",
+      "email": "joao@email.com",
+      "phone": "5511999999999",
+      "document": "12345678900"
+    },
+    "metadata": {
+      "product": "Curso XYZ",
+      "paymentUrl": "https://checkout.exemplo.com/retry/abc",
+      "pixCode": "00020126580014br.gov.bcb.pix..."
+    }
+  }
+
+Campos obrigatórios: event_type, payment.id, payment.amount, payment.status,
+customer.name, customer.email, customer.phone
+
+Valores em CENTAVOS (R$99,90 = 9990).
+
+Resposta (200):
+
+  {
+    "ok": true,
+    "accepted": true,
+    "queued": true,
+    "webhook_id": "seller-key:partner:pay_abc123",
+    "event_id": "pay_abc123",
+    "event_type": "payment_failed",
+    "seller_key": "shield"
+  }
+
+Eventos suportados: payment_failed, payment_refused, payment_expired,
+payment_created, payment_pending, payment_succeeded, payment_refunded,
+payment_chargeback, payment_canceled
+
+================================================================================
+  2. API v1 — CONSULTAR DADOS DOS SELLERS
+================================================================================
+
+Todos os endpoints abaixo usam:
+  Authorization: Bearer sk_live_XXX
+
+────────────────────────────────────────────────────────────────────────────────
+  2.1  LISTAR SELLERS
+────────────────────────────────────────────────────────────────────────────────
+
+  GET /api/partner/v1/sellers
+
+Resposta:
+
+  {
+    "sellers": [
+      {
+        "seller_key": "loja-maria",
+        "seller_name": "Loja da Maria",
+        "active": true,
+        "stats": {
+          "total_failed": 150,
+          "recovered": 87,
+          "recovery_rate": "58.0%",
+          "recovered_revenue": "R$ 12.350,00",
+          "active_leads": 23,
+          "avg_recovery_hours": 4.2
+        },
+        "leads_count": 150,
+        "conversations_count": 120,
+        "unread_messages": 5
+      }
+    ]
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  2.2  DETALHE DO SELLER
+────────────────────────────────────────────────────────────────────────────────
+
+  GET /api/partner/v1/sellers/{sellerKey}
+
+Resposta:
+
+  {
+    "seller": {
+      "seller_key": "loja-maria",
+      "seller_name": "Loja da Maria",
+      "active": true,
+      "gateway_slug": "partner"
+    },
+    "stats": {
+      "total_failed": 150,
+      "recovered": 87,
+      "recovery_rate": "58.0%",
+      "recovered_revenue": "R$ 12.350,00",
+      "active_leads": 23,
+      "avg_recovery_hours": 4.2
+    },
+    "leads": [ ... ],
+    "conversations": [ ... ]
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  2.3  LEADS DO SELLER
+────────────────────────────────────────────────────────────────────────────────
+
+  GET /api/partner/v1/sellers/{sellerKey}/leads
+  GET /api/partner/v1/sellers/{sellerKey}/leads?status=contacting
+
+Filtro opcional: ?status= (contacting, recovered, lost, etc.)
+
+Resposta:
+
+  {
+    "seller_key": "loja-maria",
+    "total": 150,
+    "leads": [
+      {
+        "lead_id": "lead_abc123",
+        "customer_name": "João Silva",
+        "email": "joao@email.com",
+        "phone": "5511999999999",
+        "product": "Curso XYZ",
+        "amount": 9990,
+        "payment_status": "failed",
+        "payment_method": "pix",
+        "lead_status": "contacting",
+        "order_id": "order-456",
+        "gateway_payment_id": "pay_abc123",
+        "assigned_agent": "Ana",
+        "created_at": "2026-04-22T10:00:00Z",
+        "updated_at": "2026-04-22T14:30:00Z"
+      }
+    ]
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  2.4  CONVERSAS DO SELLER
+────────────────────────────────────────────────────────────────────────────────
+
+  GET /api/partner/v1/sellers/{sellerKey}/conversations
+
+Resposta:
+
+  {
+    "seller_key": "loja-maria",
+    "total": 120,
+    "unread_total": 5,
+    "conversations": [
+      {
+        "conversation_id": "conv_xyz",
+        "lead_id": "lead_abc123",
+        "customer_name": "João Silva",
+        "channel": "whatsapp",
+        "contact_value": "5511999999999",
+        "status": "active",
+        "last_message": "Olá João! Notamos que...",
+        "last_message_at": "2026-04-22T14:30:00Z",
+        "unread_count": 1,
+        "message_count": 4
+      }
+    ]
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  2.5  MENSAGENS DE UMA CONVERSA (CHAT COMPLETO)
+────────────────────────────────────────────────────────────────────────────────
+
+  GET /api/partner/v1/sellers/{sellerKey}/conversations/{conversationId}/messages
+
+Resposta:
+
+  {
+    "conversation_id": "conv_xyz",
+    "seller_key": "loja-maria",
+    "customer_name": "João Silva",
+    "channel": "whatsapp",
+    "contact_value": "5511999999999",
+    "status": "active",
+    "total_messages": 4,
+    "messages": [
+      {
+        "id": "msg_1",
+        "direction": "outbound",
+        "channel": "whatsapp",
+        "content": "Olá João! Notamos que houve um problema com seu pagamento...",
+        "status": "delivered",
+        "sender_name": "PagRecovery IA",
+        "sender_address": "5511888888888",
+        "created_at": "2026-04-22T14:06:00Z",
+        "delivered_at": "2026-04-22T14:06:02Z",
+        "read_at": "2026-04-22T14:10:00Z",
+        "error": null,
+        "metadata": {
+          "payment_url": "https://pagrecovery.com/retry/pay_abc123",
+          "pix_code": "00020126580014br.gov.bcb.pix...",
+          "pix_qr_code": null,
+          "pix_expires_at": null
+        }
+      },
+      {
+        "id": "msg_2",
+        "direction": "inbound",
+        "channel": "whatsapp",
+        "content": "Quero pagar por PIX",
+        "status": "received",
+        "sender_name": "João Silva",
+        "sender_address": "5511999999999",
+        "created_at": "2026-04-22T14:12:00Z",
+        "delivered_at": null,
+        "read_at": null,
+        "error": null,
+        "metadata": null
+      }
+    ]
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  2.6  ENVIAR MENSAGEM (RESPONDER NO CHAT)
+────────────────────────────────────────────────────────────────────────────────
+
+  POST /api/partner/v1/sellers/{sellerKey}/conversations/{conversationId}/reply
+  Content-Type: application/json
+  Authorization: Bearer sk_live_XXX
+
+Body:
+
+  {
+    "content": "João, segue seu novo link de pagamento PIX..."
+  }
+
+Resposta:
+
+  {
+    "ok": true,
+    "conversation_id": "conv_xyz",
+    "status": "queued",
+    "provider_message_id": "wamid_abc123",
+    "error": null
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  2.7  QR CODE DO SELLER
+────────────────────────────────────────────────────────────────────────────────
+
+  GET /api/partner/v1/sellers/{sellerKey}/qrcode
+  GET /api/partner/v1/sellers/{sellerKey}/qrcode?format=svg
+  GET /api/partner/v1/sellers/{sellerKey}/qrcode?format=png&size=600
+
+Parâmetros:
+  format  — png (default) ou svg
+  size    — largura em pixels (default: 400, max: 1024)
+
+Retorna a imagem diretamente (Content-Type: image/png ou image/svg+xml).
+Cache de 24h.
+
+O QR code codifica:
+
+  {
+    "platform": "PagRecovery",
+    "endpoint": "https://pagrecovery.com/api/partner/ingest",
+    "seller_key": "loja-maria",
+    "docs": "https://pagrecovery.com/api/partner/ingest"
+  }
+
+================================================================================
+  3. POSTBACK — ATUALIZAÇÕES EM TEMPO REAL
+================================================================================
+
+A PagRecovery envia HTTP POST para a URL de postback da Shield a cada
+etapa da recuperação. A Shield nos envia a URL e nós cadastramos.
+
+────────────────────────────────────────────────────────────────────────────────
+  3.1  FORMATO
+────────────────────────────────────────────────────────────────────────────────
+
+HEADERS:
+  Content-Type: application/json
+  X-PagRecovery-Event: lead.created
+  X-PagRecovery-Signature: <hmac-sha256 hex do body>
+  X-PagRecovery-Postback-ID: <uuid>
+  X-PagRecovery-Timestamp: 2026-04-22T14:30:00.000Z
+
+BODY:
+  {
+    "event": "lead.created",
+    "timestamp": "2026-04-22T14:30:00.000Z",
+    "postback_id": "uuid-unico",
+    "tenant_key": "loja-maria",
+    "data": { ... }
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  3.2  EVENTOS
+────────────────────────────────────────────────────────────────────────────────
+
+  lead.created           — Pagamento falho gerou lead de recuperação
+  message.sent           — Mensagem enviada ao cliente (WhatsApp/Email)
+  message.delivered      — Mensagem entregue
+  message.read           — Cliente leu a mensagem
+  customer.replied       — Cliente respondeu
+  payment.retry_started  — Cliente clicou no link de pagamento
+  lead.recovered         — Pagamento recuperado com sucesso
+  lead.lost              — Lead encerrado sem recuperação
+
+────────────────────────────────────────────────────────────────────────────────
+  3.3  VERIFICAÇÃO DE ASSINATURA (HMAC-SHA256)
+────────────────────────────────────────────────────────────────────────────────
+
+  1. Pegue o body RAW do request (string JSON)
+  2. Compute: HMAC-SHA256(body, SECRET)
+  3. Compare com o header X-PagRecovery-Signature
+
+Exemplo Node.js:
+
+  const crypto = require("crypto");
+  function verify(rawBody, signature, secret) {
+    const expected = crypto.createHmac("sha256", secret)
+      .update(rawBody).digest("hex");
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, "hex"),
+      Buffer.from(expected, "hex")
+    );
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  3.4  RETRIES
+────────────────────────────────────────────────────────────────────────────────
+
+  Se a URL não retornar 2xx em 10s, tentamos mais 2 vezes:
+    Tentativa 1: imediata
+    Tentativa 2: +1 segundo
+    Tentativa 3: +2 segundos
+  Após 3 falhas, o postback é logado como falho mas não é perdido.
+
+================================================================================
+  RESUMO DOS ENDPOINTS
+================================================================================
+
+  ENTRADA (Shield → PagRecovery):
+
+    POST /api/partner/ingest              — Enviar pagamento falho
+    POST .../conversations/{id}/reply     — Enviar mensagem no chat
+
+  CONSULTA (Shield → PagRecovery):
+
+    GET /api/partner/v1/sellers                          — Listar sellers
+    GET /api/partner/v1/sellers/{key}                    — Detalhe + leads + conversas
+    GET /api/partner/v1/sellers/{key}/leads               — Leads (filtro por status)
+    GET /api/partner/v1/sellers/{key}/conversations       — Conversas
+    GET /api/partner/v1/sellers/{key}/conversations/{id}/messages — Chat completo
+    GET /api/partner/v1/sellers/{key}/qrcode              — QR code (PNG/SVG)
+
+  SAÍDA (PagRecovery → Shield):
+
+    POST {url_postback_shield}            — Eventos em tempo real (HMAC signed)
+
+================================================================================
+  PARA COMEÇAR
+================================================================================
+
+  O que a Shield precisa nos enviar:
+    1. URL de postback HTTPS (para receber eventos)
+    2. Lista de sellers iniciais (nome, email, identificador)
+
+  O que a PagRecovery fornece:
+    1. API key por seller (para ingest + API v1)
+    2. Secret HMAC (para verificar postbacks)
+    3. QR code de cada seller (via API)
+
+================================================================================
+  SUPORTE: contato@pagrecovery.com
+================================================================================

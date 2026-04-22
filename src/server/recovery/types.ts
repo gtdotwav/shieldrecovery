@@ -369,6 +369,8 @@ export type SystemLogRecord = {
     | "upsell"
     | "commerce"
     | "outbound_sales"
+    | "postback_dispatched"
+    | "postback_failed"
     | "unsupported";
   level: "info" | "warn" | "error";
   message: string;
@@ -532,6 +534,112 @@ export const GATEWAY_PROVIDERS = [
 ] as const;
 
 export type GatewayProvider = (typeof GATEWAY_PROVIDERS)[number];
+
+/* ── Partner Portal ── */
+
+export type PartnerProfileRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  contactEmail: string;
+  contactPhone: string;
+  brandAccent: string;
+  brandLogo: string;
+  webhookUrl: string;
+  active: boolean;
+  notes: string;
+  tenantsCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PartnerProfileInput = {
+  name: string;
+  slug?: string;
+  contactEmail: string;
+  contactPhone?: string;
+  brandAccent?: string;
+  brandLogo?: string;
+  webhookUrl?: string;
+  active?: boolean;
+  notes?: string;
+};
+
+export type PartnerTenantRecord = {
+  id: string;
+  partnerId: string;
+  tenantKey: string;
+  tenantName: string;
+  tenantEmail: string;
+  gatewaySlug: string;
+  active: boolean;
+  apiKeyId?: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PartnerTenantInput = {
+  partnerId: string;
+  tenantKey?: string;
+  tenantName: string;
+  tenantEmail?: string;
+  gatewaySlug?: string;
+  active?: boolean;
+  apiKeyId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type PartnerUserRecord = {
+  id: string;
+  partnerId: string;
+  email: string;
+  passwordHash: string;
+  displayName: string;
+  active: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PartnerUserInput = {
+  partnerId: string;
+  email: string;
+  passwordHash?: string;
+  displayName?: string;
+  active?: boolean;
+};
+
+export type PartnerTenantStats = {
+  tenantKey: string;
+  tenantName: string;
+  active: boolean;
+  totalWebhooks: number;
+  totalPayments: number;
+  failedPayments: number;
+  recoveredPayments: number;
+  recoveryRate: number;
+  recoveredRevenue: number;
+  activeLeads: number;
+  lastWebhookAt?: string;
+};
+
+export type PartnerDashboardSnapshot = {
+  partner: PartnerProfileRecord;
+  totals: {
+    tenants: number;
+    activeTenants: number;
+    totalWebhooks: number;
+    totalPayments: number;
+    failedPayments: number;
+    recoveredPayments: number;
+    recoveryRate: number;
+    recoveredRevenue: number;
+    activeLeads: number;
+  };
+  tenants: PartnerTenantStats[];
+  recentWebhooks: WebhookEventRecord[];
+};
 
 export type WhitelabelProfileRecord = {
   id: string;

@@ -4,6 +4,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 const publicRoutePrefixes = [
   "/",
   "/login",
+  "/partner/login",
   "/quiz",
   "/privacy",
   "/terms",
@@ -15,17 +16,21 @@ const publicRoutePrefixes = [
   "/api/worker/",
   "/api/cron/",
   "/api/auth/token",
+  "/api/partner/ingest",
+  "/api/partner/auth",
+  "/api/partner/v1/",
   "/api/calls/demo",
   "/api/health",
   "/webhooks/",
 ];
 
-export type UserRole = "admin" | "seller" | "market";
+export type UserRole = "admin" | "seller" | "market" | "partner";
 
 type SessionPayload = {
   sub: string;
   role: UserRole;
   exp: number;
+  pid?: string; // partnerId (only for partner role)
 };
 
 type CredentialSet = {
@@ -112,6 +117,9 @@ const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/calling", roles: ["admin", "seller", "market"] },
   { prefix: "/api/calls", roles: ["admin", "seller", "market"] },
   { prefix: "/api/calendar", roles: ["admin", "seller", "market"] },
+  { prefix: "/partner", roles: ["partner"] },
+  { prefix: "/api/partner/dashboard", roles: ["partner"] },
+  { prefix: "/api/partner/tenants", roles: ["partner"] },
   { prefix: "/marketing", roles: ["admin", "market"] },
   { prefix: "/api/marketing", roles: ["admin", "market"] },
   { prefix: "/analytics/recovery", roles: ["admin"] },
@@ -239,7 +247,7 @@ export async function authenticateCredentials(input: {
   return matched;
 }
 
-export async function createSessionToken(email: string, role: UserRole) {
+export async function createSessionToken(email: string, role: UserRole, partnerId?: string) {
   const { secret } = getAuthConfig();
   if (!secret) {
     throw new Error("PLATFORM_AUTH_SECRET is not configured.");
@@ -249,6 +257,7 @@ export async function createSessionToken(email: string, role: UserRole) {
     sub: normalizeEmail(email),
     role,
     exp: Date.now() + SESSION_TTL_SECONDS * 1000,
+    ...(partnerId ? { pid: partnerId } : {}),
   };
 
   const payloadBase64 = toBase64Url(encoder().encode(JSON.stringify(payload)));
@@ -307,13 +316,20 @@ export async function verifySessionToken(token?: string | null) {
     const halfTtlMs = (SESSION_TTL_SECONDS * 1000) / 2;
     const needsRefresh = Date.now() > sessionCreatedAt + halfTtlMs;
 
-    return { email: payload.sub, role: payload.role, expiresAt: payload.exp, needsRefresh };
+    return {
+      email: payload.sub,
+      role: payload.role,
+      expiresAt: payload.exp,
+      needsRefresh,
+      ...(payload.pid ? { partnerId: payload.pid } : {}),
+    };
   } catch {
     return null;
   }
 }
 
 export function defaultPathForRole(role: UserRole) {
+  if (role === "partner") return "/partner";
   if (role === "market") return "/marketing";
   return "/dashboard";
 }

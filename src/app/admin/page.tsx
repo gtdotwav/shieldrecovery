@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  Globe,
   KeyRound,
   Layers,
   Mail,
@@ -54,10 +55,14 @@ import { getPaymentRecoveryService } from "@/server/recovery/services/payment-re
 import { getStorageService } from "@/server/recovery/services/storage";
 import type {
   AdminSellerSnapshot,
+  PartnerProfileRecord,
+  PartnerTenantRecord,
   QuizLeadRecord,
   SellerInviteSnapshot,
   WhitelabelProfileRecord,
 } from "@/server/recovery/types";
+import { getPartnerStorageService } from "@/server/recovery/services/partner-storage";
+import { listApiKeys } from "@/server/auth/api-keys";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +88,7 @@ const TABS = [
   { key: "leads", label: "Leads", href: "/admin?tab=leads" },
   { key: "financeiro", label: "Financeiro", href: "/admin?tab=financeiro" },
   { key: "saques", label: "Saques", href: "/admin?tab=saques" },
+  { key: "partners", label: "Partners", href: "/admin?tab=partners" },
 ] as const;
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
@@ -104,7 +110,28 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   let approvedPayouts: PayoutRecord[] = [];
   let allPayouts: PayoutRecord[] = [];
 
+  // Partner data (loaded only when needed)
+  let partnerProfiles: PartnerProfileRecord[] = [];
+  let partnerTenantsMap = new Map<string, PartnerTenantRecord[]>();
+  let partnerApiKeysCount = new Map<string, number>();
+
   const activeTabStr = typeof (await searchParams)?.tab === "string" ? (await searchParams)!.tab : undefined;
+
+  if (activeTabStr === "partners") {
+    try {
+      const partnerStorage = getPartnerStorageService();
+      partnerProfiles = await partnerStorage.listProfiles();
+      for (const profile of partnerProfiles) {
+        const tenants = await partnerStorage.listTenants(profile.id);
+        partnerTenantsMap.set(profile.id, tenants);
+        const apiKeysForPartner = tenants.filter((t) => t.apiKeyId).length;
+        partnerApiKeysCount.set(profile.id, apiKeysForPartner);
+      }
+    } catch {
+      // Partner system not yet configured
+    }
+  }
+
   if (activeTabStr === "financeiro" || activeTabStr === "saques") {
     try {
       const results = await Promise.all([
@@ -258,6 +285,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           pendingPayouts={pendingPayouts}
           approvedPayouts={approvedPayouts}
           allPayouts={allPayouts}
+        />
+      ) : activeTab === "partners" ? (
+        <TabPartners
+          profiles={partnerProfiles}
+          tenantsMap={partnerTenantsMap}
+          apiKeysCount={partnerApiKeysCount}
         />
       ) : (
         <TabOverview
@@ -1797,6 +1830,164 @@ function TabSaques({
           )}
         </div>
       </PlatformSurface>
+    </>
+  );
+}
+
+// ── Partners Tab ──
+
+function TabPartners({
+  profiles,
+  tenantsMap,
+  apiKeysCount,
+}: {
+  profiles: PartnerProfileRecord[];
+  tenantsMap: Map<string, PartnerTenantRecord[]>;
+  apiKeysCount: Map<string, number>;
+}) {
+  return (
+    <>
+      {/* Summary */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <PlatformMetricCard
+          icon={Globe}
+          value={String(profiles.length)}
+          label="Partners cadastrados"
+        />
+        <PlatformMetricCard
+          icon={UsersRound}
+          value={String([...tenantsMap.values()].reduce((s, t) => s + t.length, 0))}
+          label="Sellers vinculados"
+        />
+        <PlatformMetricCard
+          icon={KeyRound}
+          value={String([...apiKeysCount.values()].reduce((s, n) => s + n, 0))}
+          label="API keys ativas"
+        />
+      </div>
+
+      {profiles.length === 0 ? (
+        <PlatformSurface className="mt-5 p-5">
+          <p className="text-sm text-[var(--foreground-secondary)]">
+            Nenhum partner cadastrado. Use{" "}
+            <code className="rounded bg-[var(--surface-strong)] px-1.5 py-0.5 text-xs">
+              python tools/provision-shield.py
+            </code>{" "}
+            para provisionar.
+          </p>
+        </PlatformSurface>
+      ) : (
+        <div className="mt-5 space-y-5">
+          {profiles.map((profile) => {
+            const tenants = tenantsMap.get(profile.id) ?? [];
+            const keyCount = apiKeysCount.get(profile.id) ?? 0;
+
+            return (
+              <PlatformSurface key={profile.id} className="p-5">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full"
+                        style={{ backgroundColor: profile.brandAccent }}
+                      />
+                      <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                        {profile.name}
+                      </h3>
+                      <PlatformPill>
+                        {profile.active ? "ativo" : "inativo"}
+                      </PlatformPill>
+                    </div>
+                    <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
+                      {profile.contactEmail}
+                      {profile.contactPhone ? ` · ${profile.contactPhone}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-[var(--foreground-secondary)]">
+                    <span className="rounded-full border border-[var(--border)] px-2.5 py-1">
+                      slug: <span className="font-mono font-semibold">{profile.slug}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* IDs */}
+                <PlatformInset className="mt-4 p-3">
+                  <div className="grid gap-2 text-xs sm:grid-cols-2">
+                    <div>
+                      <span className="text-[var(--foreground-secondary)]">Partner ID: </span>
+                      <span className="font-mono text-[var(--foreground)]">{profile.id}</span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--foreground-secondary)]">Webhook URL: </span>
+                      <span className="font-mono text-[var(--foreground)]">
+                        {profile.webhookUrl || "(não configurada)"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--foreground-secondary)]">API Keys: </span>
+                      <span className="font-semibold text-[var(--foreground)]">{keyCount}</span>
+                    </div>
+                    <div>
+                      <span className="text-[var(--foreground-secondary)]">Desde: </span>
+                      <span className="text-[var(--foreground)]">
+                        {formatRelativeTime(profile.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+                </PlatformInset>
+
+                {/* Tenants / Sellers */}
+                <div className="mt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
+                    Sellers ({tenants.length})
+                  </p>
+                  {tenants.length === 0 ? (
+                    <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
+                      Nenhum seller vinculado.
+                    </p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {tenants.map((tenant) => (
+                        <div
+                          key={tenant.id}
+                          className="flex items-center justify-between rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-[var(--foreground)]">
+                              {tenant.tenantName}
+                            </p>
+                            <p className="text-xs text-[var(--foreground-secondary)]">
+                              key: <span className="font-mono">{tenant.tenantKey}</span>
+                              {tenant.tenantEmail ? ` · ${tenant.tenantEmail}` : ""}
+                              {tenant.apiKeyId ? " · API key vinculada" : ""}
+                            </p>
+                          </div>
+                          <PlatformPill>
+                            {tenant.active ? "ativo" : "inativo"}
+                          </PlatformPill>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {profile.notes ? (
+                  <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] p-3">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
+                      Notas internas
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--foreground)] break-all">
+                      {profile.notes}
+                    </p>
+                  </div>
+                ) : null}
+              </PlatformSurface>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }

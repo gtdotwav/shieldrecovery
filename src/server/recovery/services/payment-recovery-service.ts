@@ -376,6 +376,106 @@ export class PaymentRecoveryService {
     }
   }
 
+  async handlePartnerIngestWebhook(input: {
+    rawBody: string;
+    sellerKey?: string | null;
+    apiKeyId: string;
+    partnerEmail: string;
+  }) {
+    const payload = parseJsonBody(input.rawBody);
+    const eventId = extractRawEventId(payload, randomUUID());
+    const scopedWebhookId = scopeWebhookId(`partner:${eventId}`, input.sellerKey);
+    const normalizedSellerKey = normalizeSellerIdentity(input.sellerKey);
+    const existingEvent = await this.storage.findWebhookByWebhookId(scopedWebhookId);
+
+    if (existingEvent) {
+      if (!existingEvent.processed && existingEvent.error) {
+        await this.enqueueWebhookProcessing({
+          webhookId: existingEvent.webhookId,
+          timestamp: Math.floor(Date.now() / 1000),
+          sellerKey: normalizedSellerKey,
+        });
+
+        return {
+          ok: true,
+          accepted: true,
+          requeued: true,
+          webhook_id: existingEvent.webhookId,
+          event_id: existingEvent.eventId,
+          event_type: existingEvent.eventType,
+        };
+      }
+
+      return {
+        ok: true,
+        duplicate: existingEvent.processed,
+        accepted: !existingEvent.processed,
+        queued: !existingEvent.processed,
+        webhook_id: existingEvent.webhookId,
+        event_id: existingEvent.eventId,
+        event_type: existingEvent.eventType,
+        seller_key: normalizedSellerKey || null,
+      };
+    }
+
+    const webhookRecord = await this.createInboundRecord(
+      payload,
+      scopedWebhookId,
+      "partner",
+    );
+
+    await this.storage.addLog(
+      createStructuredLog({
+        eventType: "webhook_received",
+        level: "info",
+        message: "Partner ingest webhook received and queued.",
+        context: {
+          webhookId: scopedWebhookId,
+          sellerKey: normalizedSellerKey || null,
+          apiKeyId: input.apiKeyId,
+          partnerEmail: input.partnerEmail,
+        },
+      }),
+    );
+
+    try {
+      await this.enqueueWebhookProcessing({
+        webhookId: scopedWebhookId,
+        timestamp: Math.floor(Date.now() / 1000),
+        sellerKey: normalizedSellerKey,
+      });
+
+      return {
+        ok: true,
+        accepted: true,
+        queued: true,
+        webhook_id: scopedWebhookId,
+        event_id: webhookRecord.eventId,
+        event_type: webhookRecord.eventType,
+        seller_key: normalizedSellerKey || null,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown processing error.";
+
+      await this.storage.markWebhookFailed(webhookRecord.id, errorMessage);
+      await this.storage.addLog(
+        createStructuredLog({
+          eventType: "processing_error",
+          level: "error",
+          message: "Partner ingest processing failed.",
+          context: {
+            webhookId: scopedWebhookId,
+            error: errorMessage,
+            sellerKey: normalizedSellerKey || null,
+            apiKeyId: input.apiKeyId,
+          },
+        }),
+      );
+      throw error;
+    }
+  }
+
   async importShieldTransactionPayload(rawBody: string) {
     const payload = parseJsonBody(rawBody);
     const fallbackId = `import_${extractRawEventId(payload, randomUUID())}`;

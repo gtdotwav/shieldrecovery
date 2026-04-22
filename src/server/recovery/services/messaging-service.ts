@@ -1051,27 +1051,76 @@ export class MessagingService {
     content: string;
     metadata?: MessageMetadata;
   }): Promise<DispatchOutboundMessageResult> {
-    const body = buildOutboundWhatsAppText(input.content, input.metadata);
-    const response = await fetch(
-      `${input.apiBaseUrl.replace(/\/$/, "")}/${input.phoneNumberId}/messages`,
-      {
+    const messagesUrl = `${input.apiBaseUrl.replace(/\/$/, "")}/${input.phoneNumberId}/messages`;
+    const headers = {
+      Authorization: `Bearer ${input.accessToken}`,
+      "Content-Type": "application/json",
+    };
+
+    const paymentUrl = extractPaymentUrl(input.metadata);
+    let usedCtaButton = false;
+    let response: Response;
+
+    if (paymentUrl) {
+      // CTA URL button — native WhatsApp interactive button that opens checkout
+      const bodyText = buildOutboundWhatsAppText(input.content, input.metadata, true);
+      const ctaLabel = buildCtaButtonLabel(input.metadata);
+
+      response = await fetch(messagesUrl, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${input.accessToken}`,
-          "Content-Type": "application/json",
-        },
+        headers,
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: input.phone,
+          type: "interactive",
+          interactive: {
+            type: "cta_url",
+            body: { text: bodyText },
+            action: {
+              name: "cta_url",
+              parameters: {
+                display_text: ctaLabel,
+                url: paymentUrl,
+              },
+            },
+          },
+        }),
+      });
+
+      if (response.ok) {
+        usedCtaButton = true;
+      } else {
+        // CTA button failed — fallback to plain text with link
+        console.warn("[messaging] Cloud API CTA button failed, falling back to text.");
+        const fallbackBody = buildOutboundWhatsAppText(input.content, input.metadata, false);
+        response = await fetch(messagesUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: input.phone,
+            type: "text",
+            text: { preview_url: true, body: fallbackBody },
+          }),
+        });
+      }
+    } else {
+      // No payment URL — send as regular text
+      const body = buildOutboundWhatsAppText(input.content, input.metadata, false);
+      response = await fetch(messagesUrl, {
+        method: "POST",
+        headers,
         body: JSON.stringify({
           messaging_product: "whatsapp",
           recipient_type: "individual",
           to: input.phone,
           type: "text",
-          text: {
-            preview_url: true,
-            body,
-          },
+          text: { preview_url: true, body },
         }),
-      },
-    );
+      });
+    }
 
     const payload = (await safeParseJson(response)) as
       | {
@@ -1089,27 +1138,25 @@ export class MessagingService {
       };
     }
 
+    if (usedCtaButton) {
+      console.info(`[messaging] CTA button sent to ${input.phone} → ${paymentUrl}`);
+    }
+
     // Send PIX code as separate message (code only, no label) for easy copy on WhatsApp
     const pixCode = extractPixCodeForSeparateMessage(input.metadata);
     if (pixCode && payload?.messages?.[0]?.id) {
       try {
-        await fetch(
-          `${input.apiBaseUrl.replace(/\/$/, "")}/${input.phoneNumberId}/messages`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${input.accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              to: input.phone,
-              type: "text",
-              text: { preview_url: false, body: pixCode },
-            }),
-          },
-        );
+        await fetch(messagesUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: input.phone,
+            type: "text",
+            text: { preview_url: false, body: pixCode },
+          }),
+        });
       } catch {
         // non-critical — main message was already sent
       }
@@ -1130,38 +1177,89 @@ export class MessagingService {
     metadata?: MessageMetadata;
   }): Promise<DispatchOutboundMessageResult> {
     const config = resolveWebApiConfig(input.apiBaseUrl, input.sessionId);
+    const apiHeaders = {
+      ...buildWhatsAppApiHeaders(input.accessToken),
+      "Content-Type": "application/json",
+    };
 
-    const body = buildOutboundWhatsAppText(input.content, input.metadata);
+    const paymentUrl = extractPaymentUrl(input.metadata);
+    let usedCtaButton = false;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guaranteed assigned in all branches below
+    let response!: Response;
 
-    const response =
-      config.kind === "evolution"
-        ? await fetch(config.sendUrl, {
-            method: "POST",
-            headers: {
-              ...buildWhatsAppApiHeaders(input.accessToken),
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              number: input.phone,
-              text: body,
-            }),
-            signal: AbortSignal.timeout(30_000),
-          })
-        : await fetch(config.sendUrl, {
-            method: "POST",
-            headers: {
-              ...buildWhatsAppApiHeaders(input.accessToken),
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              to: input.phone,
-              type: "text",
-              message: body,
-              text: body,
-              preview_url: true,
-            }),
-            signal: AbortSignal.timeout(30_000),
-          });
+    if (paymentUrl && config.kind === "evolution") {
+      // Evolution API: try CTA URL button via sendButtons endpoint
+      const bodyText = buildOutboundWhatsAppText(input.content, input.metadata, true);
+      const ctaLabel = buildCtaButtonLabel(input.metadata);
+      const buttonsUrl = joinUrl(
+        config.baseUrl,
+        `/message/sendButtons/${encodeURIComponent(config.sessionId)}`,
+      );
+
+      try {
+        const btnResponse = await fetch(buttonsUrl, {
+          method: "POST",
+          headers: apiHeaders,
+          body: JSON.stringify({
+            number: input.phone,
+            title: "",
+            description: bodyText,
+            buttons: [
+              {
+                type: "url",
+                displayText: ctaLabel,
+                url: paymentUrl,
+              },
+            ],
+          }),
+          signal: AbortSignal.timeout(15_000),
+        });
+
+        if (btnResponse.ok) {
+          response = btnResponse;
+          usedCtaButton = true;
+        } else {
+          console.warn("[messaging] Evolution sendButtons failed, falling back to text.");
+        }
+      } catch {
+        console.warn("[messaging] Evolution sendButtons threw, falling back to text.");
+      }
+
+      if (!usedCtaButton) {
+        // Fallback to plain text with link
+        const fallbackBody = buildOutboundWhatsAppText(input.content, input.metadata, false);
+        response = await fetch(config.sendUrl, {
+          method: "POST",
+          headers: apiHeaders,
+          body: JSON.stringify({ number: input.phone, text: fallbackBody }),
+          signal: AbortSignal.timeout(30_000),
+        });
+      }
+    } else if (config.kind === "evolution") {
+      // Evolution API: plain text (no payment URL)
+      const body = buildOutboundWhatsAppText(input.content, input.metadata, false);
+      response = await fetch(config.sendUrl, {
+        method: "POST",
+        headers: apiHeaders,
+        body: JSON.stringify({ number: input.phone, text: body }),
+        signal: AbortSignal.timeout(30_000),
+      });
+    } else {
+      // Generic Web API: plain text (buttons not supported)
+      const body = buildOutboundWhatsAppText(input.content, input.metadata, false);
+      response = await fetch(config.sendUrl, {
+        method: "POST",
+        headers: apiHeaders,
+        body: JSON.stringify({
+          to: input.phone,
+          type: "text",
+          message: body,
+          text: body,
+          preview_url: true,
+        }),
+        signal: AbortSignal.timeout(30_000),
+      });
+    }
 
     const payload = (await safeParseJson(response)) as
       | {
@@ -1193,6 +1291,10 @@ export class MessagingService {
       payload?.data?.messageId ??
       payload?.messages?.[0]?.id;
 
+    if (usedCtaButton) {
+      console.info(`[messaging] CTA button sent via Evolution to ${input.phone} → ${paymentUrl}`);
+    }
+
     // Send PIX code as separate message (code only, no label) for easy copy on WhatsApp
     const pixCode = extractPixCodeForSeparateMessage(input.metadata);
     if (pixCode && providerMessageId) {
@@ -1200,20 +1302,14 @@ export class MessagingService {
         if (config.kind === "evolution") {
           await fetch(config.sendUrl, {
             method: "POST",
-            headers: {
-              ...buildWhatsAppApiHeaders(input.accessToken),
-              "Content-Type": "application/json",
-            },
+            headers: apiHeaders,
             body: JSON.stringify({ number: input.phone, text: pixCode }),
             signal: AbortSignal.timeout(30_000),
           });
         } else {
           await fetch(config.sendUrl, {
             method: "POST",
-            headers: {
-              ...buildWhatsAppApiHeaders(input.accessToken),
-              "Content-Type": "application/json",
-            },
+            headers: apiHeaders,
             body: JSON.stringify({
               to: input.phone,
               type: "text",
@@ -1805,7 +1901,33 @@ function normalizeWhatsAppRemoteJid(value?: string) {
   return value.replace(/@.+$/, "");
 }
 
-function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata) {
+/**
+ * Extract payment URL from metadata if present (used for CTA buttons).
+ */
+function extractPaymentUrl(metadata?: MessageMetadata): string | null {
+  if (!metadata || (metadata.kind !== "recovery_prompt" && metadata.kind !== "ai_draft")) {
+    return null;
+  }
+  const url = (metadata.paymentUrl ?? metadata.retryLink)?.trim();
+  return url || null;
+}
+
+/**
+ * Build CTA button label based on messaging approach.
+ */
+function buildCtaButtonLabel(metadata?: MessageMetadata): string {
+  const approach = metadata?.messagingApproach ?? "friendly";
+  if (approach === "urgent") return "Pagar agora";
+  if (approach === "professional") return "Finalizar pagamento";
+  return "Pagar agora";
+}
+
+/**
+ * Build the WhatsApp text body. When CTA buttons are used, the payment link
+ * is NOT appended to the text (the button handles it). Otherwise, the link
+ * is inlined as a clickable URL.
+ */
+function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata, ctaButtonUsed = false) {
   if (!metadata || (metadata.kind !== "recovery_prompt" && metadata.kind !== "ai_draft")) {
     return content;
   }
@@ -1813,16 +1935,18 @@ function buildOutboundWhatsAppText(content: string, metadata?: MessageMetadata) 
   const approach = metadata.messagingApproach ?? "friendly";
   const sections = [content.trim()];
 
-  // Payment link on its own line so WhatsApp renders it as clickable
-  const actionUrl = (metadata.paymentUrl ?? metadata.retryLink)?.trim();
-  if (actionUrl && !content.includes(actionUrl)) {
-    const linkLabel =
-      approach === "urgent"
-        ? "Finalize agora"
-        : approach === "professional"
-          ? "Link de pagamento"
-          : "Segue o link pra voce finalizar";
-    sections.push(`${linkLabel} 👇\n${actionUrl}`);
+  // Only inline the payment link when CTA button is NOT being used
+  if (!ctaButtonUsed) {
+    const actionUrl = (metadata.paymentUrl ?? metadata.retryLink)?.trim();
+    if (actionUrl && !content.includes(actionUrl)) {
+      const linkLabel =
+        approach === "urgent"
+          ? "Finalize agora"
+          : approach === "professional"
+            ? "Link de pagamento"
+            : "Segue o link pra voce finalizar";
+      sections.push(`${linkLabel} 👇\n${actionUrl}`);
+    }
   }
 
   // When PIX code will be sent as a separate message, add the label here

@@ -1,0 +1,204 @@
+================================================================================
+  PAGRECOVERY — GUIA DE INTEGRAÇÃO PARA PARCEIROS (GATEWAY WHITE-LABEL)
+================================================================================
+
+Bem-vindo à PagRecovery. Este documento explica como integrar seu gateway
+com a nossa plataforma de recuperação de pagamentos.
+
+────────────────────────────────────────────────────────────────────────────────
+  1. COMO FUNCIONA
+────────────────────────────────────────────────────────────────────────────────
+
+Seu gateway detecta um pagamento falho → envia para a PagRecovery via API →
+nossa IA contacta o cliente (WhatsApp/Email) → cliente paga → receita recuperada.
+
+  Gateway → POST /api/partner/ingest → PagRecovery processa → Contato IA → Pagamento recuperado
+
+Cada merchant/seller do seu gateway é um "tenant". Cada tenant recebe uma
+API key própria. Você envia os eventos com a key do tenant correspondente.
+
+────────────────────────────────────────────────────────────────────────────────
+  2. AUTENTICAÇÃO
+────────────────────────────────────────────────────────────────────────────────
+
+Todas as chamadas usam Bearer token no header Authorization:
+
+  Authorization: Bearer sk_live_XXXXXXXXXXXXX
+
+Cada tenant tem sua própria API key. Isso garante que os dados fiquem
+isolados por tenant no painel.
+
+────────────────────────────────────────────────────────────────────────────────
+  3. ENDPOINT
+────────────────────────────────────────────────────────────────────────────────
+
+  POST https://pagrecovery.com/api/partner/ingest
+  Content-Type: application/json
+  Authorization: Bearer sk_live_XXXXXXXXXXXXX
+
+────────────────────────────────────────────────────────────────────────────────
+  4. PAYLOAD — O QUE ENVIAR
+────────────────────────────────────────────────────────────────────────────────
+
+{
+  "event_type": "payment_failed",
+
+  "payment": {
+    "id": "pay_abc123",
+    "order_id": "order-456",
+    "amount": 9990,
+    "currency": "BRL",
+    "method": "pix",
+    "status": "failed"
+  },
+
+  "customer": {
+    "name": "João Silva",
+    "email": "joao@email.com",
+    "phone": "5511999999999",
+    "document": "12345678900"
+  },
+
+  "metadata": {
+    "product": "Curso XYZ",
+    "paymentUrl": "https://checkout.exemplo.com/retry/abc",
+    "pixCode": "00020126580014br.gov.bcb.pix..."
+  }
+}
+
+────────────────────────────────────────────────────────────────────────────────
+  5. CAMPOS DETALHADOS
+────────────────────────────────────────────────────────────────────────────────
+
+CAMPO                   TIPO        OBRIGATÓRIO   DESCRIÇÃO
+─────────────────────── ─────────── ───────────── ──────────────────────────────
+event_type              string      sim           Tipo do evento (ver seção 6)
+payment.id              string      sim           ID do pagamento no gateway
+payment.order_id        string      não           ID do pedido
+payment.amount          number      sim           Valor em CENTAVOS (9990 = R$99,90)
+payment.currency        string      não           Moeda (default: BRL)
+payment.method          string      não           pix, credit_card, boleto, etc.
+payment.status          string      sim           Status: failed, refused, expired
+customer.name           string      sim           Nome completo do cliente
+customer.email          string      sim           Email do cliente
+customer.phone          string      sim           Telefone com DDI (5511999999999)
+customer.document       string      não           CPF ou CNPJ (somente números)
+metadata.product        string      não           Nome do produto
+metadata.paymentUrl     string      não           Link de retry/checkout
+metadata.pixCode        string      não           Código PIX copia-e-cola
+metadata.pixQrCode      string      não           URL da imagem do QR code
+metadata.campaign       string      não           ID de campanha/tracking
+
+────────────────────────────────────────────────────────────────────────────────
+  6. EVENTOS SUPORTADOS
+────────────────────────────────────────────────────────────────────────────────
+
+EVENTOS QUE DISPARAM RECUPERAÇÃO (enviar estes):
+
+  payment_failed      → Pagamento falhou (erro no processamento)
+  payment_refused     → Pagamento recusado (cartão negado, saldo insuficiente)
+  payment_expired     → Pagamento expirou (PIX/boleto não pago a tempo)
+
+EVENTOS DE TRACKING (opcionais, para visibilidade completa):
+
+  payment_created     → Pagamento criado
+  payment_pending     → Aguardando pagamento
+  payment_processing  → Em processamento
+  payment_succeeded   → Pagamento aprovado
+  payment_refunded    → Estornado
+  payment_chargeback  → Chargeback
+  payment_canceled    → Cancelado
+
+────────────────────────────────────────────────────────────────────────────────
+  7. RESPOSTA DA API
+────────────────────────────────────────────────────────────────────────────────
+
+Sucesso (200):
+
+{
+  "ok": true,
+  "accepted": true,
+  "queued": true,
+  "webhook_id": "tenant-key:partner:pay_abc123",
+  "event_id": "pay_abc123",
+  "event_type": "payment_failed",
+  "seller_key": "shield"
+}
+
+Duplicado (200, já recebido):
+
+{
+  "ok": true,
+  "duplicate": true,
+  "accepted": false
+}
+
+Erro (401):
+
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid or expired API key."
+  }
+}
+
+────────────────────────────────────────────────────────────────────────────────
+  8. EXEMPLO CURL
+────────────────────────────────────────────────────────────────────────────────
+
+curl -X POST https://pagrecovery.com/api/partner/ingest \
+  -H "Authorization: Bearer sk_live_SUA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "payment_failed",
+    "payment": {
+      "id": "pay_123",
+      "amount": 15000,
+      "method": "pix",
+      "status": "failed"
+    },
+    "customer": {
+      "name": "Maria Souza",
+      "email": "maria@email.com",
+      "phone": "5521988887777"
+    }
+  }'
+
+────────────────────────────────────────────────────────────────────────────────
+  9. PAINEL DO PARCEIRO
+────────────────────────────────────────────────────────────────────────────────
+
+Você tem acesso a um painel exclusivo para acompanhar a performance:
+
+  URL:    https://pagrecovery.com/partner/login
+  Email:  (fornecido pela PagRecovery)
+  Senha:  (fornecida pela PagRecovery)
+
+No painel você vê:
+  • Total recuperado (R$) em todos os tenants
+  • Taxa de recuperação (%)
+  • Leads ativos em processo
+  • Breakdown por tenant (webhooks, falhos, recuperados, receita)
+  • Webhooks recentes com status de processamento
+  • Documentação da API integrada
+
+────────────────────────────────────────────────────────────────────────────────
+  10. REGRAS IMPORTANTES
+────────────────────────────────────────────────────────────────────────────────
+
+  • Valores sempre em CENTAVOS (R$99,90 = 9990)
+  • Telefone sempre com DDI do Brasil (55 + DDD + número)
+  • Cada tenant usa API key separada
+  • Eventos duplicados são ignorados automaticamente (idempotente)
+  • Payload máximo: 1MB
+  • Rate limit: 60 requests/minuto por API key
+
+────────────────────────────────────────────────────────────────────────────────
+  11. SUPORTE
+────────────────────────────────────────────────────────────────────────────────
+
+Para dúvidas sobre a integração ou credenciais de acesso:
+
+  contato@pagrecovery.com
+
+================================================================================

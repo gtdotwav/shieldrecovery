@@ -6,12 +6,15 @@ import {
 } from "@/server/auth/core";
 import { verifyPlatformPassword } from "@/server/auth/passwords";
 import { getStorageService } from "@/server/recovery/services/storage";
+import { getPartnerStorageService } from "@/server/recovery/services/partner-storage";
 
 type AuthenticatedIdentity = {
   email: string;
   role: UserRole;
   sellerAgentName?: string;
   sellerDisplayName?: string;
+  partnerId?: string;
+  partnerName?: string;
 };
 
 function normalize(value?: string | null) {
@@ -37,7 +40,8 @@ export async function authenticatePlatformUser(input: {
   const seller = await getStorageService().findSellerUserByEmail(input.email);
 
   if (!seller || !seller.active) {
-    return null;
+    // Try partner user
+    return authenticatePartnerUser(input);
   }
 
   if (!verifyPlatformPassword(input.password.trim(), seller.passwordHash)) {
@@ -50,6 +54,35 @@ export async function authenticatePlatformUser(input: {
     sellerAgentName: seller.agentName,
     sellerDisplayName: seller.displayName,
   };
+}
+
+async function authenticatePartnerUser(input: {
+  email: string;
+  password: string;
+}): Promise<AuthenticatedIdentity | null> {
+  const partnerStorage = getPartnerStorageService();
+  const partnerUser = await partnerStorage.findUserByEmail(input.email);
+
+  if (!partnerUser || !partnerUser.active) {
+    return null;
+  }
+
+  if (!verifyPlatformPassword(input.password.trim(), partnerUser.passwordHash)) {
+    return null;
+  }
+
+  const profile = await partnerStorage.getProfile(partnerUser.partnerId);
+
+  return {
+    email: partnerUser.email,
+    role: "partner",
+    partnerId: partnerUser.partnerId,
+    partnerName: profile?.name,
+  };
+}
+
+export async function registerPartnerLogin(email: string) {
+  await getPartnerStorageService().touchUserLogin(email);
 }
 
 export async function registerSellerLogin(email: string) {

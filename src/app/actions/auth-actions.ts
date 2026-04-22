@@ -10,6 +10,7 @@ import {
 import {
   authenticatePlatformUser,
   registerSellerLogin,
+  registerPartnerLogin,
 } from "@/server/auth/identities";
 import {
   clearAuthenticatedSession,
@@ -37,9 +38,12 @@ export async function loginAction(formData: FormData) {
     authenticatedUser.role,
   );
 
-  await setAuthenticatedSession(authenticatedUser.email, authenticatedUser.role);
+  await setAuthenticatedSession(authenticatedUser.email, authenticatedUser.role, authenticatedUser.partnerId);
   if (authenticatedUser.role === "seller") {
     await registerSellerLogin(authenticatedUser.email);
+  }
+  if (authenticatedUser.role === "partner") {
+    await registerPartnerLogin(authenticatedUser.email);
   }
   redirect(
     isRoleAllowedForPath(next, authenticatedUser.role)

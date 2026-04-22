@@ -1,0 +1,441 @@
+================================================================================
+  PAGRECOVERY — WEBHOOK DE POSTBACK (ATUALIZAÇÕES EM TEMPO REAL)
+================================================================================
+
+Este documento descreve o sistema de postback da PagRecovery. Você cadastra
+uma URL e recebe atualizações em tempo real de cada evento de recuperação
+dos seus sellers.
+
+────────────────────────────────────────────────────────────────────────────────
+  1. COMO FUNCIONA
+────────────────────────────────────────────────────────────────────────────────
+
+  Seller envia pagamento falho → PagRecovery inicia recuperação →
+  Cada etapa dispara um POST para a URL de postback que você cadastrou →
+  Seu painel atualiza em tempo real.
+
+  Fluxo:
+
+  [1] payment_failed recebido
+       ↓ postback: lead.created
+  [2] Mensagem enviada ao cliente (WhatsApp/Email)
+       ↓ postback: message.sent
+  [3] Mensagem entregue
+       ↓ postback: message.delivered
+  [4] Cliente leu a mensagem
+       ↓ postback: message.read
+  [5] Cliente respondeu
+       ↓ postback: customer.replied
+  [6] Cliente clicou no link de retry
+       ↓ postback: payment.retry_started
+  [7] Pagamento confirmado
+       ↓ postback: lead.recovered
+
+  Se o lead não for recuperado:
+       ↓ postback: lead.lost
+
+────────────────────────────────────────────────────────────────────────────────
+  2. CONFIGURAÇÃO
+────────────────────────────────────────────────────────────────────────────────
+
+Nos envie a URL de postback que iremos cadastrar no perfil do parceiro.
+Exemplo:
+
+  https://api.shield.com/webhooks/pagrecovery
+
+Requisitos da URL:
+  • HTTPS obrigatório
+  • Deve aceitar POST com Content-Type: application/json
+  • Deve retornar status 2xx em menos de 10 segundos
+  • Se falhar, tentamos 3 vezes com backoff (1s, 2s, 4s)
+
+────────────────────────────────────────────────────────────────────────────────
+  3. FORMATO DO POSTBACK
+────────────────────────────────────────────────────────────────────────────────
+
+Cada postback é um POST com este formato:
+
+HEADERS:
+  Content-Type: application/json
+  X-PagRecovery-Event: lead.created
+  X-PagRecovery-Signature: <hmac-sha256 do body>
+  X-PagRecovery-Postback-ID: <uuid único>
+  X-PagRecovery-Timestamp: 2026-04-22T14:30:00.000Z
+
+BODY:
+{
+  "event": "lead.created",
+  "timestamp": "2026-04-22T14:30:00.000Z",
+  "postback_id": "a1b2c3d4-e5f6-...",
+  "tenant_key": "seller-maria",
+  "data": { ... }
+}
+
+────────────────────────────────────────────────────────────────────────────────
+  4. VERIFICAÇÃO DE ASSINATURA (HMAC)
+────────────────────────────────────────────────────────────────────────────────
+
+Cada postback é assinado com HMAC-SHA256. Para verificar:
+
+  1. Pegue o body RAW do request (string JSON)
+  2. Compute: HMAC-SHA256(body, SECRET)
+  3. Compare com o header X-PagRecovery-Signature
+
+A SECRET será fornecida pela PagRecovery no momento do cadastro.
+
+Exemplo em Node.js:
+
+  const crypto = require("crypto");
+
+  function verifySignature(rawBody, signature, secret) {
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(rawBody)
+      .digest("hex");
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, "hex"),
+      Buffer.from(expected, "hex")
+    );
+  }
+
+────────────────────────────────────────────────────────────────────────────────
+  5. EVENTOS E PAYLOADS
+────────────────────────────────────────────────────────────────────────────────
+
+Cada evento tem um campo "data" específico. O campo "tenant_key" identifica
+de qual seller/merchant veio o evento.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  5.1  lead.created
+  Disparado quando um pagamento falho gera um lead de recuperação.
+
+  {
+    "event": "lead.created",
+    "tenant_key": "seller-maria",
+    "data": {
+      "leadId": "lead_abc123",
+      "customerId": "cust_456",
+      "customerName": "João Silva",
+      "customerEmail": "joao@email.com",
+      "customerPhone": "5511999999999",
+      "paymentId": "pay_789",
+      "orderId": "order-101",
+      "amount": 9990,
+      "currency": "BRL",
+      "method": "pix",
+      "failureCode": "insufficient_funds",
+      "product": "Curso XYZ"
+    }
+  }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  5.2  message.sent
+  Disparado quando enviamos uma mensagem ao cliente.
+
+  {
+    "event": "message.sent",
+    "tenant_key": "seller-maria",
+    "data": {
+      "leadId": "lead_abc123",
+      "channel": "whatsapp",
+      "messageId": "msg_xyz",
+      "content": "Olá João! Notamos que houve um problema...",
+      "paymentUrl": "https://pagrecovery.com/retry/pay_789?token=...",
+      "pixCode": "00020126580014br.gov.bcb.pix..."
+    }
+  }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  5.3  message.delivered
+  Disparado quando a mensagem foi entregue ao cliente.
+
+  {
+    "event": "message.delivered",
+    "tenant_key": "seller-maria",
+    "data": {
+      "leadId": "lead_abc123",
+      "channel": "whatsapp",
+      "messageId": "msg_xyz",
+      "deliveredAt": "2026-04-22T14:31:05.000Z"
+    }
+  }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  5.4  message.read
+  Disparado quando o cliente leu a mensagem.
+
+  {
+    "event": "message.read",
+    "tenant_key": "seller-maria",
+    "data": {
+      "leadId": "lead_abc123",
+      "channel": "whatsapp",
+      "messageId": "msg_xyz",
+      "readAt": "2026-04-22T14:32:00.000Z"
+    }
+  }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  5.5  customer.replied
+  Disparado quando o cliente respondeu.
+
+  {
+    "event": "customer.replied",
+    "tenant_key": "seller-maria",
+    "data": {
+      "leadId": "lead_abc123",
+      "channel": "whatsapp",
+      "messageContent": "Quero pagar por PIX",
+      "detectedIntent": "payment_method_pix"
+    }
+  }
+
+  Intents possíveis:
+    payment_method_pix      → Cliente quer pagar via PIX
+    payment_method_card     → Cliente quer pagar via cartão
+    payment_method_boleto   → Cliente quer pagar via boleto
+    question                → Cliente tem dúvida
+    objection               → Cliente não quer pagar
+    confirmation            → Cliente confirmou algo
+    greeting                → Saudação
+    other                   → Outro
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  5.6  payment.retry_started
+  Disparado quando o cliente clicou no link de retry.
+
+  {
+    "event": "payment.retry_started",
+    "tenant_key": "seller-maria",
+    "data": {
+      "leadId": "lead_abc123",
+      "paymentId": "pay_789",
+      "retryUrl": "https://pagrecovery.com/retry/pay_789",
+      "attemptNumber": 2
+    }
+  }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  5.7  lead.recovered
+  Disparado quando o pagamento foi recuperado com sucesso.
+
+  {
+    "event": "lead.recovered",
+    "tenant_key": "seller-maria",
+    "data": {
+      "leadId": "lead_abc123",
+      "paymentId": "pay_789",
+      "orderId": "order-101",
+      "amount": 9990,
+      "currency": "BRL",
+      "recoveredAt": "2026-04-22T15:10:00.000Z",
+      "customerName": "João Silva",
+      "customerEmail": "joao@email.com"
+    }
+  }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  5.8  lead.lost
+  Disparado quando o lead foi marcado como perdido.
+
+  {
+    "event": "lead.lost",
+    "tenant_key": "seller-maria",
+    "data": {
+      "leadId": "lead_abc123",
+      "paymentId": "pay_789",
+      "reason": "customer_unresponsive"
+    }
+  }
+
+  Razões possíveis:
+    customer_unresponsive   → Cliente não respondeu após todas as tentativas
+    customer_refused        → Cliente explicitamente recusou
+    expired                 → Tempo limite de recuperação atingido
+    duplicate               → Lead duplicado
+    manual_close            → Fechado manualmente pelo admin
+
+────────────────────────────────────────────────────────────────────────────────
+  6. QR CODE POR SELLER
+────────────────────────────────────────────────────────────────────────────────
+
+Cada seller recebe um QR code único que pode ser usado para:
+
+  • Identificar o seller na integração
+  • Acessar a página de status do seller
+  • Compartilhar link de onboarding
+
+O QR code codifica a URL de integração do seller:
+
+  https://pagrecovery.com/api/partner/ingest?seller={tenant_key}
+
+Para gerar o QR code de um seller, use a API:
+
+  GET https://pagrecovery.com/api/partner/tenants/{tenantId}/qrcode
+
+  Retorna: imagem PNG do QR code (Content-Type: image/png)
+
+Ou acesse no painel do parceiro:
+
+  https://pagrecovery.com/partner → Tenants → QR Code
+
+────────────────────────────────────────────────────────────────────────────────
+  7. TIMELINE DE RECUPERAÇÃO
+────────────────────────────────────────────────────────────────────────────────
+
+Cada recuperação segue esta timeline. Você receberá postbacks em cada etapa:
+
+  T+0min     → lead.created
+  T+6min     → message.sent (WhatsApp: PIX + link de pagamento)
+  T+6min     → message.delivered
+  T+Xmin     → message.read (quando cliente abre)
+  T+30min    → message.sent (Email de lembrete)
+  T+Xmin     → customer.replied (quando cliente responde)
+  T+Xmin     → payment.retry_started (quando cliente clica no link)
+  T+Xmin     → lead.recovered (quando pagamento é confirmado)
+
+  Se não recuperado:
+  T+2-4h     → message.sent (Follow-up contextual)
+  T+24h      → message.sent (IA follow-up)
+  T+48h      → message.sent (Método alternativo)
+  T+72h      → message.sent (Última chance)
+  T+7d       → lead.lost (Encerramento suave)
+
+  A IA adapta a cadência baseado em:
+    • Se o cliente respondeu ou leu as mensagens
+    • Valor do pagamento (alto valor = mais tentativas)
+    • Método preferido do cliente
+    • Horário comercial da região
+
+────────────────────────────────────────────────────────────────────────────────
+  8. IDEMPOTÊNCIA
+────────────────────────────────────────────────────────────────────────────────
+
+Cada postback tem um postback_id único (UUID). Use esse campo para
+deduplicar no seu lado. É possível receber o mesmo evento mais de uma
+vez em caso de retry.
+
+────────────────────────────────────────────────────────────────────────────────
+  9. CAMPOS COMUNS EM TODOS OS POSTBACKS
+────────────────────────────────────────────────────────────────────────────────
+
+CAMPO           TIPO      DESCRIÇÃO
+─────────────── ───────── ──────────────────────────────────────────────
+event           string    Tipo do evento (lead.created, message.sent, etc.)
+timestamp       string    ISO 8601 com timezone (quando o evento ocorreu)
+postback_id     string    UUID único do postback (para idempotência)
+tenant_key      string    Identificador do seller/merchant de vocês
+data            object    Dados específicos do evento (ver seção 5)
+
+────────────────────────────────────────────────────────────────────────────────
+  10. O QUE VOCÊS PRECISAM NOS ENVIAR
+────────────────────────────────────────────────────────────────────────────────
+
+Para ativar o sistema de postback, precisamos de vocês:
+
+  1. URL de postback (HTTPS)
+     Exemplo: https://api.shield.com/webhooks/pagrecovery
+
+  2. Lista de sellers/tenants iniciais
+     Para cada seller:
+       - Nome (ex: "Loja da Maria")
+       - Email (ex: "maria@loja.com")
+       - Identificador interno (opcional, ex: "seller_123")
+
+  3. Confirmação de que a URL aceita POST com JSON
+     e retorna 2xx em menos de 10 segundos
+
+Nós forneceremos:
+  - API key por seller (para envio de eventos via /api/partner/ingest)
+  - Secret para verificação de assinatura dos postbacks
+  - Credenciais do painel do parceiro
+  - QR codes de cada seller
+
+────────────────────────────────────────────────────────────────────────────────
+  11. EXEMPLO COMPLETO DE FLUXO
+────────────────────────────────────────────────────────────────────────────────
+
+1) Shield envia pagamento falho para PagRecovery:
+
+   POST https://pagrecovery.com/api/partner/ingest
+   Authorization: Bearer sk_live_abc123
+   {
+     "event_type": "payment_failed",
+     "payment": { "id": "pay_1", "amount": 15000, "status": "failed" },
+     "customer": { "name": "Ana", "email": "ana@x.com", "phone": "5511999" }
+   }
+
+2) PagRecovery processa e envia postback para Shield:
+
+   POST https://api.shield.com/webhooks/pagrecovery
+   X-PagRecovery-Event: lead.created
+   {
+     "event": "lead.created",
+     "tenant_key": "shield",
+     "data": {
+       "leadId": "lead_xyz",
+       "customerName": "Ana",
+       "paymentId": "pay_1",
+       "amount": 15000
+     }
+   }
+
+3) PagRecovery envia WhatsApp e notifica Shield:
+
+   POST https://api.shield.com/webhooks/pagrecovery
+   X-PagRecovery-Event: message.sent
+   {
+     "event": "message.sent",
+     "tenant_key": "shield",
+     "data": {
+       "leadId": "lead_xyz",
+       "channel": "whatsapp",
+       "content": "Olá Ana! Notamos que seu pagamento...",
+       "pixCode": "00020126...",
+       "paymentUrl": "https://pagrecovery.com/retry/pay_1"
+     }
+   }
+
+4) Cliente paga, PagRecovery notifica Shield:
+
+   POST https://api.shield.com/webhooks/pagrecovery
+   X-PagRecovery-Event: lead.recovered
+   {
+     "event": "lead.recovered",
+     "tenant_key": "shield",
+     "data": {
+       "leadId": "lead_xyz",
+       "paymentId": "pay_1",
+       "amount": 15000,
+       "recoveredAt": "2026-04-22T15:10:00Z",
+       "customerName": "Ana"
+     }
+   }
+
+────────────────────────────────────────────────────────────────────────────────
+  12. RESUMO
+────────────────────────────────────────────────────────────────────────────────
+
+  ENTRADA (Shield → PagRecovery):
+    POST /api/partner/ingest + API key
+    → Envia pagamentos falhos dos sellers
+
+  SAÍDA (PagRecovery → Shield):
+    POST na URL de postback cadastrada
+    → Recebe atualizações em tempo real de cada etapa
+
+  PAINEL:
+    https://pagrecovery.com/partner/login
+    → Dashboard com métricas de todos os sellers
+
+================================================================================
+  Dúvidas: contato@pagrecovery.com
+================================================================================
