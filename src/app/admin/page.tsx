@@ -29,6 +29,12 @@ import {
   completePayoutAction,
 } from "@/app/actions/split-actions";
 import {
+  updatePartnerWebhookAction,
+  togglePartnerActiveAction,
+  addPartnerSellerAction,
+  toggleTenantActiveAction,
+} from "@/app/actions/partner-actions";
+import {
   getSplitConfig,
   listMerchantOverrides,
   getPlatformFinancials,
@@ -78,6 +84,8 @@ type AdminPageProps = {
     query?: string;
     seller?: string;
     tab?: string;
+    newApiKey?: string;
+    newSellerKey?: string;
   }>;
 };
 
@@ -291,6 +299,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           profiles={partnerProfiles}
           tenantsMap={partnerTenantsMap}
           apiKeysCount={partnerApiKeysCount}
+          statusMessage={params.message}
+          newApiKey={params.newApiKey}
+          newSellerKey={params.newSellerKey}
         />
       ) : (
         <TabOverview
@@ -1840,15 +1851,52 @@ function TabPartners({
   profiles,
   tenantsMap,
   apiKeysCount,
+  statusMessage,
+  newApiKey,
+  newSellerKey,
 }: {
   profiles: PartnerProfileRecord[];
   tenantsMap: Map<string, PartnerTenantRecord[]>;
   apiKeysCount: Map<string, number>;
+  statusMessage?: string;
+  newApiKey?: string;
+  newSellerKey?: string;
 }) {
+  const inputClass =
+    "w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-secondary)] focus:border-[var(--accent)] focus:outline-none";
+  const btnPrimary =
+    "rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)]";
+  const btnSecondary =
+    "rounded-full border border-[var(--border)] bg-[var(--surface-strong)] px-3 py-1.5 text-xs font-semibold text-[var(--foreground-secondary)] transition-colors hover:text-[var(--foreground)]";
+
   return (
     <>
+      {/* New API key alert */}
+      {newApiKey ? (
+        <PlatformSurface className="border-2 border-emerald-500/40 bg-emerald-500/5 p-5">
+          <p className="text-sm font-semibold text-[var(--foreground)]">
+            Seller <span className="font-mono">{newSellerKey}</span> criado com sucesso
+          </p>
+          <p className="mt-2 text-xs text-[var(--foreground-secondary)]">
+            API Key (mostrada apenas uma vez):
+          </p>
+          <div className="mt-1 flex items-center gap-2">
+            <code className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-mono text-sm text-[var(--foreground)] select-all">
+              {newApiKey}
+            </code>
+            <CopyButton value={newApiKey} />
+          </div>
+        </PlatformSurface>
+      ) : statusMessage ? (
+        <PlatformSurface className="p-4">
+          <p className="text-sm font-medium text-[var(--foreground)]">
+            {decodeURIComponent(statusMessage)}
+          </p>
+        </PlatformSurface>
+      ) : null}
+
       {/* Summary */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className={`grid gap-4 sm:grid-cols-3 ${newApiKey || statusMessage ? "mt-5" : ""}`}>
         <PlatformMetricCard
           icon={Globe}
           value={String(profiles.length)}
@@ -1904,25 +1952,26 @@ function TabPartners({
                       {profile.contactPhone ? ` · ${profile.contactPhone}` : ""}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-[var(--foreground-secondary)]">
-                    <span className="rounded-full border border-[var(--border)] px-2.5 py-1">
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--foreground-secondary)]">
                       slug: <span className="font-mono font-semibold">{profile.slug}</span>
                     </span>
+                    <form action={togglePartnerActiveAction}>
+                      <input type="hidden" name="partnerId" value={profile.id} />
+                      <input type="hidden" name="active" value={profile.active ? "false" : "true"} />
+                      <button type="submit" className={btnSecondary}>
+                        {profile.active ? "Desativar" : "Ativar"}
+                      </button>
+                    </form>
                   </div>
                 </div>
 
-                {/* IDs */}
+                {/* Info grid */}
                 <PlatformInset className="mt-4 p-3">
                   <div className="grid gap-2 text-xs sm:grid-cols-2">
                     <div>
                       <span className="text-[var(--foreground-secondary)]">Partner ID: </span>
                       <span className="font-mono text-[var(--foreground)]">{profile.id}</span>
-                    </div>
-                    <div>
-                      <span className="text-[var(--foreground-secondary)]">Webhook URL: </span>
-                      <span className="font-mono text-[var(--foreground)]">
-                        {profile.webhookUrl || "(não configurada)"}
-                      </span>
                     </div>
                     <div>
                       <span className="text-[var(--foreground-secondary)]">API Keys: </span>
@@ -1937,16 +1986,32 @@ function TabPartners({
                   </div>
                 </PlatformInset>
 
-                {/* Tenants / Sellers */}
+                {/* Webhook URL form */}
                 <div className="mt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
+                    Webhook URL (Postback)
+                  </p>
+                  <form action={updatePartnerWebhookAction} className="mt-2 flex gap-2">
+                    <input type="hidden" name="partnerId" value={profile.id} />
+                    <input
+                      type="url"
+                      name="webhookUrl"
+                      defaultValue={profile.webhookUrl}
+                      placeholder="https://api.partner.com/webhooks/pagrecovery"
+                      className={inputClass}
+                    />
+                    <button type="submit" className={btnPrimary}>
+                      Salvar
+                    </button>
+                  </form>
+                </div>
+
+                {/* Sellers list */}
+                <div className="mt-5">
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
                     Sellers ({tenants.length})
                   </p>
-                  {tenants.length === 0 ? (
-                    <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
-                      Nenhum seller vinculado.
-                    </p>
-                  ) : (
+                  {tenants.length > 0 ? (
                     <div className="mt-2 space-y-2">
                       {tenants.map((tenant) => (
                         <div
@@ -1963,13 +2028,56 @@ function TabPartners({
                               {tenant.apiKeyId ? " · API key vinculada" : ""}
                             </p>
                           </div>
-                          <PlatformPill>
-                            {tenant.active ? "ativo" : "inativo"}
-                          </PlatformPill>
+                          <div className="flex items-center gap-2">
+                            <PlatformPill>
+                              {tenant.active ? "ativo" : "inativo"}
+                            </PlatformPill>
+                            <form action={toggleTenantActiveAction}>
+                              <input type="hidden" name="tenantId" value={tenant.id} />
+                              <input type="hidden" name="partnerId" value={profile.id} />
+                              <input type="hidden" name="active" value={tenant.active ? "false" : "true"} />
+                              <button type="submit" className={btnSecondary}>
+                                {tenant.active ? "Desativar" : "Ativar"}
+                              </button>
+                            </form>
+                          </div>
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
+                      Nenhum seller vinculado.
+                    </p>
                   )}
+                </div>
+
+                {/* Add seller form */}
+                <div className="mt-4 rounded-xl border border-dashed border-[var(--border)] p-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
+                    Adicionar seller
+                  </p>
+                  <form action={addPartnerSellerAction} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                    <input type="hidden" name="partnerId" value={profile.id} />
+                    <input
+                      type="text"
+                      name="sellerName"
+                      placeholder="Nome do seller"
+                      required
+                      className={inputClass}
+                    />
+                    <input
+                      type="email"
+                      name="sellerEmail"
+                      placeholder="Email (opcional)"
+                      className={inputClass}
+                    />
+                    <button type="submit" className={btnPrimary}>
+                      Criar seller + API key
+                    </button>
+                  </form>
+                  <p className="mt-2 text-xs text-[var(--foreground-secondary)]">
+                    Cria seller_admin_controls, API key com escopo e tenant vinculado. A key aparece uma vez.
+                  </p>
                 </div>
 
                 {/* Notes */}
