@@ -86,6 +86,7 @@ type AdminPageProps = {
     tab?: string;
     newApiKey?: string;
     newSellerKey?: string;
+    newHmacSecret?: string;
   }>;
 };
 
@@ -302,6 +303,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           statusMessage={params.message}
           newApiKey={params.newApiKey}
           newSellerKey={params.newSellerKey}
+          newHmacSecret={params.newHmacSecret}
         />
       ) : (
         <TabOverview
@@ -1854,6 +1856,7 @@ function TabPartners({
   statusMessage,
   newApiKey,
   newSellerKey,
+  newHmacSecret,
 }: {
   profiles: PartnerProfileRecord[];
   tenantsMap: Map<string, PartnerTenantRecord[]>;
@@ -1861,6 +1864,7 @@ function TabPartners({
   statusMessage?: string;
   newApiKey?: string;
   newSellerKey?: string;
+  newHmacSecret?: string;
 }) {
   const inputClass =
     "w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-secondary)] focus:border-[var(--accent)] focus:outline-none";
@@ -1871,20 +1875,64 @@ function TabPartners({
 
   return (
     <>
-      {/* New API key alert */}
+      {/* New seller credentials alert */}
       {newApiKey ? (
         <PlatformSurface className="border-2 border-emerald-500/40 bg-emerald-500/5 p-5">
-          <p className="text-sm font-semibold text-[var(--foreground)]">
+          <p className="text-lg font-semibold text-[var(--foreground)]">
             Seller <span className="font-mono">{newSellerKey}</span> criado com sucesso
           </p>
-          <p className="mt-2 text-xs text-[var(--foreground-secondary)]">
-            API Key (mostrada apenas uma vez):
+          <p className="mt-1 text-xs text-[var(--foreground-secondary)]">
+            Credenciais mostradas apenas uma vez. Copie agora.
           </p>
-          <div className="mt-1 flex items-center gap-2">
-            <code className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-mono text-sm text-[var(--foreground)] select-all">
-              {newApiKey}
-            </code>
-            <CopyButton value={newApiKey} />
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            {/* Public Key */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
+                Public Key (seller_key)
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <code className="text-sm font-semibold text-[var(--foreground)] select-all">
+                  {newSellerKey}
+                </code>
+                <CopyButton value={newSellerKey ?? ""} />
+              </div>
+              <p className="mt-1 text-[0.65rem] text-[var(--foreground-secondary)]">
+                Identifica o seller nas URLs e QR codes
+              </p>
+            </div>
+
+            {/* Secret Key */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
+                Secret Key (API key)
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <code className="text-xs font-semibold text-[var(--foreground)] select-all break-all">
+                  {newApiKey}
+                </code>
+                <CopyButton value={newApiKey} />
+              </div>
+              <p className="mt-1 text-[0.65rem] text-[var(--foreground-secondary)]">
+                Autentica chamadas à API (Authorization: Bearer)
+              </p>
+            </div>
+
+            {/* HMAC Secret */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--foreground-secondary)]">
+                HMAC Secret (postback)
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <code className="text-xs font-semibold text-[var(--foreground)] select-all break-all">
+                  {newHmacSecret}
+                </code>
+                <CopyButton value={newHmacSecret ?? ""} />
+              </div>
+              <p className="mt-1 text-[0.65rem] text-[var(--foreground-secondary)]">
+                Verifica assinatura dos postbacks (X-PagRecovery-Signature)
+              </p>
+            </div>
           </div>
         </PlatformSurface>
       ) : statusMessage ? (
@@ -2016,30 +2064,54 @@ function TabPartners({
                       {tenants.map((tenant) => (
                         <div
                           key={tenant.id}
-                          className="flex items-center justify-between rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3"
+                          className="rounded-[1rem] border border-[var(--border)] bg-[var(--surface-strong)] px-4 py-3"
                         >
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-[var(--foreground)]">
-                              {tenant.tenantName}
-                            </p>
-                            <p className="text-xs text-[var(--foreground-secondary)]">
-                              key: <span className="font-mono">{tenant.tenantKey}</span>
-                              {tenant.tenantEmail ? ` · ${tenant.tenantEmail}` : ""}
-                              {tenant.apiKeyId ? " · API key vinculada" : ""}
-                            </p>
+                          <div className="flex items-center justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-[var(--foreground)]">
+                                {tenant.tenantName}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <PlatformPill>
+                                {tenant.active ? "ativo" : "inativo"}
+                              </PlatformPill>
+                              <form action={toggleTenantActiveAction}>
+                                <input type="hidden" name="tenantId" value={tenant.id} />
+                                <input type="hidden" name="partnerId" value={profile.id} />
+                                <input type="hidden" name="active" value={tenant.active ? "false" : "true"} />
+                                <button type="submit" className={btnSecondary}>
+                                  {tenant.active ? "Desativar" : "Ativar"}
+                                </button>
+                              </form>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <PlatformPill>
-                              {tenant.active ? "ativo" : "inativo"}
-                            </PlatformPill>
-                            <form action={toggleTenantActiveAction}>
-                              <input type="hidden" name="tenantId" value={tenant.id} />
-                              <input type="hidden" name="partnerId" value={profile.id} />
-                              <input type="hidden" name="active" value={tenant.active ? "false" : "true"} />
-                              <button type="submit" className={btnSecondary}>
-                                {tenant.active ? "Desativar" : "Ativar"}
-                              </button>
-                            </form>
+                          <div className="mt-2 grid gap-1 text-xs text-[var(--foreground-secondary)]">
+                            <div>
+                              <span>Public Key: </span>
+                              <span className="font-mono font-semibold text-[var(--foreground)]">{tenant.tenantKey}</span>
+                            </div>
+                            {tenant.apiKeyId ? (
+                              <div>
+                                <span>Secret Key: </span>
+                                <span className="font-mono text-[var(--foreground)]">sk_live_•••••••• (vinculada)</span>
+                              </div>
+                            ) : null}
+                            {tenant.webhookSecret ? (
+                              <div className="flex items-center gap-1">
+                                <span>HMAC Secret: </span>
+                                <span className="font-mono text-[var(--foreground)]">
+                                  {tenant.webhookSecret.slice(0, 8)}••••••••
+                                </span>
+                                <CopyButton value={tenant.webhookSecret} />
+                              </div>
+                            ) : null}
+                            {tenant.tenantEmail ? (
+                              <div>
+                                <span>Email: </span>
+                                <span className="text-[var(--foreground)]">{tenant.tenantEmail}</span>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       ))}

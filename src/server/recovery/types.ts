@@ -574,6 +574,7 @@ export type PartnerTenantRecord = {
   gatewaySlug: string;
   active: boolean;
   apiKeyId?: string;
+  webhookSecret: string;
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -587,6 +588,7 @@ export type PartnerTenantInput = {
   gatewaySlug?: string;
   active?: boolean;
   apiKeyId?: string;
+  webhookSecret?: string;
   metadata?: Record<string, unknown>;
 };
 

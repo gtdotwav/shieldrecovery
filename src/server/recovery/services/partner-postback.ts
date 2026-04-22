@@ -151,8 +151,8 @@ export async function dispatchPartnerPostback(
         data,
       };
 
-      // Use partner slug as HMAC secret (partner can configure a custom secret later)
-      const secret = process.env.PARTNER_POSTBACK_SECRET || profile.slug;
+      // Use the tenant's own HMAC secret for signing
+      const secret = tenant.webhookSecret || profile.slug;
 
       // Fire-and-forget with retry
       sendWithRetry(profile.webhookUrl, payload, secret).catch(() => {});

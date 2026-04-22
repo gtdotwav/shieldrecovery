@@ -1,5 +1,7 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -126,7 +128,10 @@ export async function addPartnerSellerAction(formData: FormData) {
     createdByEmail: session.email,
   });
 
-  // 3. Create partner tenant
+  // 3. Generate HMAC secret for this seller's postbacks
+  const webhookSecret = randomBytes(32).toString("hex");
+
+  // 4. Create partner tenant
   await partnerStorage.saveTenant({
     partnerId,
     tenantKey: sellerKey,
@@ -134,12 +139,12 @@ export async function addPartnerSellerAction(formData: FormData) {
     tenantEmail: sellerEmail,
     gatewaySlug: "partner",
     apiKeyId: apiKeyRecord.id,
+    webhookSecret,
   });
 
   revalidatePath("/admin");
-  // Pass the raw key in the redirect so it can be shown once
   redirect(
-    `/admin?tab=partners&status=ok&message=Seller+${encodeURIComponent(sellerName)}+criado&newApiKey=${encodeURIComponent(rawKey)}&newSellerKey=${encodeURIComponent(sellerKey)}`,
+    `/admin?tab=partners&status=ok&message=Seller+${encodeURIComponent(sellerName)}+criado&newApiKey=${encodeURIComponent(rawKey)}&newSellerKey=${encodeURIComponent(sellerKey)}&newHmacSecret=${encodeURIComponent(webhookSecret)}`,
   );
 }
 

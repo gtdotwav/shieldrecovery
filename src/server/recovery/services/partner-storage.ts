@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -41,6 +41,7 @@ type DatabasePartnerTenantRow = {
   gateway_slug: string;
   active: boolean;
   api_key_id: string | null;
+  webhook_secret: string;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -106,6 +107,7 @@ function mapTenant(row: DatabasePartnerTenantRow): PartnerTenantRecord {
     gatewaySlug: row.gateway_slug ?? "partner",
     active: row.active,
     apiKeyId: row.api_key_id ?? undefined,
+    webhookSecret: row.webhook_secret ?? "",
     metadata: row.metadata ?? {},
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
@@ -276,6 +278,7 @@ export class PartnerStorageService {
       gateway_slug: input.gatewaySlug ?? existing?.gatewaySlug ?? "partner",
       active: input.active ?? existing?.active ?? true,
       api_key_id: input.apiKeyId ?? existing?.apiKeyId ?? null,
+      webhook_secret: input.webhookSecret ?? existing?.webhookSecret ?? randomBytes(32).toString("hex"),
       metadata: input.metadata ?? existing?.metadata ?? {},
       created_at: existing?.createdAt ?? now,
       updated_at: now,
