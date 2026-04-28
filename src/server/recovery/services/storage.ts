@@ -1680,6 +1680,26 @@ class LocalStorageService implements RecoveryStorage {
         whitelabelId:
           input.whitelabelId?.trim() || existing?.whitelabelId || undefined,
         notes: input.notes?.trim() || existing?.notes || undefined,
+        whatsappInstanceName:
+          input.whatsappInstanceName !== undefined
+            ? (input.whatsappInstanceName || undefined)
+            : existing?.whatsappInstanceName,
+        whatsappInstanceStatus:
+          input.whatsappInstanceStatus ?? existing?.whatsappInstanceStatus ?? "disconnected",
+        whatsappInstanceQrCode:
+          input.whatsappInstanceQrCode !== undefined
+            ? (input.whatsappInstanceQrCode || undefined)
+            : existing?.whatsappInstanceQrCode,
+        whatsappInstancePhone:
+          input.whatsappInstancePhone !== undefined
+            ? (input.whatsappInstancePhone || undefined)
+            : existing?.whatsappInstancePhone,
+        whatsappInstanceError:
+          input.whatsappInstanceError !== undefined
+            ? (input.whatsappInstanceError || undefined)
+            : existing?.whatsappInstanceError,
+        whatsappInstanceUpdatedAt:
+          input.whatsappInstanceUpdatedAt ?? existing?.whatsappInstanceUpdatedAt,
         updatedAt: timestamp,
       };
 

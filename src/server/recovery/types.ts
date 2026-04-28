@@ -480,6 +480,12 @@ export type SellerAdminControlRecord = {
   aiNegotiationEnabled?: boolean;
   aiMaxDiscountPct?: number;
   aiNegotiationStrategy?: string;
+  whatsappInstanceName?: string;
+  whatsappInstanceStatus?: WhatsAppWebSessionStatus;
+  whatsappInstanceQrCode?: string;
+  whatsappInstancePhone?: string;
+  whatsappInstanceError?: string;
+  whatsappInstanceUpdatedAt?: string;
   updatedAt: string;
 };
 
@@ -512,6 +518,12 @@ export type SellerAdminControlInput = {
   aiNegotiationEnabled?: boolean;
   aiMaxDiscountPct?: number;
   aiNegotiationStrategy?: string;
+  whatsappInstanceName?: string;
+  whatsappInstanceStatus?: WhatsAppWebSessionStatus;
+  whatsappInstanceQrCode?: string;
+  whatsappInstancePhone?: string;
+  whatsappInstanceError?: string;
+  whatsappInstanceUpdatedAt?: string;
 };
 
 /* ── Whitelabel Profiles ── */

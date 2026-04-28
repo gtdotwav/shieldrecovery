@@ -330,6 +330,12 @@ type DatabaseSellerAdminControlRow = {
   checkout_url?: string | null;
   checkout_api_key?: string | null;
   notes?: string | null;
+  whatsapp_instance_name?: string | null;
+  whatsapp_instance_status?: string | null;
+  whatsapp_instance_qr_code?: string | null;
+  whatsapp_instance_phone?: string | null;
+  whatsapp_instance_error?: string | null;
+  whatsapp_instance_updated_at?: string | null;
   updated_at: string;
 };
 
@@ -2030,6 +2036,26 @@ export class SupabaseStorageService implements RecoveryStorage {
       checkout_url: input.checkoutUrl?.trim() || existing?.checkoutUrl || null,
       checkout_api_key: input.checkoutApiKey?.trim() || existing?.checkoutApiKey || null,
       notes: input.notes?.trim() || existing?.notes || null,
+      whatsapp_instance_name:
+        input.whatsappInstanceName !== undefined
+          ? (input.whatsappInstanceName || null)
+          : (existing?.whatsappInstanceName || null),
+      whatsapp_instance_status:
+        input.whatsappInstanceStatus ?? existing?.whatsappInstanceStatus ?? "disconnected",
+      whatsapp_instance_qr_code:
+        input.whatsappInstanceQrCode !== undefined
+          ? (input.whatsappInstanceQrCode || "")
+          : (existing?.whatsappInstanceQrCode || ""),
+      whatsapp_instance_phone:
+        input.whatsappInstancePhone !== undefined
+          ? (input.whatsappInstancePhone || "")
+          : (existing?.whatsappInstancePhone || ""),
+      whatsapp_instance_error:
+        input.whatsappInstanceError !== undefined
+          ? (input.whatsappInstanceError || "")
+          : (existing?.whatsappInstanceError || ""),
+      whatsapp_instance_updated_at:
+        input.whatsappInstanceUpdatedAt ?? existing?.whatsappInstanceUpdatedAt ?? null,
       updated_at: now,
     };
 
@@ -3176,6 +3202,12 @@ function mapSellerAdminControl(
     checkoutUrl: data.checkout_url ?? undefined,
     checkoutApiKey: data.checkout_api_key ?? undefined,
     notes: data.notes ?? undefined,
+    whatsappInstanceName: data.whatsapp_instance_name ?? undefined,
+    whatsappInstanceStatus: (data.whatsapp_instance_status as SellerAdminControlRecord["whatsappInstanceStatus"]) ?? "disconnected",
+    whatsappInstanceQrCode: data.whatsapp_instance_qr_code ?? undefined,
+    whatsappInstancePhone: data.whatsapp_instance_phone ?? undefined,
+    whatsappInstanceError: data.whatsapp_instance_error ?? undefined,
+    whatsappInstanceUpdatedAt: data.whatsapp_instance_updated_at ?? undefined,
     updatedAt: toIsoStringOrNow(data.updated_at),
   };
 }

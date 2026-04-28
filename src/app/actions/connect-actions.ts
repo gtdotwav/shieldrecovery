@@ -220,6 +220,72 @@ export async function deactivateAffiliateLinkAction(formData: FormData) {
   redirect("/connect?status=ok&saved=affiliate_link");
 }
 
+export async function startSellerWhatsAppAction() {
+  const session = await requireAuthenticatedSession(["seller", "admin"]);
+  const sellerIdentity = await getSellerIdentityByEmail(session.email);
+
+  if (!sellerIdentity?.agentName) {
+    redirect("/connect?status=error&message=Seller%20nao%20identificado");
+  }
+
+  try {
+    const { getSellerWhatsAppService } = await import(
+      "@/server/recovery/services/seller-whatsapp-service"
+    );
+    await getSellerWhatsAppService().connect(sellerIdentity.agentName);
+  } catch (error) {
+    console.error("[startSellerWhatsApp]", error instanceof Error ? error.message : error);
+    redirect("/connect?status=error&message=Falha%20ao%20conectar%20WhatsApp");
+  }
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=seller_whatsapp");
+}
+
+export async function refreshSellerWhatsAppAction() {
+  const session = await requireAuthenticatedSession(["seller", "admin"]);
+  const sellerIdentity = await getSellerIdentityByEmail(session.email);
+
+  if (!sellerIdentity?.agentName) {
+    redirect("/connect?status=error&message=Seller%20nao%20identificado");
+  }
+
+  try {
+    const { getSellerWhatsAppService } = await import(
+      "@/server/recovery/services/seller-whatsapp-service"
+    );
+    await getSellerWhatsAppService().refresh(sellerIdentity.agentName);
+  } catch (error) {
+    console.error("[refreshSellerWhatsApp]", error instanceof Error ? error.message : error);
+    redirect("/connect?status=error&message=Falha%20ao%20atualizar%20status%20WhatsApp");
+  }
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=seller_whatsapp");
+}
+
+export async function disconnectSellerWhatsAppAction() {
+  const session = await requireAuthenticatedSession(["seller", "admin"]);
+  const sellerIdentity = await getSellerIdentityByEmail(session.email);
+
+  if (!sellerIdentity?.agentName) {
+    redirect("/connect?status=error&message=Seller%20nao%20identificado");
+  }
+
+  try {
+    const { getSellerWhatsAppService } = await import(
+      "@/server/recovery/services/seller-whatsapp-service"
+    );
+    await getSellerWhatsAppService().disconnect(sellerIdentity.agentName);
+  } catch (error) {
+    console.error("[disconnectSellerWhatsApp]", error instanceof Error ? error.message : error);
+    redirect("/connect?status=error&message=Falha%20ao%20desconectar%20WhatsApp");
+  }
+
+  revalidateOperationalRoutes();
+  redirect("/connect?status=ok&saved=seller_whatsapp");
+}
+
 export async function saveSellerAiGuidanceAction(formData: FormData) {
   const session = await requireAuthenticatedSession(["seller", "admin"]);
   const guidance = String(formData.get("sellerAiGuidance") ?? "").trim();

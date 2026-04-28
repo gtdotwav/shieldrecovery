@@ -26,11 +26,14 @@ import { saveSellerGatewayKeyAction } from "@/app/actions/admin-actions";
 import {
   createAffiliateLinkAction,
   deactivateAffiliateLinkAction,
+  disconnectSellerWhatsAppAction,
   disconnectWhatsAppQrSessionAction,
+  refreshSellerWhatsAppAction,
   refreshWhatsAppQrSessionAction,
   saveConnectionSettingsAction,
   saveDatabaseBootstrapAction,
   saveSellerAiGuidanceAction,
+  startSellerWhatsAppAction,
   startWhatsAppQrSessionAction,
 } from "@/app/actions/connect-actions";
 import {
@@ -204,6 +207,17 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
     const sellerWhitelabel = sellerControl?.whitelabelId
       ? await service.getWhitelabelProfile(sellerControl.whitelabelId)
       : undefined;
+
+    // Per-seller WhatsApp instance snapshot
+    const sellerWhatsApp = {
+      instanceName: sellerControl?.whatsappInstanceName ?? "",
+      status: sellerControl?.whatsappInstanceStatus ?? "disconnected",
+      qrCode: sellerControl?.whatsappInstanceQrCode ?? "",
+      connectedPhone: sellerControl?.whatsappInstancePhone ?? "",
+      error: sellerControl?.whatsappInstanceError ?? "",
+      updatedAt: sellerControl?.whatsappInstanceUpdatedAt ?? "",
+    };
+
     return (
       <SellerConnectView
         activeCount={activeCount}
@@ -225,6 +239,7 @@ export default async function ConnectPage({ searchParams }: ConnectPageProps) {
         sellerWhitelabelId={sellerControl?.whitelabelId ?? ""}
         sellerWhitelabelName={sellerWhitelabel?.name}
         sellerWhitelabelProvider={sellerWhitelabel?.gatewayProvider}
+        sellerWhatsApp={sellerWhatsApp}
         affiliateLinks={affiliateLinks}
         affiliateStats={affiliateStats}
         appBaseUrl={runtimeSettings.appBaseUrl}
@@ -515,6 +530,7 @@ function SellerConnectView({
   sellerWhitelabelId,
   sellerWhitelabelName,
   sellerWhitelabelProvider,
+  sellerWhatsApp,
   affiliateLinks,
   affiliateStats,
   appBaseUrl,
@@ -570,6 +586,14 @@ function SellerConnectView({
   sellerWhitelabelId: string;
   sellerWhitelabelName?: string;
   sellerWhitelabelProvider?: string;
+  sellerWhatsApp: {
+    instanceName: string;
+    status: string;
+    qrCode: string;
+    connectedPhone: string;
+    error: string;
+    updatedAt: string;
+  };
   affiliateLinks: Array<{
     id: string;
     code: string;
@@ -616,15 +640,15 @@ function SellerConnectView({
         />
         <PlatformMetricCard
           icon={runtimeSettings.whatsappProvider === "web_api" ? QrCode : MessageCircle}
-          label="WhatsApp"
+          label="Meu WhatsApp"
           value={
             runtimeSettings.whatsappProvider === "web_api"
-              ? describeQrShortStatus(whatsappSessionStatus)
+              ? describeQrShortStatus(sellerWhatsApp.status)
               : health.integrations.whatsapp
                 ? "ativo"
                 : "pendente"
           }
-          subtitle="leitura operacional do canal"
+          subtitle={sellerWhatsApp.connectedPhone || "leitura operacional do canal"}
         />
       </section>
 
@@ -745,56 +769,64 @@ function SellerConnectView({
               <div className="mt-4 space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <PlatformPill icon={QrCode}>
-                    {describeQrStatus(whatsappSession.sessionStatus)}
+                    {describeQrStatus(sellerWhatsApp.status)}
                   </PlatformPill>
-                  {whatsappSession.connectedPhone ? (
-                    <PlatformPill>{whatsappSession.connectedPhone}</PlatformPill>
+                  {sellerWhatsApp.connectedPhone ? (
+                    <PlatformPill>{sellerWhatsApp.connectedPhone}</PlatformPill>
+                  ) : null}
+                  {sellerWhatsApp.instanceName ? (
+                    <PlatformPill>instância: {sellerWhatsApp.instanceName}</PlatformPill>
                   ) : null}
                 </div>
 
-                {whatsappSession.qrCode ? (
+                {sellerWhatsApp.qrCode ? (
                   <div className="flex justify-center rounded-xl border border-black/[0.06] bg-[#f8f9fb] p-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={whatsappSession.qrCode}
+                      src={sellerWhatsApp.qrCode}
                       alt="QR Code do WhatsApp"
                       className="h-64 w-64 rounded-xl bg-white object-contain p-3 shadow-sm"
                     />
                   </div>
                 ) : (
                   <div className="rounded-[1rem] border border-dashed border-black/[0.08] px-4 py-5 text-sm text-[#6b7280]">
-                    Nenhum QR disponível. Gere um novo código para escanear com o WhatsApp do seu número.
+                    {sellerWhatsApp.status === "connected"
+                      ? "WhatsApp conectado. Mensagens de recuperação são enviadas por este número."
+                      : "Nenhum QR disponível. Gere um novo código para escanear com o WhatsApp do seu número."}
                   </div>
                 )}
 
-                {whatsappSession.error ? (
-                  <p className="text-sm text-red-500">{whatsappSession.error}</p>
+                {sellerWhatsApp.error ? (
+                  <p className="text-sm text-red-500">{sellerWhatsApp.error}</p>
                 ) : null}
 
                 <div className="flex flex-wrap gap-2">
-                  <form action={startWhatsAppQrSessionAction}>
+                  <form action={startSellerWhatsAppAction}>
                     <button className="inline-flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700">
                       <QrCode className="h-4 w-4" />
-                      Gerar QR
+                      {sellerWhatsApp.status === "connected" ? "Reconectar" : "Gerar QR"}
                     </button>
                   </form>
-                  <form action={refreshWhatsAppQrSessionAction}>
+                  <form action={refreshSellerWhatsAppAction}>
                     <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
                       <RefreshCw className="h-4 w-4" />
                       Atualizar
                     </button>
                   </form>
-                  <form action={disconnectWhatsAppQrSessionAction}>
-                    <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#1a1a2e] transition-colors hover:bg-[#f5f5f7]">
-                      <Unplug className="h-4 w-4" />
-                      Desconectar
-                    </button>
-                  </form>
+                  {sellerWhatsApp.status === "connected" ? (
+                    <form action={disconnectSellerWhatsAppAction}>
+                      <button className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50">
+                        <Unplug className="h-4 w-4" />
+                        Desconectar
+                      </button>
+                    </form>
+                  ) : null}
                 </div>
 
                 <p className="text-sm leading-6 text-[#717182]">
-                  Abra o WhatsApp no celular, vá em Dispositivos conectados e escaneie o QR acima.
-                  A sessão conecta automaticamente e os webhooks de mensagem recebida chegam na nossa URL.
+                  Cada seller conecta o próprio WhatsApp. Abra o WhatsApp no celular,
+                  vá em Dispositivos conectados e escaneie o QR acima.
+                  As mensagens de recuperação dos seus leads serão enviadas por este número.
                 </p>
               </div>
             )}

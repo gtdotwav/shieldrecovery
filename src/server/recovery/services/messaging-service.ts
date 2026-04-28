@@ -451,11 +451,38 @@ export class MessagingService {
     try {
       let result: DispatchOutboundMessageResult;
 
+      // Per-seller WhatsApp instance routing: if the conversation is assigned
+      // to a seller with their own connected WhatsApp, send through their instance.
+      let sellerInstanceOverride: {
+        baseUrl: string;
+        accessToken: string;
+        instanceName: string;
+      } | null = null;
+
+      if (
+        runtimeSettings.whatsappProvider === "web_api" &&
+        input.conversation.assignedAgentName
+      ) {
+        try {
+          const { getSellerWhatsAppService } = await import(
+            "@/server/recovery/services/seller-whatsapp-service"
+          );
+          sellerInstanceOverride =
+            await getSellerWhatsAppService().resolveSellerInstance(
+              input.conversation.assignedAgentName,
+            );
+        } catch {
+          // Seller instance resolution failed — fall back to platform default
+        }
+      }
+
       if (runtimeSettings.whatsappProvider === "web_api") {
         result = await this.dispatchViaWebApi({
-          apiBaseUrl: runtimeSettings.whatsappApiBaseUrl,
-          accessToken: runtimeSettings.whatsappAccessToken,
-          sessionId: runtimeSettings.whatsappWebSessionId || platformBrand.slug,
+          apiBaseUrl: sellerInstanceOverride?.baseUrl ?? runtimeSettings.whatsappApiBaseUrl,
+          accessToken: sellerInstanceOverride?.accessToken ?? runtimeSettings.whatsappAccessToken,
+          sessionId:
+            sellerInstanceOverride?.instanceName ??
+            (runtimeSettings.whatsappWebSessionId || platformBrand.slug),
           phone: normalizedPhone,
           content,
           metadata: input.metadata,
