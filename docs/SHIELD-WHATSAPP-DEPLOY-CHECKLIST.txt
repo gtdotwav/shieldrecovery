@@ -1,205 +1,80 @@
 ================================================================================
-  SHIELD RECOVERY — DEPLOY WHATSAPP PER-SELLER (QR CODE)
-  Data: 2026-04-28
+  INTEGRACAO QR CODE WHATSAPP PER-SELLER
 ================================================================================
 
-RESUMO
-------
-Nova feature: cada seller pode conectar seu proprio WhatsApp via QR code.
-A PagRecovery rota mensagens pelo numero do seller em vez do numero da plataforma.
+Cada seller pode conectar seu proprio WhatsApp escaneando um QR code no painel.
+O backend ja esta pronto. Basta integrar os endpoints abaixo.
 
 ================================================================================
-1. DEPLOY DA APLICACAO
+1. API — ENDPOINTS
 ================================================================================
 
-A versao mais recente do app PagRecovery precisa ser deployada.
-O push para origin/main ja foi feito — o auto-deploy do Vercel deve subir.
+Todas as chamadas usam o header:
+  x-api-key: <PARTNER_API_KEY>
 
-Confirmar que o deploy completou em:
-  https://vercel.com/dashboard → PagRecovery → Deployments
+Base URL: https://pagrecovery.com
 
-================================================================================
-2. SUPABASE — CHAVE SERVICE ROLE
-================================================================================
 
-Verificar no Vercel (Settings → Environment Variables) que a variavel
-SUPABASE_SERVICE_ROLE_KEY esta com a chave service_role REAL do Supabase.
+1a. CONECTAR (gerar QR code)
 
-Se estiver com a chave "anon", trocar pela service_role:
-  Supabase Dashboard → Settings → API → service_role (secret)
+  POST /api/partner/v1/sellers/{sellerKey}/whatsapp/connect
 
-IMPORTANTE: a chave anon nao tem permissao para escrever em seller_admin_controls,
-o que impede persistir o QR code e o status da instancia.
+  Resposta:
+  {
+    "instance": "seller_shield",
+    "status": "pending_qr",
+    "qr_code": "data:image/png;base64,...",
+    "connected_phone": null,
+    "message": "Scan the QR code with WhatsApp on your phone."
+  }
 
-================================================================================
-3. SUPABASE — MIGRATION SQL
-================================================================================
+  O campo qr_code e uma imagem PNG em base64.
+  Basta exibir como <img src="data:image/png;base64,..."> no painel.
 
-Rodar no Supabase SQL Editor (Dashboard → SQL Editor → New query):
+  Se qr_code vier null, a imagem ainda esta sendo gerada.
+  Nesse caso, fazer polling no endpoint de status (abaixo) ate receber.
 
---------- INICIO DO SQL ---------
 
-ALTER TABLE seller_admin_controls
-  ADD COLUMN IF NOT EXISTS gateway_api_key TEXT,
-  ADD COLUMN IF NOT EXISTS whitelabel_id TEXT,
-  ADD COLUMN IF NOT EXISTS checkout_url TEXT,
-  ADD COLUMN IF NOT EXISTS checkout_api_key TEXT,
-  ADD COLUMN IF NOT EXISTS whatsapp_instance_name TEXT,
-  ADD COLUMN IF NOT EXISTS whatsapp_instance_status TEXT DEFAULT 'disconnected',
-  ADD COLUMN IF NOT EXISTS whatsapp_instance_qr_code TEXT DEFAULT '',
-  ADD COLUMN IF NOT EXISTS whatsapp_instance_phone TEXT DEFAULT '',
-  ADD COLUMN IF NOT EXISTS whatsapp_instance_error TEXT DEFAULT '',
-  ADD COLUMN IF NOT EXISTS whatsapp_instance_updated_at TIMESTAMP WITH TIME ZONE;
+1b. CONSULTAR STATUS
 
---------- FIM DO SQL ---------
+  GET /api/partner/v1/sellers/{sellerKey}/whatsapp/status
 
-Sao 10 colunas:
-  - 4 de config do seller (gateway_api_key, whitelabel_id, checkout_url, checkout_api_key)
-  - 6 de WhatsApp per-seller (whatsapp_instance_*)
+  Resposta:
+  {
+    "instance": "seller_shield",
+    "status": "pending_qr",
+    "qr_code": "data:image/png;base64,...",
+    "connected_phone": null,
+    "error": null
+  }
 
-Todas usam IF NOT EXISTS, entao e seguro rodar mais de uma vez.
+  Valores possiveis de status:
+    - disconnected   → nao conectado, precisa chamar /connect
+    - pending_qr     → QR gerado, aguardando escaneamento
+    - connected       → WhatsApp conectado e funcionando
+    - error           → falha (detalhes no campo error)
 
-================================================================================
-4. VPS — EVOLUTION API
-================================================================================
+  Sugestao: fazer polling a cada 3 segundos enquanto status = "pending_qr".
+  Quando mudar para "connected", parar o polling e mostrar confirmacao.
 
-Na VPS (177.7.42.173), atualizar a Evolution API:
 
-4a. Imagem correta:
-    evoapicloud/evolution-api:v2.3.5
+1c. DESCONECTAR
 
-4b. No .env da Evolution (na pasta do docker-compose), garantir:
+  POST /api/partner/v1/sellers/{sellerKey}/whatsapp/disconnect
 
-    QRCODE_LIMIT=6
-    CONFIG_SESSION_PHONE_CLIENT=PagRecovery
-    CONFIG_SESSION_PHONE_NAME=Chrome
-
-    QRCODE_LIMIT=6 → permite ate 6 tentativas de QR antes de exigir reconexao
-    CONFIG_SESSION_PHONE_CLIENT → nome que aparece no WhatsApp do seller
-    CONFIG_SESSION_PHONE_NAME → simula Chrome (padrao web)
-
-4c. Recriar o container:
-
-    cd /caminho/da/evolution
-    docker compose pull
-    docker compose up -d --force-recreate
-
-4d. Verificar que subiu:
-
-    curl http://177.7.42.173:8080/instance/fetchInstances \
-      -H "apikey: <EVOLUTION_API_KEY>"
-
-    Deve retornar JSON (array de instancias, pode ser vazio []).
 
 ================================================================================
-5. CONFIGURACAO NO ADMIN DA PAGRECOVERY
+2. FLUXO ESPERADO NO PAINEL
 ================================================================================
 
-No painel admin (/connect), garantir que:
+  1. Seller clica "Conectar WhatsApp"
+  2. Painel chama POST /connect
+  3. Exibe a imagem do QR code (campo qr_code)
+  4. Polling em GET /status a cada 3s
+  5. Seller escaneia o QR com o celular
+  6. Status muda para "connected" + connected_phone preenchido
+  7. Painel mostra "WhatsApp conectado" com o numero
 
-  - Provider: "WhatsApp Web API (Evolution)" esta selecionado
-  - URL base: http://177.7.42.173:8080 (ou o dominio/IP da Evolution)
-  - Access Token: a API key da Evolution
-  - Webhook URL esta apontando para: https://pagrecovery.com/api/webhooks/whatsapp
+A partir dai, as mensagens de recuperacao desse seller saem pelo numero dele.
 
-Isso e necessario porque o seller-whatsapp-service herda a config da plataforma
-(URL base + token) para criar instancias na Evolution API.
-
-================================================================================
-6. TESTE DA INTEGRACAO
-================================================================================
-
-6a. Conectar WhatsApp de um seller:
-
-    POST https://pagrecovery.com/api/partner/v1/sellers/{sellerKey}/whatsapp/connect
-    Headers:
-      x-api-key: <PARTNER_API_KEY>
-
-    Resposta esperada:
-    {
-      "instance": "seller_<sellerKey>",
-      "status": "pending_qr",
-      "qr_code": "data:image/png;base64,...",   ← QR code em base64
-      "connected_phone": null,
-      "message": "Scan the QR code with WhatsApp on your phone."
-    }
-
-    Se qr_code vier null na primeira chamada, a Evolution ainda esta gerando.
-    Nesse caso, poll o endpoint de status:
-
-6b. Consultar status:
-
-    GET https://pagrecovery.com/api/partner/v1/sellers/{sellerKey}/whatsapp/status
-    Headers:
-      x-api-key: <PARTNER_API_KEY>
-
-    Resposta:
-    {
-      "instance": "seller_<sellerKey>",
-      "status": "pending_qr" | "connected" | "disconnected" | "error",
-      "qr_code": "data:image/png;base64,...",
-      "connected_phone": "5511999999999",
-      "error": null
-    }
-
-6c. Apos escanear o QR:
-    - A Evolution API envia webhook QRCODE_UPDATED → CONNECTION_UPDATE
-    - O status muda para "connected"
-    - connected_phone mostra o numero do celular conectado
-    - A partir daqui, mensagens de recuperacao desse seller saem pelo numero dele
-
-6d. Desconectar:
-
-    POST https://pagrecovery.com/api/partner/v1/sellers/{sellerKey}/whatsapp/disconnect
-    Headers:
-      x-api-key: <PARTNER_API_KEY>
-
-================================================================================
-7. COMO FUNCIONA POR BAIXO
-================================================================================
-
-Fluxo de conexao:
-  1. POST /connect → cria instancia "seller_xxx" na Evolution API
-  2. Configura webhook na instancia apontando para /api/webhooks/whatsapp
-  3. GET /instance/connect/seller_xxx → Evolution gera QR code
-  4. QR code armazenado em seller_admin_controls.whatsapp_instance_qr_code
-  5. Seller escaneia QR → Evolution envia CONNECTION_UPDATE
-  6. Status atualizado para "connected" no banco
-
-Fluxo de mensagem:
-  1. Worker processa lead de recuperacao
-  2. Verifica se seller tem instancia "connected"
-  3. Se sim: envia via instancia do seller (numero proprio)
-  4. Se nao: usa instancia padrao da plataforma (fallback)
-
-Webhook routing:
-  - Se instanceName comeca com "seller_" → atualiza seller_admin_controls
-  - Caso contrario → atualiza connection_settings (instancia da plataforma)
-
-================================================================================
-8. TROUBLESHOOTING
-================================================================================
-
-QR code nao aparece:
-  - Verificar se Evolution API esta rodando: curl http://177.7.42.173:8080/
-  - Verificar se QRCODE_LIMIT nao foi excedido (recriar instancia)
-  - Checar logs: docker logs evolution-api --tail 50
-
-Status fica em "pending_qr" mesmo apos escanear:
-  - Webhook pode nao estar chegando
-  - Verificar se webhook URL esta correto no admin (/connect)
-  - Verificar se SUPABASE_SERVICE_ROLE_KEY permite escrita
-  - Testar webhook: curl -X POST https://pagrecovery.com/api/webhooks/whatsapp
-
-Erro 403 na criacao de instancia:
-  - Normal se instancia ja existe (codigo ja trata esse caso)
-  - Se persistir, deletar instancia manualmente na Evolution e tentar de novo
-
-Mensagens nao saem pelo numero do seller:
-  - Verificar se status = "connected" no banco
-  - Verificar se o seller esta associado ao lead/conversa
-  - O fallback para instancia da plataforma e automatico
-
-================================================================================
-FIM DO DOCUMENTO
 ================================================================================
