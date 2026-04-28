@@ -1,0 +1,309 @@
+================================================================================
+  SHIELD RECOVERY — INTEGRACAO WHATSAPP PER-SELLER
+  Documentacao completa para integracao
+  Abril 2026
+================================================================================
+
+
+1. CREDENCIAIS DO SERVIDOR
+================================================================================
+
+Evolution API (servidor WhatsApp):
+
+  URL:   http://177.7.42.173:8080
+  Token: 72eb45e5a13110f0931b4dbd84a0481ee820555768a440489009c6eb615a5c5c
+
+Esses dados devem ser configurados no painel admin da plataforma:
+
+  1. Acessar /connect (painel admin)
+  2. Secao WhatsApp:
+     - Provider:      WhatsApp Web API
+     - API base URL:  http://177.7.42.173:8080
+     - Access Token:  72eb45e5a13110f0931b4dbd84a0481ee820555768a440489009c6eb615a5c5c
+  3. Salvar
+
+
+2. COMO FUNCIONA
+================================================================================
+
+Cada seller conecta o proprio WhatsApp via QR code.
+Depois de conectado, todas as mensagens de recuperacao dos leads daquele
+seller saem pelo numero dele — nao pelo numero da plataforma.
+
+Se o seller desconectar, o sistema volta automaticamente pro numero padrao.
+
+Fluxo:
+
+  Seller abre painel → Clica "Conectar WhatsApp"
+       ↓
+  API gera QR code (imagem base64)
+       ↓
+  Seller escaneia com WhatsApp no celular
+       ↓
+  Frontend faz polling a cada 3-5s ate status = "connected"
+       ↓
+  Pronto. Mensagens de recuperacao saem pelo numero do seller.
+
+
+3. API — ENDPOINTS
+================================================================================
+
+Base URL:  https://<dominio-da-plataforma>/api/partner/v1/sellers/{sellerKey}/whatsapp
+
+Autenticacao: header Authorization: Bearer sk_live_XXXXXXXX
+(API key do partner — global ou scoped por seller)
+
+
+3.1  CONECTAR (Gerar QR Code)
+--------------------------------------------------------------------------------
+
+POST /api/partner/v1/sellers/{sellerKey}/whatsapp/connect
+
+Cria instancia WhatsApp pro seller e retorna QR code.
+
+Request:
+
+  curl -X POST https://<dominio>/api/partner/v1/sellers/meu-seller/whatsapp/connect \
+    -H "Authorization: Bearer sk_live_XXXXXXXX"
+
+Response (QR gerado):
+
+  {
+    "ok": true,
+    "instance": "seller_meu_seller",
+    "status": "pending_qr",
+    "qr_code": "data:image/png;base64,iVBORw0KGgo...",
+    "connected_phone": null,
+    "message": "Scan the QR code with WhatsApp on your phone."
+  }
+
+Response (ja conectado):
+
+  {
+    "ok": true,
+    "instance": "seller_meu_seller",
+    "status": "connected",
+    "qr_code": null,
+    "connected_phone": "5511999999999",
+    "message": "WhatsApp already connected."
+  }
+
+Notas:
+  - qr_code e uma imagem base64 (data URI). Renderize em <img src="...">
+  - QR expira em ~45 segundos. Chame novamente pra gerar outro.
+  - Se ja conectado, retorna status sem gerar novo QR.
+
+
+3.2  VERIFICAR STATUS
+--------------------------------------------------------------------------------
+
+GET /api/partner/v1/sellers/{sellerKey}/whatsapp/status
+
+Retorna estado atual. Se desconectado, tenta reconectar automaticamente.
+
+Request:
+
+  curl https://<dominio>/api/partner/v1/sellers/meu-seller/whatsapp/status \
+    -H "Authorization: Bearer sk_live_XXXXXXXX"
+
+Response:
+
+  {
+    "ok": true,
+    "instance": "seller_meu_seller",
+    "status": "connected",
+    "qr_code": null,
+    "connected_phone": "5511999999999",
+    "error": null,
+    "updated_at": "2026-04-28T01:30:00.000Z"
+  }
+
+Status possiveis:
+
+  disconnected  — Sem conexao. Precisa gerar QR.
+  pending_qr    — QR gerado, aguardando scan.
+  connected     — WhatsApp conectado e operacional.
+  error         — Erro na conexao. Ver campo "error".
+
+
+3.3  DESCONECTAR
+--------------------------------------------------------------------------------
+
+POST /api/partner/v1/sellers/{sellerKey}/whatsapp/disconnect
+
+Desconecta o WhatsApp do seller.
+
+Request:
+
+  curl -X POST https://<dominio>/api/partner/v1/sellers/meu-seller/whatsapp/disconnect \
+    -H "Authorization: Bearer sk_live_XXXXXXXX"
+
+Response:
+
+  {
+    "ok": true,
+    "instance": "seller_meu_seller",
+    "status": "disconnected",
+    "message": "WhatsApp disconnected successfully."
+  }
+
+
+4. FLUXO DE INTEGRACAO (FRONTEND)
+================================================================================
+
+  1. POST /whatsapp/connect
+     → Recebe QR code (campo qr_code, base64)
+
+  2. Exibir QR code pro seller
+     → <img src={qr_code} />
+
+  3. GET /whatsapp/status (polling a cada 3-5 segundos)
+     → Aguarda status mudar pra "connected"
+
+  4. Quando status = "connected":
+     → Seller pronto. Exibir numero conectado.
+     → Mensagens de recuperacao saem pelo numero dele.
+
+
+5. EXEMPLO DE CODIGO — React/Next.js
+================================================================================
+
+"use client";
+
+import { useState, useEffect } from "react";
+
+export function WhatsAppConnect({
+  sellerKey,
+  apiKey,
+}: {
+  sellerKey: string;
+  apiKey: string;
+}) {
+  const [state, setState] = useState<{
+    status: string;
+    qrCode: string | null;
+    phone: string | null;
+  }>({ status: "disconnected", qrCode: null, phone: null });
+
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const base = `/api/partner/v1/sellers/${sellerKey}/whatsapp`;
+
+  async function connect() {
+    const res = await fetch(`${base}/connect`, { method: "POST", headers });
+    const data = await res.json();
+    setState({
+      status: data.status,
+      qrCode: data.qr_code,
+      phone: data.connected_phone,
+    });
+  }
+
+  async function checkStatus() {
+    const res = await fetch(`${base}/status`, { headers });
+    const data = await res.json();
+    setState({
+      status: data.status,
+      qrCode: data.qr_code,
+      phone: data.connected_phone,
+    });
+  }
+
+  async function disconnect() {
+    const res = await fetch(`${base}/disconnect`, { method: "POST", headers });
+    const data = await res.json();
+    setState({ status: data.status, qrCode: null, phone: null });
+  }
+
+  // Polling enquanto aguarda scan
+  useEffect(() => {
+    if (state.status !== "pending_qr") return;
+    const interval = setInterval(checkStatus, 4000);
+    return () => clearInterval(interval);
+  }, [state.status]);
+
+  if (state.status === "connected") {
+    return (
+      <div>
+        <p>WhatsApp conectado: {state.phone}</p>
+        <button onClick={disconnect}>Desconectar</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {state.qrCode ? (
+        <img src={state.qrCode} alt="QR Code" width={300} height={300} />
+      ) : (
+        <p>Clique para gerar o QR Code</p>
+      )}
+      <button onClick={connect}>
+        {state.qrCode ? "Gerar novo QR" : "Conectar WhatsApp"}
+      </button>
+    </div>
+  );
+}
+
+
+6. TESTE RAPIDO (cURL)
+================================================================================
+
+# 1. Gerar QR
+curl -X POST https://<dominio>/api/partner/v1/sellers/seller123/whatsapp/connect \
+  -H "Authorization: Bearer sk_live_abc123"
+
+# 2. Checar status
+curl https://<dominio>/api/partner/v1/sellers/seller123/whatsapp/status \
+  -H "Authorization: Bearer sk_live_abc123"
+
+# 3. Desconectar
+curl -X POST https://<dominio>/api/partner/v1/sellers/seller123/whatsapp/disconnect \
+  -H "Authorization: Bearer sk_live_abc123"
+
+
+7. COMPORTAMENTO DE ROTEAMENTO
+================================================================================
+
+Quando um seller tem WhatsApp conectado:
+
+  - Mensagens de recuperacao saem pelo numero do seller
+  - Respostas dos clientes chegam na plataforma normalmente via webhook
+  - Se o seller desconectar, mensagens voltam pro numero padrao (fallback)
+  - Admin ve todas as instancias de todos os sellers no painel
+
+
+8. ERROS
+================================================================================
+
+Codigo  Causa                                    Solucao
+------  ---------------------------------------- ----------------------------------
+400     Provider nao e web_api                   Configurar Evolution API em /connect
+401     API key invalida ou ausente              Verificar header Authorization
+403     API key sem permissao pra esse seller    Usar key global ou key correta
+502     Evolution API fora do ar                 Verificar servidor 177.7.42.173
+
+
+9. LIMITES
+================================================================================
+
+  - 1 instancia WhatsApp por seller
+  - QR code expira em ~45 segundos
+  - Polling recomendado: a cada 3-5 segundos durante scan
+  - Sessao persiste ate desconexao manual ou revogacao pelo WhatsApp
+
+
+10. WEBHOOKS DE STATUS (OPCIONAL)
+================================================================================
+
+A plataforma ja recebe eventos de conexao automaticamente.
+Se precisarem de um webhook no lado de voces pra saber quando um seller
+conectou/desconectou, informem o endpoint e nos configuramos.
+
+
+================================================================================
+  Em caso de duvidas, entrar em contato com a equipe PagRecovery.
+================================================================================

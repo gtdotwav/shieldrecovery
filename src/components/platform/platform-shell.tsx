@@ -75,6 +75,14 @@ export const platformRoutes: PlatformRoute[] = [
     allowedRoles: ["admin", "seller", "market"],
   },
   {
+    href: "/admin/ceo",
+    label: "CEO",
+    description: "Visão executiva da plataforma.",
+    icon: Gauge,
+    kind: "app",
+    allowedRoles: ["admin"],
+  },
+  {
     href: "/admin",
     label: "Admin",
     description: "Governança dos sellers e da recuperação.",
