@@ -1,0 +1,1179 @@
+================================================================================
+   SHIELD RECOVERY — GUIA COMPLETO DE INTEGRAÇÃO WHATSAPP + CONVERSAS + CRM
+================================================================================
+
+Última atualização: 2026-04-16
+Plataforma: Shield Recovery / PagRecovery (white-label)
+Stack: Next.js 16 + Supabase (PostgreSQL) + WhatsApp Cloud API + Evolution API
+
+================================================================================
+ÍNDICE
+================================================================================
+
+  1. VISÃO GERAL DA ARQUITETURA
+  2. PROVEDORES WHATSAPP SUPORTADOS
+  3. CONFIGURAÇÃO DO WHATSAPP CLOUD API (META)
+  4. CONFIGURAÇÃO DO WHATSAPP WEB API (EVOLUTION)
+  5. WEBHOOK DE RECEBIMENTO DE MENSAGENS
+  6. DISPARO DE MENSAGENS (OUTBOUND)
+  7. SISTEMA DE CONVERSAS (INBOX)
+  8. GESTÃO DE NÚMEROS E NORMALIZAÇÃO
+  9. CRM — LEADS, CLIENTES E RECUPERAÇÃO
+  10. FLUXO COMPLETO: WEBHOOK → IA → MENSAGEM → RECUPERAÇÃO
+  11. AGENTE AUTÔNOMO DE RECUPERAÇÃO
+  12. CADÊNCIA DE FOLLOW-UP (11 ETAPAS)
+  13. GERAÇÃO DE MENSAGENS (TEMPLATES + IA)
+  14. PIX — CÓDIGO COPIA E COLA
+  15. LINKS DE PAGAMENTO E CHECKOUT
+  16. COMPLIANCE — OPT-OUT E FREQUÊNCIA (LGPD)
+  17. TESTES A/B DE MENSAGENS
+  18. VARIÁVEIS DE AMBIENTE NECESSÁRIAS
+  19. TABELAS DO BANCO DE DADOS
+  20. ENDPOINTS DA API
+  21. COMO INTEGRAR EM OUTRO PROJETO
+
+================================================================================
+1. VISÃO GERAL DA ARQUITETURA
+================================================================================
+
+  Gateway Pagamento (webhook)
+         │
+         ▼
+  Webhook Handler ──► Queue (queue_jobs table)
+         │                    │
+         │                    ▼
+         │            Worker (cron 1min)
+         │                    │
+         │                    ▼
+         │            AI Classification
+         │            (probabilidade, urgência, canal, tom)
+         │                    │
+         │                    ▼
+         │            Message Generator
+         │            (template ou OpenAI gpt-4.1-mini)
+         │                    │
+         │                    ▼
+         │            Dispatch Outbound
+         │            ├── WhatsApp Cloud API (Meta)
+         │            ├── WhatsApp Web API (Evolution)
+         │            ├── Email (SendGrid)
+         │            ├── SMS (provider configurável)
+         │            └── Voice (VAPI)
+         │                    │
+         │                    ▼
+         │            Delivery Tracking
+         │            (sent → delivered → read → failed)
+         │
+         ▼
+  Inbound Webhook (WhatsApp) ──► processInboundMessage()
+         │
+         ├── Detect opt-out keywords → processOptOut()
+         ├── Upsert conversation
+         ├── Store message (direction=inbound)
+         └── Trigger AI reply (if autonomous mode)
+
+
+================================================================================
+2. PROVEDORES WHATSAPP SUPORTADOS
+================================================================================
+
+┌─────────────────────┬──────────────────────────────────────────────────────┐
+│ Provedor            │ Detalhes                                             │
+├─────────────────────┼──────────────────────────────────────────────────────┤
+│ Cloud API (Meta)    │ API oficial do WhatsApp Business                     │
+│                     │ Base URL: https://graph.facebook.com/v22.0           │
+│                     │ Auth: Bearer token (WHATSAPP_ACCESS_TOKEN)           │
+│                     │ Envio: POST /{phoneNumberId}/messages                │
+│                     │ Webhook: signature HMAC-SHA256 (x-hub-signature-256) │
+├─────────────────────┼──────────────────────────────────────────────────────┤
+│ Evolution API       │ WhatsApp Web via QR Code (self-hosted)               │
+│ (Web API)           │ Base URL: configurável via connection_settings       │
+│                     │ Auth: Header apikey                                  │
+│                     │ Envio: POST /message/sendText/{sessionId}            │
+│                     │ Webhook: configurado via POST /webhook/set/{session} │
+│                     │ Events: MESSAGES_UPSERT, MESSAGES_UPDATE,            │
+│                     │         QRCODE_UPDATED, CONNECTION_UPDATE            │
+├─────────────────────┼──────────────────────────────────────────────────────┤
+│ Generic Web API     │ Qualquer API compatível (detectado automaticamente)  │
+│                     │ Envio: POST com {to, type, message, text}            │
+│                     │ Detecção: URL termina em /messages/send ou /send     │
+└─────────────────────┴──────────────────────────────────────────────────────┘
+
+Seleção do provedor:
+  - Campo: connection_settings.whatsapp_provider
+  - Valores: "cloud_api" (padrão) ou "web_api"
+  - Pode ser alterado em runtime via API settings
+
+
+================================================================================
+3. CONFIGURAÇÃO DO WHATSAPP CLOUD API (META)
+================================================================================
+
+3.1 PRÉ-REQUISITOS:
+  - Conta Meta Business
+  - App registrado no Meta for Developers
+  - WhatsApp Business API habilitada
+  - Número verificado e aprovado
+
+3.2 VARIÁVEIS DE AMBIENTE:
+  WHATSAPP_ACCESS_TOKEN=EAA...     # Token de acesso permanente
+  WHATSAPP_PHONE_NUMBER_ID=12345   # ID do número no Meta
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN=meu_token_secreto
+  WHATSAPP_APP_SECRET=abc123       # App Secret para verificar assinatura
+
+3.3 CONFIGURAÇÃO DO WEBHOOK NO META:
+
+  URL do Webhook:
+    https://pagrecovery.com/api/webhooks/whatsapp
+
+  Verify Token:
+    Valor configurado em WHATSAPP_WEBHOOK_VERIFY_TOKEN
+
+  Campos subscritos:
+    - messages (receber mensagens inbound)
+    - message_status (rastrear delivery/read)
+
+3.4 VERIFICAÇÃO DE ASSINATURA:
+  O webhook verifica a assinatura usando x-hub-signature-256:
+
+    Header: x-hub-signature-256: sha256=<hex_digest>
+    Secret: WHATSAPP_APP_SECRET ou WHATSAPP_WEBHOOK_VERIFY_TOKEN
+    Payload: raw body da requisição
+    Método: HMAC-SHA256, comparação timing-safe (timingSafeEqual)
+
+3.5 CHALLENGE (GET):
+  GET /api/webhooks/whatsapp?hub.mode=subscribe
+                            &hub.challenge=CHALLENGE_STRING
+                            &hub.verify_token=MEU_TOKEN
+
+  Resposta: retorna hub.challenge se verify_token confere
+
+
+================================================================================
+4. CONFIGURAÇÃO DO WHATSAPP WEB API (EVOLUTION)
+================================================================================
+
+4.1 PRÉ-REQUISITOS:
+  - Instância Evolution API rodando (Docker/VPS)
+  - Sessão WhatsApp Web criada (scan QR code)
+
+4.2 VARIÁVEIS DE AMBIENTE / CONNECTION SETTINGS:
+  whatsappProvider: "web_api"
+  whatsappApiBaseUrl: "https://evolution.meuservidor.com"
+  whatsappAccessToken: "minha_api_key"
+  whatsappWebSessionId: "nome_da_sessao"
+
+4.3 ENDPOINTS DA EVOLUTION API USADOS:
+
+  Conexão:
+    POST /instance/connect/{sessionId}     → Gera QR code
+    GET  /instance/connectionState/{sid}   → Status da sessão
+    POST /instance/logout/{sessionId}      → Desconectar
+
+  Webhook:
+    POST /webhook/set/{sessionId}
+    Body: { webhook: { enabled: true, url: "...", events: [...] } }
+
+  Envio:
+    POST /message/sendText/{sessionId}
+    Body: { number: "5511999999999", text: "Mensagem" }
+
+4.4 ESTADOS DA SESSÃO:
+  disconnected → pending_qr → connected → expired → error
+
+  Armazenado em connection_settings:
+    whatsapp_web_session_status
+    whatsapp_web_session_qr_code (base64 data URL)
+    whatsapp_web_session_phone
+    whatsapp_web_session_error
+    whatsapp_web_session_updated_at
+
+4.5 FLUXO DE CONEXÃO:
+  1. Admin acessa /connect no dashboard
+  2. Sistema chama POST /instance/connect/{sessionId}
+  3. QR code exibido na tela (whatsapp_web_session_qr_code)
+  4. Usuário escaneia com WhatsApp do celular
+  5. Status muda para "connected"
+  6. Sistema configura webhook automaticamente
+
+
+================================================================================
+5. WEBHOOK DE RECEBIMENTO DE MENSAGENS
+================================================================================
+
+5.1 ENDPOINT:
+  POST /api/webhooks/whatsapp
+  GET  /api/webhooks/whatsapp (challenge/verify)
+
+5.2 ARQUIVO:
+  src/app/api/webhooks/whatsapp/route.ts
+
+5.3 PAYLOAD CLOUD API (META):
+  {
+    "object": "whatsapp_business_account",
+    "entry": [{
+      "changes": [{
+        "field": "messages",
+        "value": {
+          "contacts": [{
+            "wa_id": "5511999999999",
+            "profile": { "name": "João Silva" }
+          }],
+          "messages": [{
+            "id": "wamid.ABGGFlA5FipA...",
+            "from": "5511999999999",
+            "timestamp": "1713100000",
+            "type": "text",
+            "text": { "body": "Quero pagar com PIX" }
+          }],
+          "statuses": [{
+            "id": "wamid.ABGGFlA5FipA...",
+            "status": "delivered",
+            "timestamp": "1713100005"
+          }]
+        }
+      }]
+    }]
+  }
+
+5.4 PAYLOAD WEB API (EVOLUTION):
+  {
+    "event": "MESSAGES_UPSERT",
+    "data": {
+      "key": {
+        "remoteJid": "5511999999999@s.whatsapp.net",
+        "fromMe": false,
+        "id": "MSG_ID_123"
+      },
+      "message": {
+        "conversation": "Quero pagar com PIX"
+      },
+      "pushName": "João Silva"
+    }
+  }
+
+5.5 PROCESSAMENTO (MessagingService.handleWhatsAppWebhook):
+
+  1. Detecta provider (cloud_api vs web_api) pelo formato do payload
+  2. Extrai mensagens inbound (extractInboundMessages)
+  3. Extrai atualizações de status (extractStatusUpdates)
+  4. Para cada mensagem inbound:
+     a. Busca lead pelo telefone (findLeadByContact)
+     b. Upsert conversa (canal=whatsapp, contactValue=telefone)
+     c. Armazena mensagem (direction=inbound, status=received)
+     d. Detecta opt-out → processOptOut() se detectado
+     e. Trigger resposta IA se modo autônomo ativo
+  5. Para cada status update:
+     a. Atualiza status da mensagem (sent/delivered/read/failed)
+     b. Registra timestamps (deliveredAt, readAt)
+
+5.6 DETECÇÃO DE INTENT (AI ORCHESTRATOR):
+  O sistema classifica a intenção do cliente via regex patterns:
+
+  "1", "pix", "quero pix"          → payment_method_pix
+  "2", "cartao", "credito"         → payment_method_card
+  "3", "boleto"                    → payment_method_boleto
+  "ja paguei", "transferi"         → payment_confirmed
+  "quero pagar", "vou pagar"       → payment_intent
+  "depois", "amanha", "mais tarde" → needs_time
+  "como funciona", "duvida"        → question
+  "nao quero", "caro"              → objection
+  "humano", "atendente"            → human_handoff
+  "parar", "cancelar", "sair"      → opt_out
+
+
+================================================================================
+6. DISPARO DE MENSAGENS (OUTBOUND)
+================================================================================
+
+6.1 FLUXO DE ENVIO:
+
+  dispatchOutboundMessage(input)
+    │
+    ├── 1. Compliance check (opt-out + frequency cap)
+    │   └── canContactLead() → { allowed, reason }
+    │
+    ├── 2. Normaliza telefone (normalizeBrazilPhone)
+    │
+    ├── 3. Constrói texto da mensagem
+    │   └── buildOutboundWhatsAppText(content, metadata)
+    │       ├── Texto base (gerado por template ou IA)
+    │       ├── Link de pagamento (se disponível, com label)
+    │       └── Label do PIX "copia e cola" (se disponível)
+    │
+    ├── 4. Envia mensagem principal
+    │   ├── Cloud API: POST /v22.0/{phoneNumberId}/messages
+    │   └── Web API: POST /message/sendText/{sessionId}
+    │
+    ├── 5. Envia PIX code como mensagem SEPARADA
+    │   └── Mesmo endpoint, body contendo apenas o código PIX
+    │
+    └── 6. Log frequency + retorna resultado
+
+6.2 PAYLOAD CLOUD API (ENVIO):
+  POST https://graph.facebook.com/v22.0/{PHONE_NUMBER_ID}/messages
+  Authorization: Bearer {ACCESS_TOKEN}
+  Content-Type: application/json
+
+  {
+    "messaging_product": "whatsapp",
+    "recipient_type": "individual",
+    "to": "5511999999999",
+    "type": "text",
+    "text": {
+      "preview_url": true,
+      "body": "Oi João, tudo bem? O pagamento de R$149,90 ficou pendente..."
+    }
+  }
+
+  Resposta: { "messages": [{ "id": "wamid.ABGGFlA5..." }] }
+
+6.3 PAYLOAD EVOLUTION API (ENVIO):
+  POST {BASE_URL}/message/sendText/{SESSION_ID}
+  apikey: {ACCESS_TOKEN}
+  Content-Type: application/json
+
+  {
+    "number": "5511999999999",
+    "text": "Oi João, tudo bem? O pagamento de R$149,90 ficou pendente..."
+  }
+
+  Resposta: { "key": { "id": "MSG_ID_..." } }
+
+6.4 REGRAS DO TEXTO DA MENSAGEM:
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ Texto principal (2-3 frases)                                       │
+  │                                                                     │
+  │ Segue o link pra voce finalizar 👇                                  │
+  │ https://checkout.pagrecovery.com/s/abc123                          │
+  │                                                                     │
+  │ Pix copia e cola pra facilitar 👇                                   │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ 00020126580014br.gov.bcb.pix...  (mensagem separada — PIX code)    │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  REGRA CRÍTICA: O código PIX copia-e-cola é enviado como mensagem
+  SEPARADA logo abaixo do texto de recuperação. Nunca inline no texto.
+
+6.5 LABELS DE LINK POR ABORDAGEM:
+  friendly:      "Segue o link pra voce finalizar 👇"
+  professional:  "Link de pagamento 👇"
+  urgent:        "Finalize agora 👇"
+
+6.6 LABELS DE PIX POR ABORDAGEM:
+  friendly:      "Pix copia e cola pra facilitar 👇"
+  professional:  "Pix copia e cola 👇"
+  urgent:        "Pix copia e cola (expira em breve) 👇"
+
+
+================================================================================
+7. SISTEMA DE CONVERSAS (INBOX)
+================================================================================
+
+7.1 ESTRUTURA:
+  Cada conversa é identificada por (channel + contactValue), ex:
+    channel: "whatsapp", contactValue: "5511999999999"
+
+  Status da conversa: open → pending → closed
+    - Mensagem inbound reabre conversa fechada automaticamente
+    - Operador/IA pode mudar status manualmente
+
+7.2 TABELA: conversations
+  id                UUID (PK)
+  lead_record_id    UUID (FK → recovery_leads.id)
+  lead_public_id    TEXT (ex: "lead_abc123")
+  customer_id       UUID (FK → customers.id)
+  customer_name     TEXT
+  channel           TEXT ("whatsapp" | "email" | "sms" | "voice")
+  contact_value     TEXT (telefone normalizado ou email)
+  assigned_agent_id UUID (FK → agents.id)
+  status            TEXT ("open" | "pending" | "closed")
+  last_message_at   TIMESTAMPTZ
+  created_at        TIMESTAMPTZ
+  updated_at        TIMESTAMPTZ
+
+  UNIQUE INDEX: (channel, contact_value)
+
+7.3 TABELA: messages
+  id                  UUID (PK)
+  conversation_id     UUID (FK → conversations.id)
+  lead_record_id      UUID
+  lead_public_id      TEXT
+  customer_id         UUID
+  channel             TEXT
+  direction           TEXT ("inbound" | "outbound")
+  sender_name         TEXT
+  sender_address      TEXT (telefone/email)
+  content             TEXT
+  provider_message_id TEXT UNIQUE (wamid.xxx / MSG_ID_xxx)
+  status              TEXT ("queued"|"received"|"sent"|"delivered"|"read"|"failed")
+  created_at          TIMESTAMPTZ
+  delivered_at        TIMESTAMPTZ
+  read_at             TIMESTAMPTZ
+  error               TEXT
+  metadata            JSONB
+
+7.4 METADATA DA MENSAGEM (JSONB):
+  {
+    "kind": "recovery_prompt" | "ai_draft" | "operator_note",
+    "generatedBy": "workflow" | "ai" | "operator",
+    "nextAction": "send_initial_message" | "ask_payment_method" | ...,
+    "inboundIntent": "payment_method_pix" | "payment_confirmed" | ...,
+    "selectedMethodType": "pix" | "card" | "boleto",
+    "customerName": "João",
+    "productName": "Curso X",
+    "paymentValue": 14990,
+    "retryLink": "https://checkout.../s/abc123",
+    "paymentUrl": "https://...",
+    "pixCode": "00020126580014br.gov.bcb.pix...",
+    "pixQrCode": "data:image/png;base64,...",
+    "pixExpiresAt": "2026-04-17T18:00:00Z",
+    "messagingApproach": "friendly" | "professional" | "urgent"
+  }
+
+7.5 INTERFACE DO INBOX (UI):
+  Layout 3 colunas:
+    Coluna 1: Fila de conversas (lista com badge de não-lidas)
+    Coluna 2: Thread (mensagens + form de resposta + botão "Responder com IA")
+    Coluna 3: Contexto do lead (nome, valor, produto, status, link ativo)
+
+  Caminho: /inbox?conversationId={id}
+
+7.6 ENDPOINTS DA INBOX:
+  GET    /api/inbox                  → Lista conversas + unreadCount
+  GET    /api/inbox/:id              → Conversa + mensagens + lead vinculado
+  PATCH  /api/inbox/:id              → Atualizar conversa
+  POST   /api/inbox/:id/reply        → Enviar resposta manual (operador)
+  POST   /api/inbox/:id/ai-reply     → Gerar e enviar resposta IA
+  PUT    /api/inbox/:id/status       → Mudar status (open/pending/closed)
+
+7.7 CONTROLE DE ACESSO:
+  - Admin: vê todas as conversas
+  - Seller: vê apenas conversas dos leads atribuídos ao seu agentName
+  - Market: vê conversas dos leads do seu escopo
+  - Verificação: canRoleAccessAgent(role, assignedAgent, viewerAgentName)
+
+
+================================================================================
+8. GESTÃO DE NÚMEROS E NORMALIZAÇÃO
+================================================================================
+
+8.1 NORMALIZAÇÃO DE TELEFONE:
+
+  Input                    → Output
+  ────────────────────────────────────────
+  "(11) 99999-9999"        → "5511999999999"
+  "11999999999"            → "5511999999999"
+  "+55 11 99999-9999"      → "5511999999999"
+  "5511999999999"          → "5511999999999"
+  "999999999@s.whatsapp.net" → "999999999"
+
+  Função: normalizeBrazilPhone(value)
+    1. Remove tudo que não é dígito
+    2. Se não começa com "55", adiciona "55" na frente
+    3. Resultado: sempre 12-13 dígitos (55 + DDD + número)
+
+  Função: normalizeWhatsAppRemoteJid(value)
+    1. Remove sufixo @s.whatsapp.net (ou @c.us, @g.us)
+
+8.2 COMO O NÚMERO É USADO:
+  - conversations.contact_value: telefone normalizado (sem formatação)
+  - messages.sender_address: telefone normalizado
+  - Busca de lead por telefone: findLeadByContact({ phone })
+  - Match: comparação direta de strings após normalização
+
+
+================================================================================
+9. CRM — LEADS, CLIENTES E RECUPERAÇÃO
+================================================================================
+
+9.1 ENTIDADES PRINCIPAIS:
+
+  customers (clientes):
+    id, gateway_customer_id, name, email, phone, document
+
+  payments (pagamentos):
+    id, gateway_payment_id, order_id, customer_id, status, amount,
+    payment_method, failure_code, first_failure_at, recovered_at
+
+  recovery_leads (leads de recuperação):
+    id, lead_id, payment_id, customer_id, customer_name, email, phone,
+    payment_value, product, failure_reason, status, assigned_agent_id
+
+  Pipeline de status do lead:
+    NEW_RECOVERY → CONTACTING → WAITING_CUSTOMER → RECOVERED | LOST | EXPIRED
+
+9.2 FLUXO CRM:
+
+  Webhook recebido (pagamento falhou)
+    │
+    ├── Customer upserted (by gateway_customer_id or email)
+    ├── Payment upserted (by gateway_payment_id)
+    └── Recovery Lead criado (status: NEW_RECOVERY)
+         │
+         ├── Atribuído a agente (round-robin ou por seller_key)
+         ├── Conversa criada (WhatsApp ou Email)
+         ├── Mensagem inicial enviada (T+6min)
+         └── Cadência de follow-up agendada (11 etapas)
+
+9.3 FOLLOW-UP CONTACTS (VIEW):
+  A view principal do CRM combina leads + customers + payments:
+
+  FollowUpContact = {
+    lead_id, customer_name, email, phone,
+    payment_value, product, lead_status,
+    payment_status, payment_method,
+    assigned_agent, gateway_payment_id,
+    created_at, updated_at
+  }
+
+9.4 AGENTES:
+  Tabela: agents
+    id, name, email, phone, active, last_assigned_at
+
+  Tabela: seller_admin_controls
+    seller_key, seller_name, active,
+    recovery_target_percent, max_assigned_leads,
+    inbox_enabled, automations_enabled,
+    autonomy_mode ("supervised" | "assisted" | "autonomous"),
+    messaging_approach ("friendly" | "professional" | "urgent"),
+    gateway_slug, checkout_url, checkout_api_key
+
+  Atribuição: Lead é atribuído ao seller por seller_key do webhook
+
+9.5 CONNECTION SETTINGS (CONFIGURAÇÃO CRM):
+  Tabela: connection_settings (ID = "default")
+
+  Campos WhatsApp:
+    whatsapp_provider, whatsapp_api_base_url, whatsapp_access_token,
+    whatsapp_phone_number_id, whatsapp_business_account_id,
+    whatsapp_webhook_verify_token
+
+  Campos Email:
+    email_provider, email_api_key, email_from_address
+
+  Campos CRM:
+    crm_api_url, crm_api_key (integração CRM externo, se configurado)
+
+  Campos IA:
+    openai_api_key
+
+  Campos Webhook:
+    app_base_url, webhook_secret, webhook_tolerance_seconds
+
+
+================================================================================
+10. FLUXO COMPLETO: WEBHOOK → IA → MENSAGEM → RECUPERAÇÃO
+================================================================================
+
+  MINUTO 0:
+    Gateway envia webhook de pagamento falho
+    ├── Assinatura verificada (HMAC-SHA256)
+    ├── Evento normalizado (payment_failed/refused/expired)
+    ├── Customer e Payment upserted
+    ├── Recovery Lead criado (NEW_RECOVERY)
+    └── 5 jobs enfileirados:
+        ├── lead-created (imediato)
+        ├── whatsapp-initial (T+6min)
+        ├── email-reminder (T+30min)
+        ├── agent-task/ai_follow_up (T+24h)
+        └── escalation-review (T+72h)
+
+  MINUTO 6:
+    Worker processa job "whatsapp-initial"
+    ├── AI classifica lead (probabilidade, urgência)
+    ├── Gera link de checkout (ou PIX direto)
+    ├── Gera mensagem de recuperação (template ou OpenAI)
+    ├── Cria conversa (canal=whatsapp)
+    ├── Envia mensagem via WhatsApp Cloud API
+    ├── Envia PIX como mensagem separada (se disponível)
+    └── Status do lead: CONTACTING
+
+  MINUTO 30:
+    Worker processa job "email-reminder"
+    ├── Envia email via SendGrid (mesmo conteúdo adaptado)
+    └── Registra mensagem na conversa (canal=email)
+
+  CLIENTE RESPONDE (ex: "1" = PIX):
+    Webhook WhatsApp recebe mensagem inbound
+    ├── processInboundMessage()
+    ├── Intent detectado: payment_method_pix
+    ├── Checkout session criada com método=PIX
+    ├── AI gera resposta: "Perfeito! O link e o Pix estão aqui embaixo."
+    ├── Mensagem enviada + PIX code separado
+    └── Status do lead: WAITING_CUSTOMER
+
+  CLIENTE PAGA:
+    Webhook do gateway: payment_succeeded
+    ├── Payment.status = "succeeded"
+    ├── Lead.status = RECOVERED
+    ├── Próxima mensagem inbound: "Já paguei"
+    ├── AI detecta intent: payment_confirmed
+    └── Resposta: "Pagamento confirmado! Muito obrigado pela compra."
+
+
+================================================================================
+11. AGENTE AUTÔNOMO DE RECUPERAÇÃO
+================================================================================
+
+  Arquivo: src/server/recovery/ai/autonomous-agent.ts
+  Cron: GET /api/agent/orchestrate (a cada 5 minutos)
+  Auth: Bearer CRON_SECRET
+  Timeout: 50s (hard bail, Vercel max=55s)
+
+  7 TAREFAS AUTÔNOMAS:
+
+  1. Processar mensagens inbound não respondidas
+     - Para cada lead ativo com inbound sem resposta
+     - Classifica intent → gera resposta IA → envia
+
+  2. Executar etapas de cadência pendentes
+     - Verifica follow_up_cadences com scheduled_at <= now
+     - Dispara mensagem ou voz conforme a etapa
+
+  3. Agendar cadências faltantes
+     - Leads sem cadência criada → cria etapas 4-11
+     - Respeita horário comercial (9h-20h, fuso por DDD)
+     - Pula finais de semana
+
+  4. Processar transcrições de chamadas
+     - Calls com transcript mas sem summary
+     - Analisa via Claude: sentimento, compromissos, objeções
+
+  5. Atualizar scores de recuperação
+     - Recência, valor, status → metadata.scorePriority
+
+  6. Escalar para humano
+     - Leads 3+ dias, alto valor (>=R$50k), estagnados
+
+  7. Fechar leads exauridos
+     - Leads 10+ dias sem resposta → status: LOST
+
+
+================================================================================
+12. CADÊNCIA DE FOLLOW-UP (11 ETAPAS)
+================================================================================
+
+  Arquivo: src/server/recovery/ai/cadence-engine.ts
+
+  ┌────────┬─────────────┬────────────────────────────────────────────────┐
+  │ Etapa  │ Timing      │ Ação                                           │
+  ├────────┼─────────────┼────────────────────────────────────────────────┤
+  │ 1      │ T+0 (job)   │ Lead criado, webhook registrado                │
+  │ 2      │ T+6min      │ WhatsApp inicial (mensagem de recuperação)      │
+  │ 3      │ T+30min     │ Email reminder                                  │
+  │ 4      │ T+4h        │ Follow-up contextual (WhatsApp)                 │
+  │        │             │ Fallback: SMS após 1h se não entregue           │
+  │ 5      │ T+12h       │ Voice call (alto valor) OU WhatsApp casual      │
+  │ 6      │ T+48h       │ Métodos alternativos de pagamento               │
+  │        │             │ Negociação elegível (desconto se habilitado)     │
+  │ 7      │ T+72h       │ Oferta de desconto OU última chance             │
+  │ 8      │ T+5 dias    │ Email re-engagement                             │
+  │ 9      │ T+5.5 dias  │ SMS (se habilitado para o seller)               │
+  │ 10     │ T+5.5 dias  │ Voice call para muito alto valor (>=R$1000)     │
+  │ 11     │ T+7 dias    │ Soft close com porta aberta                     │
+  └────────┴─────────────┴────────────────────────────────────────────────┘
+
+  Regras:
+  - Cada etapa é criada como registro em follow_up_cadences
+  - Agente autônomo verifica etapas pendentes a cada 5 minutos
+  - Se cliente respondeu recentemente → pula etapa
+  - Se lead já RECOVERED ou LOST → pula todas restantes
+  - Respeita horário comercial (9h-20h, timezone por DDD do telefone)
+  - Não dispara em finais de semana
+
+
+================================================================================
+13. GERAÇÃO DE MENSAGENS (TEMPLATES + IA)
+================================================================================
+
+13.1 TEMPLATE ENGINE:
+  Arquivo: src/server/recovery/ai/message-generator.ts
+
+  ~20 templates hardcoded para diferentes cenários:
+
+  wa_ask_method_empathetic:
+    "Oi {name}, tudo bem? Vi que o pagamento{product} de {value}
+     nao foi concluido. Posso te ajudar a finalizar agora mesmo.
+     Qual forma de pagamento voce prefere?
+     1 - PIX (aprovacao instantanea)
+     2 - Cartao de credito
+     3 - Boleto"
+
+  wa_pix_initial_empathetic:
+    "Oi {name}, tudo bem? O pagamento{product} de {value} ficou pendente.
+     Ja deixei o link e o Pix prontos aqui embaixo pra facilitar.
+     Qualquer duvida, estou a disposicao."
+
+  wa_checkout_empathetic:
+    "Oi {name}, tudo bem? O pagamento{product} de {value} ficou pendente.
+     Deixei o link aqui embaixo para voce escolher a melhor forma.
+     Qualquer duvida, e so me chamar."
+
+  wa_followup_empathetic:
+    "Oi {name}, o link para concluir o pagamento{product} continua
+     disponivel. Se precisar de ajuda, e so me chamar: {link}"
+
+  Variáveis interpoladas:
+    {name}    → customerName ou "cliente"
+    {value}   → formatMinorUnitCurrency(cartValue) ex: "R$ 149,90"
+    {product} → " de {productName}" ou "" se vazio
+    {link}    → paymentLink
+    {brand}   → sellerBrandName ou platformBrand.name
+
+13.2 IA (OPENAI gpt-4.1-mini):
+  Quando OPENAI_API_KEY está configurado, o sistema gera mensagens via IA
+  em vez de usar templates fixos. Templates servem como fallback.
+
+  Endpoint: POST https://api.openai.com/v1/responses
+  Model: gpt-4.1-mini
+  Timeout: 15s
+
+  PROMPT DO SISTEMA (recuperação):
+    "Voce escreve mensagens curtas de recuperacao de pagamento para
+     WhatsApp em portugues do Brasil.
+     Regras:
+     - No maximo 3 frases curtas e diretas.
+     - Comece com 'Oi {nome}' e va direto ao ponto.
+     - NAO inclua o link nem o codigo Pix no corpo.
+     - Quando mencionar link ou Pix, diga 'aqui embaixo'.
+     - NAO use markdown, aspas, emojis, exclamacoes excessivas."
+
+  PROMPT DO SISTEMA (reply):
+    "Voce responde um cliente em uma conversa de recuperacao via WhatsApp.
+     Regras:
+     - Responda em no maximo 2 frases.
+     - NAO inclua o link nem o codigo Pix no corpo.
+     - Quando mencionar link ou Pix, diga 'aqui embaixo'."
+
+13.3 FALLBACK DE REPLIES:
+  Se IA não disponível, usa templates de resposta:
+
+  payment_method_pix:  "Perfeito, {name}. O link e o Pix estao aqui embaixo."
+  payment_method_card: "Perfeito, {name}. O link para pagamento via cartao esta aqui embaixo."
+  payment_method_boleto: "Perfeito, {name}. O boleto esta sendo gerado, acesse pelo link."
+  payment_intent:      "Perfeito, {name}. O pagamento esta pronto aqui embaixo."
+  needs_time:          "Sem problema, {name}. O link fica disponivel quando voce quiser."
+  question:            "{name}, o pagamento esta acessivel pelo link aqui embaixo."
+  objection:           "Entendi, {name}. Se mudar de ideia, o link esta aqui embaixo."
+  human_handoff:       "{name}, vou direcionar seu caso para atendimento."
+
+
+================================================================================
+14. PIX — CÓDIGO COPIA E COLA
+================================================================================
+
+  REGRA FUNDAMENTAL:
+  O código PIX copia-e-cola NUNCA é enviado dentro do texto da mensagem.
+  É sempre enviado como uma MENSAGEM SEPARADA logo abaixo.
+
+  Motivo: facilitar que o cliente copie o código inteiro sem erros.
+
+  FLUXO:
+  1. Sistema gera checkout session com método=PIX
+  2. Checkout retorna: pixCode, pixQrCode, pixExpiresAt
+  3. Mensagem principal é enviada (texto + label "Pix copia e cola 👇")
+  4. Mensagem separada é enviada contendo APENAS o código PIX
+  5. Ambas ficam registradas na tabela messages com metadata
+
+  EXEMPLO DE CÓDIGO PIX:
+  00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890...
+
+  METADATA ARMAZENADA:
+  {
+    "pixCode": "00020126580014br.gov.bcb.pix...",
+    "pixQrCode": "data:image/png;base64,...",
+    "pixExpiresAt": "2026-04-17T18:00:00Z"
+  }
+
+
+================================================================================
+15. LINKS DE PAGAMENTO E CHECKOUT
+================================================================================
+
+15.1 CHECKOUT PLATFORM:
+  Plataforma separada (PagRecovery Checkout) que processa pagamentos.
+
+  Criação de session:
+    POST ${CHECKOUT_PLATFORM_URL}/api/v1/sessions
+    Header: X-API-Key: ${CHECKOUT_PLATFORM_API_KEY}
+    Body: {
+      amount: 14990,           // centavos (R$149,90)
+      currency: "BRL",
+      description: "Pagamento pendente",
+      customerName: "João",
+      customerEmail: "joao@email.com",
+      customerPhone: "5511999999999",
+      source: "recovery",
+      sourceReferenceId: "lead_abc123",
+      couponCode: "DESC10",    // opcional
+      discountPercent: 10,     // opcional
+      metadata: { leadId, paymentId }
+    }
+
+  Resposta: {
+    sessionId: "uuid-xxx",
+    shortId: "abc123",
+    checkoutUrl: "https://checkout.pagrecovery.com/s/abc123",
+    expiresAt: "2026-04-18T00:00:00Z"
+  }
+
+15.2 RETRY LINK:
+  Quando checkout não configurado, gera link direto:
+    https://pagrecovery.com/retry/{gatewayPaymentId}?token={uuid}
+
+  Endpoint: POST /api/payments/retry
+  Body: { payment_id, gateway_payment_id, order_id, reason }
+
+15.3 SELLER-SPECIFIC CHECKOUT:
+  Cada seller pode ter seu próprio checkout:
+    seller_admin_controls.checkout_url
+    seller_admin_controls.checkout_api_key
+
+  Se configurado, checkout sessions usam URL/key do seller.
+
+
+================================================================================
+16. COMPLIANCE — OPT-OUT E FREQUÊNCIA (LGPD)
+================================================================================
+
+16.1 OPT-OUT:
+  Arquivo: src/server/recovery/services/opt-out-service.ts
+
+  KEYWORDS DE OPT-OUT:
+    "parar", "sair", "cancelar", "remover", "descadastrar",
+    "nao quero", "não quero", "pare", "stop", "unsubscribe",
+    "nao me mande", "nao envie", "quero sair"
+
+  DETECÇÃO:
+    - Mensagens curtas (<=30 chars): qualquer keyword match
+    - Mensagens longas: keyword no início ou match exato
+
+  PROCESSAMENTO:
+    1. Detecta keyword na mensagem inbound
+    2. Cria registro em contact_opt_outs
+    3. Lead marcado como LOST
+    4. Mensagem de confirmação enviada:
+       "Pronto! Você não receberá mais mensagens por este canal.
+        Se mudar de ideia, é só nos enviar uma mensagem."
+
+  TABELA: contact_opt_outs
+    id, channel, contact_value, reason, opted_out_at,
+    source ("inbound_keyword"|"admin_manual"|"api"|"legal_request"),
+    seller_key, metadata
+
+16.2 FREQUENCY CAPPING:
+  Arquivo: src/server/recovery/services/frequency-service.ts
+
+  LIMITES (por seller_admin_controls):
+    max_contacts_per_lead_per_day   (padrão: sem limite explícito)
+    max_contacts_per_lead_per_week  (padrão: sem limite explícito)
+
+  VERIFICAÇÃO (canContactLead):
+    1. Verifica opt-out (contact_opt_outs)
+    2. Verifica frequência (contact_frequency_log)
+    3. Se qualquer check falha → mensagem não enviada
+
+  TABELA: contact_frequency_log
+    id, contact_value, channel, direction, sent_at,
+    message_id, call_id, seller_key
+
+  Cada mensagem outbound registra um log de frequência.
+
+
+================================================================================
+17. TESTES A/B DE MENSAGENS
+================================================================================
+
+  Tabela: ab_tests
+    id, name, status ("draft"|"running"|"completed"|"archived"),
+    template_a_id, template_b_id, channel,
+    total_sent_a, total_sent_b,
+    total_delivered_a, total_delivered_b,
+    total_clicked_a, total_clicked_b,
+    total_converted_a, total_converted_b,
+    winner ("a"|"b"|"tie"), confidence_pct
+
+  Tabela: ab_test_assignments
+    id, ab_test_id, contact_value, variant ("a"|"b"),
+    message_id, delivered, clicked, converted
+
+  Endpoints:
+    GET  /api/ab-tests          → Lista testes
+    POST /api/ab-tests          → Criar teste (admin only)
+
+  Cada contato é atribuído aleatoriamente ao variante A ou B.
+  Métricas rastreadas: envio, entrega, clique no link, conversão.
+
+
+================================================================================
+18. VARIÁVEIS DE AMBIENTE NECESSÁRIAS
+================================================================================
+
+  ┌──────────────────────────────────┬──────────────────────────────────────┐
+  │ Variável                         │ Uso                                  │
+  ├──────────────────────────────────┼──────────────────────────────────────┤
+  │ NEXT_PUBLIC_SUPABASE_URL         │ URL do Supabase                      │
+  │ SUPABASE_SERVICE_ROLE_KEY        │ Service role key                     │
+  │ PLATFORM_AUTH_SECRET             │ Segredo HMAC para tokens de sessão   │
+  │ CRON_SECRET                      │ Auth para worker + agent cron        │
+  ├──────────────────────────────────┼──────────────────────────────────────┤
+  │ WHATSAPP_ACCESS_TOKEN            │ Token Cloud API (Meta)               │
+  │ WHATSAPP_PHONE_NUMBER_ID         │ Phone Number ID (Cloud API)          │
+  │ WHATSAPP_WEBHOOK_VERIFY_TOKEN    │ Token para challenge webhook         │
+  │ WHATSAPP_APP_SECRET              │ App Secret (verif. assinatura)       │
+  │ WHATSAPP_BUSINESS_ACCOUNT_ID     │ WABA ID (opcional)                   │
+  ├──────────────────────────────────┼──────────────────────────────────────┤
+  │ OPENAI_API_KEY                   │ Geração de mensagens IA              │
+  │ SENDGRID_API_KEY                 │ Envio de emails                      │
+  │ VAPI_API_KEY                     │ Chamadas de voz                      │
+  ├──────────────────────────────────┼──────────────────────────────────────┤
+  │ CHECKOUT_PLATFORM_URL            │ URL do checkout (pagamentos)         │
+  │ CHECKOUT_PLATFORM_API_KEY        │ API key do checkout                  │
+  │ SHIELD_GATEWAY_WEBHOOK_SECRET    │ Segredo para webhooks de gateway     │
+  ├──────────────────────────────────┼──────────────────────────────────────┤
+  │ NEXT_PUBLIC_BRAND                │ "pagrecovery" ou "shield"            │
+  │ NEXT_PUBLIC_APP_URL              │ URL base da aplicação                │
+  └──────────────────────────────────┴──────────────────────────────────────┘
+
+
+================================================================================
+19. TABELAS DO BANCO DE DADOS (RELEVANTES)
+================================================================================
+
+  CORE:
+    customers              → Clientes (name, email, phone, document)
+    payments               → Pagamentos (amount, status, failure_code)
+    payment_attempts       → Tentativas de retry (payment_link)
+    webhook_events         → Eventos de webhook (payload, processed)
+    recovery_leads         → Leads em recuperação (status, assigned_agent)
+
+  CONVERSAS:
+    conversations          → Threads (channel, contact_value, status)
+    messages               → Mensagens (direction, content, metadata)
+
+  COMPLIANCE:
+    contact_opt_outs       → Opt-out por canal/contato
+    contact_frequency_log  → Log de frequência de contato
+
+  TEMPLATES:
+    message_templates      → Templates de mensagem
+    ab_tests               → Testes A/B
+    ab_test_assignments    → Atribuições A/B por contato
+
+  AGENTS:
+    agents                 → Agentes/operadores
+    seller_admin_controls  → Config por seller (autonomia, abordagem)
+    seller_users           → Usuários seller (auth)
+
+  CALLS:
+    calls                  → Chamadas de voz (transcript, outcome)
+    call_campaigns         → Campanhas de ligação
+    call_events            → Eventos de chamada
+
+  CONFIG:
+    connection_settings    → Config WhatsApp/Email/CRM/IA
+    queue_jobs             → Fila de jobs (worker)
+    follow_up_cadences     → Etapas de cadência agendadas
+    system_logs            → Logs estruturados
+
+  API KEYS:
+    api_keys               → Chaves de API programáticas (SDK)
+
+
+================================================================================
+20. ENDPOINTS DA API (RELACIONADOS)
+================================================================================
+
+  WEBHOOKS (público, sem auth):
+    POST /api/webhooks/whatsapp           → Inbound + status updates
+    GET  /api/webhooks/whatsapp           → Challenge verification
+    POST /api/webhooks/shield-gateway     → Payment webhooks
+    POST /api/webhooks/shield-gateway/:key → Payment webhooks (seller)
+    POST /api/webhooks/pagouai            → PagouAi webhooks
+    POST /api/webhooks/pagnet/:key        → PagNet webhooks
+    POST /api/webhooks/buckpay            → BuckPay webhooks
+    POST /api/webhooks/callcenter         → VAPI voice events
+
+  INBOX (auth required):
+    GET    /api/inbox                     → Lista conversas
+    GET    /api/inbox/:id                 → Conversa + mensagens
+    PATCH  /api/inbox/:id                 → Atualizar conversa
+    POST   /api/inbox/:id/reply           → Resposta manual
+    POST   /api/inbox/:id/ai-reply        → Resposta IA
+    PUT    /api/inbox/:id/status          → Mudar status
+
+  TEMPLATES (auth required):
+    GET    /api/templates                 → Lista templates
+    POST   /api/templates                 → Criar template
+
+  A/B TESTS (admin only):
+    GET    /api/ab-tests                  → Lista testes
+    POST   /api/ab-tests                  → Criar teste
+
+  LEADS (auth required):
+    GET    /api/leads                     → Lista leads
+    GET    /api/leads/:id                 → Detalhe do lead
+    PATCH  /api/leads/:id                 → Atualizar lead
+    POST   /api/leads/:id/transition      → Transição de status
+
+  CALLS (auth required):
+    GET    /api/calls                     → Lista chamadas
+    POST   /api/calls                     → Iniciar chamada
+    GET    /api/calls/:id                 → Detalhe da chamada
+    GET    /api/calls/stats               → Estatísticas
+
+  SETTINGS (admin only):
+    GET    /api/settings/connections       → Config atual
+    PUT    /api/settings/connections       → Salvar config
+
+  WORKER/AGENT (cron, requires CRON_SECRET):
+    GET    /api/worker/run                → Processar fila (1min)
+    GET    /api/agent/orchestrate         → Agente autônomo (5min)
+
+  API KEYS (admin only):
+    GET    /api/keys                      → Lista API keys
+    POST   /api/keys                      → Criar API key
+    DELETE /api/keys/:id                  → Revogar API key
+
+
+================================================================================
+21. COMO INTEGRAR EM OUTRO PROJETO
+================================================================================
+
+21.1 VIA SDK (@pagrecovery/sdk):
+
+  Instalação:
+    npm install @pagrecovery/sdk
+
+  Configuração:
+    import { PagRecovery } from '@pagrecovery/sdk';
+
+    const pr = new PagRecovery({
+      apiKey: 'sk_live_xxxxxxxx...',
+      baseUrl: 'https://pagrecovery.com',  // ou sua instância
+    });
+
+  Uso:
+    // Listar leads em recuperação
+    const { leads } = await pr.leads.list({ status: 'CONTACTING' });
+
+    // Ver conversa com mensagens
+    const conv = await pr.inbox.get('conv_uuid');
+
+    // Enviar resposta manual
+    await pr.inbox.reply('conv_uuid', { message: 'Olá!' });
+
+    // Gerar resposta IA
+    await pr.inbox.aiReply('conv_uuid');
+
+    // Iniciar chamada de voz
+    await pr.calls.create({ toNumber: '+5511999999999' });
+
+    // Dashboard
+    const data = await pr.dashboard.get();
+
+    // Analytics
+    const analytics = await pr.analytics.recovery();
+
+  Webhook verification:
+    import { verifyWebhookSignature } from '@pagrecovery/sdk/webhooks';
+
+    const isValid = verifyWebhookSignature({
+      secret: process.env.WEBHOOK_SECRET,
+      signature: req.headers['x-signature'],
+      timestamp: req.headers['x-timestamp'],
+      rawBody: rawBodyString,
+    });
+
+21.2 VIA API REST DIRETA:
+
+  Auth:
+    POST /api/auth/token
+    Body: { "email": "...", "password": "..." }
+    Response: { "token": "...", "role": "admin", "expiresIn": 604800 }
+
+    OU usar API Key:
+    Authorization: Bearer sk_live_xxxxxxxx...
+
+  Enviar mensagem para lead:
+    POST /api/inbox/{conversationId}/reply
+    Authorization: Bearer sk_live_xxx
+    Body: { "content": "Mensagem de recuperação..." }
+
+  Receber webhooks de pagamento:
+    Configure webhook no seu gateway apontando para:
+    POST https://pagrecovery.com/api/webhooks/shield-gateway/{sellerKey}
+
+    Headers obrigatórios:
+      X-Webhook-Id: unique-id
+      X-Timestamp: unix-timestamp-seconds
+      X-Signature: hmac-sha256-hex
+
+    Payload:
+    {
+      "event_type": "payment_failed",
+      "payment": {
+        "id": "pay_xxx",
+        "amount": 14990,
+        "currency": "BRL",
+        "status": "failed",
+        "failure_code": "card_declined",
+        "customer": {
+          "name": "João Silva",
+          "email": "joao@email.com",
+          "phone": "5511999999999"
+        },
+        "order_id": "order_123",
+        "payment_method": "credit_card"
+      }
+    }
+
+21.3 VIA WEBHOOK BIDIRECIONAL:
+
+  Para integrar com outro sistema que precisa saber quando
+  um pagamento é recuperado:
+
+  1. Configure seller_admin_controls com checkout_url do sistema externo
+  2. O Shield Recovery envia webhooks de evento para o CRM externo
+     via crm_api_url configurado em connection_settings
+  3. Use o SDK para polling de status ou configure webhook reverso
+
+21.4 SELF-HOSTED (WHITE-LABEL):
+
+  1. Clone o repositório
+  2. Configure variáveis de ambiente (seção 18)
+  3. Execute migration SQL (seção 19)
+  4. Deploy na Vercel (ou qualquer host Node.js)
+  5. Configure NEXT_PUBLIC_BRAND para sua marca
+  6. Configure webhook do gateway de pagamento
+  7. Configure WhatsApp Cloud API ou Evolution API
+  8. Pronto — sistema autônomo de recuperação rodando
+
+
+================================================================================
+FIM DO DOCUMENTO
+================================================================================
+
+  Arquivos-chave do codebase:
+
+  src/server/recovery/services/messaging-service.ts    (~2200 linhas)
+  src/server/recovery/services/payment-recovery-service.ts
+  src/server/recovery/ai/autonomous-agent.ts
+  src/server/recovery/ai/message-generator.ts
+  src/server/recovery/ai/cadence-engine.ts
+  src/server/recovery/ai/orchestrator.ts
+  src/server/recovery/services/opt-out-service.ts
+  src/server/recovery/services/frequency-service.ts
+  src/server/recovery/controllers/worker-controller.ts
+  src/app/api/webhooks/whatsapp/route.ts
+  src/app/api/inbox/route.ts
+  src/app/api/inbox/[id]/route.ts
+  src/app/api/inbox/[id]/reply/route.ts
+  src/app/api/inbox/[id]/ai-reply/route.ts
+  src/app/api/settings/connections/route.ts
+  src/server/auth/api-keys.ts
+  packages/sdk/src/index.ts

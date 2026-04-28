@@ -71,8 +71,15 @@ export async function handleWhatsAppWebhook(request: Request) {
     );
   }
 
+  const payload = safeParseWebhookPayload(rawBody);
+  const isMetaWebhook =
+    Boolean(payload) &&
+    typeof payload === "object" &&
+    !Array.isArray(payload) &&
+    (payload as Record<string, unknown>).object === "whatsapp_business_account";
+
   const signature = request.headers.get("x-hub-signature-256");
-  if (!verifyWhatsAppSignature(rawBody, signature)) {
+  if (isMetaWebhook && !verifyWhatsAppSignature(rawBody, signature)) {
     return NextResponse.json(
       { ok: false, error: "Invalid signature." },
       { status: 401 },
@@ -84,6 +91,14 @@ export async function handleWhatsAppWebhook(request: Request) {
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
     return buildErrorResponse(error);
+  }
+}
+
+function safeParseWebhookPayload(rawBody: string): unknown {
+  try {
+    return JSON.parse(rawBody) as unknown;
+  } catch {
+    return null;
   }
 }
 

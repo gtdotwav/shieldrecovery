@@ -190,6 +190,9 @@ export interface RecoveryStorage {
     readAt?: string;
     error?: string;
   }): Promise<MessageRecord | undefined>;
+  findMessageByProviderMessageId(
+    providerMessageId: string,
+  ): Promise<MessageRecord | undefined>;
   addLog(log: SystemLogRecord): Promise<void>;
   getCalendarSnapshot(input: {
     month: string;
@@ -1223,6 +1226,14 @@ class LocalStorageService implements RecoveryStorage {
 
       return message;
     });
+  }
+
+  async findMessageByProviderMessageId(
+    providerMessageId: string,
+  ): Promise<MessageRecord | undefined> {
+    return this.readState().messages.find(
+      (item: MessageRecord) => item.providerMessageId === providerMessageId,
+    );
   }
 
   async addLog(log: SystemLogRecord): Promise<void> {

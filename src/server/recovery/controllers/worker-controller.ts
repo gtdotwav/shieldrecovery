@@ -5,7 +5,8 @@ import { logger } from "@/server/recovery/utils/logger";
 import { getRecoveryWorkerService } from "@/server/recovery/services/recovery-worker-service";
 import { getStorageService } from "@/server/recovery/services/storage";
 
-const STALE_JOB_THRESHOLD_MINUTES = 10;
+const STALE_JOB_THRESHOLD_MINUTES = 5;
+const DEAD_JOB_MAX_AGE_DAYS = 7;
 
 /**
  * Reset jobs stuck in "processing" state for longer than the threshold.
@@ -69,10 +70,64 @@ async function resetStaleJobs(): Promise<number> {
   }
 }
 
+/**
+ * Dead Letter Queue cleanup: archive permanently failed jobs
+ * (attempts exhausted, older than DEAD_JOB_MAX_AGE_DAYS).
+ */
+async function cleanupDeadJobs(): Promise<number> {
+  const storage = getStorageService();
+  if (storage.mode !== "supabase") return 0;
+
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+    );
+
+    const cutoff = new Date(
+      Date.now() - DEAD_JOB_MAX_AGE_DAYS * 24 * 60 * 60_000,
+    ).toISOString();
+
+    // Delete permanently failed jobs older than max age
+    const { count, error } = await supabase
+      .from("queue_jobs")
+      .delete({ count: "exact" })
+      .eq("status", "failed")
+      .eq("attempts", 0)
+      .lt("created_at", cutoff);
+
+    if (error) {
+      logger.error("Failed to cleanup dead jobs", {
+        handler: "cleanupDeadJobs",
+        error: error.message,
+      });
+      return 0;
+    }
+
+    const deleted = count ?? 0;
+    if (deleted > 0) {
+      logger.info("Cleaned up dead letter queue", {
+        handler: "cleanupDeadJobs",
+        deletedCount: deleted,
+        maxAgeDays: DEAD_JOB_MAX_AGE_DAYS,
+      });
+    }
+
+    return deleted;
+  } catch (error) {
+    logger.error("Dead job cleanup failed", {
+      handler: "cleanupDeadJobs",
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return 0;
+  }
+}
+
 export async function handleRunWorker(request: Request) {
   try {
-    // Reset stale jobs before processing new ones
-    await resetStaleJobs();
+    // Reset stale jobs and clean up dead jobs before processing new ones
+    await Promise.all([resetStaleJobs(), cleanupDeadJobs()]);
 
     const { searchParams } = new URL(request.url);
     const limitParam = Number(searchParams.get("limit") ?? String(appEnv.workerBatchSize));

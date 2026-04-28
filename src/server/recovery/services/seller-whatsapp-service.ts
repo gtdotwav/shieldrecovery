@@ -1,4 +1,5 @@
-import { platformBrand } from "@/lib/platform";
+import QRCode from "qrcode";
+
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { getStorageService } from "@/server/recovery/services/storage";
 import type {
@@ -22,6 +23,13 @@ type EvolutionInstanceConfig = {
   baseUrl: string;
   accessToken: string;
   instanceName: string;
+};
+
+type NormalizedEvolutionStatus = {
+  status: WhatsAppWebSessionStatus;
+  qrCode: string;
+  phone: string;
+  error: string;
 };
 
 function buildHeaders(accessToken: string) {
@@ -59,12 +67,39 @@ function extractError(payload: unknown): string {
   return "";
 }
 
-function normalizeStatus(payload: unknown): {
-  status: WhatsAppWebSessionStatus;
-  qrCode: string;
-  phone: string;
-  error: string;
-} {
+async function resolveQrCode(value: string, isImageValue = false) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("data:image")) return trimmed;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  if (isImageValue) {
+    return `data:image/png;base64,${trimmed.replace(/^data:[^,]+,/, "")}`;
+  }
+  return QRCode.toDataURL(trimmed, {
+    margin: 1,
+    width: 320,
+  });
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  return value as Record<string, unknown>;
+}
+
+function firstString(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+async function normalizeStatus(payload: unknown): Promise<NormalizedEvolutionStatus> {
   const result = {
     status: "disconnected" as WhatsAppWebSessionStatus,
     qrCode: "",
@@ -72,25 +107,51 @@ function normalizeStatus(payload: unknown): {
     error: "",
   };
 
-  if (!payload || typeof payload !== "object") return result;
-  const rec = payload as Record<string, unknown>;
+  const rec = asRecord(payload);
+  if (!rec) return result;
+  const data = asRecord(rec.data);
+  const source = data ?? rec;
+  const instance =
+    asRecord(source.instance) ??
+    asRecord(rec.instance) ??
+    source;
+  const qrcode =
+    asRecord(source.qrcode) ??
+    asRecord(source.qrCode) ??
+    asRecord(data?.qrcode) ??
+    asRecord(data?.qrCode);
 
   // Evolution API returns different shapes depending on the endpoint
   // connect → { base64, code, pairingCode, instance { state } }
   // connectionState → { instance { state, statusReason } }
+  // webhook QRCODE_UPDATED → { data: { qrcode: { code, base64 } } }
 
   // QR code (from connect endpoint)
-  if (typeof rec.base64 === "string" && rec.base64.startsWith("data:")) {
-    result.qrCode = rec.base64;
+  const base64 = firstString(source.base64, qrcode?.base64);
+  const rawQr = firstString(
+    source.qrCodeDataUrl,
+    source.qrCode,
+    source.qrcode,
+    source.qr_code,
+    source.qr,
+    source.code,
+    qrcode?.qrCodeDataUrl,
+    qrcode?.qrCode,
+    qrcode?.qrcode,
+    qrcode?.qr_code,
+    qrcode?.qr,
+    qrcode?.code,
+  );
+
+  if (base64) {
+    result.qrCode = await resolveQrCode(base64, true);
     result.status = "pending_qr";
-  } else if (typeof rec.code === "string" && rec.code.length > 20) {
-    result.qrCode = rec.code;
+  } else if (rawQr) {
+    result.qrCode = await resolveQrCode(rawQr);
     result.status = "pending_qr";
   }
 
   // Instance state
-  const instance =
-    (rec.instance as Record<string, unknown> | undefined) ?? rec;
   const state =
     typeof instance.state === "string"
       ? instance.state.toLowerCase()
@@ -108,10 +169,17 @@ function normalizeStatus(payload: unknown): {
   }
 
   // Connected phone
-  if (typeof rec.ownerJid === "string") {
-    result.phone = rec.ownerJid.replace(/@.*/, "");
-  } else if (typeof instance.owner === "string") {
-    result.phone = instance.owner.replace(/@.*/, "");
+  const owner = firstString(
+    source.ownerJid,
+    source.owner,
+    source.wuid,
+    source.phone,
+    instance.ownerJid,
+    instance.owner,
+    instance.wuid,
+  );
+  if (owner) {
+    result.phone = owner.replace(/@.*/, "");
   }
 
   // Error
@@ -122,6 +190,23 @@ function normalizeStatus(payload: unknown): {
   }
 
   return result;
+}
+
+function markPendingQrWhenAccepted(
+  response: Response,
+  state: NormalizedEvolutionStatus,
+): NormalizedEvolutionStatus {
+  if (!response.ok || state.status === "connected" || state.qrCode) {
+    return state;
+  }
+
+  return {
+    ...state,
+    status: "pending_qr",
+    error:
+      state.error ||
+      "Evolution API aceitou a conexao, mas ainda nao retornou o QR. Aguardando evento QRCODE_UPDATED.",
+  };
 }
 
 export class SellerWhatsAppService {
@@ -203,7 +288,13 @@ export class SellerWhatsAppService {
     // 1. Ensure instance exists
     await this.ensureInstance({ ...evo, instanceName });
 
-    // 2. Connect (get QR code)
+    // 2. Configure webhook before asking Evolution to generate a QR.
+    const webhookWarning = await this.configureWebhook({
+      ...evo,
+      instanceName,
+    });
+
+    // 3. Connect (get QR code)
     const connectUrl = joinUrl(
       evo.baseUrl,
       `/instance/connect/${encodeURIComponent(instanceName)}`,
@@ -215,21 +306,31 @@ export class SellerWhatsAppService {
     });
 
     const payload = await safeParseJson(response);
-    const state = normalizeStatus(payload);
+    let state = markPendingQrWhenAccepted(
+      response,
+      await normalizeStatus(payload),
+    );
+    let activeResponse = response;
 
-    // 3. Configure webhook
-    const webhookWarning = await this.configureWebhook({
-      ...evo,
-      instanceName,
-    });
+    if (response.ok && state.status !== "connected" && !state.qrCode) {
+      const regenerated = await this.recreateDisconnectedInstance({
+        ...evo,
+        instanceName,
+      });
+      state = markPendingQrWhenAccepted(
+        regenerated.response,
+        regenerated.state,
+      );
+      activeResponse = regenerated.response;
+    }
 
     // 4. Persist
     await this.persistState(sellerKey, instanceName, state, webhookWarning);
 
-    if (!response.ok && state.status !== "connected" && state.status !== "pending_qr") {
+    if (!activeResponse.ok && state.status !== "connected" && state.status !== "pending_qr") {
       throw new HttpError(
         502,
-        state.error || `Evolution API returned ${response.status}.`,
+        state.error || `Evolution API returned ${activeResponse.status}.`,
       );
     }
 
@@ -255,14 +356,19 @@ export class SellerWhatsAppService {
     });
 
     const statusPayload = await safeParseJson(statusResponse);
-    let state = normalizeStatus(statusPayload);
+    let state = await normalizeStatus(statusPayload);
+    let activeResponse = statusResponse;
 
     // 2. If not connected and not pending QR, try to reconnect
     if (
-      statusResponse.ok &&
+      statusResponse.status === 404 ||
+      (statusResponse.ok &&
       state.status !== "connected" &&
-      state.status !== "pending_qr"
+      state.status !== "pending_qr")
     ) {
+      if (statusResponse.status === 404) {
+        await this.ensureInstance({ ...evo, instanceName });
+      }
       const connectUrl = joinUrl(
         evo.baseUrl,
         `/instance/connect/${encodeURIComponent(instanceName)}`,
@@ -273,11 +379,34 @@ export class SellerWhatsAppService {
         signal: AbortSignal.timeout(15_000),
       });
       const connectPayload = await safeParseJson(connectResponse);
-      state = normalizeStatus(connectPayload);
+      state = markPendingQrWhenAccepted(
+        connectResponse,
+        await normalizeStatus(connectPayload),
+      );
+      activeResponse = connectResponse;
+    }
+
+    if (activeResponse.ok && state.status !== "connected" && !state.qrCode) {
+      const regenerated = await this.recreateDisconnectedInstance({
+        ...evo,
+        instanceName,
+      });
+      state = markPendingQrWhenAccepted(
+        regenerated.response,
+        regenerated.state,
+      );
+      activeResponse = regenerated.response;
     }
 
     // 3. Persist
     await this.persistState(sellerKey, instanceName, state);
+
+    if (!activeResponse.ok) {
+      throw new HttpError(
+        502,
+        state.error || `Evolution API returned ${activeResponse.status}.`,
+      );
+    }
 
     return this.getSnapshot(sellerKey);
   }
@@ -347,7 +476,36 @@ export class SellerWhatsAppService {
     }
   }
 
+  async syncFromWebhook(input: {
+    instanceName: string;
+    status: WhatsAppWebSessionStatus;
+    qrCode: string;
+    connectedPhone: string;
+    error: string;
+  }): Promise<boolean> {
+    if (!input.instanceName.startsWith("seller_")) return false;
+
+    const controls = await this.storage.getSellerAdminControls();
+    const matched = controls.find(
+      (control) => control.whatsappInstanceName === input.instanceName,
+    );
+    const sellerKey =
+      matched?.sellerKey ||
+      input.instanceName.replace(/^seller_/, "").replace(/_/g, "-");
+
+    await this.persistState(sellerKey, input.instanceName, {
+      status: input.status,
+      qrCode: input.qrCode,
+      phone: input.connectedPhone,
+      error: input.error,
+    });
+
+    return true;
+  }
+
   private async ensureInstance(config: EvolutionInstanceConfig) {
+    const settings = await getConnectionSettingsService().getSettings();
+    const webhookUrl = `${settings.appBaseUrl}/api/webhooks/whatsapp`;
     const createUrl = joinUrl(config.baseUrl, "/instance/create");
     const response = await fetch(createUrl, {
       method: "POST",
@@ -356,23 +514,40 @@ export class SellerWhatsAppService {
         instanceName: config.instanceName,
         integration: "WHATSAPP-BAILEYS",
         qrcode: true,
+        webhook: {
+          enabled: true,
+          url: webhookUrl,
+          byEvents: false,
+          base64: false,
+          headers: settings.webhookSecret
+            ? { "x-pagrecovery-webhook-secret": settings.webhookSecret }
+            : undefined,
+          events: [
+            "MESSAGES_UPSERT",
+            "MESSAGES_UPDATE",
+            "QRCODE_UPDATED",
+            "CONNECTION_UPDATE",
+            "SEND_MESSAGE",
+          ],
+        },
       }),
       signal: AbortSignal.timeout(15_000),
     });
 
-    if (response.ok || response.status === 409 || response.status === 403) {
-      // 403 from Evolution API v2 means "name already in use"
-      if (response.status === 403) {
-        const payload = await safeParseJson(response);
-        const message = extractError(payload);
-        if (
-          message.toLowerCase().includes("already") ||
-          message.toLowerCase().includes("in use")
-        ) {
-          return;
-        }
-      }
+    if (response.ok || response.status === 409) {
       return;
+    }
+
+    if (response.status === 403) {
+      // 403 from Evolution API v2 means "name already in use"
+      const payload = await safeParseJson(response);
+      const message = extractError(payload);
+      if (
+        message.toLowerCase().includes("already") ||
+        message.toLowerCase().includes("in use")
+      ) {
+        return;
+      }
     }
 
     const payload = await safeParseJson(response);
@@ -419,6 +594,9 @@ export class SellerWhatsAppService {
               "CONNECTION_UPDATE",
               "SEND_MESSAGE",
             ],
+            headers: settings.webhookSecret
+              ? { "x-pagrecovery-webhook-secret": settings.webhookSecret }
+              : undefined,
           },
         }),
         signal: AbortSignal.timeout(10_000),
@@ -475,6 +653,64 @@ export class SellerWhatsAppService {
       whatsappInstanceError: extraWarning || state.error,
       whatsappInstanceUpdatedAt: new Date().toISOString(),
     });
+  }
+
+  private async connectInstance(config: EvolutionInstanceConfig) {
+    const response = await fetch(
+      joinUrl(
+        config.baseUrl,
+        `/instance/connect/${encodeURIComponent(config.instanceName)}`,
+      ),
+      {
+        method: "GET",
+        headers: buildHeaders(config.accessToken),
+        signal: AbortSignal.timeout(15_000),
+      },
+    );
+
+    const payload = await safeParseJson(response);
+    const state = markPendingQrWhenAccepted(
+      response,
+      await normalizeStatus(payload),
+    );
+    return { response, payload, state };
+  }
+
+  private async recreateDisconnectedInstance(config: EvolutionInstanceConfig) {
+    const statusResponse = await fetch(
+      joinUrl(
+        config.baseUrl,
+        `/instance/connectionState/${encodeURIComponent(config.instanceName)}`,
+      ),
+      {
+        method: "GET",
+        headers: buildHeaders(config.accessToken),
+        signal: AbortSignal.timeout(10_000),
+      },
+    ).catch(() => null);
+
+    if (statusResponse?.ok) {
+      const statusPayload = await safeParseJson(statusResponse);
+      const status = await normalizeStatus(statusPayload);
+      if (status.status === "connected") {
+        return { response: statusResponse, state: status };
+      }
+    }
+
+    await fetch(
+      joinUrl(
+        config.baseUrl,
+        `/instance/delete/${encodeURIComponent(config.instanceName)}`,
+      ),
+      {
+        method: "DELETE",
+        headers: buildHeaders(config.accessToken),
+        signal: AbortSignal.timeout(10_000),
+      },
+    ).catch(() => null);
+
+    await this.ensureInstance(config);
+    return this.connectInstance(config);
   }
 }
 

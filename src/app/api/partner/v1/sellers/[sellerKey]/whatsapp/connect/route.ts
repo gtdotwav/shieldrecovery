@@ -5,12 +5,16 @@ import {
   isErrorResponse,
 } from "@/server/recovery/controllers/partner-api-auth";
 import { getSellerWhatsAppService } from "@/server/recovery/services/seller-whatsapp-service";
+import { checkRateLimit, partnerApiLimiter } from "@/server/recovery/utils/rate-limiter";
 
 export const dynamic = "force-dynamic";
 
 type RouteProps = { params: Promise<{ sellerKey: string }> };
 
 export async function POST(request: Request, { params }: RouteProps) {
+  const rateLimited = checkRateLimit(request, partnerApiLimiter);
+  if (rateLimited) return rateLimited;
+
   const auth = await requirePartnerApiKey(request);
   if (isErrorResponse(auth)) return auth;
 
@@ -33,8 +37,10 @@ export async function POST(request: Request, { params }: RouteProps) {
       qr_code: snapshot.qrCode || null,
       connected_phone: snapshot.connectedPhone || null,
       message:
-        snapshot.status === "pending_qr"
+        snapshot.status === "pending_qr" && snapshot.qrCode
           ? "Scan the QR code with WhatsApp on your phone."
+          : snapshot.status === "pending_qr"
+            ? "QR requested. Poll the status endpoint until qr_code is available."
           : snapshot.status === "connected"
             ? "WhatsApp already connected."
             : "Instance created. Try again in a moment.",

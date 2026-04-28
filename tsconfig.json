@@ -33,5 +33,5 @@
     "packages/checkout/**/*.ts",
     "packages/checkout/**/*.tsx"
   ],
-  "exclude": ["node_modules", "evolution-api", "packages/checkout/src", "packages/checkout 2"]
+  "exclude": ["node_modules", "evolution-api", "packages/checkout/src", "packages/checkout 2", "vitest.config.ts", "tests"]
 }

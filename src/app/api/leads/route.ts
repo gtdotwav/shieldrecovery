@@ -3,6 +3,7 @@ import { getSellerIdentityByEmail } from "@/server/auth/identities";
 import { requireApiAuth } from "@/server/auth/request";
 import { apiOk, corsOptions, isErrorResponse } from "@/server/recovery/utils/api-response";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+import { checkRateLimit, apiLimiter } from "@/server/recovery/utils/rate-limiter";
 
 export function OPTIONS() {
   return corsOptions();
@@ -14,6 +15,9 @@ export function OPTIONS() {
  * Returns: { leads: FollowUpContact[] }
  */
 export async function GET(request: Request) {
+  const rateLimited = checkRateLimit(request, apiLimiter);
+  if (rateLimited) return rateLimited;
+
   const auth = await requireApiAuth(request, ["admin", "seller"]);
   if (isErrorResponse(auth)) return auth;
 

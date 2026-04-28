@@ -68,6 +68,7 @@ import {
   verifyShieldGatewaySignature,
 } from "@/server/recovery/utils/webhook-signature";
 import { normalizeShieldGatewayEvent } from "@/server/recovery/webhooks/event-normalizer";
+import { trackPartnerUsage, resolvePartnerIdFromSellerKey } from "@/server/recovery/services/partner-billing-service";
 
 const RECOVERABLE_EVENT_SET = new Set<string>(RECOVERABLE_PAYMENT_EVENTS);
 
@@ -1866,6 +1867,26 @@ export class PaymentRecoveryService {
     const payment = await this.storage.upsertPayment(normalizedEvent, customer.id);
     const forcedAssignedAgent = await this.resolveSellerWebhookAgent(input.sellerKey);
 
+    // LGPD: Payment webhook implies consent for data processing
+    try {
+      const { trackImplicitConsent } = await import(
+        "@/server/recovery/services/compliance-service"
+      );
+      const contactValue = normalizedEvent.customer.phone || normalizedEvent.customer.email || "";
+      if (contactValue) {
+        trackImplicitConsent(
+          customer.id,
+          contactValue,
+          normalizedEvent.customer.phone ? "whatsapp" : "email",
+          "data_processing",
+          "webhook_implicit",
+          { webhookId: input.webhookId, eventType: normalizedEvent.event_type },
+        );
+      }
+    } catch {
+      // Non-blocking — consent tracking must never break webhook processing
+    }
+
     let lead: RecoveryLeadRecord | null = null;
     let jobs: QueueJobRecord[] = [];
 
@@ -1953,6 +1974,19 @@ export class PaymentRecoveryService {
           normalizedEvent.customer?.name || "Cliente",
           payment.amount,
         ).catch((err) => console.error("[push] new lead notify error:", err));
+
+        // Partner billing: track lead creation
+        if (input.sellerKey) {
+          resolvePartnerIdFromSellerKey(input.sellerKey).then((pid) => {
+            if (pid) {
+              trackPartnerUsage(pid, input.sellerKey!, "lead_created", 1, {
+                leadId: lead?.leadId,
+                paymentId: payment.id,
+                amount: payment.amount,
+              });
+            }
+          }).catch(() => {});
+        }
       }
     } else if (shouldCreateFollowUpLead(normalizedEvent.event_type)) {
       lead = await createOrUpdateShieldLead({
@@ -2037,6 +2071,19 @@ export class PaymentRecoveryService {
         normalizedEvent.customer?.name || "Cliente",
         payment.amount,
       ).catch((err) => console.error("[push] recovery notify error:", err));
+
+      // Partner billing: track payment recovery
+      if (input.sellerKey) {
+        resolvePartnerIdFromSellerKey(input.sellerKey).then((pid) => {
+          if (pid) {
+            trackPartnerUsage(pid, input.sellerKey!, "payment_recovered", 1, {
+              paymentId: payment.id,
+              leadId: lead?.leadId,
+              amount: payment.amount,
+            });
+          }
+        }).catch(() => {});
+      }
     }
 
     if (

@@ -193,6 +193,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: Gift,
     kind: "app",
     allowedRoles: ["admin", "seller"],
+    experimental: true,
   },
   {
     href: "/commerce",
@@ -201,6 +202,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: Store,
     kind: "app",
     allowedRoles: ["admin", "seller"],
+    experimental: true,
   },
   {
     href: "/outbound-sales",
@@ -209,6 +211,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: PhoneOutgoing,
     kind: "app",
     allowedRoles: ["admin", "seller"],
+    experimental: true,
   },
   {
     href: "/reactivation",
@@ -249,6 +252,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: Banknote,
     kind: "app",
     allowedRoles: ["admin"],
+    experimental: true,
   },
   {
     href: "/admin/withdraw",

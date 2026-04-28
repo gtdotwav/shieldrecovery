@@ -1422,6 +1422,19 @@ export class SupabaseStorageService implements RecoveryStorage {
     return mapMessage(data);
   }
 
+  async findMessageByProviderMessageId(
+    providerMessageId: string,
+  ): Promise<MessageRecord | undefined> {
+    const { data, error } = await this.supabase
+      .from("messages")
+      .select("*")
+      .eq("provider_message_id", providerMessageId)
+      .maybeSingle();
+
+    if (error || !data) return undefined;
+    return mapMessage(data);
+  }
+
   async addLog(log: SystemLogRecord): Promise<void> {
     try {
       await this.supabase.from("system_logs").insert({
@@ -2059,17 +2072,48 @@ export class SupabaseStorageService implements RecoveryStorage {
       updated_at: now,
     };
 
-    const { data, error } = await this.supabase
-      .from("seller_admin_controls")
-      .upsert(payload, { onConflict: "seller_key" })
-      .select("*")
-      .single();
+    let activePayload: Record<string, unknown> = payload;
+    let lastError = "";
 
-    if (error || !data) {
-      return mapSellerAdminControl(payload as DatabaseSellerAdminControlRow);
+    for (let attempt = 0; attempt < 16; attempt += 1) {
+      const { data, error } = await this.supabase
+        .from("seller_admin_controls")
+        .upsert(activePayload, { onConflict: "seller_key" })
+        .select("*")
+        .single();
+
+      if (!error && data) {
+        return mapSellerAdminControl(data as DatabaseSellerAdminControlRow);
+      }
+
+      lastError = error?.message ?? "empty Supabase response";
+      const missingColumn = extractMissingSchemaColumn(error);
+
+      if (
+        missingColumn?.startsWith("whatsapp_instance_") &&
+        "whatsapp_instance_status" in activePayload
+      ) {
+        activePayload = buildSellerControlWhatsAppFallbackPayload(
+          activePayload as SellerControlPayloadWithWhatsAppState,
+        );
+        continue;
+      }
+
+      if (
+        missingColumn &&
+        OPTIONAL_SELLER_CONTROL_COLUMNS.has(missingColumn) &&
+        missingColumn in activePayload
+      ) {
+        const nextPayload = { ...activePayload };
+        delete nextPayload[missingColumn];
+        activePayload = nextPayload;
+        continue;
+      }
+
+      break;
     }
 
-    return mapSellerAdminControl(data as DatabaseSellerAdminControlRow);
+    throw new Error(`Failed to save seller admin control: ${lastError}`);
   }
 
   async getConnectionSettings(): Promise<ConnectionSettingsRecord> {
@@ -3176,9 +3220,131 @@ function mapCalendarNote(data: DatabaseCalendarNoteRow): CalendarNoteRecord {
   };
 }
 
+const WHATSAPP_STATE_START = "--- PAGRECOVERY_WHATSAPP_STATE ---\n";
+const WHATSAPP_STATE_END = "\n--- /PAGRECOVERY_WHATSAPP_STATE ---";
+
+type SellerWhatsAppFallbackState = Pick<
+  DatabaseSellerAdminControlRow,
+  | "whatsapp_instance_name"
+  | "whatsapp_instance_status"
+  | "whatsapp_instance_qr_code"
+  | "whatsapp_instance_phone"
+  | "whatsapp_instance_error"
+  | "whatsapp_instance_updated_at"
+>;
+
+const OPTIONAL_SELLER_CONTROL_COLUMNS = new Set([
+  "gateway_api_key",
+  "whitelabel_id",
+  "checkout_url",
+  "checkout_api_key",
+  "max_contacts_per_lead_per_week",
+  "max_contacts_per_lead_per_day",
+  "sms_enabled",
+  "sms_provider",
+  "sms_api_key",
+  "sms_from_number",
+  "email_recovery_enabled",
+  "preferred_channels",
+  "ai_negotiation_enabled",
+  "ai_max_discount_pct",
+  "ai_negotiation_strategy",
+  "whatsapp_instance_name",
+  "whatsapp_instance_status",
+  "whatsapp_instance_qr_code",
+  "whatsapp_instance_phone",
+  "whatsapp_instance_error",
+  "whatsapp_instance_updated_at",
+]);
+
+type SellerControlPayloadWithWhatsAppState = {
+  [key: string]: unknown;
+  notes: string | null;
+  whatsapp_instance_name: string | null;
+  whatsapp_instance_status: string;
+  whatsapp_instance_qr_code: string;
+  whatsapp_instance_phone: string;
+  whatsapp_instance_error: string;
+  whatsapp_instance_updated_at: string | null;
+};
+
+function extractMissingSchemaColumn(error: { message?: string } | null) {
+  const message = error?.message ?? "";
+  const match = message.match(/'([^']+)' column/i);
+  if (!match) return "";
+  const normalized = message.toLowerCase();
+  if (
+    !normalized.includes("schema cache") &&
+    !normalized.includes("does not exist") &&
+    !normalized.includes("could not find")
+  ) {
+    return "";
+  }
+  return match[1];
+}
+
+function splitWhatsAppStateFromNotes(rawNotes: string | null | undefined): {
+  notes: string | null;
+  state: Partial<SellerWhatsAppFallbackState>;
+} {
+  const notes = rawNotes ?? "";
+  const start = notes.indexOf(WHATSAPP_STATE_START);
+  const end = notes.indexOf(WHATSAPP_STATE_END);
+
+  if (start === -1 || end === -1 || end <= start) {
+    return { notes: rawNotes ?? null, state: {} };
+  }
+
+  const jsonStart = start + WHATSAPP_STATE_START.length;
+  const encoded = notes.slice(jsonStart, end).trim();
+  const cleanNotes = `${notes.slice(0, start)}${notes.slice(end + WHATSAPP_STATE_END.length)}`.trim();
+
+  try {
+    const parsed = JSON.parse(encoded) as Partial<SellerWhatsAppFallbackState>;
+    return { notes: cleanNotes || null, state: parsed };
+  } catch {
+    return { notes: rawNotes ?? null, state: {} };
+  }
+}
+
+function encodeWhatsAppStateInNotes(
+  rawNotes: string | null | undefined,
+  state: SellerWhatsAppFallbackState,
+) {
+  const { notes } = splitWhatsAppStateFromNotes(rawNotes);
+  return `${notes ?? ""}${WHATSAPP_STATE_START}${JSON.stringify(state)}${WHATSAPP_STATE_END}`.trim();
+}
+
+function buildSellerControlWhatsAppFallbackPayload(
+  payload: SellerControlPayloadWithWhatsAppState,
+) {
+  const {
+    whatsapp_instance_name,
+    whatsapp_instance_status,
+    whatsapp_instance_qr_code,
+    whatsapp_instance_phone,
+    whatsapp_instance_error,
+    whatsapp_instance_updated_at,
+    ...basePayload
+  } = payload;
+
+  return {
+    ...basePayload,
+    notes: encodeWhatsAppStateInNotes(payload.notes, {
+      whatsapp_instance_name,
+      whatsapp_instance_status,
+      whatsapp_instance_qr_code,
+      whatsapp_instance_phone,
+      whatsapp_instance_error,
+      whatsapp_instance_updated_at,
+    }),
+  };
+}
+
 function mapSellerAdminControl(
   data: DatabaseSellerAdminControlRow,
 ): SellerAdminControlRecord {
+  const notesFallback = splitWhatsAppStateFromNotes(data.notes);
   return {
     id: data.id,
     sellerKey: data.seller_key,
@@ -3201,13 +3367,31 @@ function mapSellerAdminControl(
     whitelabelId: data.whitelabel_id ?? undefined,
     checkoutUrl: data.checkout_url ?? undefined,
     checkoutApiKey: data.checkout_api_key ?? undefined,
-    notes: data.notes ?? undefined,
-    whatsappInstanceName: data.whatsapp_instance_name ?? undefined,
-    whatsappInstanceStatus: (data.whatsapp_instance_status as SellerAdminControlRecord["whatsappInstanceStatus"]) ?? "disconnected",
-    whatsappInstanceQrCode: data.whatsapp_instance_qr_code ?? undefined,
-    whatsappInstancePhone: data.whatsapp_instance_phone ?? undefined,
-    whatsappInstanceError: data.whatsapp_instance_error ?? undefined,
-    whatsappInstanceUpdatedAt: data.whatsapp_instance_updated_at ?? undefined,
+    notes: notesFallback.notes ?? undefined,
+    whatsappInstanceName:
+      data.whatsapp_instance_name ??
+      notesFallback.state.whatsapp_instance_name ??
+      undefined,
+    whatsappInstanceStatus:
+      (data.whatsapp_instance_status as SellerAdminControlRecord["whatsappInstanceStatus"] | null | undefined) ??
+      (notesFallback.state.whatsapp_instance_status as SellerAdminControlRecord["whatsappInstanceStatus"] | undefined) ??
+      "disconnected",
+    whatsappInstanceQrCode:
+      data.whatsapp_instance_qr_code ??
+      notesFallback.state.whatsapp_instance_qr_code ??
+      undefined,
+    whatsappInstancePhone:
+      data.whatsapp_instance_phone ??
+      notesFallback.state.whatsapp_instance_phone ??
+      undefined,
+    whatsappInstanceError:
+      data.whatsapp_instance_error ??
+      notesFallback.state.whatsapp_instance_error ??
+      undefined,
+    whatsappInstanceUpdatedAt:
+      data.whatsapp_instance_updated_at ??
+      notesFallback.state.whatsapp_instance_updated_at ??
+      undefined,
     updatedAt: toIsoStringOrNow(data.updated_at),
   };
 }

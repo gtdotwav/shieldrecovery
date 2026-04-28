@@ -5,12 +5,16 @@ import {
   isErrorResponse,
 } from "@/server/recovery/controllers/partner-api-auth";
 import { getSellerWhatsAppService } from "@/server/recovery/services/seller-whatsapp-service";
+import { checkRateLimit, partnerApiLimiter } from "@/server/recovery/utils/rate-limiter";
 
 export const dynamic = "force-dynamic";
 
 type RouteProps = { params: Promise<{ sellerKey: string }> };
 
 export async function GET(request: Request, { params }: RouteProps) {
+  const rateLimited = checkRateLimit(request, partnerApiLimiter);
+  if (rateLimited) return rateLimited;
+
   const auth = await requirePartnerApiKey(request);
   if (isErrorResponse(auth)) return auth;
 

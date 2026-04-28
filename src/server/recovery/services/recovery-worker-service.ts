@@ -764,14 +764,10 @@ function readPayloadOptionalString(job: QueueJobRecord, key: string) {
 }
 
 function retryDelayMinutesForAttempt(attempts: number) {
-  let base: number;
-  if (attempts >= 3) {
-    base = 5;
-  } else if (attempts === 2) {
-    base = 15;
-  } else {
-    base = 60;
-  }
+  // Exponential backoff: 2min → 8min → 32min → 60min (capped)
+  // attempts counts DOWN (3 → 2 → 1 → 0), so retryIndex counts UP
+  const retryIndex = Math.max(0, 3 - attempts);
+  const base = Math.min(60, 2 * Math.pow(4, retryIndex));
   // Add random jitter (0-25% of base) to prevent thundering herd
   const jitter = Math.random() * base * 0.25;
   return base + jitter;

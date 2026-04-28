@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
 
 import { platformBrand } from "@/lib/platform";
+import { buildRecoveryEmailHtml } from "@/server/recovery/templates/email-recovery";
 import { getConnectionSettingsService } from "@/server/recovery/services/connection-settings-service";
 import { getStorageService } from "@/server/recovery/services/storage";
 import type {
@@ -167,14 +168,18 @@ export class MessagingService {
     const touchedConversationIds = new Set<string>();
 
     if (sessionUpdate) {
-      await this.storage.saveConnectionSettings({
-        whatsappWebSessionId: sessionUpdate.sessionId,
-        whatsappWebSessionStatus: sessionUpdate.sessionStatus,
-        whatsappWebSessionQrCode: sessionUpdate.qrCode,
-        whatsappWebSessionPhone: sessionUpdate.connectedPhone,
-        whatsappWebSessionError: sessionUpdate.error,
-        whatsappWebSessionUpdatedAt: new Date().toISOString(),
-      });
+      const handledBySeller = await this.persistSellerSessionUpdate(sessionUpdate);
+
+      if (!handledBySeller) {
+        await this.storage.saveConnectionSettings({
+          whatsappWebSessionId: sessionUpdate.sessionId,
+          whatsappWebSessionStatus: sessionUpdate.sessionStatus,
+          whatsappWebSessionQrCode: sessionUpdate.qrCode,
+          whatsappWebSessionPhone: sessionUpdate.connectedPhone,
+          whatsappWebSessionError: sessionUpdate.error,
+          whatsappWebSessionUpdatedAt: new Date().toISOString(),
+        });
+      }
     }
 
     for (const inboundMessage of inboundMessages) {
@@ -559,6 +564,15 @@ export class MessagingService {
     const fromAddress = runtimeSettings.emailFromAddress || platformBrand.contactEmail || "noreply@pagrecovery.com";
 
     try {
+      const unsubscribeUrl = `${runtimeSettings.appBaseUrl}/api/unsubscribe?contact=${encodeURIComponent(recipientEmail)}&channel=email`;
+      const paymentLink = input.metadata?.retryLink ?? input.metadata?.paymentUrl;
+      const htmlContent = buildRecoveryEmailHtml({
+        customerName: input.conversation.customerName,
+        content: input.content,
+        paymentLink: typeof paymentLink === "string" ? paymentLink : undefined,
+        unsubscribeUrl,
+      });
+
       const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
         method: "POST",
         headers: {
@@ -569,7 +583,10 @@ export class MessagingService {
           personalizations: [{ to: [{ email: recipientEmail }] }],
           from: { email: fromAddress, name: platformBrand.name },
           subject: `${platformBrand.name} - Recuperacao de pagamento`,
-          content: [{ type: "text/plain", value: input.content }],
+          content: [
+            { type: "text/plain", value: input.content },
+            { type: "text/html", value: htmlContent },
+          ],
         }),
       });
 
@@ -933,6 +950,16 @@ export class MessagingService {
   }
 
   private async processInboundMessage(message: WhatsAppInboundMessage) {
+    // Idempotency: skip if we already stored a message with this provider ID
+    if (message.providerMessageId) {
+      const existing = await this.storage.findMessageByProviderMessageId(
+        message.providerMessageId,
+      );
+      if (existing) {
+        return existing.conversationId;
+      }
+    }
+
     const runtimeSettings =
       await getConnectionSettingsService().getRuntimeSettings();
     const lead = await this.storage.findLeadByContact({ phone: message.from });
@@ -943,6 +970,23 @@ export class MessagingService {
       lead,
       customerId: lead?.customerId,
     });
+
+    // LGPD: Inbound WhatsApp message implies consent for recovery contact
+    try {
+      const { trackImplicitConsent } = await import(
+        "@/server/recovery/services/compliance-service"
+      );
+      trackImplicitConsent(
+        lead?.customerId ?? conversation.customerId ?? message.from,
+        message.from,
+        "whatsapp",
+        "recovery_contact",
+        "webhook_implicit",
+        { providerMessageId: message.providerMessageId },
+      );
+    } catch {
+      // Non-blocking — consent tracking must never break messaging
+    }
 
     await this.storage.createMessage({
       conversationId: conversation.id,
@@ -1211,7 +1255,6 @@ export class MessagingService {
 
     const paymentUrl = extractPaymentUrl(input.metadata);
     let usedCtaButton = false;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- guaranteed assigned in all branches below
     let response!: Response;
 
     if (paymentUrl && config.kind === "evolution") {
@@ -1670,6 +1713,37 @@ export class MessagingService {
       whatsappWebSessionUpdatedAt: new Date().toISOString(),
     });
   }
+
+  private async persistSellerSessionUpdate(sessionUpdate: {
+    sessionId: string;
+    sessionStatus: WhatsAppWebSessionStatus;
+    qrCode: string;
+    connectedPhone: string;
+    error: string;
+  }) {
+    if (!sessionUpdate.sessionId.startsWith("seller_")) {
+      return false;
+    }
+
+    try {
+      const { getSellerWhatsAppService } = await import(
+        "@/server/recovery/services/seller-whatsapp-service"
+      );
+      return getSellerWhatsAppService().syncFromWebhook({
+        instanceName: sessionUpdate.sessionId,
+        status: sessionUpdate.sessionStatus,
+        qrCode: sessionUpdate.qrCode,
+        connectedPhone: sessionUpdate.connectedPhone,
+        error: sessionUpdate.error,
+      });
+    } catch (error) {
+      console.error(
+        "[messaging] seller WhatsApp session update failed:",
+        error instanceof Error ? error.message : error,
+      );
+      return false;
+    }
+  }
 }
 
 function parseJsonBody(rawBody: string): unknown {
@@ -1872,6 +1946,11 @@ async function extractWebApiSessionUpdate(payload: unknown) {
   const data = asRecord(payloadRecord.data);
   const source = data ?? payloadRecord;
   const instance = asRecord(source?.instance);
+  const qrcode =
+    asRecord(source?.qrcode) ??
+    asRecord(source?.qrCode) ??
+    asRecord(data?.qrcode) ??
+    asRecord(data?.qrCode);
   const hasSessionSignal = Boolean(
     event &&
       [
@@ -1884,7 +1963,15 @@ async function extractWebApiSessionUpdate(payload: unknown) {
 
   if (
     !hasSessionSignal &&
-    !firstString(source?.code, source?.qrcode, source?.qrCode, instance?.state, source?.state)
+    !firstString(
+      source?.code,
+      source?.qrcode,
+      source?.qrCode,
+      qrcode?.code,
+      qrcode?.base64,
+      instance?.state,
+      source?.state,
+    )
   ) {
     return null;
   }
@@ -2110,6 +2197,11 @@ async function normalizeSessionState(
   const source = nestedData ?? data;
   const instance = asRecord(source?.instance);
   const nestedInstance = asRecord(nestedData?.instance);
+  const qrcode =
+    asRecord(source?.qrcode) ??
+    asRecord(source?.qrCode) ??
+    asRecord(nestedData?.qrcode) ??
+    asRecord(nestedData?.qrCode);
 
   const rawStatus = firstString(
     source?.status,
@@ -2127,6 +2219,13 @@ async function normalizeSessionState(
     source?.qr_code,
     source?.qr,
     source?.code,
+    qrcode?.base64,
+    qrcode?.qrCodeDataUrl,
+    qrcode?.qrCode,
+    qrcode?.qrcode,
+    qrcode?.qr_code,
+    qrcode?.qr,
+    qrcode?.code,
     nestedData?.qrCodeDataUrl,
     nestedData?.qrCode,
     nestedData?.qrcode,
@@ -2141,6 +2240,13 @@ async function normalizeSessionState(
     asRecord(source?.response)?.message,
   );
 
+  const qrCode = await resolveQrCode(qrValue);
+  const normalizedStatus = normalizeSessionStatus(rawStatus, input.fallbackStatus);
+  const sessionStatus =
+    qrCode && normalizedStatus !== "connected"
+      ? "pending_qr"
+      : normalizedStatus;
+
   return {
     sessionId:
       firstString(
@@ -2153,8 +2259,8 @@ async function normalizeSessionState(
         nestedData?.session_id,
         nestedData?.id,
       ) ?? input.fallbackSessionId,
-    sessionStatus: normalizeSessionStatus(rawStatus, input.fallbackStatus),
-    qrCode: await resolveQrCode(qrValue),
+    sessionStatus,
+    qrCode,
     connectedPhone:
       firstString(
         source?.connectedPhone,

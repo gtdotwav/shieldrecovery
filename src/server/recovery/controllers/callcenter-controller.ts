@@ -16,6 +16,7 @@ import type {
 import { createCheckoutSession } from "@/server/checkout";
 import { MessagingService } from "@/server/recovery/services/messaging-service";
 import { getPaymentRecoveryService } from "@/server/recovery/services/payment-recovery-service";
+import { processCallOutcome } from "@/server/recovery/services/call-outcome-processor";
 
 const createCallSchema = z.object({
   leadId: z.string().optional(),
@@ -169,6 +170,14 @@ export async function handleCallcenterWebhook(request: Request) {
           });
         }
 
+        // Process call outcome for recovery follow-up actions
+        processCallOutcome(call.id).catch((err) => {
+          console.error("[callcenter] Call outcome processing failed", {
+            callId: call.id,
+            error: err instanceof Error ? err.message : err,
+          });
+        });
+
         return NextResponse.json({ ok: true, callId: call.id });
       }
 
@@ -180,6 +189,14 @@ export async function handleCallcenterWebhook(request: Request) {
           outcomeNotes: asOptionalString(body.error) ?? asOptionalString(body.reason),
         });
         await storage.createCallEvent(call.id, "error", body);
+
+        // Process call outcome — triggers WhatsApp fallback
+        processCallOutcome(call.id).catch((err) => {
+          console.error("[callcenter] Call outcome processing failed", {
+            callId: call.id,
+            error: err instanceof Error ? err.message : err,
+          });
+        });
 
         return NextResponse.json({ ok: true, callId: call.id });
       }

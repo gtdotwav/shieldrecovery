@@ -21,6 +21,7 @@ const publicRoutePrefixes = [
   "/api/partner/v1/",
   "/api/calls/demo",
   "/api/health",
+  "/api/unsubscribe",
   "/webhooks/",
 ];
 
@@ -111,6 +112,8 @@ const protectedPathRoles: Array<{ prefix: string; roles: UserRole[] }> = [
   { prefix: "/api/inbox", roles: ["admin", "seller", "market"] },
   { prefix: "/api/dashboard", roles: ["admin"] },
   { prefix: "/api/keys", roles: ["admin"] },
+  { prefix: "/api/admin/billing", roles: ["admin"] },
+  { prefix: "/api/admin/compliance", roles: ["admin"] },
   { prefix: "/api/admin", roles: ["admin"] },
   { prefix: "/api/mobile", roles: ["admin", "seller", "market"] },
   { prefix: "/api/push", roles: ["admin", "seller", "market"] },
