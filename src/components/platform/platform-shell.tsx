@@ -443,7 +443,7 @@ export async function PlatformAppPage({
   return (
     <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-300">
       {/* ─── Desktop sidebar (icon-only, w-16) ─── */}
-      <aside className="hidden md:flex w-16 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex-col items-center py-4 justify-between shrink-0 h-screen sticky top-0 transition-colors duration-300">
+      <aside className="hidden md:flex w-16 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex-col items-center py-4 justify-between shrink-0 h-screen sticky top-0 z-30 transition-colors duration-300">
         <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1">
           <ShieldMark />
 
