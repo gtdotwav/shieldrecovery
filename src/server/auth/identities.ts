@@ -48,9 +48,11 @@ export async function authenticatePlatformUser(input: {
     return null;
   }
 
+  const role = seller.role === "admin" ? "admin" : "seller";
+
   return {
     email: seller.email,
-    role: "seller",
+    role,
     sellerAgentName: seller.agentName,
     sellerDisplayName: seller.displayName,
   };

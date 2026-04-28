@@ -695,6 +695,7 @@ export type SellerUserRecord = {
   displayName: string;
   agentName: string;
   passwordHash: string;
+  role?: string;
   active: boolean;
   createdAt: string;
   updatedAt: string;

@@ -345,6 +345,7 @@ type DatabaseSellerUserRow = {
   display_name: string;
   agent_name: string;
   password_hash: string;
+  role?: string | null;
   active: boolean;
   created_at: string;
   updated_at: string;
@@ -3424,6 +3425,7 @@ function mapSellerUser(data: DatabaseSellerUserRow): SellerUserRecord {
     displayName: data.display_name,
     agentName: data.agent_name,
     passwordHash: data.password_hash,
+    role: data.role ?? undefined,
     active: data.active,
     createdAt: toIsoStringOrNow(data.created_at),
     updatedAt: toIsoStringOrNow(data.updated_at),
