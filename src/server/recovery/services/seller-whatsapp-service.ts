@@ -47,10 +47,14 @@ function extractError(payload: unknown): string {
   if (!payload || typeof payload !== "object") return "";
   const record = payload as Record<string, unknown>;
   if (typeof record.message === "string") return record.message;
+  if (Array.isArray(record.message) && record.message.length > 0)
+    return String(record.message[0]);
   if (typeof record.error === "string") return record.error;
   if (record.response && typeof record.response === "object") {
     const inner = record.response as Record<string, unknown>;
     if (typeof inner.message === "string") return inner.message;
+    if (Array.isArray(inner.message) && inner.message.length > 0)
+      return String(inner.message[0]);
   }
   return "";
 }
@@ -356,14 +360,28 @@ export class SellerWhatsAppService {
       signal: AbortSignal.timeout(15_000),
     });
 
-    if (response.ok || response.status === 409) return;
+    if (response.ok || response.status === 409 || response.status === 403) {
+      // 403 from Evolution API v2 means "name already in use"
+      if (response.status === 403) {
+        const payload = await safeParseJson(response);
+        const message = extractError(payload);
+        if (
+          message.toLowerCase().includes("already") ||
+          message.toLowerCase().includes("in use")
+        ) {
+          return;
+        }
+      }
+      return;
+    }
 
     const payload = await safeParseJson(response);
     const message = extractError(payload);
 
     if (
       message.toLowerCase().includes("already") ||
-      message.toLowerCase().includes("exists")
+      message.toLowerCase().includes("exists") ||
+      message.toLowerCase().includes("in use")
     ) {
       return;
     }
