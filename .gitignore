@@ -53,3 +53,6 @@ test-write.txt
 # partner credentials (sensitive)
 docs/shield-credentials.json
 docs/*-credentials.json
+
+# Sentry Config File
+.env.sentry-build-plugin

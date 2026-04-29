@@ -8,9 +8,11 @@ if (dsn) {
     environment: process.env.NEXT_PUBLIC_VERCEL_ENV || "development",
     release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
     tracesSampleRate: 0.05,
-    replaysOnErrorSampleRate: 0.1,
+    replaysOnErrorSampleRate: 0,
     replaysSessionSampleRate: 0,
+    enableLogs: true,
     sendDefaultPii: false,
-    integrations: [],
   });
 }
+
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
