@@ -9,6 +9,8 @@ import { retrievePagouTransaction } from "@/server/pagouai/client";
 import { createCheckoutSession } from "@/server/checkout";
 import { getStorageService } from "@/server/recovery/services/storage";
 import { getTrackingService } from "@/server/recovery/services/tracking-service";
+import { CopyPixButton } from "./_components/copy-pix-button";
+import { PixCountdown } from "./_components/pix-countdown";
 
 export const dynamic = "force-dynamic";
 
@@ -29,26 +31,78 @@ type RetryPaymentPageProps = {
   }>;
 };
 
+type FailureCategory = "timeout" | "not_found" | "auth" | "service_down" | "unknown";
+
+function categorizeFailure(error: unknown): FailureCategory {
+  if (!(error instanceof Error)) return "unknown";
+  const msg = error.message.toLowerCase();
+  if (msg.includes("aborted") || msg.includes("timeout")) return "timeout";
+  if (msg.includes("404") || msg.includes("not found")) return "not_found";
+  if (msg.includes("401") || msg.includes("403") || msg.includes("unauthorized")) return "auth";
+  if (msg.includes("503") || msg.includes("502") || msg.includes("unavailable")) return "service_down";
+  return "unknown";
+}
+
+const FAILURE_COPY: Record<FailureCategory, { title: string; body: string; cta: string }> = {
+  timeout: {
+    title: "O servidor demorou demais para responder.",
+    body: "A requisição ao gateway expirou. Tente novamente em alguns segundos — se persistir, usamos um link alternativo do checkout.",
+    cta: "Tentar novamente",
+  },
+  not_found: {
+    title: "Pagamento não encontrado.",
+    body: "Não localizamos esta cobrança no gateway. Verifique se o link está completo ou peça o reenvio para o suporte.",
+    cta: "Voltar para a plataforma",
+  },
+  auth: {
+    title: "Sessão expirou.",
+    body: "Por segurança, este link não é mais válido. Solicite uma nova cobrança ou contate quem te enviou.",
+    cta: "Solicitar nova cobrança",
+  },
+  service_down: {
+    title: "Gateway fora do ar.",
+    body: "O gateway de pagamento está indisponível agora. Em geral isso se resolve em poucos minutos. Tente novamente em instantes.",
+    cta: "Tentar novamente",
+  },
+  unknown: {
+    title: "Não foi possível carregar a cobrança Pix agora.",
+    body: "Aconteceu um imprevisto. Tente novamente em alguns segundos ou use o link de retomada que enviamos por mensagem.",
+    cta: "Tentar novamente",
+  },
+};
+
 export default async function RetryPaymentPage({
   params,
   searchParams,
 }: RetryPaymentPageProps) {
   const { gatewayPaymentId } = await params;
-  const { provider, transactionId, method, utm_source, utm_medium, utm_campaign, utm_content, utm_term } = await searchParams;
+  const {
+    provider,
+    transactionId,
+    method,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    utm_content,
+    utm_term,
+  } = await searchParams;
 
-  // Record tracking event if UTM params present (fire and forget)
   const hasUtm = utm_source || utm_medium || utm_campaign;
   if (hasUtm) {
     try {
       const trackingService = getTrackingService();
-      trackingService.recordEvent({
-        sellerKey: "recovery",
-        eventType: "checkout_start",
-        utm: { utm_source, utm_medium, utm_campaign, utm_content, utm_term },
-        landingPage: `/retry/${gatewayPaymentId}`,
-        internalSource: "direct",
-      }).catch(() => {});
-    } catch { /* tracking not critical */ }
+      trackingService
+        .recordEvent({
+          sellerKey: "recovery",
+          eventType: "checkout_start",
+          utm: { utm_source, utm_medium, utm_campaign, utm_content, utm_term },
+          landingPage: `/retry/${gatewayPaymentId}`,
+          internalSource: "direct",
+        })
+        .catch(() => {});
+    } catch {
+      /* tracking is best-effort */
+    }
   }
 
   if (
@@ -56,13 +110,9 @@ export default async function RetryPaymentPage({
     transactionId &&
     method === "pix"
   ) {
-    return renderPagouPixRetry({
-      gatewayPaymentId,
-      transactionId,
-    });
+    return renderPagouPixRetry({ gatewayPaymentId, transactionId });
   }
 
-  // Try to redirect to PagRecovery checkout
   const storage = getStorageService();
   const payment = await storage.findPayment({ gatewayPaymentId });
 
@@ -86,11 +136,12 @@ export default async function RetryPaymentPage({
           gatewayPaymentId: payment.gatewayPaymentId,
           orderId: payment.orderId,
           retryRedirect: true,
-          ...(hasUtm && { utm: { utm_source, utm_medium, utm_campaign, utm_content, utm_term } }),
+          ...(hasUtm && {
+            utm: { utm_source, utm_medium, utm_campaign, utm_content, utm_term },
+          }),
         },
       });
 
-      // Validate redirect URL against configured checkout platform
       const checkoutOrigin = process.env.CHECKOUT_PLATFORM_URL
         ? new URL(process.env.CHECKOUT_PLATFORM_URL).origin
         : null;
@@ -99,55 +150,85 @@ export default async function RetryPaymentPage({
       if (checkoutOrigin && redirectUrl.origin === checkoutOrigin) {
         redirect(session.checkoutUrl);
       }
-      // Invalid origin — fall through to fallback
       console.error("[retry] Checkout URL origin mismatch", {
         gatewayPaymentId,
         expected: checkoutOrigin,
         got: redirectUrl.origin,
       });
     } catch (error) {
-      // Re-throw Next.js redirect (it uses a special error internally)
       if (isRedirectError(error)) throw error;
       console.error("[retry] Checkout session failed", {
         gatewayPaymentId,
         error: error instanceof Error ? error.message : "unknown",
+        category: categorizeFailure(error),
       });
     }
   }
 
-  return renderFallback(gatewayPaymentId);
+  return renderFallback({ gatewayPaymentId, category: "unknown" });
 }
 
-function renderFallback(gatewayPaymentId: string) {
+function renderFallback({
+  gatewayPaymentId,
+  category,
+}: {
+  gatewayPaymentId: string;
+  category: FailureCategory;
+}) {
+  const copy = FAILURE_COPY[category];
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-16">
-      <div className="w-full rounded-[2rem] border border-black/[0.08] bg-white p-8 shadow-[0_26px_120px_rgba(15,23,42,0.08)]">
-        <p className="text-[0.72rem] uppercase tracking-[0.28em] text-sky-600">
-          Pagamento
+    <main
+      className="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-16"
+      style={{
+        background:
+          "radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%)",
+      }}
+    >
+      <div className="w-full rounded-[2rem] border border-black/[0.08] bg-white p-8 shadow-[0_26px_120px_rgba(15,23,42,0.08)] dark:bg-[var(--surface,_#0f0f0f)]">
+        <p
+          className="text-[0.72rem] uppercase tracking-[0.28em]"
+          style={{ color: "var(--accent)" }}
+        >
+          {platformBrand.name} · Pagamento
         </p>
-        <h1 className="mt-4 max-w-[18ch] text-4xl font-semibold tracking-tight text-[#082f49]">
-          Estamos preparando seu pagamento.
+        <h1 className="mt-4 max-w-[26ch] text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
+          {copy.title}
         </h1>
-        <p className="mt-4 max-w-2xl text-base leading-8 text-[#64748b]">
-          O checkout não está disponível neste momento. Por favor, tente
-          novamente em alguns instantes ou entre em contato com o suporte.
+        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-700 dark:text-slate-300">
+          {copy.body}
         </p>
 
-        <div className="mt-6 rounded-[1.25rem] border border-sky-100 bg-sky-50 px-5 py-4">
-          <p className="text-[0.68rem] uppercase tracking-[0.18em] text-sky-500">
+        <div
+          className="mt-6 rounded-[1.25rem] border px-5 py-4"
+          style={{
+            borderColor: "color-mix(in oklab, var(--accent) 25%, transparent)",
+            background: "color-mix(in oklab, var(--accent) 8%, transparent)",
+          }}
+        >
+          <p
+            className="text-[0.68rem] uppercase tracking-[0.18em]"
+            style={{ color: "var(--accent)" }}
+          >
             Referência
           </p>
-          <p className="mt-2 break-all font-mono text-sm text-[#082f49]">
+          <p className="mt-2 break-all font-mono text-sm text-slate-900 dark:text-slate-100">
             {gatewayPaymentId}
           </p>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href={`/retry/${gatewayPaymentId}`}
-            className="inline-flex items-center rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+            className="inline-flex items-center rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-[filter] hover:brightness-110"
+            style={{ background: "var(--accent)" }}
           >
-            Tentar novamente
+            {copy.cta}
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 dark:bg-[#111] dark:text-slate-100"
+          >
+            Voltar para a plataforma
           </Link>
         </div>
       </div>
@@ -162,6 +243,7 @@ async function renderPagouPixRetry(input: {
   try {
     const transaction = await retrievePagouTransaction(input.transactionId);
     const pixCode = transaction.pixCode?.trim() ?? "";
+    const expiresAt = transaction.pixExpiresAt ?? null;
     const qrCodeDataUrl = pixCode
       ? await QRCode.toDataURL(pixCode, {
           width: 320,
@@ -170,69 +252,106 @@ async function renderPagouPixRetry(input: {
       : null;
 
     return (
-      <main className="mx-auto flex min-h-screen max-w-4xl items-center px-6 py-16">
-        <div className="grid w-full gap-6 rounded-[2rem] border border-black/[0.08] bg-white p-8 shadow-[0_26px_120px_rgba(15,23,42,0.08)] lg:grid-cols-[minmax(0,0.95fr)_minmax(20rem,1.05fr)]">
-          <section className="rounded-[1.5rem] border border-sky-100 bg-[linear-gradient(180deg,#eff6ff,#f8fafc)] p-6">
-            <p className="text-[0.72rem] uppercase tracking-[0.28em] text-sky-600">
-              Pix {platformBrand.name}
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#082f49]">
+      <main
+        className="mx-auto flex min-h-screen max-w-4xl items-center px-6 py-16"
+        style={{
+          background:
+            "radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 70%)",
+        }}
+      >
+        <div className="grid w-full gap-6 rounded-[2rem] border border-black/[0.08] bg-white p-8 shadow-[0_26px_120px_rgba(15,23,42,0.08)] dark:bg-[var(--surface,_#0f0f0f)] lg:grid-cols-[minmax(0,0.95fr)_minmax(20rem,1.05fr)]">
+          <section
+            className="rounded-[1.5rem] border p-6"
+            style={{
+              borderColor: "color-mix(in oklab, var(--accent) 18%, transparent)",
+              background:
+                "linear-gradient(180deg, color-mix(in oklab, var(--accent) 6%, white), color-mix(in oklab, var(--accent) 0%, white))",
+            }}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <p
+                className="text-[0.72rem] uppercase tracking-[0.28em]"
+                style={{ color: "var(--accent)" }}
+              >
+                Pix · {platformBrand.name}
+              </p>
+              {expiresAt ? <PixCountdown expiresAt={expiresAt} /> : null}
+            </div>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
               Pagamento pronto para copiar ou escanear.
             </h1>
-            <p className="mt-3 text-sm leading-7 text-[#475569]">
-              Esta cobrança foi criada para o fluxo de recovery da{" "}
-              {platformBrand.name}. Assim que o gateway confirmar o pagamento,
-              o webhook atualiza o caso automaticamente.
+            <p className="mt-3 text-sm leading-7 text-slate-700">
+              Esta cobrança foi gerada pelo fluxo de recovery da {platformBrand.name}.
+              Assim que o gateway confirmar, o checkout atualiza automaticamente.
             </p>
 
-            <div className="mt-5 rounded-[1.25rem] border border-sky-200 bg-white p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+            <div className="mt-5 rounded-[1.25rem] border border-black/[0.05] bg-white p-4 shadow-inner">
               {qrCodeDataUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={qrCodeDataUrl}
-                  alt="QR Code Pix"
+                  alt={`QR Code Pix · ${formatCurrency(transaction.amount)} · ${input.gatewayPaymentId}`}
                   className="mx-auto h-64 w-64 rounded-xl bg-white object-contain"
                 />
               ) : (
-                <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-sky-200 bg-sky-50 text-sm text-sky-700">
+                <div
+                  className="flex h-64 items-center justify-center rounded-xl border border-dashed text-sm"
+                  style={{
+                    borderColor: "color-mix(in oklab, var(--accent) 25%, transparent)",
+                    color: "var(--accent)",
+                  }}
+                >
                   QR code indisponível no momento.
                 </div>
               )}
             </div>
+
+            <div className="mt-4 flex justify-center">
+              <CopyPixButton pixCode={pixCode} />
+            </div>
           </section>
 
-          <section className="flex flex-col justify-between">
-            <div>
-              <div className="rounded-[1.25rem] border border-black/[0.06] bg-gray-50 dark:bg-[#111111] p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">
-                  Status atual
-                </p>
-                <p className="mt-2 text-base font-semibold text-[#082f49]">
-                  {transaction.status || "pending"}
-                </p>
-              </div>
+          <section className="flex flex-col justify-between gap-4">
+            <div className="space-y-4">
+              <StatusCard status={transaction.status || "pending"} />
 
-              <div className="mt-4 rounded-[1.25rem] border border-black/[0.06] bg-white p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">
+              <div className="rounded-[1.25rem] border border-black/[0.06] bg-white p-4 dark:bg-[#111]">
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                   Código Pix copia e cola
                 </p>
-                <p className="mt-3 break-all rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 font-mono text-xs leading-6 text-[#0f172a]">
+                <p
+                  className="mt-3 break-all rounded-xl border px-4 py-3 font-mono text-xs leading-6 text-slate-900 dark:text-slate-100"
+                  style={{
+                    borderColor:
+                      "color-mix(in oklab, var(--accent) 20%, transparent)",
+                    background:
+                      "color-mix(in oklab, var(--accent) 5%, white)",
+                  }}
+                >
                   {pixCode || "Não informado pelo gateway."}
                 </p>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <InfoCard label="Gateway payment id" value={input.gatewayPaymentId} />
-                <InfoCard label="Pagou transaction id" value={transaction.transactionId} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <InfoCard
+                  label="ID da cobrança"
+                  value={input.gatewayPaymentId}
+                  monospace
+                />
+                <InfoCard
+                  label="Transação"
+                  value={transaction.transactionId}
+                  monospace
+                />
                 <InfoCard label="Valor" value={formatCurrency(transaction.amount)} />
-                <InfoCard label="Metodo" value={transaction.method || "pix"} />
+                <InfoCard label="Método" value={transaction.method || "pix"} />
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3">
               <Link
                 href="/"
-                className="inline-flex items-center rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-[#082f49] transition-colors hover:bg-gray-50 dark:bg-[#111111]"
+                className="inline-flex items-center rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 dark:bg-[#111] dark:text-slate-100"
               >
                 Voltar para a plataforma
               </Link>
@@ -241,40 +360,63 @@ async function renderPagouPixRetry(input: {
         </div>
       </main>
     );
-  } catch {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-16">
-        <div className="w-full rounded-[2rem] border border-red-100 bg-white p-8 shadow-[0_26px_120px_rgba(15,23,42,0.08)]">
-          <p className="text-[0.72rem] uppercase tracking-[0.28em] text-red-500">
-            Reemissão indisponível
-          </p>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-[#082f49]">
-            Não foi possível carregar a cobrança Pix agora.
-          </h1>
-          <p className="mt-4 text-sm leading-7 text-[#64748b]">
-            A transação do gateway não respondeu neste momento. Tente novamente
-            em instantes ou use o fluxo de reenvio dentro da plataforma.
-          </p>
-          <div className="mt-6 rounded-[1.25rem] border border-red-100 bg-red-50 px-5 py-4">
-            <p className="text-[0.68rem] uppercase tracking-[0.18em] text-red-500">
-              Gateway payment id
-            </p>
-            <p className="mt-2 break-all font-mono text-sm text-[#082f49]">
-              {input.gatewayPaymentId}
-            </p>
-          </div>
-        </div>
-      </main>
-    );
+  } catch (error) {
+    return renderFallback({
+      gatewayPaymentId: input.gatewayPaymentId,
+      category: categorizeFailure(error),
+    });
   }
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function StatusCard({ status }: { status: string }) {
+  const friendly =
+    status === "succeeded" || status === "paid"
+      ? { label: "Pagamento confirmado", tone: "success" as const }
+      : status === "pending" || status === "processing" || status === "waiting_payment"
+        ? { label: "Aguardando pagamento", tone: "info" as const }
+        : status === "expired"
+          ? { label: "QR Code expirado", tone: "warning" as const }
+          : { label: status, tone: "default" as const };
+
+  const toneStyles: Record<typeof friendly.tone, string> = {
+    success: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    info: "bg-[color:var(--accent)]/8 text-[color:var(--accent)] border-[color:var(--accent)]/25",
+    warning: "bg-amber-50 text-amber-700 border-amber-200",
+    default: "bg-slate-50 text-slate-700 border-slate-200",
+  };
+
   return (
-    <div className="rounded-[1.1rem] border border-black/[0.06] bg-gray-50 dark:bg-[#111111] p-4">
-      <p className="text-xs uppercase tracking-[0.16em] text-[#94a3b8]">{label}</p>
-      <p className="mt-2 break-all text-sm font-medium text-[#082f49]">{value}</p>
+    <div
+      className={`rounded-[1.25rem] border px-4 py-3 ${toneStyles[friendly.tone]}`}
+      role="status"
+    >
+      <p className="text-xs uppercase tracking-[0.16em] opacity-70">Status atual</p>
+      <p className="mt-1 text-base font-semibold">{friendly.label}</p>
     </div>
   );
 }
 
+function InfoCard({
+  label,
+  value,
+  monospace,
+}: {
+  label: string;
+  value: string;
+  monospace?: boolean;
+}) {
+  return (
+    <div className="rounded-[1.1rem] border border-black/[0.06] bg-slate-50 p-4 dark:bg-[#111]">
+      <p className="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <p
+        className={`mt-2 break-all text-sm font-medium text-slate-900 dark:text-slate-100 ${
+          monospace ? "font-mono text-xs" : ""
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { platformBrand } from "@/lib/platform";
 import { appEnv } from "@/server/recovery/config";
 import { HttpError } from "@/server/recovery/utils/http-error";
+import { safeFetch } from "@/server/recovery/utils/safe-fetch";
 
 type PagouBuyer = {
   name?: string | null;

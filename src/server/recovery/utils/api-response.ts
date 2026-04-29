@@ -2,37 +2,65 @@ import { NextResponse } from "next/server";
 
 import type { ApiSession } from "@/server/auth/request";
 
-function getCorsOrigin(): string {
+let cachedPrimaryOrigin: string | null = null;
+let warnedDevFallback = false;
+
+/**
+ * Resolve the canonical app origin lazily. We can't fail at module load time
+ * because Next.js evaluates server modules during the build (page data
+ * collection) without runtime env vars set. Throwing there would block the
+ * build entirely.
+ *
+ * In production runtime: missing NEXT_PUBLIC_APP_URL is fatal — we refuse
+ * to silently fall back to a hardcoded value.
+ * In dev: we use http://localhost:3000 with a one-shot warning.
+ */
+function getPrimaryOrigin(): string {
+  if (cachedPrimaryOrigin) return cachedPrimaryOrigin;
   const url = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (!url) {
-    if (process.env.NODE_ENV === "production") {
-      console.error("[CORS] NEXT_PUBLIC_APP_URL not set in production — using restrictive default");
-    } else {
-      console.warn("[CORS] NEXT_PUBLIC_APP_URL not set — using restrictive default");
-    }
-    return "https://pagrecovery.com.br";
+  if (url) {
+    cachedPrimaryOrigin = url;
+    return url;
   }
-  return url;
+  // We are in production runtime (request-scoped) without the env var set.
+  // Refuse the request rather than echo a permissive Origin header.
+  if (process.env.NODE_ENV === "production" && process.env.NEXT_RUNTIME) {
+    throw new Error(
+      "[CORS] NEXT_PUBLIC_APP_URL is required in production. " +
+        "Set it to the canonical app URL (e.g. https://pagrecovery.com) before serving traffic.",
+    );
+  }
+  if (!warnedDevFallback) {
+    console.warn(
+      "[CORS] NEXT_PUBLIC_APP_URL not set — defaulting to http://localhost:3000 for dev",
+    );
+    warnedDevFallback = true;
+  }
+  cachedPrimaryOrigin = "http://localhost:3000";
+  return cachedPrimaryOrigin;
 }
 
-const ALLOWED_ORIGINS = new Set([
-  getCorsOrigin(),
-  ...(process.env.NODE_ENV !== "production"
-    ? ["http://localhost:8081", "http://localhost:19006"]
-    : []),
-]);
+function getAllowedOrigins(): Set<string> {
+  const set = new Set<string>([getPrimaryOrigin()]);
+  if (process.env.NODE_ENV !== "production") {
+    set.add("http://localhost:8081");
+    set.add("http://localhost:19006");
+    set.add("http://localhost:3000");
+  }
+  return set;
+}
 
 function corsHeaders(origin?: string | null): Record<string, string> {
-  const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : getCorsOrigin();
+  const primary = getPrimaryOrigin();
+  const allowed = origin && getAllowedOrigins().has(origin) ? origin : primary;
   return {
     "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
   };
 }
-
-const CORS_HEADERS = corsHeaders();
 
 /** Preflight OPTIONS response with CORS headers. */
 export function corsOptions(request?: Request) {
@@ -49,14 +77,14 @@ export function apiOk<T>(data: T, status = 200, request?: Request) {
 /** JSON error response with CORS headers and standardized format. */
 export function apiError(message: string, status = 400, request?: Request, code?: string) {
   const origin = request?.headers?.get("origin");
-  const errorCode = code ?? deriveErrorCode(status, message);
+  const errorCode = code ?? deriveErrorCode(status);
   return NextResponse.json(
     { error: { code: errorCode, message } },
     { status, headers: corsHeaders(origin) },
   );
 }
 
-function deriveErrorCode(status: number, message: string): string {
+function deriveErrorCode(status: number): string {
   if (status === 400) return "BAD_REQUEST";
   if (status === 401) return "UNAUTHORIZED";
   if (status === 403) return "FORBIDDEN";

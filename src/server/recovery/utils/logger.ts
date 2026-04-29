@@ -1,3 +1,5 @@
+import { captureException, captureMessage } from "@/server/observability/sentry";
+
 type LogLevel = "info" | "warn" | "error" | "debug";
 
 function log(
@@ -12,9 +14,24 @@ function log(
     ...context,
   };
 
-  if (level === "error") console.error(JSON.stringify(entry));
-  else if (level === "warn") console.warn(JSON.stringify(entry));
-  else console.log(JSON.stringify(entry));
+  if (level === "error") {
+    console.error(JSON.stringify(entry));
+    const err = context?.error;
+    if (err instanceof Error) {
+      captureException(err, { extra: { message, ...context } });
+    } else {
+      captureMessage(message, "error", { extra: context });
+    }
+    return;
+  }
+
+  if (level === "warn") {
+    console.warn(JSON.stringify(entry));
+    captureMessage(message, "warning", { extra: context });
+    return;
+  }
+
+  console.log(JSON.stringify(entry));
 }
 
 export const logger = {

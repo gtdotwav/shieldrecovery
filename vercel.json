@@ -11,6 +11,14 @@
       "destination": "https://checkout-mu-dun.vercel.app/checkout/:path*"
     }
   ],
+  "functions": {
+    "src/app/api/worker/run/route.ts": { "maxDuration": 60 },
+    "src/app/api/agent/orchestrate/route.ts": { "maxDuration": 55 },
+    "src/app/api/webhooks/pagouai/[sellerKey]/route.ts": { "maxDuration": 30 },
+    "src/app/api/webhooks/pagouai/route.ts": { "maxDuration": 30 },
+    "src/app/api/webhooks/pagnet/[sellerKey]/route.ts": { "maxDuration": 30 },
+    "src/app/api/webhooks/pagnet/route.ts": { "maxDuration": 30 }
+  },
   "crons": [
     {
       "path": "/api/worker/run",

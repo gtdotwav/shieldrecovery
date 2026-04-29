@@ -1,58 +1,17 @@
 import { authenticatePlatformUser, registerSellerLogin } from "@/server/auth/identities";
 import { createSessionToken, isAuthConfigured, normalizeEmail } from "@/server/auth/core";
+import { resolveRequestId } from "@/server/observability/request-id";
 import { apiError, apiOk, corsOptions } from "@/server/recovery/utils/api-response";
+import { bumpRateLimit } from "@/server/recovery/utils/distributed-rate-limit";
 import { logger } from "@/server/recovery/utils/logger";
 
 export function OPTIONS(request: Request) {
   return corsOptions(request);
 }
 
-/* ── Simple in-memory rate limiter ──
- * NOTE: This Map resets on Vercel cold starts, so it only provides
- * per-isolate protection. A persistent store (Redis / KV) would be
- * needed for cross-isolate rate limiting. The shorter window (30s)
- * makes the per-isolate limiter more effective against burst attacks.
- */
-
-const RATE_WINDOW_MS = 30_000; // 30 seconds — shorter window is more effective per-isolate
-const MAX_ATTEMPTS = 5;
-
-const attempts = new Map<string, { count: number; resetAt: number }>();
-
-function recordAttempt(ip: string): void {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    attempts.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-  } else {
-    entry.count++;
-  }
-}
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-
-  if (!entry || now > entry.resetAt) {
-    return false;
-  }
-
-  return entry.count >= MAX_ATTEMPTS;
-}
-
-// Periodically clean up stale entries (every 5 min)
-if (typeof globalThis !== "undefined") {
-  const CLEANUP_INTERVAL = 300_000;
-  const key = "__auth_rate_limit_cleanup";
-  if (!(globalThis as Record<string, unknown>)[key]) {
-    (globalThis as Record<string, unknown>)[key] = setInterval(() => {
-      const now = Date.now();
-      for (const [ip, entry] of attempts) {
-        if (now > entry.resetAt) attempts.delete(ip);
-      }
-    }, CLEANUP_INTERVAL);
-  }
-}
+const RATE_WINDOW_SECONDS = 60;
+const MAX_ATTEMPTS_PER_IP = 5;
+const MAX_ATTEMPTS_PER_EMAIL = 8;
 
 function getClientIp(request: Request): string {
   return (
@@ -68,16 +27,22 @@ function getClientIp(request: Request): string {
  * Returns: { token: string; role: string; email: string; expiresIn: number }
  */
 export async function POST(request: Request) {
+  resolveRequestId(request);
   const ip = getClientIp(request);
 
-  if (isRateLimited(ip)) {
-    const entry = attempts.get(ip);
-    logger.warn("Auth rate limit exceeded", {
+  const ipLimit = await bumpRateLimit({
+    key: `auth-token:ip:${ip}`,
+    windowSeconds: RATE_WINDOW_SECONDS,
+    maxCount: MAX_ATTEMPTS_PER_IP,
+  });
+
+  if (!ipLimit.allowed) {
+    logger.warn("Auth rate limit exceeded (per IP)", {
       endpoint: "/api/auth/token",
       ip,
-      currentCount: entry?.count ?? 0,
-      limit: MAX_ATTEMPTS,
-      windowMs: RATE_WINDOW_MS,
+      currentCount: ipLimit.count,
+      limit: MAX_ATTEMPTS_PER_IP,
+      windowSeconds: RATE_WINDOW_SECONDS,
     });
     return apiError("Muitas tentativas. Tente novamente em alguns segundos.", 429, request);
   }
@@ -97,14 +62,29 @@ export async function POST(request: Request) {
   const password = body.password?.trim() ?? "";
 
   if (!email || !password) {
-    recordAttempt(ip);
     return apiError("Email and password are required.", 400, request);
+  }
+
+  const emailLimit = await bumpRateLimit({
+    key: `auth-token:email:${email.toLowerCase()}`,
+    windowSeconds: RATE_WINDOW_SECONDS,
+    maxCount: MAX_ATTEMPTS_PER_EMAIL,
+  });
+
+  if (!emailLimit.allowed) {
+    logger.warn("Auth rate limit exceeded (per email)", {
+      endpoint: "/api/auth/token",
+      email,
+      ip,
+      currentCount: emailLimit.count,
+      limit: MAX_ATTEMPTS_PER_EMAIL,
+    });
+    return apiError("Muitas tentativas. Tente novamente em alguns segundos.", 429, request);
   }
 
   const identity = await authenticatePlatformUser({ email, password });
 
   if (!identity) {
-    recordAttempt(ip);
     return apiError("Invalid credentials.", 401, request);
   }
 

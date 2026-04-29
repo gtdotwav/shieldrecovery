@@ -183,7 +183,7 @@ describe("Worker Secret Timing-Safe Comparison", () => {
     expect(workerSource).not.toMatch(/secret\s*===\s*headerToken/);
   });
 
-  it("should use timingSafeEqual in orchestrate route", async () => {
+  it("should use timingSafeEqual via authorizeCronRequest in orchestrate route", async () => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
 
@@ -191,10 +191,16 @@ describe("Worker Secret Timing-Safe Comparison", () => {
       join(process.cwd(), "src/app/api/agent/orchestrate/route.ts"),
       "utf-8",
     );
+    // Cron auth was extracted to a shared helper; the route delegates to it.
+    expect(orchestrateSource).toContain("authorizeCronRequest");
 
-    expect(orchestrateSource).toContain("timingSafeEqual");
-    // Must NOT use plain === for secret comparison
-    expect(orchestrateSource).not.toMatch(/authHeader\s*===\s*`Bearer/);
-    expect(orchestrateSource).not.toMatch(/workerHeader\s*===\s*cronSecret/);
+    const helperSource = readFileSync(
+      join(process.cwd(), "src/server/observability/cron-auth.ts"),
+      "utf-8",
+    );
+    expect(helperSource).toContain("timingSafeEqual");
+
+    // Must NOT use plain === for secret comparison anywhere in the helper.
+    expect(helperSource).not.toMatch(/secret\s*===\s*[a-zA-Z]/);
   });
 });

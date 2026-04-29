@@ -51,6 +51,7 @@ export class RecoveryWorkerService {
   async runDueJobs(input?: {
     limit?: number;
     concurrency?: number;
+    perSellerConcurrency?: number;
     now?: string;
   }): Promise<WorkerRunSummary> {
     const runAt = input?.now ?? new Date().toISOString();
@@ -66,7 +67,15 @@ export class RecoveryWorkerService {
       Math.max(1, Math.floor(input?.concurrency ?? appEnv.workerConcurrency)),
       Math.max(1, jobs.length || 1),
     );
-    const results = await this.processClaimedJobsInParallel(jobs, concurrency);
+    const perSellerConcurrency = Math.max(
+      1,
+      Math.min(concurrency, Math.floor(input?.perSellerConcurrency ?? 3)),
+    );
+    const results = await this.processClaimedJobsInParallel(
+      jobs,
+      concurrency,
+      perSellerConcurrency,
+    );
 
     return {
       ok: true,
@@ -82,21 +91,70 @@ export class RecoveryWorkerService {
     };
   }
 
+  /**
+   * Schedules claimed jobs across N global workers with a per-seller fairness
+   * cap so that one seller with a huge backlog cannot starve the others or
+   * burn down a shared rate-limited resource (WhatsApp / SendGrid / VAPI).
+   *
+   * Strategy:
+   *  1. Group jobs by seller key (or "__nokey" bucket if absent).
+   *  2. Each global worker repeatedly picks the next bucket whose in-flight
+   *     count is below perSellerConcurrency.
+   *  3. If every bucket is at cap, the worker waits for the next completion.
+   */
   private async processClaimedJobsInParallel(
     jobs: QueueJobRecord[],
     concurrency: number,
+    perSellerConcurrency: number,
   ) {
-    if (!jobs.length) {
-      return [];
-    }
+    if (!jobs.length) return [];
 
+    const buckets = new Map<string, Array<{ index: number; job: QueueJobRecord }>>();
+    jobs.forEach((job, index) => {
+      const key = sellerKeyForJob(job);
+      const list = buckets.get(key) ?? [];
+      list.push({ index, job });
+      buckets.set(key, list);
+    });
+
+    const inFlightBySeller = new Map<string, number>();
     const results = new Array<WorkerJobRunResult>(jobs.length);
-    const totalItems = jobs.length;
 
-    const workers = Array.from({ length: concurrency }, (_, workerIdx) => {
+    const claimNext = ():
+      | { sellerKey: string; index: number; job: QueueJobRecord }
+      | null => {
+      for (const [sellerKey, queue] of buckets) {
+        if (!queue.length) continue;
+        const live = inFlightBySeller.get(sellerKey) ?? 0;
+        if (live >= perSellerConcurrency) continue;
+        const next = queue.shift()!;
+        inFlightBySeller.set(sellerKey, live + 1);
+        return { sellerKey, index: next.index, job: next.job };
+      }
+      return null;
+    };
+
+    const anyPending = () =>
+      Array.from(buckets.values()).some((q) => q.length > 0);
+
+    const workers = Array.from({ length: concurrency }, () => {
       return (async () => {
-        for (let i = workerIdx; i < totalItems; i += concurrency) {
-          results[i] = await this.processClaimedJob(jobs[i]);
+        // Each global worker drains whatever bucket allows another in-flight
+        // job. When everything is capped, yield back via setTimeout so we
+        // don't hot-spin between completions.
+        while (true) {
+          const claim = claimNext();
+          if (!claim) {
+            if (!anyPending()) return;
+            await new Promise((resolve) => setTimeout(resolve, 25));
+            continue;
+          }
+          try {
+            results[claim.index] = await this.processClaimedJob(claim.job);
+          } finally {
+            const live = inFlightBySeller.get(claim.sellerKey) ?? 1;
+            inFlightBySeller.set(claim.sellerKey, Math.max(0, live - 1));
+          }
         }
       })();
     });
@@ -761,6 +819,18 @@ function readPayloadNumber(job: QueueJobRecord, key: string) {
 function readPayloadOptionalString(job: QueueJobRecord, key: string) {
   const value = job.payload[key];
   return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function sellerKeyForJob(job: QueueJobRecord): string {
+  const fromPayload =
+    typeof job.payload?.sellerKey === "string" ? job.payload.sellerKey.trim() : "";
+  if (fromPayload) return fromPayload;
+  const fromAgent =
+    typeof job.payload?.assignedAgentName === "string"
+      ? job.payload.assignedAgentName.trim()
+      : "";
+  if (fromAgent) return `agent:${fromAgent}`;
+  return "__nokey";
 }
 
 function retryDelayMinutesForAttempt(attempts: number) {

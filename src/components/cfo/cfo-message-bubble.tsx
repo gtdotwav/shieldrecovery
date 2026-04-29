@@ -1,5 +1,7 @@
 "use client";
 
+import { renderSafeMarkdown } from "@/server/recovery/utils/html-escape";
+
 type CfoMessage = {
   role: "user" | "assistant" | "system";
   content: string;
@@ -23,19 +25,16 @@ export function CfoMessageBubble({ message }: { message: CfoMessage }) {
           ? "bg-[var(--accent)] text-white rounded-br-md"
           : "bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] rounded-bl-md"
       }`}>
-        {/* Text content with basic markdown */}
         <div className={`text-sm md:text-[0.8rem] leading-relaxed whitespace-pre-wrap ${isUser ? "" : "cfo-markdown"}`}>
           {renderContent(message.content)}
         </div>
 
-        {/* Chart visualization */}
         {message.chartData && !isUser && (
           <div className="mt-3 pt-3 border-t border-[var(--border)]/50">
             <CfoMiniChart chart={message.chartData} />
           </div>
         )}
 
-        {/* Timestamp */}
         <p className={`text-[0.6rem] mt-1.5 ${isUser ? "text-white/60" : "text-[var(--muted)]"}`}>
           {new Date(message.timestamp).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
         </p>
@@ -45,12 +44,7 @@ export function CfoMessageBubble({ message }: { message: CfoMessage }) {
 }
 
 function renderContent(text: string) {
-  const lines = text.split("\n");
-  return lines.map((line, i) => {
-    let processed = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    processed = processed.replace(/^• /, "\u2192 ");
-    return <span key={i} dangerouslySetInnerHTML={{ __html: processed + (i < lines.length - 1 ? "<br/>" : "") }} />;
-  });
+  return <span dangerouslySetInnerHTML={{ __html: renderSafeMarkdown(text) }} />;
 }
 
 function CfoMiniChart({ chart }: { chart: NonNullable<CfoMessage["chartData"]> }) {
@@ -91,7 +85,6 @@ function CfoMiniChart({ chart }: { chart: NonNullable<CfoMessage["chartData"]> }
     );
   }
 
-  // Bar chart (default for "bar" and "line")
   return (
     <div className="space-y-1.5">
       {chart.title && <p className="text-[0.65rem] font-semibold text-[var(--muted)]">{chart.title}</p>}

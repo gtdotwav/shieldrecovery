@@ -14,6 +14,7 @@ import type {
   WhatsAppWebSessionStatus,
 } from "@/server/recovery/types";
 import { HttpError } from "@/server/recovery/utils/http-error";
+import { safeFetch } from "@/server/recovery/utils/safe-fetch";
 import { createStructuredLog } from "@/server/recovery/utils/structured-logger";
 
 type WhatsAppWebhookPayload = {
@@ -329,12 +330,12 @@ export class MessagingService {
 
     if (settings.whatsappApiBaseUrl && settings.whatsappWebSessionId) {
       if (webApiConfig.kind === "evolution") {
-        await fetch(webApiConfig.disconnectUrl, {
+        await safeFetch(webApiConfig.disconnectUrl, {
           method: "DELETE",
           headers: buildWhatsAppApiHeaders(settings.whatsappAccessToken),
         }).catch((err) => console.error("[messaging] disconnect error:", err));
       } else {
-        await fetch(webApiConfig.disconnectUrl, {
+        await safeFetch(webApiConfig.disconnectUrl, {
           method: "POST",
           headers: {
             ...buildWhatsAppApiHeaders(settings.whatsappAccessToken),
@@ -573,7 +574,7 @@ export class MessagingService {
         unsubscribeUrl,
       });
 
-      const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      const response = await safeFetch("https://api.sendgrid.com/v3/mail/send", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${sendgridApiKey}`,
@@ -770,7 +771,7 @@ export class MessagingService {
     phone: string;
     bodyText: string;
   }): Promise<DispatchOutboundMessageResult> {
-    const response = await fetch(
+    const response = await safeFetch(
       `${input.apiBaseUrl.replace(/\/$/, "")}/${input.phoneNumberId}/messages`,
       {
         method: "POST",
@@ -838,7 +839,7 @@ export class MessagingService {
         `/message/sendText/${encodeURIComponent(config.sessionId)}`,
       );
 
-      const response = await fetch(textUrl, {
+      const response = await safeFetch(textUrl, {
         method: "POST",
         headers: {
           ...buildWhatsAppApiHeaders(input.accessToken),
@@ -868,7 +869,7 @@ export class MessagingService {
     }
 
     // Generic Web API: send as plain text (buttons not supported)
-    const response = await fetch(config.sendUrl, {
+    const response = await safeFetch(config.sendUrl, {
       method: "POST",
       headers: {
         ...buildWhatsAppApiHeaders(input.accessToken),
@@ -1137,7 +1138,7 @@ export class MessagingService {
       const bodyText = buildOutboundWhatsAppText(input.content, input.metadata, true);
       const ctaLabel = buildCtaButtonLabel(input.metadata);
 
-      response = await fetch(messagesUrl, {
+      response = await safeFetch(messagesUrl, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -1165,7 +1166,7 @@ export class MessagingService {
         // CTA button failed — fallback to plain text with link
         console.warn("[messaging] Cloud API CTA button failed, falling back to text.");
         const fallbackBody = buildOutboundWhatsAppText(input.content, input.metadata, false);
-        response = await fetch(messagesUrl, {
+        response = await safeFetch(messagesUrl, {
           method: "POST",
           headers,
           body: JSON.stringify({
@@ -1180,7 +1181,7 @@ export class MessagingService {
     } else {
       // No payment URL — send as regular text
       const body = buildOutboundWhatsAppText(input.content, input.metadata, false);
-      response = await fetch(messagesUrl, {
+      response = await safeFetch(messagesUrl, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -1217,7 +1218,7 @@ export class MessagingService {
     const pixCode = extractPixCodeForSeparateMessage(input.metadata);
     if (pixCode && payload?.messages?.[0]?.id) {
       try {
-        await fetch(messagesUrl, {
+        await safeFetch(messagesUrl, {
           method: "POST",
           headers,
           body: JSON.stringify({
@@ -1267,7 +1268,7 @@ export class MessagingService {
       );
 
       try {
-        const btnResponse = await fetch(buttonsUrl, {
+        const btnResponse = await safeFetch(buttonsUrl, {
           method: "POST",
           headers: apiHeaders,
           body: JSON.stringify({
@@ -1298,7 +1299,7 @@ export class MessagingService {
       if (!usedCtaButton) {
         // Fallback to plain text with link
         const fallbackBody = buildOutboundWhatsAppText(input.content, input.metadata, false);
-        response = await fetch(config.sendUrl, {
+        response = await safeFetch(config.sendUrl, {
           method: "POST",
           headers: apiHeaders,
           body: JSON.stringify({ number: input.phone, text: fallbackBody }),
@@ -1308,7 +1309,7 @@ export class MessagingService {
     } else if (config.kind === "evolution") {
       // Evolution API: plain text (no payment URL)
       const body = buildOutboundWhatsAppText(input.content, input.metadata, false);
-      response = await fetch(config.sendUrl, {
+      response = await safeFetch(config.sendUrl, {
         method: "POST",
         headers: apiHeaders,
         body: JSON.stringify({ number: input.phone, text: body }),
@@ -1317,7 +1318,7 @@ export class MessagingService {
     } else {
       // Generic Web API: plain text (buttons not supported)
       const body = buildOutboundWhatsAppText(input.content, input.metadata, false);
-      response = await fetch(config.sendUrl, {
+      response = await safeFetch(config.sendUrl, {
         method: "POST",
         headers: apiHeaders,
         body: JSON.stringify({
@@ -1370,14 +1371,14 @@ export class MessagingService {
     if (pixCode && providerMessageId) {
       try {
         if (config.kind === "evolution") {
-          await fetch(config.sendUrl, {
+          await safeFetch(config.sendUrl, {
             method: "POST",
             headers: apiHeaders,
             body: JSON.stringify({ number: input.phone, text: pixCode }),
             signal: AbortSignal.timeout(30_000),
           });
         } else {
-          await fetch(config.sendUrl, {
+          await safeFetch(config.sendUrl, {
             method: "POST",
             headers: apiHeaders,
             body: JSON.stringify({
@@ -1416,7 +1417,7 @@ export class MessagingService {
     // Strip data URL prefix to get raw base64
     const base64Data = input.base64Image.replace(/^data:image\/\w+;base64,/, "");
 
-    const response = await fetch(mediaUrl, {
+    const response = await safeFetch(mediaUrl, {
       method: "POST",
       headers: {
         ...buildWhatsAppApiHeaders(input.accessToken),
@@ -1462,7 +1463,7 @@ export class MessagingService {
   }
 
   private async startGenericWebSession(config: WebApiConnectionConfig) {
-    const response = await fetch(config.startUrl, {
+    const response = await safeFetch(config.startUrl, {
       method: "POST",
       headers: {
         ...buildWhatsAppApiHeaders(config.accessToken),
@@ -1499,7 +1500,7 @@ export class MessagingService {
       statusUrl.searchParams.set("sessionId", config.sessionId);
     }
 
-    const response = await fetch(statusUrl, {
+    const response = await safeFetch(statusUrl, {
       headers: buildWhatsAppApiHeaders(config.accessToken),
     });
 
@@ -1522,14 +1523,14 @@ export class MessagingService {
   }
 
   private async startEvolutionSession(config: WebApiConnectionConfig) {
-    let response = await fetch(config.startUrl, {
+    let response = await safeFetch(config.startUrl, {
       method: "GET",
       headers: buildWhatsAppApiHeaders(config.accessToken),
     });
 
     if (response.status === 404) {
       await this.ensureEvolutionInstance(config).catch((err) => console.error("[messaging] ensureEvolutionInstance error:", err));
-      response = await fetch(config.startUrl, {
+      response = await safeFetch(config.startUrl, {
         method: "GET",
         headers: buildWhatsAppApiHeaders(config.accessToken),
       });
@@ -1560,7 +1561,7 @@ export class MessagingService {
   }
 
   private async refreshEvolutionSession(config: WebApiConnectionConfig) {
-    const statusResponse = await fetch(config.statusUrl, {
+    const statusResponse = await safeFetch(config.statusUrl, {
       method: "GET",
       headers: buildWhatsAppApiHeaders(config.accessToken),
     });
@@ -1578,7 +1579,7 @@ export class MessagingService {
       nextSession.sessionStatus !== "connected" &&
       nextSession.sessionStatus !== "pending_qr"
     ) {
-      const connectResponse = await fetch(config.startUrl, {
+      const connectResponse = await safeFetch(config.startUrl, {
         method: "GET",
         headers: buildWhatsAppApiHeaders(config.accessToken),
       });
@@ -1607,7 +1608,7 @@ export class MessagingService {
   }
 
   private async ensureEvolutionInstance(config: WebApiConnectionConfig) {
-    const response = await fetch(joinUrl(config.baseUrl, "/instance/create"), {
+    const response = await safeFetch(joinUrl(config.baseUrl, "/instance/create"), {
       method: "POST",
       headers: {
         ...buildWhatsAppApiHeaders(config.accessToken),
@@ -1635,7 +1636,7 @@ export class MessagingService {
   }
 
   private async configureEvolutionWebhook(config: WebApiConnectionConfig) {
-    const response = await fetch(joinUrl(config.baseUrl, `/webhook/set/${config.sessionId}`), {
+    const response = await safeFetch(joinUrl(config.baseUrl, `/webhook/set/${config.sessionId}`), {
       method: "POST",
       headers: {
         ...buildWhatsAppApiHeaders(config.accessToken),

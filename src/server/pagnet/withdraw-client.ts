@@ -1,5 +1,7 @@
 /* ── Config ── */
 
+import { safeFetch } from "@/server/recovery/utils/safe-fetch";
+
 const TAG = "[pagnet-withdraw]";
 
 const PAGNET_API_BASE = "https://api.pagnetbrasil.com/v1";
@@ -29,7 +31,7 @@ async function pagnetFetch<T>(
   const url = `${PAGNET_API_BASE}${path}`;
   const auth = useWithdrawKey ? withdrawAuthHeader() : authHeader();
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     ...init,
     headers: {
       Authorization: auth,
@@ -38,6 +40,7 @@ async function pagnetFetch<T>(
       ...init.headers,
     },
     cache: "no-store",
+    timeoutMs: 20_000,
   });
 
   const body = await res.text();

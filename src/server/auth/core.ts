@@ -31,6 +31,8 @@ type SessionPayload = {
   sub: string;
   role: UserRole;
   exp: number;
+  /** unique session id used for blacklist-based revocation */
+  jti?: string;
   pid?: string; // partnerId (only for partner role)
 };
 
@@ -260,6 +262,7 @@ export async function createSessionToken(email: string, role: UserRole, partnerI
     sub: normalizeEmail(email),
     role,
     exp: Date.now() + SESSION_TTL_SECONDS * 1000,
+    jti: crypto.randomUUID(),
     ...(partnerId ? { pid: partnerId } : {}),
   };
 
@@ -314,6 +317,15 @@ export async function verifySessionToken(token?: string | null) {
       return null;
     }
 
+    // Blacklist check (fast cached lookup). Defense-in-depth on top of the
+    // signed jwt: an admin can revoke a session before its 7-day TTL.
+    if (payload.jti) {
+      const { isSessionRevoked } = await import("./session-blacklist");
+      if (await isSessionRevoked(payload.jti)) {
+        return null;
+      }
+    }
+
     // Sliding session: flag refresh when past 50% of the 7-day TTL (> 3.5 days old)
     const sessionCreatedAt = payload.exp - SESSION_TTL_SECONDS * 1000;
     const halfTtlMs = (SESSION_TTL_SECONDS * 1000) / 2;
@@ -324,6 +336,7 @@ export async function verifySessionToken(token?: string | null) {
       role: payload.role,
       expiresAt: payload.exp,
       needsRefresh,
+      jti: payload.jti,
       ...(payload.pid ? { partnerId: payload.pid } : {}),
     };
   } catch {

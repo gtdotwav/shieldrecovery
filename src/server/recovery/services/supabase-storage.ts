@@ -2,6 +2,11 @@ import { randomUUID } from "node:crypto";
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { logger } from "@/server/recovery/utils/logger";
+import {
+  CUSTOMER_FIELDS,
+  PAYMENT_FIELDS,
+  LEAD_FIELDS_WITH_AGENT,
+} from "@/server/recovery/services/entity-projections";
 
 /**
  * Sanitize a value for use in PostgREST filter strings (.or(), .filter()).
@@ -510,11 +515,11 @@ export class SupabaseStorageService implements RecoveryStorage {
     // Prefer exact gateway_customer_id match, then fall back to email match
     const { data: byGatewayId } = await this.supabase
       .from("customers")
-      .select("*")
+      .select(CUSTOMER_FIELDS)
       .eq("gateway_customer_id", normalizedEvent.customer.id)
       .limit(1);
 
-    const existing = byGatewayId?.[0] ?? null;
+    const existing = (byGatewayId?.[0] as DatabaseCustomerRow | undefined) ?? null;
 
     if (existing) {
       const updatePayload: Record<string, unknown> = {
@@ -539,11 +544,11 @@ export class SupabaseStorageService implements RecoveryStorage {
     // Check by email as fallback — but don't change its gateway_customer_id
     const { data: byEmail } = await this.supabase
       .from("customers")
-      .select("*")
+      .select(CUSTOMER_FIELDS)
       .eq("email", normalizedEvent.customer.email)
       .limit(1);
 
-    const emailMatch = byEmail?.[0] ?? null;
+    const emailMatch = (byEmail?.[0] as DatabaseCustomerRow | undefined) ?? null;
 
     if (emailMatch) {
       const emailUpdatePayload: Record<string, unknown> = {
@@ -594,12 +599,12 @@ export class SupabaseStorageService implements RecoveryStorage {
 
     const { data: paymentRows } = await this.supabase
       .from("payments")
-      .select("*")
+      .select(PAYMENT_FIELDS)
       .or(`gateway_payment_id.eq.${sanitizeFilterValue(normalizedEvent.payment.id)},order_id.eq.${sanitizeFilterValue(normalizedEvent.payment.order_id)}`)
       .order("created_at", { ascending: true })
       .limit(1);
 
-    const existing = paymentRows?.[0] ?? null;
+    const existing = (paymentRows?.[0] as DatabasePaymentRow | undefined) ?? null;
 
     if (existing) {
       const { data, error } = await this.supabase
@@ -689,25 +694,29 @@ export class SupabaseStorageService implements RecoveryStorage {
 
     const { data } = await this.supabase
       .from("payments")
-      .select("*")
+      .select(PAYMENT_FIELDS)
       .or(conditions.join(","))
       .maybeSingle();
-    return data ? mapPayment(data) : undefined;
+    return data ? mapPayment(data as unknown as DatabasePaymentRow) : undefined;
   }
 
   async findCustomer(customerId: string): Promise<CustomerRecord | undefined> {
-    const { data } = await this.supabase.from("customers").select("*").eq("id", customerId).maybeSingle();
-    return data ? mapCustomer(data) : undefined;
+    const { data } = await this.supabase
+      .from("customers")
+      .select(CUSTOMER_FIELDS)
+      .eq("id", customerId)
+      .maybeSingle();
+    return data ? mapCustomer(data as unknown as DatabaseCustomerRow) : undefined;
   }
 
   async findLeadByLeadId(leadId: string): Promise<RecoveryLeadRecord | undefined> {
     const { data } = await this.supabase
       .from("recovery_leads")
-      .select("*, agent:agents(*)")
+      .select(LEAD_FIELDS_WITH_AGENT)
       .eq("lead_id", leadId)
       .maybeSingle();
 
-    return data ? mapLead(data as DatabaseLeadRow) : undefined;
+    return data ? mapLead(data as unknown as DatabaseLeadRow) : undefined;
   }
 
   async findLeadByContact(input: {
@@ -1092,6 +1101,49 @@ export class SupabaseStorageService implements RecoveryStorage {
   }): Promise<QueueJobRecord[]> {
     const limit = input?.limit ?? 20;
     const runUntil = input?.runUntil ?? new Date().toISOString();
+
+    // Atomic claim via FOR UPDATE SKIP LOCKED RPC (see
+    // 20260429_atomic_job_claim_and_dlq.sql). Falls back to the legacy
+    // SELECT-then-UPDATE path if the function is not yet deployed.
+    try {
+      const { data, error } = await withRetry(
+        async () =>
+          this.supabase.rpc("claim_queue_jobs_atomic", {
+            p_limit: limit,
+            p_run_until: runUntil,
+          }),
+        "claimDueQueueJobs.rpc",
+      );
+
+      if (!error && Array.isArray(data) && data.length >= 0) {
+        const claimedRows = (data as DatabaseQueueJobRow[]).sort((left, right) => {
+          const priorityDifference =
+            queueJobPriority(left.job_type) - queueJobPriority(right.job_type);
+          if (priorityDifference !== 0) return priorityDifference;
+          return new Date(left.run_at).getTime() - new Date(right.run_at).getTime();
+        });
+        return claimedRows.map(mapQueueJob);
+      }
+
+      // RPC reported an error — log once and degrade to legacy path.
+      if (error) {
+        logger.warn("claim_queue_jobs_atomic RPC failed; using legacy claim path", {
+          error: error.message,
+        });
+      }
+    } catch (rpcError) {
+      logger.warn("claim_queue_jobs_atomic RPC threw; using legacy claim path", {
+        error: rpcError instanceof Error ? rpcError.message : String(rpcError),
+      });
+    }
+
+    return this.claimDueQueueJobsLegacy(limit, runUntil);
+  }
+
+  private async claimDueQueueJobsLegacy(
+    limit: number,
+    runUntil: string,
+  ): Promise<QueueJobRecord[]> {
     const selectionWindow = Math.min(Math.max(limit * 4, limit), 500);
 
     const { data, error } = await withRetry(
@@ -1103,7 +1155,7 @@ export class SupabaseStorageService implements RecoveryStorage {
           .lte("run_at", runUntil)
           .order("run_at", { ascending: true })
           .limit(selectionWindow),
-      "claimDueQueueJobs",
+      "claimDueQueueJobs.legacy",
     );
 
     if (error || !data?.length) {

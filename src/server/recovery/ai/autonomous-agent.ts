@@ -528,6 +528,29 @@ export class AutonomousRecoveryAgent {
             hasReadMessages: false,
           });
 
+          // Compliance gate at *schedule* time, not just dispatch time.
+          // Without this, cadences are queued for opted-out customers and
+          // we only stop them at send (potentially with the agent burning
+          // tokens to draft messages that get dropped). Channels that are
+          // already opted-out are filtered here.
+          const { canContactLead } = await import(
+            "@/server/recovery/services/frequency-service"
+          );
+          const phoneAllowed = bundle.customer.phone
+            ? (await canContactLead({
+                contactValue: bundle.customer.phone,
+                channel: "whatsapp",
+                sellerKey: lead.assignedAgentName ?? undefined,
+              })).allowed
+            : false;
+          const emailAllowed = bundle.customer.email
+            ? (await canContactLead({
+                contactValue: bundle.customer.email,
+                channel: "email",
+                sellerKey: lead.assignedAgentName ?? undefined,
+              })).allowed
+            : false;
+
           for (const step of cadenceSteps) {
             const scheduledAt = calculateStepSchedule(
               lead.createdAt,
@@ -535,8 +558,19 @@ export class AutonomousRecoveryAgent {
               bundle.customer.phone,
             );
 
-            // Don't schedule steps in the past
+            // Don't schedule steps in the past.
             if (scheduledAt.getTime() < Date.now()) continue;
+
+            // Skip steps whose channel is opted-out for this contact.
+            if (
+              (step.channel === "whatsapp" || step.channel === "sms" || step.channel === "voice") &&
+              !phoneAllowed
+            ) {
+              continue;
+            }
+            if (step.channel === "email" && !emailAllowed) {
+              continue;
+            }
 
             await this.createCadenceStep({
               leadId: lead.leadId,

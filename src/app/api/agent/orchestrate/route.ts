@@ -1,4 +1,5 @@
-import { timingSafeEqual } from "node:crypto";
+import { authorizeCronRequest } from "@/server/observability/cron-auth";
+import { resolveRequestId } from "@/server/observability/request-id";
 import { handleAgentOrchestrate } from "@/server/recovery/controllers/agent-controller";
 
 export const dynamic = "force-dynamic";
@@ -14,54 +15,21 @@ export const maxDuration = 55;
  * POST /api/agent/orchestrate — manual trigger
  */
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
-
-  return handleAgentOrchestrate(request);
+  return run(request);
 }
 
 export async function POST(request: Request) {
-  if (!isAuthorized(request)) {
-    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
-
-  return handleAgentOrchestrate(request);
+  return run(request);
 }
 
-function isAuthorized(request: Request): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret) {
-    // Secret not configured — deny all access
-    return false;
+async function run(request: Request) {
+  resolveRequestId(request);
+  const result = authorizeCronRequest(request, { route: "/api/agent/orchestrate" });
+  if (!result.ok) {
+    return Response.json(
+      { ok: false, error: "Unauthorized", reason: result.reason },
+      { status: 401 },
+    );
   }
-
-  const authHeader = request.headers.get("authorization") ?? "";
-  const workerHeader = request.headers.get("x-worker-secret") ?? "";
-
-  // Check Bearer token (timing-safe)
-  const expectedBearer = `Bearer ${cronSecret}`;
-  if (authHeader.length === expectedBearer.length) {
-    try {
-      if (timingSafeEqual(Buffer.from(authHeader), Buffer.from(expectedBearer))) {
-        return true;
-      }
-    } catch {
-      // length mismatch after encoding — fall through
-    }
-  }
-
-  // Check x-worker-secret header (timing-safe)
-  if (workerHeader.length === cronSecret.length) {
-    try {
-      if (timingSafeEqual(Buffer.from(workerHeader), Buffer.from(cronSecret))) {
-        return true;
-      }
-    } catch {
-      // fall through
-    }
-  }
-
-  return false;
+  return handleAgentOrchestrate(request);
 }

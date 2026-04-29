@@ -71,8 +71,9 @@ async function resetStaleJobs(): Promise<number> {
 }
 
 /**
- * Dead Letter Queue cleanup: archive permanently failed jobs
- * (attempts exhausted, older than DEAD_JOB_MAX_AGE_DAYS).
+ * Dead Letter Queue cleanup: archive permanently failed jobs into
+ * dead_letter_jobs (forensic record) and remove originals.
+ * Falls back to plain DELETE if the archive RPC is not yet deployed.
  */
 async function cleanupDeadJobs(): Promise<number> {
   const storage = getStorageService();
@@ -89,7 +90,30 @@ async function cleanupDeadJobs(): Promise<number> {
       Date.now() - DEAD_JOB_MAX_AGE_DAYS * 24 * 60 * 60_000,
     ).toISOString();
 
-    // Delete permanently failed jobs older than max age
+    // Preferred path: atomic archive via RPC (see migration
+    // 20260429_atomic_job_claim_and_dlq.sql).
+    const archiveResult = await supabase.rpc("archive_dead_jobs", {
+      p_cutoff: cutoff,
+    });
+
+    if (!archiveResult.error) {
+      const archived = Number(archiveResult.data ?? 0);
+      if (archived > 0) {
+        logger.error("Dead letter queue archived terminal jobs", {
+          handler: "cleanupDeadJobs",
+          archivedCount: archived,
+          maxAgeDays: DEAD_JOB_MAX_AGE_DAYS,
+          // logger.error pushes this to Sentry as an alert so on-call sees the trend.
+        });
+      }
+      return archived;
+    }
+
+    logger.warn("archive_dead_jobs RPC failed; falling back to delete-only", {
+      error: archiveResult.error.message,
+    });
+
+    // Legacy fallback: plain DELETE.
     const { count, error } = await supabase
       .from("queue_jobs")
       .delete({ count: "exact" })
@@ -98,7 +122,7 @@ async function cleanupDeadJobs(): Promise<number> {
       .lt("created_at", cutoff);
 
     if (error) {
-      logger.error("Failed to cleanup dead jobs", {
+      logger.error("Failed to cleanup dead jobs (legacy path)", {
         handler: "cleanupDeadJobs",
         error: error.message,
       });
@@ -107,13 +131,12 @@ async function cleanupDeadJobs(): Promise<number> {
 
     const deleted = count ?? 0;
     if (deleted > 0) {
-      logger.info("Cleaned up dead letter queue", {
+      logger.error("Dead letter queue purged terminal jobs (no archive)", {
         handler: "cleanupDeadJobs",
         deletedCount: deleted,
         maxAgeDays: DEAD_JOB_MAX_AGE_DAYS,
       });
     }
-
     return deleted;
   } catch (error) {
     logger.error("Dead job cleanup failed", {
