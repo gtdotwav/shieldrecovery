@@ -8,6 +8,7 @@ import {
   ChevronRight,
   FlaskConical,
   LayoutDashboard,
+  LayoutGrid,
   Link2,
   LogOut,
   Megaphone,
@@ -61,6 +62,7 @@ type PlatformRoute = {
   icon: LucideIcon;
   kind: "marketing" | "app";
   group?: SidebarGroup;
+  pinned?: boolean;
   allowedRoles?: UserRole[];
   devOnly?: boolean;
   experimental?: boolean;
@@ -76,6 +78,15 @@ export const platformRoutes: PlatformRoute[] = [
     kind: "marketing",
   },
 
+  {
+    href: "/apps",
+    label: "Mais",
+    description: "Todas as ferramentas e módulos.",
+    icon: LayoutGrid,
+    kind: "app",
+    group: "overview",
+  },
+
   // ── Visão Geral ──
   {
     href: "/admin/ceo",
@@ -84,6 +95,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: Gauge,
     kind: "app",
     group: "overview",
+    pinned: true,
     allowedRoles: ["admin"],
   },
   {
@@ -93,6 +105,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: BarChart3,
     kind: "app",
     group: "overview",
+    pinned: true,
     allowedRoles: ["admin", "seller", "market"],
   },
   {
@@ -122,6 +135,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: Users,
     kind: "app",
     group: "communication",
+    pinned: true,
     allowedRoles: ["admin", "seller", "market"],
   },
   {
@@ -131,6 +145,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: MessageSquare,
     kind: "app",
     group: "communication",
+    pinned: true,
     allowedRoles: ["admin", "seller", "market"],
   },
   {
@@ -151,6 +166,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: Wallet,
     kind: "app",
     group: "monetization",
+    pinned: true,
     allowedRoles: ["admin", "seller", "market"],
   },
   {
@@ -239,6 +255,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: Bot,
     kind: "app",
     group: "operations",
+    pinned: true,
     allowedRoles: ["admin", "seller", "market"],
   },
   {
@@ -248,6 +265,7 @@ export const platformRoutes: PlatformRoute[] = [
     icon: Settings,
     kind: "app",
     group: "operations",
+    pinned: true,
     allowedRoles: ["admin", "seller", "market"],
   },
   {
@@ -493,77 +511,56 @@ export async function PlatformAppPage({
     <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-300">
       {/* ─── Desktop sidebar (icon-only, w-16) ─── */}
       <aside className="hidden md:flex w-16 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex-col items-center py-4 justify-between shrink-0 h-screen sticky top-0 z-30 transition-colors duration-300">
-        <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1 overflow-y-auto overflow-x-hidden flex-1 min-h-0 no-scrollbar">
+        <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1">
           <ShieldMark />
 
-          {(() => {
-            const groupOrder: SidebarGroup[] = ["overview", "communication", "monetization", "sales", "operations", "admin"];
-            const grouped = new Map<SidebarGroup, PlatformRoute[]>();
-            for (const route of appRoutes) {
-              const g = route.group ?? "overview";
-              if (!grouped.has(g)) grouped.set(g, []);
-              grouped.get(g)!.push(route);
-            }
+          {appRoutes.filter((r) => r.pinned).map((route) => {
+            const isActive = !route.external && currentPath === route.href;
+            const linkClass = cn(
+              "relative group/tip w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+              isActive
+                ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+            );
 
-            const elements: React.ReactNode[] = [];
-            let isFirst = true;
+            const tooltip = (
+              <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 w-max max-w-[12rem] rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 opacity-0 scale-95 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50 shadow-lg">
+                <span className="block text-xs font-semibold text-white dark:text-gray-900">{route.label}</span>
+                <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">{route.description}</span>
+              </span>
+            );
 
-            for (const group of groupOrder) {
-              const routes = grouped.get(group);
-              if (!routes?.length) continue;
+            return route.external ? (
+              <a key={route.href} href={route.href} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                <route.icon className="w-5 h-5" />
+                {tooltip}
+              </a>
+            ) : (
+              <Link key={route.href} href={route.href} className={linkClass} {...(isActive ? { "aria-current": "page" as const } : {})}>
+                <route.icon className="w-5 h-5" />
+                {tooltip}
+              </Link>
+            );
+          })}
 
-              if (!isFirst) {
-                elements.push(
-                  <div key={`sep-${group}`} className="w-6 h-px bg-gray-200 dark:bg-gray-800 my-1 shrink-0" />
-                );
-              }
-              isFirst = false;
+          <div className="w-6 h-px bg-gray-200 dark:bg-gray-800 my-1" />
 
-              for (const route of routes) {
-                const isActive = !route.external && currentPath === route.href;
-                const linkClass = cn(
-                  "relative group/tip w-10 h-10 rounded-lg flex items-center justify-center transition-colors shrink-0",
-                  isActive
-                    ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                    : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
-                );
-
-                const tooltip = (
-                  <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 w-max max-w-[12rem] rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 opacity-0 scale-95 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50 shadow-lg">
-                    <span className="block text-xs font-semibold text-white dark:text-gray-900">{route.label}</span>
-                    <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">{route.description}</span>
-                  </span>
-                );
-
-                elements.push(
-                  route.external ? (
-                    <a
-                      key={route.href}
-                      href={route.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={linkClass}
-                    >
-                      <route.icon className="w-5 h-5" />
-                      {tooltip}
-                    </a>
-                  ) : (
-                    <Link
-                      key={route.href}
-                      href={route.href}
-                      className={linkClass}
-                      {...(isActive ? { "aria-current": "page" as const } : {})}
-                    >
-                      <route.icon className="w-5 h-5" />
-                      {tooltip}
-                    </Link>
-                  )
-                );
-              }
-            }
-
-            return elements;
-          })()}
+          <Link
+            href="/apps"
+            className={cn(
+              "relative group/tip w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+              currentPath === "/apps"
+                ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+            )}
+            {...(currentPath === "/apps" ? { "aria-current": "page" as const } : {})}
+          >
+            <LayoutGrid className="w-5 h-5" />
+            <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 w-max max-w-[12rem] rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 opacity-0 scale-95 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50 shadow-lg">
+              <span className="block text-xs font-semibold text-white dark:text-gray-900">Mais</span>
+              <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">Todas as ferramentas e módulos.</span>
+            </span>
+          </Link>
         </nav>
 
         <div className="flex flex-col items-center gap-1">
