@@ -46,12 +46,21 @@ import { cn } from "@/lib/utils";
 import type { UserRole } from "@/server/auth/core";
 import { platformBrand } from "@/lib/platform";
 
+type SidebarGroup =
+  | "overview"
+  | "communication"
+  | "monetization"
+  | "sales"
+  | "operations"
+  | "admin";
+
 type PlatformRoute = {
   href: string;
   label: string;
   description: string;
   icon: LucideIcon;
   kind: "marketing" | "app";
+  group?: SidebarGroup;
   allowedRoles?: UserRole[];
   devOnly?: boolean;
   experimental?: boolean;
@@ -66,28 +75,15 @@ export const platformRoutes: PlatformRoute[] = [
     icon: LayoutDashboard,
     kind: "marketing",
   },
-  {
-    href: "/onboarding",
-    label: "Guia",
-    description: "Como usar a plataforma no dia a dia.",
-    icon: BookOpen,
-    kind: "app",
-    allowedRoles: ["admin", "seller", "market"],
-  },
+
+  // ── Visão Geral ──
   {
     href: "/admin/ceo",
     label: "CEO",
     description: "Visão executiva da plataforma.",
     icon: Gauge,
     kind: "app",
-    allowedRoles: ["admin"],
-  },
-  {
-    href: "/admin",
-    label: "Admin",
-    description: "Governança dos sellers e da recuperação.",
-    icon: ShieldCheck,
-    kind: "app",
+    group: "overview",
     allowedRoles: ["admin"],
   },
   {
@@ -96,38 +92,36 @@ export const platformRoutes: PlatformRoute[] = [
     description: "O que precisa de ação agora.",
     icon: BarChart3,
     kind: "app",
+    group: "overview",
     allowedRoles: ["admin", "seller", "market"],
   },
   {
-    href: "/financeiro",
-    label: "Financeiro",
-    description: "Saldo, comissões e saques.",
-    icon: Wallet,
+    href: "/admin",
+    label: "Admin",
+    description: "Governança dos sellers e da recuperação.",
+    icon: ShieldCheck,
     kind: "app",
-    allowedRoles: ["admin", "seller", "market"],
+    group: "overview",
+    allowedRoles: ["admin"],
   },
   {
-    href: "/connect",
-    label: "Integrações",
-    description: "O que está ativo e o que falta.",
-    icon: Settings,
+    href: "/onboarding",
+    label: "Guia",
+    description: "Como usar a plataforma no dia a dia.",
+    icon: BookOpen,
     kind: "app",
+    group: "overview",
     allowedRoles: ["admin", "seller", "market"],
   },
-  {
-    href: "/calendar",
-    label: "Calendário",
-    description: "Movimento, notas e automações por dia.",
-    icon: CalendarDays,
-    kind: "app",
-    allowedRoles: ["admin", "seller", "market"],
-  },
+
+  // ── Comunicação ──
   {
     href: "/leads",
     label: "CRM",
     description: "Qual caso mover agora.",
     icon: Users,
     kind: "app",
+    group: "communication",
     allowedRoles: ["admin", "seller", "market"],
   },
   {
@@ -136,23 +130,8 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Quem precisa de resposta.",
     icon: MessageSquare,
     kind: "app",
+    group: "communication",
     allowedRoles: ["admin", "seller", "market"],
-  },
-  {
-    href: "/ai",
-    label: "Automações",
-    description: "IA e automações da operação.",
-    icon: Bot,
-    kind: "app",
-    allowedRoles: ["admin", "seller", "market"],
-  },
-  {
-    href: "/test",
-    label: "Testes",
-    description: "Disparar eventos simulados.",
-    icon: FlaskConical,
-    kind: "app",
-    allowedRoles: ["admin"],
   },
   {
     href: "/calling",
@@ -160,15 +139,19 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Agente de voz IA para recuperação de clientes.",
     icon: PhoneCall,
     kind: "app",
+    group: "communication",
     allowedRoles: ["admin", "seller", "market"],
   },
+
+  // ── Monetização ──
   {
-    href: "/marketing",
-    label: "Painel",
-    description: "Painel de resultados e operação de recuperação.",
-    icon: Megaphone,
+    href: "/financeiro",
+    label: "Financeiro",
+    description: "Saldo, comissões e saques.",
+    icon: Wallet,
     kind: "app",
-    allowedRoles: ["admin", "market"],
+    group: "monetization",
+    allowedRoles: ["admin", "seller", "market"],
   },
   {
     href: "/cart-recovery",
@@ -176,6 +159,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Recuperação de carrinhos abandonados.",
     icon: ShoppingCart,
     kind: "app",
+    group: "monetization",
     allowedRoles: ["admin", "seller"],
   },
   {
@@ -184,7 +168,37 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Assinaturas e cobrança recorrente inteligente.",
     icon: Repeat,
     kind: "app",
+    group: "monetization",
     allowedRoles: ["admin", "seller"],
+  },
+  {
+    href: "/reactivation",
+    label: "Reativação",
+    description: "Reativar clientes inativos da base.",
+    icon: RefreshCcw,
+    kind: "app",
+    group: "monetization",
+    allowedRoles: ["admin", "seller"],
+  },
+  {
+    href: "/preventive",
+    label: "Preventiva",
+    description: "Régua preventiva pré-vencimento.",
+    icon: Bell,
+    kind: "app",
+    group: "monetization",
+    allowedRoles: ["admin", "seller"],
+  },
+
+  // ── Vendas ──
+  {
+    href: "/marketing",
+    label: "Painel",
+    description: "Painel de resultados e operação de recuperação.",
+    icon: Megaphone,
+    kind: "app",
+    group: "sales",
+    allowedRoles: ["admin", "market"],
   },
   {
     href: "/upsell",
@@ -192,6 +206,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Ofertas pós-pagamento e cross-sell.",
     icon: Gift,
     kind: "app",
+    group: "sales",
     allowedRoles: ["admin", "seller"],
     experimental: true,
   },
@@ -201,6 +216,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Vendas por conversa via WhatsApp e voz.",
     icon: Store,
     kind: "app",
+    group: "sales",
     allowedRoles: ["admin", "seller"],
     experimental: true,
   },
@@ -210,56 +226,57 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Campanhas de venda ativa por IA.",
     icon: PhoneOutgoing,
     kind: "app",
+    group: "sales",
     allowedRoles: ["admin", "seller"],
     experimental: true,
   },
+
+  // ── Operações ──
   {
-    href: "/reactivation",
-    label: "Reativação",
-    description: "Reativar clientes inativos da base.",
-    icon: RefreshCcw,
+    href: "/ai",
+    label: "Automações",
+    description: "IA e automações da operação.",
+    icon: Bot,
     kind: "app",
+    group: "operations",
+    allowedRoles: ["admin", "seller", "market"],
+  },
+  {
+    href: "/connect",
+    label: "Integrações",
+    description: "O que está ativo e o que falta.",
+    icon: Settings,
+    kind: "app",
+    group: "operations",
+    allowedRoles: ["admin", "seller", "market"],
+  },
+  {
+    href: "/calendar",
+    label: "Calendário",
+    description: "Movimento, notas e automações por dia.",
+    icon: CalendarDays,
+    kind: "app",
+    group: "operations",
+    allowedRoles: ["admin", "seller", "market"],
+  },
+  {
+    href: "/tracking",
+    label: "Tracking",
+    description: "Atribuição UTM, ROAS e rastreamento de conversões.",
+    icon: Crosshair,
+    kind: "app",
+    group: "operations",
     allowedRoles: ["admin", "seller"],
   },
-  {
-    href: "/payment-score",
-    label: "Score",
-    description: "Score de pagamento proprietário.",
-    icon: Gauge,
-    kind: "app",
-    allowedRoles: ["admin"],
-  },
-  {
-    href: "/reconciliation",
-    label: "Conciliação",
-    description: "Conciliação financeira automática.",
-    icon: FileSpreadsheet,
-    kind: "app",
-    allowedRoles: ["admin"],
-  },
-  {
-    href: "/negativation",
-    label: "Negativação",
-    description: "Negativação e protesto automatizado.",
-    icon: AlertTriangle,
-    kind: "app",
-    allowedRoles: ["admin"],
-  },
-  {
-    href: "/anticipation",
-    label: "Antecipação",
-    description: "Antecipação de recebíveis.",
-    icon: Banknote,
-    kind: "app",
-    allowedRoles: ["admin"],
-    experimental: true,
-  },
+
+  // ── Administração ──
   {
     href: "/admin/withdraw",
     label: "Saques",
     description: "Painel de saques PIX e saldo.",
     icon: HandCoins,
     kind: "app",
+    group: "admin",
     allowedRoles: ["admin"],
   },
   {
@@ -268,23 +285,54 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Contatos e chaves PIX para saques.",
     icon: ContactRound,
     kind: "app",
+    group: "admin",
     allowedRoles: ["admin"],
   },
   {
-    href: "/preventive",
-    label: "Preventiva",
-    description: "Régua preventiva pré-vencimento.",
-    icon: Bell,
+    href: "/reconciliation",
+    label: "Conciliação",
+    description: "Conciliação financeira automática.",
+    icon: FileSpreadsheet,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    group: "admin",
+    allowedRoles: ["admin"],
   },
   {
-    href: "/tracking",
-    label: "Tracking",
-    description: "Atribuição UTM, ROAS e rastreamento de conversões.",
-    icon: Crosshair,
+    href: "/payment-score",
+    label: "Score",
+    description: "Score de pagamento proprietário.",
+    icon: Gauge,
     kind: "app",
-    allowedRoles: ["admin", "seller"],
+    group: "admin",
+    allowedRoles: ["admin"],
+  },
+  {
+    href: "/negativation",
+    label: "Negativação",
+    description: "Negativação e protesto automatizado.",
+    icon: AlertTriangle,
+    kind: "app",
+    group: "admin",
+    allowedRoles: ["admin"],
+  },
+  {
+    href: "/anticipation",
+    label: "Antecipação",
+    description: "Antecipação de recebíveis.",
+    icon: Banknote,
+    kind: "app",
+    group: "admin",
+    allowedRoles: ["admin"],
+    experimental: true,
+  },
+  {
+    href: "/test",
+    label: "Testes",
+    description: "Disparar eventos simulados.",
+    icon: FlaskConical,
+    kind: "app",
+    group: "admin",
+    allowedRoles: ["admin"],
   },
   {
     href: "/checkout/dashboard",
@@ -292,6 +340,7 @@ export const platformRoutes: PlatformRoute[] = [
     description: "Plataforma de pagamentos e transações.",
     icon: Link2,
     kind: "app",
+    group: "admin",
     external: true,
     allowedRoles: ["admin"],
   },
@@ -444,48 +493,77 @@ export async function PlatformAppPage({
     <div className="flex h-screen bg-[#f5f5f7] dark:bg-[#0d0d0d] overflow-hidden transition-colors duration-300">
       {/* ─── Desktop sidebar (icon-only, w-16) ─── */}
       <aside className="hidden md:flex w-16 bg-white dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex-col items-center py-4 justify-between shrink-0 h-screen sticky top-0 z-30 transition-colors duration-300">
-        <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1">
+        <nav aria-label="Navegação principal" className="flex flex-col items-center gap-1 overflow-y-auto overflow-x-hidden flex-1 min-h-0 no-scrollbar">
           <ShieldMark />
 
-          {appRoutes.map((route) => {
-            const isActive = !route.external && currentPath === route.href;
-            const linkClass = cn(
-              "relative group/tip w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
-              isActive
-                ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
-            );
+          {(() => {
+            const groupOrder: SidebarGroup[] = ["overview", "communication", "monetization", "sales", "operations", "admin"];
+            const grouped = new Map<SidebarGroup, PlatformRoute[]>();
+            for (const route of appRoutes) {
+              const g = route.group ?? "overview";
+              if (!grouped.has(g)) grouped.set(g, []);
+              grouped.get(g)!.push(route);
+            }
 
-            const tooltip = (
-              <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 w-max max-w-[12rem] rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 opacity-0 scale-95 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50 shadow-lg">
-                <span className="block text-xs font-semibold text-white dark:text-gray-900">{route.label}</span>
-                <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">{route.description}</span>
-              </span>
-            );
+            const elements: React.ReactNode[] = [];
+            let isFirst = true;
 
-            return route.external ? (
-              <a
-                key={route.href}
-                href={route.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkClass}
-              >
-                <route.icon className="w-5 h-5" />
-                {tooltip}
-              </a>
-            ) : (
-              <Link
-                key={route.href}
-                href={route.href}
-                className={linkClass}
-                {...(isActive ? { "aria-current": "page" as const } : {})}
-              >
-                <route.icon className="w-5 h-5" />
-                {tooltip}
-              </Link>
-            );
-          })}
+            for (const group of groupOrder) {
+              const routes = grouped.get(group);
+              if (!routes?.length) continue;
+
+              if (!isFirst) {
+                elements.push(
+                  <div key={`sep-${group}`} className="w-6 h-px bg-gray-200 dark:bg-gray-800 my-1 shrink-0" />
+                );
+              }
+              isFirst = false;
+
+              for (const route of routes) {
+                const isActive = !route.external && currentPath === route.href;
+                const linkClass = cn(
+                  "relative group/tip w-10 h-10 rounded-lg flex items-center justify-center transition-colors shrink-0",
+                  isActive
+                    ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                    : "text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800",
+                );
+
+                const tooltip = (
+                  <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 w-max max-w-[12rem] rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 opacity-0 scale-95 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:scale-100 z-50 shadow-lg">
+                    <span className="block text-xs font-semibold text-white dark:text-gray-900">{route.label}</span>
+                    <span className="block text-[0.65rem] leading-snug text-gray-300 dark:text-gray-500 mt-0.5">{route.description}</span>
+                  </span>
+                );
+
+                elements.push(
+                  route.external ? (
+                    <a
+                      key={route.href}
+                      href={route.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={linkClass}
+                    >
+                      <route.icon className="w-5 h-5" />
+                      {tooltip}
+                    </a>
+                  ) : (
+                    <Link
+                      key={route.href}
+                      href={route.href}
+                      className={linkClass}
+                      {...(isActive ? { "aria-current": "page" as const } : {})}
+                    >
+                      <route.icon className="w-5 h-5" />
+                      {tooltip}
+                    </Link>
+                  )
+                );
+              }
+            }
+
+            return elements;
+          })()}
         </nav>
 
         <div className="flex flex-col items-center gap-1">
